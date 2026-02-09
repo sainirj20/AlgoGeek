@@ -1,3 +1,3 @@
 # AlgoGeek
 leetcode algo problems
-[website](https://sainirj20.github.io/AlgoGeek/))
+[website link](https://sainirj20.github.io/AlgoGeek/)
