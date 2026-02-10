@@ -18,8 +18,10 @@ const renderer = {
                     if (j == 0 || j == temp.length-1 ) continue;
                     newHtml += "<span style='line-height:0.8; display:block;'>\u00A0</span>";
                 } else {
-                    newHtml += xxx + "<br />";
-                }                
+                    newHtml += (xxx.endsWith('ul>') || xxx.endsWith('li>'))
+                            ? xxx 
+                            : xxx + "<br />";
+                }
             }
             htmls[i].innerHTML = newHtml;
         }
