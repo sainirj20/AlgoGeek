@@ -2,18 +2,26 @@ const renderer = {
     question : document.getElementsByTagName("question"),
     notes : document.getElementsByTagName("notes"),
     snippet : document.getElementsByTagName("snippet"),
+    anchors : document.getElementsByTagName("a"),
     renderUI : () => {
         if (renderer.question) renderer._format(renderer.question);
         if (renderer.notes) renderer._format(renderer.notes);
         if (renderer.snippet) renderer.renderSnippet();
+        for (let i=0; i < renderer.anchors.length; i++) {
+            renderer.anchors[i].setAttribute("target", "_blank");
+        }
     },
     _format : (htmls) => {
         for (let i = 0; i<htmls.length; i++) {
             if (!htmls[i].innerHTML) continue;
             const temp = htmls[i].innerHTML.split('\n');
             let newHtml = '';
+            let preStarted = false;
             for (let j = 0; j < temp.length; j++) {
-                const xxx = temp[j].trim();
+                if(temp[j].includes("<pre>")) preStarted = true;
+                else if(temp[j].includes("</pre>")) preStarted = false;
+
+                const xxx = preStarted ? temp[j] : temp[j].trim();
                 if (xxx.length == 0) {
                     if (j == 0 || j == temp.length-1 ) continue;
                     newHtml += "<span style='line-height:0.8; display:block;'>\u00A0</span>";
