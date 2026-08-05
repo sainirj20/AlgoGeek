@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATM | Object Oriented Design | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Object Oriented Design</a><span class="sep">/</span><span class="current">ATM</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Object Oriented Design overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#actors-and-use-cases">Actors &amp; Use Cases</a></li>
+        <li><a href="#key-classes">Key Classes</a></li>
+        <li><a href="#class-diagram">Class Diagram</a></li>
+        <li><a href="#key-flow-activity-diagram">Key Flow: Withdraw Cash</a></li>
+        <li><a href="#key-flow-sequence-diagram">Key Flow: PIN Verification</a></li>
+        <li><a href="#design-patterns-applied">Design Patterns Applied</a></li>
+        <li><a href="#code-skeleton">Code Skeleton</a></li>
+        <li><a href="#extensibility-and-edge-cases">Extensibility &amp; Edge Cases</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">OBJECT ORIENTED DESIGN</span>
+          <h1>Design an ATM</h1>
+        </div>
+
+        <p><em>The ATM problem is the canonical whiteboard introduction to the <strong>State</strong> design pattern, and interviewers use it precisely because the state machine isn't contrived &mdash; an ATM's screen and behavior genuinely change depending on where the customer is in the flow: no card inserted, card inserted but not yet authenticated, authenticated and choosing an operation, or mid-transaction with cash physically moving. Underneath that state machine sits a second, equally real problem: the machine is a small cash register with finite physical inventory, so a "give me $60" request can fail for a reason that has nothing to do with the customer's balance &mdash; the machine might simply not have the right bills on hand. A strong answer treats both halves as first-class: model the state machine so each screen genuinely owns its own behavior instead of leaning on one giant conditional, and treat the denomination breakdown as a real algorithm with a real failure mode, not an implementation detail to hand-wave past.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the software running inside a bank's Automated Teller Machine. A customer inserts a bank card, the machine reads the card number, and the customer enters a PIN that must be verified against the bank's records before anything else is possible. Once authenticated, the customer can withdraw cash, check their balance, deposit cash, transfer funds to another account, or view a mini statement. A withdrawal has to clear two checks &mdash; enough balance in the account, and under the account's daily withdrawal limit &mdash; before the machine will even attempt to dispense anything; and dispensing itself is a physical constraint, not just a database update, since the requested amount has to be broken down into whatever denominations the machine's cash cassettes actually contain right now. The ATM tracks its own remaining cash inventory per denomination independently of the customer's account balance, and has to gracefully refuse (or offer an alternative) when it can't make exact change. Interviewers use this problem to see whether a candidate reaches for the State pattern deliberately &mdash; because the ATM's legal operations really do change screen-to-screen &mdash; rather than bolting on a <code>mode</code> field and a wall of <code>if</code>/<code>else</code>, and whether they'll proactively raise the "money moved but cash didn't dispense" failure mode that real ATM operators deal with every day.</p>
+
+        <h2 id="requirements">Requirements</h2>
+        <ol>
+          <li>The ATM must <strong>accept a bank card</strong> and read the <strong>card number</strong> off it via a card reader.</li>
+          <li>The ATM must <strong>verify the customer's PIN</strong> against the bank's records, allowing only a <strong>limited number of attempts</strong> (typically three) before the card is <strong>retained or blocked</strong>.</li>
+          <li>Once authenticated, the customer can perform: <strong>Withdraw Cash</strong>, <strong>Check Balance</strong>, <strong>Deposit Cash</strong>, <strong>Transfer Between Accounts</strong>, and <strong>Print/Show Mini Statement</strong>.</li>
+          <li>A withdrawal amount must be validated against both the account's <strong>available balance</strong> and the account's <strong>daily withdrawal limit</strong> before the machine proceeds.</li>
+          <li>Cash dispensed must be broken down into whatever <strong>denominations</strong> the machine currently has available (e.g., $100, $50, $20, $10, $5, $1 bills).</li>
+          <li>The machine must track its <strong>own remaining cash inventory per denomination</strong> and <strong>refuse a withdrawal</strong> &mdash; or fall back to a different, dispensable amount &mdash; if it cannot make <strong>exact change</strong> for the requested amount.</li>
+          <li>The machine must <strong>eject the card</strong> on a normal, successful interaction, and <strong>retain the card</strong> after the customer exhausts their PIN attempts.</li>
+          <li>An <strong>Operator/Technician</strong> can <strong>replenish cash</strong> per denomination and place the machine into a <strong>maintenance / out-of-service</strong> mode.</li>
+        </ol>
+
+        <h2 id="actors-and-use-cases">Actors &amp; Use Cases</h2>
+        <p>Three actors touch this system, and each initiates use cases none of the others can:</p>
+        <ul>
+          <li><strong>Customer</strong> &mdash; inserts a card, authenticates, and performs the money-moving operations: withdraw, deposit, check balance, transfer. The only actor who owns an account in the scenario.</li>
+          <li><strong>Bank / Backend System</strong> &mdash; not physically present at the machine; the system-of-record that verifies PINs, checks balance and daily-limit rules, and authorizes or declines every transaction the ATM asks it to. Modeling it as its own actor keeps "who actually approved this" honest &mdash; the ATM never approves a transaction on its own authority.</li>
+          <li><strong>Operator / Technician</strong> &mdash; a human who services the physical machine: replenishing cash cassettes per denomination and switching the ATM into and out of a maintenance/out-of-service mode. Never touches a single customer's transaction.</li>
+        </ul>
+        <p>Primary use cases: <strong>Insert Card</strong>, <strong>Enter PIN</strong>, <strong>Withdraw Cash</strong>, <strong>Deposit Cash</strong>, <strong>Check Balance</strong>, <strong>Transfer Funds</strong>, and <strong>Replenish Cash</strong>.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 860 520" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Use case diagram: Customer, Bank/Backend System, and Operator/Technician actors connected to seven use cases inside the ATM System boundary">
+            <rect x="170" y="40" width="520" height="400" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+            <text x="430" y="64" text-anchor="middle" font-size="14" font-weight="700" fill="var(--color-primary-dark)">ATM System</text>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="72" y1="150" x2="195" y2="110"/>
+              <line x1="72" y1="150" x2="195" y2="190"/>
+              <line x1="72" y1="150" x2="195" y2="270"/>
+              <line x1="72" y1="150" x2="195" y2="350"/>
+              <line x1="72" y1="150" x2="465" y2="110"/>
+              <line x1="72" y1="150" x2="465" y2="190"/>
+
+              <line x1="72" y1="390" x2="465" y2="270"/>
+
+              <line x1="768" y1="270" x2="415" y2="190"/>
+              <line x1="768" y1="270" x2="415" y2="270"/>
+              <line x1="768" y1="270" x2="685" y2="190"/>
+            </g>
+
+            <g font-size="12" fill="var(--color-text)">
+              <circle cx="60" cy="116" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="60" y1="126" x2="60" y2="160" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="45" y1="140" x2="75" y2="140" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="60" y1="160" x2="47" y2="185" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="60" y1="160" x2="68" y2="185" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="60" y="202" text-anchor="middle">Customer</text>
+
+              <circle cx="60" cy="350" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="60" y1="360" x2="60" y2="394" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="45" y1="374" x2="75" y2="374" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="60" y1="394" x2="47" y2="419" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="60" y1="394" x2="68" y2="419" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="60" y="436" text-anchor="middle">Operator /</text>
+              <text x="60" y="450" text-anchor="middle">Technician</text>
+
+              <circle cx="795" cy="236" r="10" fill="none" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="795" y1="246" x2="795" y2="280" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="780" y1="260" x2="810" y2="260" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="795" y1="280" x2="782" y2="305" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="795" y1="280" x2="808" y2="305" stroke="var(--color-accent)" stroke-width="2"/>
+              <text x="795" y="322" text-anchor="middle" fill="var(--color-accent-dark)">Bank</text>
+              <text x="795" y="336" text-anchor="middle" font-size="9" fill="var(--color-accent-dark)">(Backend System)</text>
+            </g>
+
+            <g font-size="11" fill="var(--color-text)">
+              <ellipse cx="305" cy="110" rx="110" ry="28" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="305" y="114" text-anchor="middle">Insert Card</text>
+
+              <ellipse cx="305" cy="190" rx="110" ry="28" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="305" y="194" text-anchor="middle">Enter PIN</text>
+
+              <ellipse cx="305" cy="270" rx="110" ry="28" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="305" y="274" text-anchor="middle">Withdraw Cash</text>
+
+              <ellipse cx="305" cy="350" rx="110" ry="28" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="305" y="354" text-anchor="middle">Deposit Cash</text>
+
+              <ellipse cx="575" cy="110" rx="110" ry="28" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="575" y="114" text-anchor="middle">Check Balance</text>
+
+              <ellipse cx="575" cy="190" rx="110" ry="28" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="575" y="194" text-anchor="middle">Transfer Funds</text>
+
+              <ellipse cx="575" cy="270" rx="110" ry="28" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="575" y="274" text-anchor="middle">Replenish Cash</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 1. Use-case diagram: Customer initiates authentication and every money-moving use case; Operator/Technician owns only Replenish Cash; Bank sits behind the scenes, backing Enter PIN, Withdraw Cash, and Transfer Funds with the authorization checks only it can perform.</div>
+        </div>
+
+        <h2 id="key-classes">Key Classes</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td>ATM</td><td>The physical machine and the State pattern's context object; holds the current ATMState, a CashDispenser, a CardReader, and a reference to the Bank. Every public action &mdash; insertCard, enterPin, selectOperation, ejectCard &mdash; delegates to the current state.</td></tr>
+            <tr><td>ATMState <em>(interface)</em></td><td>Declares the same state-dependent method set (insertCard, ejectCard, enterPin, selectOperation) that every concrete state implements differently.</td></tr>
+            <tr><td>IdleState</td><td>No card inserted; only insertCard() has any effect, moving the ATM into HasCardState.</td></tr>
+            <tr><td>HasCardState</td><td>Card inserted, PIN not yet verified; enterPin() checks with the Bank and transitions to SelectOperationState on success, re-prompts on a recoverable failure, or ejects-and-retains the card after the final failed attempt.</td></tr>
+            <tr><td>SelectOperationState</td><td>PIN verified; the customer picks Withdraw, Deposit, Check Balance, or Transfer, and selectOperation() hands off into a TransactionState.</td></tr>
+            <tr><td>TransactionState</td><td>A Transaction is actively executing (funds moving, cash dispensing); most other inputs are blocked or ignored until it completes.</td></tr>
+            <tr><td>CardReader</td><td>Reads the card number off the physical card; can retain the card or return it to the customer.</td></tr>
+            <tr><td>CashDispenser</td><td>Owns the ATM's per-denomination cash inventory; computes a denomination breakdown for a requested amount and dispenses it, or reports that exact change isn't currently possible.</td></tr>
+            <tr><td>Account</td><td>Backend record of balance, currency, and the daily withdrawal limit/usage for a customer.</td></tr>
+            <tr><td>Card</td><td>Card number, the linked Account, and the PIN-attempt counter tracked for the current session.</td></tr>
+            <tr><td>Transaction <em>(abstract)</em> &mdash; Withdrawal, Deposit, Transfer, BalanceInquiry</td><td>One transaction attempt; each subtype implements execute() against the Bank and, for Withdrawal, the CashDispenser as well.</td></tr>
+            <tr><td>Bank</td><td>The backend authorizer; verifies PINs, checks balance/daily-limit rules, and debits or credits accounts on the ATM's behalf.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="class-diagram">Class Diagram</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1060 720" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="UML class diagram for the ATM system">
+            <defs>
+              <marker id="atmTriangle" viewBox="0 0 20 14" refX="18" refY="7" markerWidth="18" markerHeight="14" orient="auto">
+                <path d="M1,1 L18,7 L1,13 Z" fill="#ffffff" stroke="var(--color-primary)" stroke-width="1.2"/>
+              </marker>
+              <marker id="atmDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-primary-dark)" stroke="var(--color-primary-dark)" stroke-width="1"/>
+              </marker>
+              <marker id="atmArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)"/>
+              </marker>
+            </defs>
+
+            <!-- realization: concrete states -> ATMState interface (dashed, hollow triangle at interface end) -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" stroke-dasharray="5,4">
+              <line x1="110" y1="250" x2="380" y2="160" marker-end="url(#atmTriangle)"/>
+              <line x1="320" y1="250" x2="440" y2="160" marker-end="url(#atmTriangle)"/>
+              <line x1="550" y1="250" x2="550" y2="160" marker-end="url(#atmTriangle)"/>
+              <line x1="780" y1="250" x2="620" y2="160" marker-end="url(#atmTriangle)"/>
+            </g>
+
+            <!-- inheritance: Transaction subtypes -> Transaction (solid, hollow triangle at Transaction end) -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="205" y1="540" x2="225" y2="490" marker-end="url(#atmTriangle)"/>
+              <line x1="335" y1="540" x2="335" y2="490" marker-end="url(#atmTriangle)"/>
+              <line x1="465" y1="540" x2="465" y2="490" marker-end="url(#atmTriangle)"/>
+              <line x1="605" y1="540" x2="585" y2="490" marker-end="url(#atmTriangle)"/>
+            </g>
+
+            <!-- ATM -> ATMState (association, open arrow at ATMState end) -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="740" y1="100" x2="640" y2="90" marker-end="url(#atmArrow)"/>
+            </g>
+            <!-- ATM -> CashDispenser (composition, filled diamond at ATM end) -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="870" y1="210" x2="870" y2="380" marker-start="url(#atmDiamond)"/>
+            </g>
+            <!-- ATM -> Bank (association, open arrow at Bank end), routed around CashDispenser -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <polyline points="1000,60 1030,60 1030,615 1000,615" marker-end="url(#atmArrow)"/>
+            </g>
+            <!-- TransactionState -> Transaction ("creates", dashed arrow) -->
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none" stroke-dasharray="5,4">
+              <line x1="780" y1="340" x2="560" y2="380" marker-end="url(#atmArrow)"/>
+            </g>
+
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="655" y="83">currentState</text>
+              <text x="700" y="98">1</text>
+              <text x="875" y="300">1</text>
+              <text x="1000" y="340">authorizes via</text>
+              <text x="600" y="365">&laquo;creates&raquo;</text>
+            </g>
+
+            <!-- ATMState interface -->
+            <g>
+              <rect x="360" y="20" width="280" height="140" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="360" y1="58" x2="640" y2="58" stroke="var(--color-primary)"/>
+              <text x="500" y="36" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;interface&raquo;</text>
+              <text x="500" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">ATMState</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="370" y="76">+ insertCard(atm): void</text>
+                <text x="370" y="92">+ ejectCard(atm): void</text>
+                <text x="370" y="108">+ enterPin(atm, pin): void</text>
+                <text x="370" y="124">+ selectOperation(atm, op): void</text>
+              </g>
+            </g>
+
+            <!-- ATM -->
+            <g>
+              <rect x="740" y="20" width="260" height="190" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="740" y1="54" x2="1000" y2="54" stroke="var(--color-primary)"/>
+              <line x1="740" y1="122" x2="1000" y2="122" stroke="var(--color-primary)"/>
+              <text x="870" y="46" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">ATM</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="748" y="70">- currentState: ATMState</text>
+                <text x="748" y="84">- cashDispenser: CashDispenser</text>
+                <text x="748" y="98">- cardReader: CardReader</text>
+                <text x="748" y="112">- bank: Bank</text>
+                <text x="748" y="138">+ setState(s: ATMState): void</text>
+                <text x="748" y="152">+ insertCard(): void</text>
+                <text x="748" y="166">+ enterPin(pin): void</text>
+                <text x="748" y="180">+ selectOperation(op): void</text>
+              </g>
+            </g>
+
+            <!-- Concrete states -->
+            <g>
+              <rect x="20" y="250" width="180" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="20" y1="280" x2="200" y2="280" stroke="var(--color-accent-dark)"/>
+              <text x="110" y="272" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">IdleState</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="28" y="296">+ insertCard(atm)</text>
+                <text x="28" y="310">&rarr; setState(HasCardState)</text>
+              </g>
+            </g>
+
+            <g>
+              <rect x="220" y="250" width="200" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="220" y1="280" x2="420" y2="280" stroke="var(--color-accent-dark)"/>
+              <text x="320" y="272" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">HasCardState</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="228" y="296">+ enterPin(atm, pin)</text>
+                <text x="228" y="310">&rarr; verify via Bank</text>
+              </g>
+            </g>
+
+            <g>
+              <rect x="440" y="250" width="220" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="440" y1="280" x2="660" y2="280" stroke="var(--color-accent-dark)"/>
+              <text x="550" y="272" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--color-text)">SelectOperationState</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="448" y="296">+ selectOperation(atm, op)</text>
+                <text x="448" y="310">&rarr; setState(TransactionState)</text>
+              </g>
+            </g>
+
+            <g>
+              <rect x="680" y="250" width="200" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="680" y1="280" x2="880" y2="280" stroke="var(--color-accent-dark)"/>
+              <text x="780" y="272" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">TransactionState</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="688" y="296">+ executes op via</text>
+                <text x="688" y="310">CashDispenser / Bank</text>
+              </g>
+            </g>
+
+            <!-- Transaction abstract -->
+            <g>
+              <rect x="220" y="380" width="380" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="220" y1="412" x2="600" y2="412" stroke="var(--color-primary)"/>
+              <line x1="220" y1="452" x2="600" y2="452" stroke="var(--color-primary)"/>
+              <text x="410" y="404" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Transaction {abstract}</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="230" y="428">#amount: BigDecimal</text>
+                <text x="230" y="442">#timestamp: LocalDateTime</text>
+                <text x="230" y="468">+ execute(): TransactionResult {abstract}</text>
+              </g>
+            </g>
+
+            <!-- CashDispenser -->
+            <g>
+              <rect x="740" y="380" width="260" height="130" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="740" y1="412" x2="1000" y2="412" stroke="var(--color-primary)"/>
+              <line x1="740" y1="440" x2="1000" y2="440" stroke="var(--color-primary)"/>
+              <text x="870" y="404" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">CashDispenser</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="748" y="430">- denomCounts: Map&lt;Integer,Integer&gt;</text>
+                <text x="748" y="456">+ dispense(amount): DispenseResult</text>
+                <text x="748" y="470">+ canDispense(amount): boolean</text>
+                <text x="748" y="484">+ replenish(denom, count): void</text>
+              </g>
+            </g>
+
+            <!-- Transaction subtypes -->
+            <g font-size="10" fill="var(--color-text)" text-anchor="middle">
+              <rect x="150" y="540" width="110" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="150" y1="566" x2="260" y2="566" stroke="var(--color-accent-dark)"/>
+              <text x="205" y="558" font-weight="700">Withdrawal</text>
+              <text x="205" y="582" font-size="9">+ execute()</text>
+
+              <rect x="280" y="540" width="110" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="280" y1="566" x2="390" y2="566" stroke="var(--color-accent-dark)"/>
+              <text x="335" y="558" font-weight="700">Deposit</text>
+              <text x="335" y="582" font-size="9">+ execute()</text>
+
+              <rect x="410" y="540" width="110" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="410" y1="566" x2="520" y2="566" stroke="var(--color-accent-dark)"/>
+              <text x="465" y="558" font-weight="700">Transfer</text>
+              <text x="465" y="582" font-size="9">+ execute()</text>
+
+              <rect x="540" y="540" width="130" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="540" y1="566" x2="670" y2="566" stroke="var(--color-accent-dark)"/>
+              <text x="605" y="558" font-size="9.5" font-weight="700">BalanceInquiry</text>
+              <text x="605" y="582" font-size="9">+ execute()</text>
+            </g>
+
+            <!-- Bank -->
+            <g>
+              <rect x="740" y="560" width="260" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="740" y1="592" x2="1000" y2="592" stroke="var(--color-primary)"/>
+              <line x1="740" y1="620" x2="1000" y2="620" stroke="var(--color-primary)"/>
+              <text x="870" y="584" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Bank</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="748" y="610">- accounts: Map&lt;String,Account&gt;</text>
+                <text x="748" y="636">+ verifyPin(cardNo, pin): boolean</text>
+                <text x="748" y="650">+ authorize(txn): boolean</text>
+              </g>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 2. ATMState is an interface realized (dashed hollow-triangle) by IdleState, HasCardState, SelectOperationState, and TransactionState. ATM holds an association to its currentState (plain arrow, swapped at runtime) and is composed of (filled diamond) a CashDispenser &mdash; the dispenser has no meaning outside the machine that owns it. Transaction is an abstract base realized by four hollow-triangle subtypes with genuinely different execute() logic. ATM associates with Bank for authorization, and TransactionState is where a Transaction instance is actually created and executed (dashed &laquo;creates&raquo;).</div>
+        </div>
+        <p><strong>Why State instead of an <code>atmMode</code> enum.</strong> A tempting shortcut is a single <code>ATM</code> class with a <code>mode</code> field (IDLE, HAS_CARD, SELECTING, TRANSACTING) and every method &mdash; <code>insertCard()</code>, <code>enterPin()</code>, <code>selectOperation()</code> &mdash; opening with a <code>switch</code> on that field. It works for four states. It stops working the moment the ATM grows a fifth screen (say, a "confirm large withdrawal" prompt) or a sixth (an out-of-service screen operators can force at any time): every one of those <code>switch</code> statements needs a new case, in every method, and it's easy to forget one and leave a state where, say, <code>ejectCard()</code> silently does nothing when it should return the card. The State pattern turns "what can happen in this screen" into a single class whose four methods together define the complete, exhaustive answer &mdash; add a new screen by adding a new class implementing <code>ATMState</code>, and the compiler (via the interface) forces you to decide what every existing action means in it, rather than letting a forgotten <code>case</code> silently fall through.</p>
+
+        <h2 id="key-flow-activity-diagram">Key Flow: Withdraw Cash (Activity Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 800 900" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Activity diagram for withdrawing cash at an ATM">
+            <defs>
+              <marker id="atmActArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#atmActArrow)" fill="none">
+              <line x1="300" y1="30" x2="300" y2="54"/>
+              <line x1="300" y1="105" x2="300" y2="129"/>
+              <line x1="300" y1="180" x2="300" y2="204"/>
+              <line x1="300" y1="285" x2="300" y2="309"/>
+              <line x1="300" y1="360" x2="300" y2="384"/>
+              <line x1="300" y1="475" x2="300" y2="499"/>
+              <line x1="300" y1="596" x2="300" y2="620"/>
+              <line x1="300" y1="671" x2="300" y2="695"/>
+              <line x1="300" y1="751" x2="300" y2="775"/>
+              <line x1="300" y1="831" x2="300" y2="855"/>
+              <line x1="400" y1="245" x2="460" y2="245"/>
+              <line x1="420" y1="430" x2="470" y2="430"/>
+              <line x1="430" y1="548" x2="480" y2="548"/>
+            </g>
+            <circle cx="300" cy="20" r="10" fill="var(--color-primary)"/>
+
+            <rect x="180" y="55" width="240" height="50" rx="22" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="85" text-anchor="middle" font-size="11" fill="var(--color-text)">Insert card at ATM</text>
+
+            <rect x="180" y="130" width="240" height="50" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="160" text-anchor="middle" font-size="11" fill="var(--color-text)">Enter PIN</text>
+
+            <polygon points="300,205 400,245 300,285 200,245" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="249" text-anchor="middle" font-size="10" fill="var(--color-text)">PIN correct?</text>
+            <text x="248" y="228" font-size="10" font-weight="700" fill="var(--color-primary-dark)">No, attempts remain</text>
+            <text x="405" y="228" font-size="10" font-weight="700" fill="var(--color-primary-dark)">No, 0 attempts left</text>
+            <text x="252" y="303" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <polyline points="200,245 90,245 90,155 180,155" fill="none" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#atmActArrow)"/>
+            <text x="10" y="200" font-size="9.5" fill="var(--color-text-muted)">Re-prompt</text>
+            <text x="10" y="212" font-size="9.5" fill="var(--color-text-muted)">for PIN</text>
+
+            <rect x="460" y="218" width="250" height="55" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="585" y="238" text-anchor="middle" font-size="10" fill="var(--color-text)">Retain card (too many</text>
+            <text x="585" y="252" text-anchor="middle" font-size="10" fill="var(--color-text)">failed PIN attempts)</text>
+            <line x1="585" y1="273" x2="585" y2="300" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#atmActArrow)"/>
+            <circle cx="585" cy="312" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="585" cy="312" r="6" fill="var(--color-primary)"/>
+
+            <rect x="180" y="310" width="240" height="50" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="330" text-anchor="middle" font-size="10" fill="var(--color-text)">Select "Withdraw";</text>
+            <text x="300" y="344" text-anchor="middle" font-size="10" fill="var(--color-text)">enter amount</text>
+
+            <polygon points="300,385 420,430 300,475 180,430" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="424" text-anchor="middle" font-size="9.5" fill="var(--color-text)">Amount &le; balance AND</text>
+            <text x="300" y="438" text-anchor="middle" font-size="9.5" fill="var(--color-text)">&le; daily limit?</text>
+            <text x="392" y="410" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="252" y="468" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="470" y="403" width="250" height="55" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="595" y="423" text-anchor="middle" font-size="10" fill="var(--color-text)">Show error: insufficient</text>
+            <text x="595" y="437" text-anchor="middle" font-size="10" fill="var(--color-text)">funds or over daily limit</text>
+            <line x1="595" y1="458" x2="595" y2="485" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#atmActArrow)"/>
+            <circle cx="595" cy="497" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="595" cy="497" r="6" fill="var(--color-primary)"/>
+
+            <polygon points="300,500 430,548 300,596 170,548" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="544" text-anchor="middle" font-size="9.5" fill="var(--color-text)">Exact denominations</text>
+            <text x="300" y="558" text-anchor="middle" font-size="9.5" fill="var(--color-text)">available?</text>
+            <text x="402" y="528" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="252" y="590" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="480" y="521" width="270" height="55" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="615" y="541" text-anchor="middle" font-size="10" fill="var(--color-text)">Show "cannot dispense this</text>
+            <text x="615" y="555" text-anchor="middle" font-size="10" fill="var(--color-text)">amount"; offer nearest amount</text>
+            <line x1="615" y1="576" x2="615" y2="603" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#atmActArrow)"/>
+            <circle cx="615" cy="615" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="615" cy="615" r="6" fill="var(--color-primary)"/>
+
+            <rect x="180" y="621" width="240" height="50" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="651" text-anchor="middle" font-size="11" fill="var(--color-text)">Debit account via Bank</text>
+
+            <rect x="170" y="696" width="260" height="55" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="718" text-anchor="middle" font-size="10" fill="var(--color-text)">Dispense cash; update</text>
+            <text x="300" y="732" text-anchor="middle" font-size="10" fill="var(--color-text)">CashDispenser inventory</text>
+
+            <rect x="170" y="776" width="260" height="55" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="798" text-anchor="middle" font-size="10" fill="var(--color-text)">Print receipt; eject card</text>
+            <text x="300" y="812" text-anchor="middle" font-size="10" fill="var(--color-text)">(ATM &rarr; IdleState)</text>
+
+            <circle cx="300" cy="867" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="300" cy="867" r="6" fill="var(--color-primary)"/>
+          </svg>
+          <div class="diagram-caption">Figure 3. Activity diagram for withdrawal: PIN verification loops back on a recoverable failure and terminates on the final one; the balance/limit check and the "can the machine physically make this amount" check are deliberately separate decisions &mdash; a customer can be fully authorized by the Bank and still be told the ATM itself can't complete the request.</div>
+        </div>
+
+        <h2 id="key-flow-sequence-diagram">Key Flow: PIN Verification (Sequence Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Sequence diagram for PIN verification at an ATM, showing State pattern transitions">
+            <defs>
+              <marker id="atmSeqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-border)" stroke-width="1.3" stroke-dasharray="4,4">
+              <line x1="70" y1="60" x2="70" y2="590"/>
+              <line x1="260" y1="60" x2="260" y2="590"/>
+              <line x1="460" y1="60" x2="460" y2="590"/>
+              <line x1="680" y1="60" x2="680" y2="590"/>
+            </g>
+            <g fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5">
+              <rect x="5" y="20" width="130" height="40"/>
+              <rect x="195" y="20" width="130" height="40"/>
+              <rect x="395" y="20" width="130" height="40"/>
+              <rect x="615" y="20" width="130" height="40"/>
+            </g>
+            <g font-size="11" font-weight="700" fill="var(--color-text)" text-anchor="middle">
+              <text x="70" y="44">Customer</text>
+              <text x="260" y="44">ATM</text>
+              <text x="460" y="38">Card</text>
+              <text x="460" y="50">Reader</text>
+              <text x="680" y="44">Bank</text>
+            </g>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#atmSeqArrow)">
+              <line x1="70" y1="90" x2="260" y2="90"/>
+              <line x1="260" y1="155" x2="460" y2="155"/>
+              <line x1="70" y1="215" x2="260" y2="215"/>
+              <line x1="260" y1="245" x2="680" y2="245"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#atmSeqArrow)">
+              <line x1="460" y1="185" x2="260" y2="185"/>
+              <line x1="680" y1="275" x2="260" y2="275"/>
+            </g>
+
+            <g font-size="10" fill="var(--color-text)">
+              <text x="80" y="85">insertCard(card)</text>
+              <text x="270" y="150">readCardNumber()</text>
+              <text x="300" y="180">cardNumber</text>
+              <text x="80" y="210">enterPin(pin)</text>
+              <text x="270" y="240">verifyPin(cardNumber, pin)</text>
+              <text x="320" y="270">valid / invalid</text>
+            </g>
+
+            <rect x="200" y="100" width="240" height="30" fill="none" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3"/>
+            <text x="320" y="119" text-anchor="middle" font-size="9.5" font-style="italic" fill="var(--color-text-muted)">state: IdleState &rarr; HasCardState</text>
+
+            <rect x="40" y="300" width="810" height="270" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M40,300 L80,300 L80,312 L40,312 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="46" y="309" font-size="9" fill="var(--color-text)">alt</text>
+            <text x="88" y="309" font-size="9.5" fill="var(--color-text)">[PIN valid]</text>
+
+            <rect x="200" y="325" width="260" height="30" fill="none" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3"/>
+            <text x="330" y="344" text-anchor="middle" font-size="9.5" font-style="italic" fill="var(--color-text-muted)">state: HasCardState &rarr; SelectOperationState</text>
+            <line x1="260" y1="375" x2="70" y2="375" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#atmSeqArrow)" fill="none"/>
+            <text x="80" y="370" font-size="10" fill="var(--color-text)">show operation menu</text>
+
+            <line x1="40" y1="390" x2="850" y2="390" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="3,3"/>
+            <text x="88" y="405" font-size="9.5" fill="var(--color-text)">[PIN invalid, attempts remain]</text>
+            <line x1="260" y1="435" x2="70" y2="435" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#atmSeqArrow)" fill="none"/>
+            <text x="80" y="430" font-size="10" fill="var(--color-text)">show "Incorrect PIN, N left"</text>
+            <text x="80" y="450" font-size="9" font-style="italic" fill="var(--color-text-muted)">(remains in HasCardState; counter decremented)</text>
+
+            <line x1="40" y1="465" x2="850" y2="465" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="3,3"/>
+            <text x="88" y="480" font-size="9.5" fill="var(--color-text)">[PIN invalid, 0 attempts left]</text>
+            <rect x="200" y="488" width="260" height="30" fill="none" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3"/>
+            <text x="330" y="507" text-anchor="middle" font-size="9.5" font-style="italic" fill="var(--color-text-muted)">state: HasCardState &rarr; IdleState (retained)</text>
+            <line x1="260" y1="535" x2="460" y2="535" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#atmSeqArrow)" fill="none"/>
+            <text x="270" y="530" font-size="10" fill="var(--color-text)">retainCard()</text>
+            <line x1="260" y1="558" x2="70" y2="558" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#atmSeqArrow)" fill="none"/>
+            <text x="80" y="553" font-size="10" fill="var(--color-text)">show "Card retained &mdash; contact your bank"</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Sequence diagram for PIN verification: the ATM moves IdleState &rarr; HasCardState the moment a card is inserted, then &mdash; inside the <code>alt</code> fragment &mdash; either HasCardState &rarr; SelectOperationState on success, stays in HasCardState (with its internal attempt counter decremented) on a recoverable failure, or HasCardState &rarr; IdleState with the card physically retained on the final failure. The state transition is the actual outcome of this flow, not a side effect of the messages.</div>
+        </div>
+
+        <h2 id="design-patterns-applied">Design Patterns Applied</h2>
+        <p>Name the pattern and the forcing function together, not just the name:</p>
+        <ul>
+          <li><strong>State</strong> (ATMState / IdleState / HasCardState / SelectOperationState / TransactionState) &mdash; this is the textbook example for a reason. All four concrete states implement the exact same method set &mdash; <code>insertCard()</code>, <code>ejectCard()</code>, <code>enterPin()</code>, <code>selectOperation()</code> &mdash; but each gives a genuinely different answer: <code>IdleState.insertCard()</code> moves the machine forward, while <code>HasCardState.insertCard()</code> is a no-op because a card is already in the slot. The <code>ATM</code> context never branches on "what screen am I in" itself; it holds a single <code>currentState: ATMState</code> reference and blindly delegates every call &mdash; <code>currentState.insertCard(this)</code>, <code>currentState.enterPin(this, pin)</code> &mdash; to whichever object is currently installed there. The state <em>swap</em> is the other half of the pattern: a state decides when the machine is done with it and calls <code>atm.setState(new NextState())</code>, replacing the object the context delegates to. Nothing about <code>ATM</code>'s own code changes when a new screen is added &mdash; only a new class implementing <code>ATMState</code>.</li>
+          <li><strong>Strategy</strong> (optional angle: <code>CashDispenser</code>'s denomination-breakdown algorithm) &mdash; today's implementation might be greedy-largest-denomination-first, but a bank could reasonably want a different policy (e.g., preserve $20s for the next customer by favoring $50s and $100s first, or cap how many bills a single dispense can contain). Extracting that into a <code>DenominationStrategy</code> interface with a single <code>breakdownFor(amount, inventory)</code> method lets <code>CashDispenser</code> stay unchanged while the breakdown policy varies independently &mdash; the same shape as Strategy anywhere else (payment method, fee calculation): one interface, interchangeable implementations, and the caller never branches on which one is installed.</li>
+          <li><strong>Command</strong> (extension idea, not forced) &mdash; each <code>Transaction</code> subtype already looks like a command object: it bundles the request (amount, account) with an <code>execute()</code> method. Pushed a little further, <code>Transaction</code> could carry an audit log entry on creation and, where it makes sense, a compensating <code>reverse()</code> (a <code>Transfer</code> can genuinely be reversed by crediting the money back; a <code>Withdrawal</code> whose cash has already left the building physically cannot be "undone" the same way &mdash; only the ledger entry can be corrected). This is worth mentioning as a natural direction if the interviewer pushes on auditability or undo, not something to force into the core design where the four <code>Transaction</code> subtypes already do the job.</li>
+        </ul>
+
+        <h2 id="code-skeleton">Code Skeleton</h2>
+        <p>Fields and method signatures only &mdash; not a runnable program. The state-swap idiom in <code>HasCardState.enterPin()</code> and <code>CashDispenser.dispense()</code>'s exact-change handling are the two methods worked out in more detail, since they're exactly what interviewers probe on.</p>
+
+        <pre><code>public interface ATMState {
+    void insertCard(ATM atm, Card card);
+    void ejectCard(ATM atm);
+    void enterPin(ATM atm, String pin);
+    void selectOperation(ATM atm, OperationType operation, BigDecimal amount);
+}</code></pre>
+
+        <pre><code>public class IdleState implements ATMState {
+
+    @Override
+    public void insertCard(ATM atm, Card card) {
+        atm.setCurrentCard(card);
+        atm.setState(new HasCardState());          // the state-swap idiom
+    }
+
+    @Override
+    public void ejectCard(ATM atm) { /* no-op: no card to eject */ }
+
+    @Override
+    public void enterPin(ATM atm, String pin) { /* no-op: nothing to verify yet */ }
+
+    @Override
+    public void selectOperation(ATM atm, OperationType operation, BigDecimal amount) { /* no-op */ }
+}</code></pre>
+
+        <pre><code>public class HasCardState implements ATMState {
+    private static final int MAX_PIN_ATTEMPTS = 3;
+    private int attemptsRemaining = MAX_PIN_ATTEMPTS;
+
+    @Override
+    public void insertCard(ATM atm, Card card) { /* no-op: a card is already inserted */ }
+
+    @Override
+    public void enterPin(ATM atm, String pin) {
+        boolean valid = atm.getBank().verifyPin(atm.getCurrentCard(), pin);
+        if (valid) {
+            atm.setState(new SelectOperationState());
+        } else if (--attemptsRemaining &gt; 0) {
+            atm.showMessage("Incorrect PIN, " + attemptsRemaining + " attempt(s) remaining");
+            // stays in HasCardState -- same object instance, decremented counter
+        } else {
+            atm.getCardReader().retainCard();
+            atm.showMessage("Card retained -- contact your bank");
+            atm.setState(new IdleState());
+        }
+    }
+
+    @Override
+    public void ejectCard(ATM atm) {
+        atm.getCardReader().returnCard();
+        atm.setState(new IdleState());
+    }
+
+    @Override
+    public void selectOperation(ATM atm, OperationType operation, BigDecimal amount) { /* no-op: PIN not yet verified */ }
+}</code></pre>
+
+        <pre><code>public class ATM {
+    private ATMState currentState;
+    private final CashDispenser cashDispenser;
+    private final CardReader cardReader;
+    private final Bank bank;
+    private Card currentCard;
+
+    public ATM(CashDispenser cashDispenser, CardReader cardReader, Bank bank) {
+        this.cashDispenser = cashDispenser;
+        this.cardReader = cardReader;
+        this.bank = bank;
+        this.currentState = new IdleState();        // starting state
+    }
+
+    public void setState(ATMState state) { this.currentState = state; }
+    public void insertCard(Card card)    { currentState.insertCard(this, card); }
+    public void enterPin(String pin)     { currentState.enterPin(this, pin); }
+    public void selectOperation(OperationType op, BigDecimal amount) {
+        currentState.selectOperation(this, op, amount);
+    }
+    public void ejectCard() { currentState.ejectCard(this); }
+
+    public CashDispenser getCashDispenser() { return cashDispenser; }
+    public CardReader getCardReader()       { return cardReader; }
+    public Bank getBank()                   { return bank; }
+    public Card getCurrentCard()             { return currentCard; }
+    public void setCurrentCard(Card card)    { this.currentCard = card; }
+    public void showMessage(String text)     { /* renders to the physical screen */ }
+}</code></pre>
+
+        <pre><code>public class CashDispenser {
+    private final Map&lt;Integer, Integer&gt; denominationCounts;   // e.g. 20 -&gt; 340 bills on hand
+
+    public CashDispenser(Map&lt;Integer, Integer&gt; initialInventory) {
+        this.denominationCounts = initialInventory;
+    }
+
+    public boolean canDispenseExact(int amount) {
+        return breakdownFor(amount) != null;
+    }
+
+    // Returns a denomination -&gt; count breakdown, or throws if exact change isn't possible
+    // with the current inventory; the caller (Withdrawal) is responsible for reversing
+    // any debit already applied and/or offering a nearest dispensable amount.
+    public synchronized Map&lt;Integer, Integer&gt; dispense(int amount) {
+        Map&lt;Integer, Integer&gt; breakdown = breakdownFor(amount);
+        if (breakdown == null) {
+            throw new CannotDispenseExactAmountException(amount);
+        }
+        breakdown.forEach((denom, count) -&gt;
+            denominationCounts.merge(denom, -count, Integer::sum));
+        return breakdown;
+    }
+
+    // Greedy largest-denomination-first with backtracking when a denomination
+    // runs out; returns null (no throw) if no combination sums to `amount` exactly.
+    private Map&lt;Integer, Integer&gt; breakdownFor(int amount) { /* ... */ }
+
+    public void replenish(int denomination, int count) {
+        denominationCounts.merge(denomination, count, Integer::sum);
+    }
+}</code></pre>
+
+        <pre><code>public abstract class Transaction {
+    protected final String transactionId;
+    protected final Account account;
+    protected final BigDecimal amount;
+    protected final LocalDateTime timestamp;
+    protected TransactionStatus status;
+
+    protected Transaction(String transactionId, Account account, BigDecimal amount) { /* ... */ }
+
+    public abstract TransactionStatus execute(Bank bank, CashDispenser dispenser);
+}
+
+public class Withdrawal extends Transaction {
+
+    public Withdrawal(String transactionId, Account account, BigDecimal amount) {
+        super(transactionId, account, amount);
+    }
+
+    @Override
+    public TransactionStatus execute(Bank bank, CashDispenser dispenser) {
+        if (!bank.authorize(this)) {                          // balance + daily-limit check
+            return TransactionStatus.DECLINED;
+        }
+        Map&lt;Integer, Integer&gt; breakdown;
+        try {
+            breakdown = dispenser.dispense(amount.intValue());
+        } catch (CannotDispenseExactAmountException e) {
+            bank.reverse(this);                               // undo the debit; nothing was dispensed
+            return TransactionStatus.FAILED_NO_CASH;
+        }
+        bank.debit(account, amount);
+        this.status = TransactionStatus.COMPLETED;
+        return status;
+    }
+}</code></pre>
+
+        <div class="formula-box">
+          <span class="formula-label">Worked example</span>
+          Requested withdrawal: <strong>$70</strong>. Inventory: three $20s, zero $10s, unlimited $5s and $1s. Greedy largest-first tries 3&times;$20 = $60, leaving $10 with no $10 bills available &mdash; falls back to $5s: 2&times;$5 = $10. Final breakdown: <strong>3&times;$20 + 2&times;$5 = $70</strong>. If instead only $2 remained in $5s and $1s combined, no combination reaches exactly $70 and <code>dispense()</code> throws <code>CannotDispenseExactAmountException</code> rather than silently shorting the customer.
+        </div>
+
+        <h2 id="extensibility-and-edge-cases">Extensibility &amp; Edge Cases</h2>
+        <ul>
+          <li><strong>Debit succeeds, dispense fails (or vice versa).</strong> A network blip between the ATM and the Bank, or a cassette jam mid-dispense, can leave the ledger and the physical cash out of sync: the account was debited but no bills came out, or bills came out but the debit call timed out before confirming. The fix isn't "try harder" &mdash; it's treating every <code>Transaction</code> as carrying an <strong>idempotency key</strong> so a retried debit can't double-apply, logging the transaction's state (authorized / dispensed / confirmed) at each step, and running a periodic <strong>reconciliation job</strong> that compares the ATM's local transaction log against the Bank's ledger and auto-reverses (or queues for manual review) any mismatch. This is a real, everyday concern for ATM operators &mdash; "cash out of balance" cases are a standard category in bank operations, not a hypothetical edge case.</li>
+          <li><strong>Running out of a specific denomination.</strong> <code>CashDispenser.breakdownFor()</code> has to try alternate combinations (e.g., no $20s left &rarr; fall back to $10s and $5s) before concluding the amount can't be made, and low-inventory thresholds per denomination should trigger a proactive alert to the Operator/Technician well before the machine actually fails a customer's request.</li>
+          <li><strong>Multi-currency ATMs.</strong> Introduce a <code>Currency</code> on both <code>Account</code> and <code>Transaction</code>, group <code>CashDispenser</code>'s cassettes by currency, and add an FX-rate lookup (a job for the same kind of pluggable rate/pricing engine used elsewhere) when a withdrawal's currency differs from the account's home currency.</li>
+          <li><strong>Contactless / mobile-initiated withdrawals.</strong> A real, increasingly common feature: the customer authenticates and picks the amount inside their banking app, which hands the ATM a short-lived one-time code or QR code instead of a physical card and PIN. Modeling this cleanly means the ATM's authentication step becomes pluggable &mdash; a <code>MobileSessionState</code> that plays the same role <code>HasCardState</code> does (verify, then advance to <code>SelectOperationState</code>) without ever touching <code>CardReader</code> &mdash; rather than retrofitting card-specific logic to accept a code.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">Walk through every State transition this ATM goes through end to end, from card insertion to a completed withdrawal.</div>
+          <div class="qa-a">IdleState starts as the current state. insertCard() moves it to HasCardState, which owns the PIN-attempt counter. A correct enterPin() moves it to SelectOperationState; an incorrect one either decrements the counter and stays in HasCardState (same object, recoverable), or &mdash; on the final attempt &mdash; retains the card and moves back to IdleState. From SelectOperationState, selectOperation() moves the machine into TransactionState, parameterized by which operation was chosen; that state executes the corresponding Transaction (e.g., Withdrawal.execute()) and, on completion, moves the ATM back to IdleState after ejecting the card. At every step, ATM.currentState is the only thing that changes; the ATM object itself never branches on "what screen am I in."</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">The customer asks to withdraw $70 but the ATM is completely out of $10 bills and has three $20s and a pile of $5s and $1s left. How should the denomination-breakdown algorithm handle that, and what should the customer see?</div>
+          <div class="qa-a">A pure greedy algorithm that always takes the largest bill first has to be willing to backtrack: try 3x$20 ($60), then need $10 more with no $10s available, so it drops to $5s and $1s for the remainder (2x$5). If no combination of the remaining inventory sums to exactly $70, CashDispenser.dispense() should not silently dispense the wrong amount or round -- it should signal "cannot make exact change" (e.g., throw a CannotDispenseExactAmountException) and the calling Withdrawal should catch that, decline the transaction (or offer the nearest amount the machine actually can dispense, like $65 or $75), and make sure no debit was applied for the failed attempt.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if the Bank confirms the debit but the cash dispenser then jams and nothing comes out? How do you reconcile that?</div>
+          <div class="qa-a">This is the single most important real-world failure mode in this design, and it's exactly why Withdrawal.execute() is structured to authorize first, attempt to dispense second, and reverse on dispense failure -- but that reversal call can itself fail (network timeout, Bank service down). The durable fix is: give every Transaction an idempotency key so a retried debit or reversal can't double-apply; log each step (authorized, dispense-attempted, dispensed, confirmed) to a local transaction log the ATM keeps independently of the Bank's ledger; and run a periodic reconciliation job that diffs the ATM's log against the Bank's ledger, auto-reversing clear one-sided debits and flagging anything ambiguous for manual review. This is standard practice at real ATM operators, not a hypothetical -- "cash out of balance" is a named operational category.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does State scale better here than a single ATM class with an atmMode enum and if/else branches in every method?</div>
+          <div class="qa-a">With four states it barely matters -- the if/else version is annoying but survivable. It stops scaling the moment a new screen is added (a "confirm large withdrawal" prompt, an out-of-service screen, a mobile-session variant of HasCardState): every method (insertCard, enterPin, selectOperation, ejectCard) needs a new branch, in every method, and it's easy to silently forget one -- leaving, say, ejectCard() a no-op in a state where it should return the card. State turns "what can happen in this screen" into one class implementing one interface; the interface's method list is the exhaustive contract every state must answer, so adding a state means writing one new class rather than editing N existing methods and hoping nothing was missed.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is CashDispenser composed into ATM (owned, dies with it) rather than being a standalone service the ATM just calls?</div>
+          <div class="qa-a">A CashDispenser's cash inventory is meaningless outside the specific physical machine it's bolted into -- there's no scenario where "this dispenser" gets reassigned to a different ATM the way, say, a Product might move between categories in a catalog. That's exactly the composition signal (filled diamond): destroy the ATM (decommission the machine) and its CashDispenser's state goes with it. Contrast that with ATM's relationship to Bank, which is a plain association -- the same Bank instance is shared across every ATM in the network, and neither owns the other's lifecycle.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why are Withdrawal, Deposit, Transfer, and BalanceInquiry modeled as separate Transaction subclasses instead of one Transaction class with a TransactionType enum field?</div>
+          <div class="qa-a">This is the opposite call from ParkingSpot in the parking-lot problem, and the distinction is the point: those five parking-spot types were behaviorally identical and differed only in a data tag, which argued for one class plus an enum. Here, execute() genuinely differs by type -- Withdrawal needs the CashDispenser and has a physical dispense-failure path that the others don't; Transfer needs a second Account and a two-sided debit/credit; BalanceInquiry doesn't touch money movement at all. That's real behavioral divergence, which is exactly when subclassing (or, equivalently, a Command-style hierarchy) earns its cost.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you prevent double-dispensing cash if the ATM loses power or reboots mid-transaction?</div>
+          <div class="qa-a">The dispense step and the "mark this transaction as dispensed" write need to be treated as a single unit of recovery: persist the transaction's state (authorized, dispense-in-progress, dispensed, failed) to durable local storage before actuating the physical dispenser, and on reboot the ATM checks for any transaction left in dispense-in-progress and reconciles it against the hardware's own dispense log rather than blindly re-attempting the dispense call. Combined with the idempotency key from the Bank-side reconciliation discussion, this closes both directions of the failure: a re-sent debit can't double-charge, and a re-attempted dispense can't double-pay.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Two withdrawal requests hit the same account at nearly the same instant from two different ATMs. How do you stop the account from going negative?</div>
+          <div class="qa-a">This has to be enforced at the Bank, not at either ATM, since the two requests never share in-process state. Bank.authorize() needs to perform its balance-and-daily-limit check and its reservation of funds atomically -- e.g. a single conditional update like "debit WHERE balance &gt;= amount AND dailyWithdrawn + amount &lt;= dailyLimit," checking that exactly one row changed -- rather than a separate read-then-write. Whichever request's update lands first succeeds; the second sees a failed conditional update and is declined, the same last-resource-race pattern that shows up any time two independent actors compete for one finite thing.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A customer loses power or walks away mid-transaction after the PIN is verified but before they pick an operation. What should the ATM do?</div>
+          <div class="qa-a">SelectOperationState should carry an inactivity timeout: if no selectOperation() call arrives within, say, 30 seconds, the ATM should eject the card (or retain it, per bank policy, if it's been sitting unclaimed) and transition back to IdleState on its own, rather than leaving the machine authenticated and waiting indefinitely for the next person who walks up. This is a good example of a transition the state machine needs even though no explicit customer action triggered it -- the state itself, not just the ATM's public methods, needs a way to time out.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support the contactless/mobile-initiated withdrawal flow where the customer starts the transaction on their phone?</div>
+          <div class="qa-a">Introduce a new state, e.g. MobileSessionState, that plays the same structural role as HasCardState -- it's reached by a different trigger (the ATM scanning a one-time code or QR from the customer's banking app instead of insertCard()+enterPin()) but converges on the same SelectOperationState once authenticated. Because ATMState is an interface, this is additive: no existing state's code changes, CardReader is simply never invoked for this path, and TransactionState and every Transaction subtype downstream are completely unaware of which authentication path got the customer there.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Key Takeaways</div>
+          <ul>
+            <li>State is the headline pattern here: ATMState's four methods form one exhaustive contract, every concrete state answers it differently, and ATM only ever delegates to currentState -- it never branches on "what screen am I in."</li>
+            <li>The state-swap idiom (a state calling atm.setState(new NextState())) is what makes adding a new screen additive -- one new class -- instead of an edit to every existing method's conditional.</li>
+            <li>"Can't make exact change" is a real, first-class failure mode for CashDispenser -- the algorithm must try alternate denomination combinations and explicitly signal failure rather than silently rounding or over/under-dispensing.</li>
+            <li>Debit-succeeds-but-dispense-fails (and its mirror) is the single most important edge case to raise unprompted; the fix is idempotency keys plus a periodic reconciliation job, not "add a try/catch."</li>
+            <li>Where Transaction subtypes and ParkingSpot subtypes diverge is instructive: Transaction subclasses because execute() genuinely differs per type, while a data-only distinction elsewhere would argue for one class and an enum instead.</li>
+          </ul>
+        </div>
+
+        <h2 id="references">References</h2>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/State_pattern" target="_blank" rel="noopener">"State pattern"</a> &mdash; general reference for the State pattern discussion above (ATMState and its concrete states).</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Two-phase_commit_protocol" target="_blank" rel="noopener">"Two-phase commit protocol"</a> &mdash; background on the class of problem behind "debit succeeded, dispense failed" and why atomic cross-system commitment is hard in general.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Idempotence" target="_blank" rel="noopener">"Idempotence"</a> &mdash; general reference for the idempotency-key approach used in the reconciliation and retry discussion above.</p>
+
+        <div class="page-nav">
+          <a class="prev" href="movie-ticket-booking.html"><span class="dir">Previous</span>Movie Ticket Booking System</a>
+          <a class="next" href="airline-management-system.html"><span class="dir">Next</span>Airline Management System</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

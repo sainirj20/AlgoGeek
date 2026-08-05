@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Discord | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Design Discord</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-scope">Problem Statement &amp; Scope</a></li>
+        <li><a href="#functional-requirements">Functional Requirements</a></li>
+        <li><a href="#non-functional-requirements">Non-Functional Requirements</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#api-design">API Design</a></li>
+        <li><a href="#low-level-design-deep-dive">Low-Level Design (Deep Dive)</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-sharding-and-partitioning">Data Sharding and Partitioning</a></li>
+        <li><a href="#feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#caching-strategy">Caching Strategy</a></li>
+        <li><a href="#monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</a></li>
+        <li><a href="#security-considerations">Security Considerations</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing Discord</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a Discord-style real-time community platform covering guilds ("servers") with multiple text channels, direct messages, presence and typing indicators, and group voice/video channels: requirements and capacity estimation, high-level architecture, API and low-level design (the WebSocket gateway session lifecycle), database schema, sharding, a feature-specific deep dive on fanning a single message out to a mega-guild's connected sessions without one send blocking the system, replication and fault tolerance, caching, monitoring, security, and a bank of follow-up interview questions. The thread running through every section is that this system is really <strong>two different real-time systems sharing one product surface</strong> &mdash; a reliable, ordered WebSocket control plane (chat, presence, typing) fanned out through a pub/sub tree, and a loss-tolerant, low-jitter UDP media plane (voice/video) relayed through an SFU that never touches the message store or the gateway's event stream &mdash; plus one architectural fact that trips up most candidates: <strong>a handful of oversized guilds, not the average guild, are what actually threaten to take down the fan-out layer</strong>, so the design has to be built around the 99.9th-percentile guild, not the median one.</em></p>
+
+        <h2 id="problem-statement-and-scope">Problem Statement &amp; Scope</h2>
+        <p>Design a real-time community chat platform, similar to Discord, that lets users:</p>
+        <ul>
+          <li><strong>Create or join a "server" (guild)</strong> &mdash; a persistent community grouping multiple <strong>text and voice channels</strong>, joined via a shareable invite.</li>
+          <li><strong>Send and receive real-time text messages</strong> in a channel, with full history and pagination, delivered to every currently connected member with sub-second latency.</li>
+          <li>See <strong>presence</strong> &mdash; who else in a shared guild is online, idle, or offline &mdash; updated live as members connect, disconnect, or go idle.</li>
+          <li>See <strong>typing indicators</strong> &mdash; a lightweight, ephemeral "user is typing&hellip;" signal scoped to one channel.</li>
+          <li>Exchange <strong>direct messages (DMs)</strong> with another user, outside any guild.</li>
+          <li>Join a <strong>voice or video channel</strong> inside a guild for real-time group voice/video (WebRTC).</li>
+          <li>Operate under <strong>per-guild roles and permissions</strong> &mdash; who can post, manage channels, or moderate, resolved per channel.</li>
+          <li>Receive a <strong>push notification</strong> for an @mention or DM while offline.</li>
+        </ul>
+
+        <h3>In scope</h3>
+        <p>The WebSocket gateway/session layer and its event fan-out, the guild/channel/membership/role model, message persistence and history pagination, presence propagation, typing indicators, the voice-channel signaling handshake and SFU-based media relay, and the caching/sharding decisions that keep one oversized guild from degrading the platform for everyone else.</p>
+
+        <h3>Out of scope (acknowledged, not designed in depth)</h3>
+        <p>Audio/video codec internals (Opus/VP8/H.264 encoding itself), the bot/developer API platform, AutoMod/ML content-moderation internals, screen-share encoding specifics, monetization, and end-to-end encrypted voice. We treat these as adjacent systems the design must leave room for, not features to build from scratch.</p>
+
+        <div class="callout">
+          <div class="callout-title">Key design tension</div>
+          Two facts shape almost every later decision. First, <strong>this is two different real-time systems wearing one UI</strong>: text/presence/typing is a reliable, ordered event-fan-out problem over persistent WebSocket connections, while voice/video is a loss-tolerant, latency-sensitive media-relay problem that needs an entirely different transport (UDP, SFU) &mdash; pushing voice frames through the same pub/sub pipe that carries chat events would be a fundamental mismatch. Second, <strong>guild size is wildly uneven</strong>: the overwhelming majority of guilds have a handful to a few hundred members, but a small number run into the hundreds of thousands &mdash; and a "publish this message to every member's connection" implementation that is perfectly fine at 50 members becomes a thundering-herd fan-out storm at 100,000+. The design has to be built around that long tail, not the median.
+        </div>
+
+        <h2 id="functional-requirements">Functional Requirements</h2>
+        <table>
+          <tr><th>#</th><th>Requirement</th><th>Notes</th></tr>
+          <tr><td>FR1</td><td>Create/join a guild (server) with multiple channels</td><td>A guild owner creates a guild, adds text and voice channels, and invites members via a shareable invite code; a joining user becomes a member with a default role.</td></tr>
+          <tr><td>FR2</td><td>Send/receive real-time text messages with history and pagination</td><td>Post a message to a channel; every connected member sees it within sub-second latency; anyone with permission can page backward through history via cursor (Snowflake-based) pagination, not offset.</td></tr>
+          <tr><td>FR3</td><td>Presence (online/idle/offline) visible to other members</td><td>A member's status is visible to every member of a shared guild, updated on connect, on explicit status change, and on an idle timeout.</td></tr>
+          <tr><td>FR4</td><td>Typing indicators</td><td>A lightweight, ephemeral, &asymp;10-second-expiring "user is typing" signal scoped to one channel; never persisted, never part of history.</td></tr>
+          <tr><td>FR5</td><td>Direct messages between users</td><td>A private message channel outside any guild, with the same real-time delivery and history semantics as a guild channel.</td></tr>
+          <tr><td>FR6</td><td>Join a voice channel for group voice/video (WebRTC)</td><td>A member joins a voice channel inside a guild; audio (and optionally video/screen-share) is relayed in real time to every other participant via an SFU.</td></tr>
+          <tr><td>FR7</td><td>Permissions/roles per server</td><td>Guild owners define roles (Admin, Moderator, Member&hellip;) with permission bitflags; per-channel permission overwrites can grant/deny a role or specific user on top of their guild-wide role.</td></tr>
+          <tr><td>FR8</td><td>Push notifications for mentions when offline</td><td>An @mention or DM to a user with no live session (or with push-on-all-messages enabled) triggers an APNs/FCM push &mdash; the same signal that drives the unread/mention badge.</td></tr>
+        </table>
+        <p>Non-goals for this doc: the bot/developer API platform, AutoMod/ML content-moderation internals, screen-share codec specifics, monetization, and end-to-end encrypted voice.</p>
+
+        <h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+        <ul>
+          <li><strong>Very low latency for real-time events.</strong> A message posted in a channel should reach every other connected member well under a second (target end-to-end p95 in the low hundreds of ms for text/typing/presence) &mdash; a human-perceived "instant messaging" bar, not "eventually shows up."</li>
+          <li><strong>Extremely large individual guilds must not degrade the rest of the platform.</strong> A single guild can have hundreds of thousands of members; fanning out one message in that guild must cost work proportional to <em>that guild's</em> connected sessions, never contend for a resource every unrelated guild also depends on.</li>
+          <li><strong>High WebSocket connection concurrency at global scale.</strong> Tens of millions of concurrent, long-lived, mostly-idle connections must be held open cheaply &mdash; per-connection footprint (memory, scheduler overhead) is the dominant cost driver of the gateway tier.</li>
+          <li><strong>Message ordering within a channel.</strong> Two messages posted to the same channel must be delivered to every subscriber in one consistent order &mdash; never re-ordered within a channel, even if wall-clock ordering across unrelated channels is not guaranteed.</li>
+          <li><strong>Voice/video has a fundamentally different latency/loss contract than text.</strong> Voice needs low, bounded jitter and tolerates occasional dropped packets (a dropped 20&thinsp;ms audio frame is inaudible; a late retransmit is worse than useless) &mdash; the opposite trade-off from text, which must never lose a message but tolerates tens to low-hundreds of ms of delivery latency.</li>
+          <li><strong>Durability of message history, but not of ephemeral signals.</strong> A message, once acknowledged, must survive a node failure. Presence and typing indicators are best-effort soft state &mdash; losing one typing event or one stale presence tick is a non-event.</li>
+        </ul>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p><strong>Given assumptions (illustrative, for this exercise &mdash; not a claim about Discord's actual current traffic):</strong> &asymp;200M monthly active users, &asymp;40M DAU, &asymp;15M peak-concurrent WebSocket gateway sessions. That concurrency figure is deliberately grounded in the same order of magnitude as the real, cited progression on Discord's own engineering blog &mdash; <strong>5,000,000 concurrent users</strong> on the Elixir gateway in 2017, scaled further to <strong>11,000,000+ concurrent connections</strong> after the Rust/Rustler optimizations described in a later post &mdash; so 15M peak sits as a reasonable next step in that same trajectory, not an invented number.</p>
+
+        <h3>Guild size distribution &mdash; the long tail that drives the design</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          &asymp;40M active guilds; the overwhelming majority (&asymp;99%) have &lt;500 members
+          <br>&asymp;0.1% of guilds ("mega-guilds") have 50,000&ndash;500,000+ members &mdash; illustrative long-tail, consistent with Discord publicly describing individual communities in the hundreds of thousands
+          <br>A single mega-guild at 100,000 members with &asymp;15% concurrently online &rArr; &asymp;15,000 simultaneously connected sessions subscribed to that one guild
+        </div>
+
+        <h3>Message throughput</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Assume &asymp;40M DAU send &asymp;15 messages/day on average &rarr; &asymp;600M messages/day
+          <br>Average messages/sec = 600M &divide; 86,400s &asymp; 6,900 msg/sec
+          <br>Peak multiplier (evening/regional peak concentration) &times;5 &asymp; 35,000 msg/sec peak write rate
+          <br><em>(Order of magnitude only &mdash; Discord's own "trillions of messages stored" figure, cited on its engineering blog, implies a multi-year sustained average consistent with a number in roughly this range.)</em>
+        </div>
+
+        <h3>Fan-out cost of one message in a 100,000-member guild</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Guild members = 100,000; concurrently-connected fraction &asymp; 15% &rarr; 15,000 live gateway sessions subscribed to that guild
+          <br>Naive fan-out: 1 message write &rarr; 15,000 individual gateway pushes, all triggered by a single publish
+          <br>If those 15,000 sessions are spread across &asymp;75 gateway nodes (&asymp;200 sessions/node, least-connections balanced), a pub/sub layer that delivers <strong>once per interested node</strong> instead of once per session cuts the fan-out publish cost from 15,000 to &asymp;75 &mdash; each node then does one cheap, in-process local broadcast to its own &asymp;200 attached sessions (see Feature-Specific Logic Deep Dive)
+        </div>
+
+        <h3>Voice/SFU bandwidth</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption &amp; calculation</span>
+          Opus audio &asymp; 64&thinsp;kbps per participant's upstream; the SFU forwards (does not mix) each active speaker's stream to every other participant
+          <br>A 10-person voice channel with &asymp;2 simultaneously-active speakers &rarr; each participant downloads &asymp;2 &times; 64&thinsp;kbps &asymp; 128&thinsp;kbps, uploads &asymp;64&thinsp;kbps only while actually speaking
+          <br>Grounded by the real, cited figures on Discord's own engineering blog: &asymp;2.6M concurrent voice users served by 850+ voice servers across 13 regions/30+ datacenters, at &gt;220&thinsp;Gbps and &gt;120M packets/sec of egress &mdash; consistent with per-participant bandwidth staying small (tens to low hundreds of kbps) while aggregate egress is dominated by participant <em>count</em>, not per-participant rate
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Takeaway</div>
+          The text/presence path (&asymp;35,000 msg/sec peak writes, 15M concurrent WS sessions) is a <strong>fan-out-shaped</strong> problem, and the shape is lumpy, not smooth: a handful of mega-guilds contribute a wildly disproportionate share of the fan-out cost per message compared to the platform average. The voice path (&asymp;2.6M concurrent, real cited figure) is a <strong>media-relay-shaped</strong> problem dominated by participant count and egress bandwidth, not message volume, and lives on entirely separate infrastructure (see High-Level Design and Data Sharding).
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+
+        <h3>Services</h3>
+        <table>
+          <tr><th>Service</th><th>Responsibility</th></tr>
+          <tr><td>API Gateway / BFF</td><td>TLS termination, authN/session-token validation, REST routing, and the WebSocket upgrade handshake.</td></tr>
+          <tr><td>Gateway Service</td><td>The WebSocket session layer: one lightweight per-connection process per client, Identify/Resume handling, heartbeats, and the guild "interest set" a session is subscribed to.</td></tr>
+          <tr><td>Presence Service</td><td>Tracks online/idle/offline/dnd status per user, driven by gateway connect/disconnect/heartbeat/idle-timeout events; broadcasts PRESENCE_UPDATE.</td></tr>
+          <tr><td>Guild/Channel Service</td><td>Guild, channel, membership, and role/permission-overwrite CRUD &mdash; the single writer of "what a guild/channel looks like."</td></tr>
+          <tr><td>Message Service</td><td>Validates and persists messages, serves paginated history reads; the sole writer to the Message Store.</td></tr>
+          <tr><td>Pub/Sub Fan-out Layer</td><td>The per-guild/per-channel topic layer that delivers one message-store write once per <em>interested gateway node</em>, not once per session (see Feature-Specific Logic Deep Dive).</td></tr>
+          <tr><td>Message Store</td><td>Durable, append-mostly message log, partitioned by channel_id (see Data Sharding).</td></tr>
+          <tr><td>Voice Signaling Service</td><td>Handles voice-channel join/leave, SDP offer/answer and ICE candidate exchange, and assigns a participant to a nearby SFU node.</td></tr>
+          <tr><td>Voice/SFU Cluster</td><td>The media relay: forwards (never mixes) each active speaker's RTP stream to every other participant in the same voice channel, over UDP, entirely decoupled from the text/gateway path.</td></tr>
+          <tr><td>Notification Service</td><td>Async consumer of the fan-out stream; detects an @mention/DM to an offline user and sends an APNs/FCM push.</td></tr>
+          <tr><td>Moderation/Trust &amp; Safety Service</td><td>Abuse-report intake, rate-limit/spam signal aggregation, and the human/automated review queue.</td></tr>
+          <tr><td>Supporting infra</td><td>Redis (presence cache, recent-message cache, resolved-permission cache), Kafka/NATS (Message Store change feed into the fan-out layer), ScyllaDB/Cassandra-style wide-column Message Store.</td></tr>
+        </table>
+
+        <h3>Architecture overview</h3>
+        <p>The diagram below turns the service list into a wiring diagram. The API Gateway splits traffic into a WebSocket upgrade path (Gateway Service, for receiving real-time events) and a REST path (Guild/Channel Service, for CRUD and message sends). A message write triggers a change-feed event into the Pub/Sub Fan-out Layer, which delivers once per gateway node holding an interested session &mdash; each node then does a cheap local broadcast. Voice is signaled over the same WS connection but its actual media takes a completely separate UDP path straight to the SFU cluster.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 560" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-dc-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-dc-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-dc-1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="10" width="200" height="42" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="35" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client (Desktop/Web/Mobile)</text>
+
+            <rect x="270" y="72" width="200" height="48" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="93" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">API Gateway / BFF</text>
+            <text x="370" y="109" text-anchor="middle" fill="#cbd8ef" font-size="9">TLS &#183; authN &#183; REST routing &#183; WS upgrade</text>
+
+            <rect x="15" y="148" width="460" height="340" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="25" y="168" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.04em">REAL-TIME TEXT &amp; PRESENCE DOMAIN</text>
+
+            <rect x="490" y="148" width="235" height="280" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="500" y="168" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.04em">VOICE / VIDEO DOMAIN</text>
+
+            <rect x="30" y="180" width="210" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="135" y="203" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Gateway Service</text>
+            <text x="135" y="219" text-anchor="middle" fill="#cbd8ef" font-size="9">WS session manager, per-conn process</text>
+
+            <rect x="260" y="180" width="200" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="360" y="203" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Guild/Channel Service</text>
+            <text x="360" y="219" text-anchor="middle" fill="#cbd8ef" font-size="9">guild/channel/role CRUD</text>
+
+            <rect x="30" y="255" width="210" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="135" y="278" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Presence Service</text>
+            <text x="135" y="294" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">online/idle/offline, per guild</text>
+
+            <rect x="260" y="255" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="360" y="278" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Permission/Role Resolver</text>
+            <text x="360" y="294" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">role + per-channel overwrite</text>
+
+            <rect x="30" y="330" width="430" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="245" y="353" text-anchor="middle" fill="#6b4a10" font-size="11" font-weight="700">Message Store</text>
+            <text x="245" y="369" text-anchor="middle" fill="#6b4a10" font-size="9">ScyllaDB/Cassandra-style, sharded by channel_id</text>
+
+            <rect x="30" y="405" width="210" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="135" y="428" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Pub/Sub Fan-out Layer</text>
+            <text x="135" y="444" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">one delivery per interested node</text>
+
+            <rect x="260" y="405" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="360" y="428" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Notification Service</text>
+            <text x="360" y="444" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">push on offline mention/DM</text>
+
+            <rect x="505" y="180" width="210" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="610" y="203" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Voice Signaling Service</text>
+            <text x="610" y="219" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">SDP/ICE handshake, node assignment</text>
+
+            <rect x="505" y="255" width="210" height="80" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="610" y="280" text-anchor="middle" fill="#6b4a10" font-size="11" font-weight="700">Voice / SFU Cluster</text>
+            <text x="610" y="296" text-anchor="middle" fill="#6b4a10" font-size="9">forwards, never mixes, RTP streams</text>
+            <text x="610" y="311" text-anchor="middle" fill="#6b4a10" font-size="9">UDP media plane, region-local</text>
+
+            <line x1="370" y1="52" x2="370" y2="70" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-dc-1)"></line>
+
+            <line x1="330" y1="120" x2="145" y2="178" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-1)"></line>
+            <text x="200" y="145" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">WS upgrade + Identify</text>
+
+            <line x1="400" y1="120" x2="365" y2="178" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-1)"></line>
+            <text x="430" y="145" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">REST: create/POST message</text>
+
+            <line x1="440" y1="120" x2="600" y2="178" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-1)"></line>
+            <text x="545" y="145" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">join voice: SDP/ICE offer</text>
+
+            <line x1="135" y1="235" x2="135" y2="253" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-1)"></line>
+            <text x="150" y="248" text-anchor="start" font-size="8" fill="var(--color-text-muted)" font-style="italic">connect/heartbeat/idle</text>
+
+            <line x1="360" y1="235" x2="360" y2="253" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-1)"></line>
+
+            <line x1="330" y1="290" x2="290" y2="328" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-1)"></line>
+            <text x="330" y="320" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">persist message</text>
+
+            <line x1="150" y1="385" x2="140" y2="403" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-1)"></line>
+            <text x="160" y="399" text-anchor="start" font-size="8" fill="var(--color-text-muted)" font-style="italic">change feed / outbox</text>
+
+            <line x1="240" y1="432" x2="258" y2="432" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-dc-1b)"></line>
+            <text x="250" y="424" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">mention, recipient offline</text>
+
+            <line x1="610" y1="235" x2="610" y2="253" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-1)"></line>
+            <text x="610" y="248" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">assign region + node</text>
+
+            <path d="M28,432 L8,432 L8,207 L28,207" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-dc-1m)"></path>
+            <text x="8" y="320" text-anchor="middle" font-size="7" fill="var(--color-text-muted)" font-style="italic" transform="rotate(-90 8 320)">push events to every subscribed session</text>
+
+            <path d="M472,30 C610,40 700,140 700,253" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-dc-1m)"></path>
+            <text x="700" y="150" text-anchor="middle" font-size="7" fill="var(--color-text-muted)" font-style="italic">UDP RTP/SRTP media &mdash; bypasses gateway</text>
+
+            <text x="370" y="510" text-anchor="middle" font-size="9" fill="var(--color-text)" font-weight="600">Text/presence: reliable, ordered WebSocket control plane, fanned out through Pub/Sub.</text>
+            <text x="370" y="528" text-anchor="middle" font-size="9" fill="var(--color-text)" font-weight="600">Voice/video: loss-tolerant UDP media plane relayed by the SFU &mdash; the two domains share almost nothing at runtime.</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. Service topology: text/presence flows through the Gateway Service and a Pub/Sub fan-out layer that delivers once per interested gateway node, never once per session; voice/video is signaled through the same WS connection but its actual media takes a separate UDP path straight to the SFU cluster, bypassing the message store and fan-out layer entirely.</div>
+        </div>
+
+        <h3>Data flow (a): Sending a text message</h3>
+        <ol>
+          <li>Client &rarr; API Gateway: <code>POST /v1/channels/{channel_id}/messages</code> (REST, not over the WS gateway &mdash; sends are request/response, not gateway dispatch).</li>
+          <li>API Gateway &rarr; Guild/Channel Service: resolve the caller's effective permission for this channel (role + per-channel overwrite).</li>
+          <li>Guild/Channel Service &rarr; Message Service: permission OK &rarr; persist the message (Message Store write, partitioned by channel_id).</li>
+          <li>Message Service &rarr; API Gateway &rarr; Client: 201 Created with the canonical message (a Snowflake message_id, so id order = time order).</li>
+          <li>The write triggers an async change event &rarr; Pub/Sub Fan-out Layer, keyed by (guild_id, channel_id).</li>
+          <li>Fan-out Layer &rarr; every Gateway node with &ge;1 session subscribed to that guild/channel: one delivery per node.</li>
+          <li>Each Gateway node &rarr; its own locally attached sessions: an in-process broadcast of a MESSAGE_CREATE dispatch event, no further network hop.</li>
+          <li>(async) Fan-out Layer &rarr; Notification Service: if a mentioned/DM'd user has no live session, send a push notification.</li>
+        </ol>
+
+        <h3>Data flow (b): Joining a voice channel</h3>
+        <ol>
+          <li>Client &rarr; Gateway Service (over the existing WS control connection): a Gateway op signaling "join voice channel X" (VOICE_STATE_UPDATE).</li>
+          <li>Gateway Service &rarr; Voice Signaling Service: forwards the request; Voice Signaling assigns the nearest/least-loaded SFU node for that channel's region and returns connection info (SFU endpoint, ICE servers) back over the same WS connection (VOICE_SERVER_UPDATE).</li>
+          <li>Client &harr; SFU node: a separate UDP connection &mdash; ICE negotiation, DTLS handshake, then SRTP media flow. This never touches the Gateway Service, the Pub/Sub Fan-out Layer, or the Message Store.</li>
+          <li>SFU node &rarr; every other participant already in the channel: forwards the new participant's audio/video stream (and vice versa) &mdash; an N-way relay through the SFU, not a peer-to-peer mesh between clients.</li>
+          <li>Voice Signaling Service &rarr; Presence Service: mark the user "in voice channel X" so other guild members see it live.</li>
+        </ol>
+
+        <h2 id="api-design">API Design</h2>
+        <p>Conventions: JSON over HTTPS (REST) for CRUD and message send/read; a persistent WebSocket for the real-time event stream (the "Gateway"). Message/guild/channel/user IDs are Snowflakes (time-sortable 64-bit integers, see Database Schema), so pagination and ordering never need a separate timestamp index.</p>
+
+        <h3>Guilds &amp; channels (REST)</h3>
+        <pre><code>POST /v1/guilds
+{ "name": "My Server" }
+&rarr; 201 { "guild_id": "9421...", "owner_id": "...", "default_channel_id": "..." }
+
+POST /v1/guilds/{guild_id}/channels
+{ "name": "general", "type": "text" | "voice" }
+&rarr; 201 { "channel_id": "...", "type": "text" }
+
+POST /v1/invites
+{ "guild_id": "...", "channel_id": "...", "max_uses": 0, "expires_in": 604800 }
+&rarr; 201 { "invite_code": "aB3xQ9" }
+
+POST /v1/invites/{invite_code}/accept
+&rarr; 200 { "guild_id": "...", "member": { "user_id","roles":[...] } }</code></pre>
+
+        <h3>Messages (REST)</h3>
+        <pre><code>POST /v1/channels/{channel_id}/messages
+{ "content": "gg everyone", "nonce": "client-generated-dedupe-token" }
+&rarr; 201 { "message_id": "1099...", "channel_id","author_id","content","created_at" }
+
+GET /v1/channels/{channel_id}/messages?before={message_id}&amp;limit=50
+&rarr; 200 { "messages": [ ... ] } // cursor pagination on the Snowflake message_id, newest-first
+
+PATCH /v1/channels/{channel_id}/messages/{message_id}
+{ "content": "gg everyone (edited)" }
+&rarr; 200 { "message_id","content","edited_at" }
+
+DELETE /v1/channels/{channel_id}/messages/{message_id}
+&rarr; 204 No Content</code></pre>
+
+        <h3>Direct messages (REST)</h3>
+        <pre><code>POST /v1/users/@me/channels
+{ "recipient_id": "..." }
+&rarr; 200 { "channel_id": "..." } // idempotent: returns the existing DM channel if one exists</code></pre>
+
+        <h3>Gateway (WebSocket) protocol</h3>
+        <pre><code>wss://gateway.example.com/?v=10&amp;encoding=json
+
+&larr; op 10 Hello        { "heartbeat_interval": 41250 }
+&rarr; op 2 Identify      { "token":"...", "intents": ["GUILDS","GUILD_MESSAGES","GUILD_PRESENCES"] }
+&larr; op 0 Dispatch      { "t":"READY", "s":0, "d": { "session_id":"...", "guilds":[...] } }
+
+&rarr; op 1 Heartbeat     { "d": &lt;last_seq&gt; }         // every heartbeat_interval
+&larr; op 11 Heartbeat ACK
+
+&larr; op 0 Dispatch      { "t":"MESSAGE_CREATE","s":41,"d": {...} }
+&larr; op 0 Dispatch      { "t":"TYPING_START","s":42,"d": {"channel_id","user_id"} }
+&larr; op 0 Dispatch      { "t":"PRESENCE_UPDATE","s":43,"d": {"user_id","status"} }
+
+// reconnect after a drop:
+&rarr; op 6 Resume        { "token":"...", "session_id":"...", "seq": 43 }
+&larr; op 0 Dispatch (replay of any events with s &gt; 43), then the live stream continues
+   &mdash; or, if the session is no longer valid server-side &mdash;
+&larr; op 9 Invalid Session { "d": false }               // client must re-Identify from scratch</code></pre>
+        <p>Every Dispatch event carries a monotonically increasing sequence number <code>s</code>, scoped to the session; a client tracks the last <code>s</code> it saw so a Resume can ask the gateway to replay only what it missed (see Low-Level Design).</p>
+
+        <h2 id="low-level-design-deep-dive">Low-Level Design (Deep Dive)</h2>
+
+        <h3>7.1 Gateway session lifecycle: connect, heartbeat, and resume without losing events</h3>
+        <p>A gateway connection is not stateless request/response &mdash; it is a long-lived session with server-side state (the guild interest set, the last-seen sequence number, a short replay buffer of recent dispatches) that a reconnect should ideally recover rather than rebuild from scratch.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-dc-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-dc-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="15" y="15" width="150" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="90" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Client</text>
+            <rect x="575" y="15" width="150" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="650" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Gateway Service</text>
+
+            <line x1="90" y1="51" x2="90" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="650" y1="51" x2="650" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+
+            <line x1="90" y1="78" x2="650" y2="78" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-dc-2)"></line>
+            <text x="370" y="70" text-anchor="middle" font-size="9" fill="var(--color-text)">1. wss:// connect (TLS handshake)</text>
+
+            <line x1="650" y1="108" x2="90" y2="108" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-dc-2)"></line>
+            <text x="370" y="100" text-anchor="middle" font-size="9" fill="var(--color-text)">2. op 10 Hello { heartbeat_interval }</text>
+
+            <line x1="90" y1="138" x2="650" y2="138" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-dc-2)"></line>
+            <text x="370" y="130" text-anchor="middle" font-size="9" fill="var(--color-text)">3. op 2 Identify { token, intents }</text>
+
+            <rect x="480" y="150" width="220" height="34" rx="5" fill="none" stroke="var(--color-accent)" stroke-dasharray="3,3"></rect>
+            <text x="590" y="171" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">builds guild interest set, subscribes to Pub/Sub</text>
+
+            <line x1="650" y1="200" x2="90" y2="200" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-dc-2)"></line>
+            <text x="370" y="192" text-anchor="middle" font-size="9" fill="var(--color-text)">4. op 0 Dispatch READY { session_id, seq=0, guilds }</text>
+
+            <line x1="90" y1="230" x2="650" y2="230" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-dc-2)" marker-start="url(#arrow-dc-2)"></line>
+            <text x="370" y="222" text-anchor="middle" font-size="9" fill="var(--color-text)">5. op 1 Heartbeat &#8596; op 11 Heartbeat ACK (every interval)</text>
+
+            <line x1="650" y1="262" x2="90" y2="262" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-dc-2m)"></line>
+            <text x="370" y="254" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">6. (async) op 0 Dispatch MESSAGE_CREATE, seq=41</text>
+
+            <text x="370" y="292" text-anchor="middle" font-size="9" fill="var(--color-accent-dark)" font-weight="600">7. connection drops (network blip) &mdash; heartbeat ACK missed</text>
+
+            <line x1="90" y1="322" x2="650" y2="322" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-dc-2)"></line>
+            <text x="370" y="314" text-anchor="middle" font-size="9" fill="var(--color-text)">8. reconnect, then op 6 Resume { session_id, seq: 41 }</text>
+
+            <rect x="60" y="340" width="290" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="205" y="360" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-weight="600">9a. session still live (bounded replay buffer)</text>
+            <text x="205" y="375" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-weight="600">&rarr; replay events seq&gt;41, resume live stream</text>
+
+            <rect x="390" y="340" width="290" height="55" rx="6" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="535" y="360" text-anchor="middle" font-size="8" fill="var(--color-accent-dark)" font-weight="600">9b. session expired/unknown</text>
+            <text x="535" y="375" text-anchor="middle" font-size="8" fill="var(--color-accent-dark)" font-weight="600">&rarr; op 9 Invalid Session, re-Identify, full Ready resync</text>
+
+            <text x="370" y="430" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">The sequence number lets Resume ask precisely "replay events after s=41" instead of a full guild resync.</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Gateway session lifecycle: Hello, Identify, and Ready establish a session with a sequence number; on reconnect, Resume asks for events after the client's last-seen seq, replayed from a bounded server-side buffer &mdash; only if that buffer or session is gone does the client pay for a full re-Identify.</div>
+        </div>
+        <p>Why a sequence number instead of "just replay everything since you disconnected": the gateway does not know how long a client will be gone, and a session that reconnects a minute later should not force a full guild resync if nothing changed except three messages in one channel it cares about. The sequence number lets Resume ask precisely "replay events after s=41" against a short, bounded replay buffer (illustratively a few minutes). If the buffer has already rotated past that point, or the session's owning process/node is gone, the gateway cannot honestly claim to replay everything and instead sends Invalid Session &mdash; forcing a fresh Identify and a full Ready payload is strictly slower but never silently drops an event the client thinks it should have received.</p>
+
+        <h3>7.2 Sharding a single logical guild across gateway processes at mega-guild scale</h3>
+        <p>A guild is a logical pub/sub topic, but nothing says the fan-out work for one guild has to be owned by a single process. For a 500-member guild, one lightweight guild-coordinator process handling every publish and knowing every subscribed session is fine. For a 200,000-member guild with 30,000 concurrently connected sessions, the same design would mean one process holding 30,000 remote references and doing 30,000 sends for every single message &mdash; a single point of both bottleneck and failure for that one (admittedly unusual) guild.</p>
+        <p>The fix: split the guild's session-interest set across <strong>N relay shards</strong> (illustratively, one relay shard per &asymp;500&ndash;1,000 sessions), each independently responsible for delivering to its own slice of that guild's connected sessions. The guild-coordinator's job shrinks to "publish once to each of my N relay shards," not "publish once to every session" &mdash; the fan-out ratio the coordinator itself deals with drops from 1:30,000 to roughly 1:30&ndash;60, and each relay shard's own fan-out (1:500&ndash;1,000) is cheap, local, in-process work. This is conceptually the same problem Discord's own engineering blog describes solving with <strong>Manifold</strong> &mdash; a library that distributes a broadcast across remote nodes without requiring the sending process to call send once per destination process &mdash; and is also why very large guilds' connections are described as sharded across many separate gateway processes rather than herded onto one.</p>
+
+        <h3>7.3 Permission resolution on the message-send hot path</h3>
+        <p>Every message send and every read of channel history re-resolves the caller's effective permission for that specific channel: base permissions from the member's role(s), then any channel-level permission overwrite (allow/deny bitmask) for that role or that specific user, applied in a fixed precedence order (guild role &rarr; role overwrite &rarr; member-specific overwrite, most specific wins). This is cheap (a bitwise OR/AND over a small number of roles) but happens on every send, so the resolved bitmask for a (user, channel) pair is cached and invalidated on any role/overwrite change (see Caching Strategy) rather than recomputed from a fresh role lookup every time.</p>
+
+        <h3>7.4 Typing indicators as pure ephemeral state</h3>
+        <p>A TYPING_START event is deliberately never written to the Message Store. It is published directly to the Pub/Sub Fan-out Layer for that channel with a client-enforced &asymp;10-second expiry, and if the fan-out publish is dropped under load, the correct behavior is to drop it silently, not retry &mdash; a missed typing indicator is invisible to the user experience, while retrying it after the fact would show a stale, misleading signal. This is the clearest example in the whole design of a signal with intentionally weaker guarantees than a message.</p>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>IDs are Snowflake-style 64-bit integers (timestamp + worker/shard id + sequence), so an ID is both a globally unique key and a sortable proxy for created_at &mdash; pagination and ordering never need a separate index. guild_id is the shard key for membership/role data; channel_id is the shard key for messages (see Data Sharding).</p>
+
+        <h3>guilds</h3>
+        <pre><code>CREATE TABLE guilds (
+  guild_id BIGINT PRIMARY KEY, -- snowflake
+  name VARCHAR(100) NOT NULL,
+  owner_id BIGINT NOT NULL,
+  region VARCHAR(16) NOT NULL, -- default voice/media region
+  member_count BIGINT NOT NULL DEFAULT 0, -- approximate, async-updated
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);</code></pre>
+
+        <h3>channels</h3>
+        <pre><code>CREATE TABLE channels (
+  channel_id BIGINT PRIMARY KEY, -- snowflake
+  guild_id BIGINT REFERENCES guilds(guild_id), -- NULL for a DM channel
+  type VARCHAR(8) NOT NULL, -- text|voice|dm
+  name VARCHAR(100),
+  position INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_channels_guild ON channels(guild_id);</code></pre>
+
+        <h3>guild_members, roles &amp; permission overwrites</h3>
+        <pre><code>CREATE TABLE guild_members (
+  guild_id BIGINT NOT NULL REFERENCES guilds(guild_id),
+  user_id BIGINT NOT NULL,
+  nickname VARCHAR(64),
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (guild_id, user_id)
+);
+
+CREATE TABLE roles (
+  role_id BIGINT PRIMARY KEY,
+  guild_id BIGINT NOT NULL REFERENCES guilds(guild_id),
+  name VARCHAR(64) NOT NULL,
+  permissions BIGINT NOT NULL, -- bitflags: SEND_MESSAGES, MANAGE_CHANNELS, KICK, BAN, MUTE_MEMBERS, ...
+  position INT NOT NULL DEFAULT 0 -- role hierarchy for precedence
+);
+
+CREATE TABLE member_roles (
+  guild_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  role_id BIGINT NOT NULL REFERENCES roles(role_id),
+  PRIMARY KEY (guild_id, user_id, role_id)
+);
+
+CREATE TABLE channel_permission_overwrites (
+  channel_id BIGINT NOT NULL REFERENCES channels(channel_id),
+  target_type VARCHAR(4) NOT NULL, -- 'role' | 'user'
+  target_id BIGINT NOT NULL,
+  allow BIGINT NOT NULL DEFAULT 0,
+  deny BIGINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (channel_id, target_type, target_id)
+);</code></pre>
+
+        <h3>messages (partitioned by channel_id, see Data Sharding)</h3>
+        <pre><code>CREATE TABLE messages (
+  channel_id BIGINT NOT NULL,  -- partition key
+  message_id BIGINT NOT NULL,  -- snowflake, clustering key DESC (time-sortable)
+  author_id BIGINT NOT NULL,
+  content TEXT,
+  edited_at TIMESTAMPTZ,
+  deleted BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (channel_id, message_id)
+) WITH CLUSTERING ORDER BY (message_id DESC);
+-- wide-column store (ScyllaDB/Cassandra-style): one partition per channel_id (+ time bucket at very high volume)</code></pre>
+
+        <h3>direct_message_channels</h3>
+        <pre><code>CREATE TABLE dm_channel_participants (
+  channel_id BIGINT NOT NULL REFERENCES channels(channel_id),
+  user_id BIGINT NOT NULL,
+  PRIMARY KEY (channel_id, user_id)
+);
+-- a DM channel is a channels row with type='dm' and no guild_id, plus its participant list here;
+-- "does a DM channel already exist between these two users" is a lookup on this table.</code></pre>
+
+        <p><strong>What's deliberately not here:</strong> presence and typing state never touch this schema at all &mdash; they live only in Redis/in-memory session state (see Caching Strategy), because they are soft state that is worthless once stale and would only add write load to a durable store for no benefit.</p>
+
+        <h2 id="data-sharding-and-partitioning">Data Sharding and Partitioning</h2>
+        <p>Two independent partitioning decisions matter here, for two different reasons.</p>
+
+        <h3>Message storage: partitioned by channel_id</h3>
+        <p>Every message read (open a channel, page back through history) is scoped to exactly one channel_id, so co-locating a channel's messages on one partition gives natural read/write locality: a channel-open reads one partition's most recent rows, never a cross-partition scatter-gather. At very high per-channel volume this is further bucketed by a time window (e.g., one bucket per channel per N days) so a single channel's partition doesn't grow unbounded &mdash; the same channel_id + bucket partitioning Discord's own engineering blog describes using in its real message store (originally Cassandra, migrated to ScyllaDB).</p>
+
+        <h3>The mega-guild problem: gateway fan-out, not storage, is the actual hot spot</h3>
+        <p>Message storage partitioned by channel_id scales gracefully even for a busy channel in a huge guild &mdash; it's one more partition doing more writes, not fundamentally different from any other partition. The real hot spot lives one layer up, in the <strong>gateway/session fan-out</strong>: a 200,000-member guild's 30,000 concurrently connected sessions are not naturally partitioned by anything, and if the pub/sub layer treats guild_id as the only routing key, every one of those 30,000 sessions converges on whatever single process or topic owns that guild_id &mdash; a hot partition of connections, not of storage rows.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-dc-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="15" width="330" height="30" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="185" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">AXIS 1: Message storage &mdash; partitioned by channel_id</text>
+
+            <rect x="390" y="15" width="330" height="30" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="555" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">AXIS 2: One mega-guild's fan-out &mdash; sharded by session</text>
+
+            <rect x="20" y="65" width="150" height="90" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="95" y="87" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Partition: #general</text>
+            <text x="95" y="105" text-anchor="middle" fill="var(--color-primary)" font-size="8">messages for one channel</text>
+            <text x="95" y="122" text-anchor="middle" fill="var(--color-primary)" font-size="8">+ time bucket</text>
+            <text x="95" y="140" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">one busy partition, not a crisis</text>
+
+            <rect x="190" y="65" width="150" height="90" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="265" y="87" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Partition: #memes</text>
+            <text x="265" y="105" text-anchor="middle" fill="var(--color-primary)" font-size="8">messages for one channel</text>
+            <text x="265" y="122" text-anchor="middle" fill="var(--color-primary)" font-size="8">+ time bucket</text>
+            <text x="265" y="140" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">independent of guild size</text>
+
+            <rect x="20" y="175" width="320" height="55" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3"></rect>
+            <text x="180" y="197" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">storage locality problem: one write, one</text>
+            <text x="180" y="212" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">partition &mdash; scales the same whether the guild has 50 or 500,000 members</text>
+
+            <rect x="405" y="65" width="300" height="40" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="555" y="90" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">Guild Coordinator &mdash; 200,000-member guild</text>
+
+            <line x1="450" y1="105" x2="450" y2="128" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-4)"></line>
+            <line x1="555" y1="105" x2="555" y2="128" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-4)"></line>
+            <line x1="660" y1="105" x2="660" y2="128" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-4)"></line>
+
+            <rect x="405" y="130" width="90" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.6"></rect>
+            <text x="450" y="153" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">Relay</text>
+            <text x="450" y="167" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">Shard 1</text>
+
+            <rect x="510" y="130" width="90" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.6"></rect>
+            <text x="555" y="153" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">Relay</text>
+            <text x="555" y="167" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">Shard 2</text>
+
+            <rect x="615" y="130" width="90" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.6"></rect>
+            <text x="660" y="153" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">Relay</text>
+            <text x="660" y="167" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">Shard &#8230;N</text>
+
+            <rect x="405" y="195" width="300" height="45" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3"></rect>
+            <text x="555" y="212" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">connection fan-out problem: 30,000 sessions</text>
+            <text x="555" y="226" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">split across N relay shards, each &asymp;500&ndash;1,000 sessions</text>
+
+            <rect x="70" y="270" width="600" height="70" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="370" y="293" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Small/typical guild: N=1 relay shard is the common case &mdash; no extra hop, no extra complexity</text>
+            <text x="370" y="310" text-anchor="middle" fill="#6b4a10" font-size="9">Sharding fan-out only kicks in once a guild's connected-session count crosses a threshold</text>
+            <text x="370" y="326" text-anchor="middle" fill="#6b4a10" font-size="9">&mdash; the long tail pays for the complexity it needs; the median guild stays simple</text>
+
+            <text x="370" y="390" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">Two different hot-spot problems, two different keys: storage keys on channel_id for read</text>
+            <text x="370" y="408" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">locality; live fan-out for one guild keys on session assignment to avoid one node owning it all.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. The mega-guild problem is a connection-fan-out hot spot, not a storage hot spot: message partitions scale the same regardless of guild size, but a single huge guild's live session fan-out must itself be sharded across relay shards to avoid one coordinator process owning tens of thousands of sends per message.</div>
+        </div>
+        <p>The fix mirrors Section 7.2: fan-out for one guild is itself sharded across relay shards keyed by something like <code>hash(session_id) mod N</code>, so a mega-guild's fan-out workload is spread across N relay shards instead of concentrating on one. A regular-sized guild doesn't need this at all &mdash; N=1 relay shard is the common case, and the sharding only kicks in once a guild's connected-session count crosses a threshold, so the added complexity is paid for only by the guilds that actually need it.</p>
+
+        <h2 id="feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</h2>
+
+        <h3>10.1 Fanning one message out to a 100,000-member guild without one send blocking the system</h3>
+        <p>Scenario: a message is posted in the busiest text channel of a 100,000-member guild; &asymp;15,000 of those members are concurrently connected right now, spread across many gateway nodes because sessions are load-balanced across the whole gateway fleet, not pinned to one node per guild.</p>
+        <p><strong>Why pure fan-out-on-write (iterate every session and push) doesn't work at this size:</strong> a single publish that must individually address 15,000 remote sessions means the publishing process either blocks synchronously issuing 15,000 sends, or spawns 15,000 short-lived send tasks &mdash; either way it is a burst of work proportional to guild size on every single message, and a popular mega-guild channel can produce this burst many times a second.</p>
+        <p><strong>Why pure fan-out-on-read (store the message, let each client poll/pull) doesn't work either:</strong> it destroys the "instant messaging" feel FR2 and the low-latency NFR require &mdash; polling introduces exactly the delay a WebSocket gateway exists to avoid.</p>
+        <p>The design that actually works is a <strong>hybrid</strong>, batched at the granularity of gateway nodes, not individual sessions:</p>
+        <ol>
+          <li>The Message Service does one write to the Message Store (single partition, channel_id).</li>
+          <li>That write publishes exactly once to a Pub/Sub topic keyed by (guild_id, channel_id) &mdash; fan-out-on-write, but only <strong>one</strong> logical publish, not 15,000.</li>
+          <li>The Pub/Sub layer maintains, per topic, the set of gateway nodes that currently have at least one session interested in it (not the set of sessions themselves) &mdash; illustratively &asymp;75 nodes out of the whole gateway fleet, since 15,000 sessions spread at &asymp;200/node land on &asymp;75 distinct nodes.</li>
+          <li>The topic delivers the event once to each of those &asymp;75 nodes &mdash; the only "wide" fan-out step, and two orders of magnitude cheaper than addressing every session directly.</li>
+          <li>Each of the &asymp;75 nodes then does a cheap, <strong>local, in-process broadcast loop</strong> over its own &asymp;200 attached sessions interested in that guild/channel &mdash; no network hop, no per-recipient serialization, just writing the same already-serialized bytes to each local connection's send buffer.</li>
+        </ol>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-dc-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="10" width="200" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="34" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Message Service &mdash; 1 write</text>
+
+            <line x1="370" y1="50" x2="370" y2="73" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-dc-3)"></line>
+
+            <rect x="245" y="75" width="250" height="45" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="370" y="95" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Pub/Sub Topic (guild_id, channel_id)</text>
+            <text x="370" y="110" text-anchor="middle" fill="#6b4a10" font-size="8">tracks &asymp;75 interested gateway nodes</text>
+
+            <line x1="290" y1="120" x2="120" y2="160" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-3)"></line>
+            <line x1="340" y1="120" x2="280" y2="160" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-3)"></line>
+            <line x1="400" y1="120" x2="460" y2="160" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-3)"></line>
+            <line x1="450" y1="120" x2="620" y2="160" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-dc-3)"></line>
+
+            <rect x="40" y="162" width="160" height="42" rx="14" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="120" y="187" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Gateway Node 1</text>
+            <rect x="200" y="162" width="160" height="42" rx="14" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="280" y="187" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Gateway Node 2</text>
+            <rect x="380" y="162" width="160" height="42" rx="14" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="460" y="187" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Gateway Node 3</text>
+            <rect x="540" y="162" width="160" height="42" rx="14" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="620" y="187" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">&#8230; Node &asymp;75</text>
+
+            <line x1="120" y1="204" x2="120" y2="230" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-dc-3)"></line>
+            <line x1="280" y1="204" x2="280" y2="230" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-dc-3)"></line>
+            <line x1="460" y1="204" x2="460" y2="230" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-dc-3)"></line>
+            <line x1="620" y1="204" x2="620" y2="230" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-dc-3)"></line>
+
+            <rect x="30" y="232" width="680" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="254" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Each node: local, in-process broadcast to &asymp;200 attached sessions</text>
+            <text x="370" y="271" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">no network hop, no per-recipient serialization &mdash; already-serialized bytes, written N times</text>
+
+            <rect x="130" y="305" width="480" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="370" y="327" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">1 write &rarr; 1 publish &rarr; &asymp;75 node deliveries &rarr; &asymp;75 local loops of &asymp;200 each</text>
+            <text x="370" y="344" text-anchor="middle" fill="#6b4a10" font-size="9">= 15,000 sessions reached, but only &asymp;75 "wide" network deliveries ever happen</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Hybrid fan-out for a mega-guild message: fan-out-on-write happens once, at the granularity of interested gateway nodes (&asymp;75), not sessions (15,000); each node then does a cheap fan-out-on-read-style local loop over its own attached sessions.</div>
+        </div>
+        <p>This is fan-out-on-write at the inter-node granularity and a tight local loop within each node &mdash; conceptually the same shape as the batch message-passing Discord's own engineering blog describes building (Manifold) specifically so that a guild process calls send at most once per remote node, not once per session.</p>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li><strong>Gateway node failure and session resume via sequence numbers.</strong> If a gateway node dies, every session it was holding drops. The client reconnects (to a different node, via the load balancer) and attempts Resume with its last-known session_id and seq. Because the session's in-memory state (guild interest set, replay buffer) lived on the node that just died, a Resume against a truly dead node's session will fail server-side (Invalid Session) unless that state was itself externalized/replicated &mdash; which most gateway designs deliberately do not do, because replicating every connection's transient state for the rare case of a node crash is expensive relative to just accepting a full re-Identify. The practical trade-off: a node failure costs affected clients one full guild resync (a brief "reconnecting&hellip;" state), never a lost message &mdash; messages themselves are safe in the Message Store regardless of what happens to any gateway node.</li>
+          <li><strong>Message Store replication.</strong> The wide-column store (ScyllaDB/Cassandra-style) replicates each partition to multiple nodes (typically 3, across racks/AZs) with a quorum write/read consistency level &mdash; a message is not acknowledged as sent until a quorum of replicas has it, so a single node loss never loses an acknowledged message.</li>
+          <li><strong>Voice SFU failover mid-call is accepted as a brief reconnect, not seamless failover.</strong> If a participant's assigned SFU node dies mid-call, there is no practical way to hand off an in-flight UDP/DTLS/SRTP session to another node without the client renegotiating &mdash; so the accepted behavior is: detect the drop (missed RTP/RTCP keepalives), the client re-runs the voice-join handshake against a newly assigned SFU node, and there is a short audio glitch. This is a deliberate scope decision: chasing seamless mid-call SFU failover is a large amount of engineering for a failure mode users already tolerate (it looks like ordinary network jitter), whereas losing a chat message would not be tolerated at all.</li>
+          <li><strong>Presence and typing state are not replicated at all &mdash; they're recomputed, not recovered.</strong> If the process holding a user's presence state dies, the correct recovery is to recompute it from the still-live gateway connection state (is this user's session currently connected anywhere?), not to restore it from a durable log; there is nothing to lose that isn't trivially re-derivable.</li>
+        </ul>
+
+        <h2 id="caching-strategy">Caching Strategy</h2>
+        <p>Guiding rule: <strong>cache anything that's safe to read slightly stale for display; never let a cache become the only place authorization state lives.</strong></p>
+        <table>
+          <tr><th>Data</th><th>Cache?</th><th>Rationale / invalidation</th></tr>
+          <tr><td>Last N messages per channel (e.g., last 50)</td><td><strong>Yes</strong> &mdash; Redis, keyed by channel_id</td><td>Opening a channel is the single most common read; serving the initial page from cache avoids a Message Store read on every channel switch. Appended to on every new message, capped at N.</td></tr>
+          <tr><td>Guild member list / roster</td><td><strong>Yes</strong>, TTL minutes, invalidated on join/leave/role change</td><td>Changes far less often than messages; a roster a few seconds stale is unnoticeable.</td></tr>
+          <tr><td>Presence status per user</td><td><strong>Yes</strong> &mdash; this <em>is</em> the store, not a cache of something else</td><td>Presence has no other durable source of truth; it lives in Redis/in-memory gateway state by design (see Replication and Fault Tolerance).</td></tr>
+          <tr><td>Resolved (user, channel) permission bitmask</td><td><strong>Yes</strong>, invalidated on any role/overwrite change for that guild/channel</td><td>Recomputing role + overwrite precedence on every message send is wasted work if nothing changed since the last message; a targeted invalidation keeps it both fast and correct.</td></tr>
+          <tr><td>Older message history (beyond the cached recent window)</td><td><strong>No</strong> &mdash; served from the Message Store directly</td><td>Scrolling back through years-old history is rare and read-once; caching it would mostly evict more valuable recent-message cache entries for little benefit.</td></tr>
+          <tr><td>The authoritative guild role/permission definitions</td><td><strong>No</strong> &mdash; the Guild/Channel Service's own store is authoritative</td><td>The cache above is a read-through derived value; a role's actual permission bitflags are never written anywhere except the source-of-truth table.</td></tr>
+        </table>
+
+        <h2 id="monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</h2>
+        <ul>
+          <li><strong>WebSocket connection count and reconnect rate</strong>, globally and per gateway node &mdash; a spike in reconnects after a deploy or node restart is the earliest signal of a thundering-herd reconnect storm (see Follow-up Interview Questions).</li>
+          <li><strong>Message fan-out latency</strong> &mdash; time from a Message Store write to dispatch being flushed to a subscriber connection, tracked at both the "delivered to gateway node" hop and the "delivered to client" hop, so a slow relay shard versus a slow individual node is distinguishable.</li>
+          <li><strong>Per-guild fan-out cost distribution</strong> &mdash; not just an average, but the tail: which guilds are triggering the widest node fan-out per message, since that's precisely the mega-guild hot-spot signal from Data Sharding.</li>
+          <li><strong>Voice call quality metrics</strong> &mdash; jitter, packet loss %, round-trip time, and a derived quality score per SFU node/region, so a degrading region can be flagged before users report "voice keeps cutting out."</li>
+          <li><strong>Moderation/report queue depth and age</strong> &mdash; abuse reports waiting for review, an operational and trust-and-safety signal simultaneously.</li>
+          <li><strong>Push notification delivery latency/success rate</strong> for offline mentions, split by APNs/FCM, since a silent failure here means a user simply never finds out they were mentioned.</li>
+        </ul>
+        <p><strong>Notification triggers:</strong> an @mention or DM to a user with no live gateway session (or with push-on-all-messages enabled) is picked up by the Notification Service as it consumes the same fan-out stream every gateway node consumes &mdash; it is just another subscriber, never a special-cased write path.</p>
+
+        <h2 id="security-considerations">Security Considerations</h2>
+        <ul>
+          <li><strong>Role/permission enforcement per channel, on every action.</strong> Sending a message, reading history, joining a voice channel, and every moderation action all re-resolve the caller's effective permission for that specific channel (role &rarr; role overwrite &rarr; member overwrite precedence) at the moment of the action &mdash; never trusted from a client-supplied claim, and never skipped because "they were allowed to post here five minutes ago."</li>
+          <li><strong>Rate limiting to prevent message flooding/spam.</strong> Per-user, per-channel, and per-IP rate limits at the API Gateway on message sends (and on invite creation, DM initiation, and reaction adds), independent of and in addition to any content-based spam/abuse classifier.</li>
+          <li><strong>Voice/video media encryption.</strong> Media is encrypted in transit via DTLS-SRTP between client and SFU (standard WebRTC transport security); the SFU can see and route packets, but end-to-end (client-to-client, SFU-blind) encryption of voice content is a materially harder, separate design (acknowledged, out of scope &mdash; see Problem Statement &amp; Scope).</li>
+          <li><strong>Abuse reporting and moderation tooling.</strong> Any member can report a message/user; reports enqueue into the Moderation/Trust &amp; Safety Service for human or automated review, independent of the normal message-delivery path, so a report never blocks or delays delivery to other members.</li>
+          <li><strong>Invite abuse controls.</strong> Invite codes support max-use counts and expirations; a compromised/leaked invite to a large guild is a realistic vector for spam-bot floods, so invite creation and redemption are both rate-limited and auditable per guild.</li>
+          <li><strong>Token/session security.</strong> Gateway Identify uses a bearer token over TLS; a revoked/reset token immediately invalidates every live session authenticated with it (the Gateway Service checks token validity, not just presence, on Identify and on a periodic re-validation window).</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <p>Interviewers commonly push into these areas after the base design. Rehearse the reasoning out loud, not just the one-line answer &mdash; the "why" is what actually gets evaluated.</p>
+
+        <h3>Real-Time Fan-out &amp; the Gateway</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q1. How would you fan out a single message to a 100,000-member guild without overloading the system?</div>
+          <div class="qa-a">Never address individual sessions from the publish path. Publish once to a (guild_id, channel_id) topic; the pub/sub layer tracks which gateway <em>nodes</em> hold at least one interested session (illustratively &asymp;75 nodes for 15,000 concurrently connected sessions) and delivers once per node, not once per session. Each node then does a cheap, local, in-process broadcast to its own &asymp;200 attached sessions. This turns a 15,000-wide fan-out into a &asymp;75-wide one at the network layer, with the remaining fan-out happening as free, local work per node.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q2. Walk me through what happens when a client's WebSocket disconnects and reconnects &mdash; how do they avoid missing events?</div>
+          <div class="qa-a">Every dispatch event carries a monotonically increasing sequence number scoped to the session. On reconnect, the client sends Resume with its session_id and last-seen seq. If the gateway still has that session's state and a bounded replay buffer covering the gap, it replays only the missed events and continues the live stream &mdash; no full resync needed. If the session or buffer is gone (e.g., the owning node crashed, or too much time passed), the gateway sends Invalid Session and the client must re-Identify from scratch, paying for a full guild resync instead of silently missing events.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q3. Why is "15M concurrent connections" a harder capacity problem than the raw message throughput number?</div>
+          <div class="qa-a">Connection count, not message rate, dominates the gateway tier's resource footprint: tens of millions of mostly-idle, long-lived connections each cost memory and scheduler overhead just to exist, independent of whether they ever receive a message. Message throughput (tens of thousands/sec) is comparatively small and bursty; the always-on cost of simply holding that many sockets open is the number that actually sizes the fleet.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q4. A user in a small guild occasionally reports "losing" a typing indicator. Is that a bug?</div>
+          <div class="qa-a">No &mdash; typing indicators are explicitly best-effort, ephemeral signals that are dropped rather than retried under load. Retrying a stale typing event after the moment has passed would show a misleading "still typing" signal, which is worse than simply not showing it. This is a deliberate NFR distinction: a message must never be lost, but a typing indicator losing an occasional update is a non-event by design.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q5. A gateway node restarts for a deploy. What stops every client on it from reconnecting at the exact same instant?</div>
+          <div class="qa-a">Client SDKs reconnect with exponential backoff and jitter rather than an immediate retry, spreading the reconnect load over a window instead of a single instant. The load balancer in front of the Gateway Service uses least-connections routing so new/resumed connections spread evenly across the remaining fleet, and each node enforces a connection-admission cap so it fails fast rather than degrading for everyone if it approaches its limit.</div>
+        </div>
+
+        <h3>Voice, Media &amp; Transport</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q6. Why does voice/video use a completely different transport and architecture (SFU/UDP) instead of the same WebSocket gateway used for text?</div>
+          <div class="qa-a">Text needs reliability and ordering (never lose a message, never reorder within a channel) and tolerates tens to low-hundreds of ms of delivery latency &mdash; a good fit for TCP-based WebSocket dispatch. Voice/video needs the opposite trade-off: low, bounded jitter, and it tolerates dropping a packet outright (a lost 20ms audio frame is inaudible; a late retransmit of it is worse than useless) &mdash; a good fit for UDP with no retransmission. On top of that, group voice at scale needs a media relay (SFU) rather than a peer-to-peer mesh, because P2P cost grows with the square of participants and leaks every participant's IP; routing media through server-side relays avoids both problems, which is the real, published reasoning behind Discord's own SFU-based voice architecture.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q7. Why doesn't the SFU mix audio server-side instead of forwarding every participant's stream separately?</div>
+          <div class="qa-a">Forwarding (not mixing) keeps the SFU a comparatively simple, mostly-stateless relay rather than a real-time audio-encoding pipeline that would need to re-encode a mixed stream per listener at real CPU cost, at scale. It also preserves per-user volume control and muting entirely on the client, since each participant's stream arrives separately and the client decides how to combine and present them locally &mdash; a feature that would be lost if the server had already mixed everything into one stream. This forward-don't-mix design is the one Discord's own engineering blog describes for its real SFU.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q8. An SFU node crashes mid-call for a 6-person voice channel. What happens to the participants?</div>
+          <div class="qa-a">There is no attempt at seamless mid-call failover of the UDP/DTLS/SRTP session &mdash; that would require the client to hold and resume cryptographic/transport state across a server it no longer has any connection to, which isn't practical. Instead, clients detect the drop via missed RTP/RTCP keepalives, and each client re-runs the voice-join signaling handshake against a freshly assigned SFU node. Users experience a short glitch that looks like ordinary network jitter, which is an accepted, deliberate trade-off against the much larger engineering cost of true seamless media failover.</div>
+        </div>
+
+        <h3>Sharding, Storage &amp; Reliability</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q9. What's your sharding strategy for message history, and why that key?</div>
+          <div class="qa-a">Partition by channel_id, because every history read is scoped to exactly one channel &mdash; co-locating a channel's messages on one partition gives read/write locality with no cross-partition scatter-gather. At very high volume, further bucket by a time window so one channel's partition doesn't grow unbounded. Sharding by guild_id instead would be wrong: a guild can contain many channels of wildly different activity levels, and grouping them onto one partition would recreate exactly the hot-partition problem this key choice avoids.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q10. A single channel in a mega-guild is extremely chatty &mdash; thousands of messages a minute. Does channel_id partitioning still hold up?</div>
+          <div class="qa-a">At the storage layer, yes &mdash; it's simply one busier partition doing more writes, and can be split further by a finer time bucket if needed; nothing about it is fundamentally different from any other partition. The pressure from a hot mega-guild channel actually shows up one layer up, in gateway/session fan-out (see Data Sharding), which is the layer that genuinely needs its own, separate sharding fix &mdash; conflating "the channel is chatty" with "the guild's fan-out is expensive" is the mistake to avoid.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q11. How would you track per-user unread/mention state without adding write load to the message-send hot path?</div>
+          <div class="qa-a">As a separate, async "read state" service &mdash; a per-user, per-channel last-read-message-id, updated when the client acknowledges reading up to a point, decoupled entirely from the message-send path. This mirrors a real Discord service (their Read States service), which was rewritten from Go to Rust specifically because it sits on a very hot, latency-sensitive path (touched on every connect, every send, every read) where garbage-collection pauses were causing periodic latency spikes; Rust's ownership model let them evict and free entries from its cache without a GC pause.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q12. Why not just make every guild use the same N-relay-shard fan-out from day one, even small ones?</div>
+          <div class="qa-a">Because the extra hop (guild coordinator &rarr; N relay shards &rarr; sessions) is pure overhead for a 50-person guild that would be served just as well, and more simply, by one coordinator process talking directly to its handful of sessions. Sharding a guild's fan-out is threshold-triggered &mdash; it only activates once connected-session count for that guild crosses a size where a single coordinator would actually become a bottleneck &mdash; so the common case (the overwhelming majority of guilds) stays simple, and the complexity is paid for only by the long tail that needs it.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This design is really two systems sharing one product surface, and the biggest interview trap is treating them as one. The <strong>text/presence path</strong> is a reliable, ordered event-fan-out problem: a Gateway Service holds tens of millions of mostly-idle WebSocket connections, a Pub/Sub Fan-out Layer delivers each message once per interested <em>gateway node</em> rather than once per session, and every node then does a cheap local broadcast to its own attached sessions &mdash; a hybrid of fan-out-on-write and fan-out-on-read that is the only thing keeping a 100,000-member mega-guild from becoming a thundering-herd fan-out storm. The <strong>voice/video path</strong> is a completely different, loss-tolerant, low-jitter media-relay problem: an SFU forwards (never mixes) each speaker's stream over UDP, entirely bypassing the message store and the gateway's event stream after the initial signaling handshake. Layered on both: message storage shards by <code>channel_id</code> for read/write locality, while a single mega-guild's live fan-out has to be sharded independently, across relay shards keyed by session, because storage locality and connection-fan-out cost are two different hot-spot problems with two different fixes. None of this is "one size fits all" &mdash; it's a design that spends its complexity exactly where the long tail (a handful of oversized guilds, a handful of hot channels) actually needs it, and stays simple everywhere else.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Discord Engineering, <a href="https://discord.com/blog/how-discord-scaled-elixir-to-5-000-000-concurrent-users" target="_blank" rel="noopener">"How Discord Scaled Elixir to 5,000,000 Concurrent Users"</a> &mdash; the original gateway session-process, pub/sub guild fan-out design this section's Gateway Service and Low-Level Design are modeled on.</li>
+          <li>Discord Engineering, <a href="https://discord.com/blog/using-rust-to-scale-elixir-for-11-million-concurrent-users" target="_blank" rel="noopener">"Using Rust to Scale Elixir for 11 Million Concurrent Users"</a> &mdash; the real, cited follow-up scaling milestone and the Manifold-style batched cross-node fan-out this design's Feature-Specific Logic deep dive is based on.</li>
+          <li>Discord Engineering, <a href="https://discord.com/blog/why-discord-is-switching-from-go-to-rust" target="_blank" rel="noopener">"Why Discord is Switching from Go to Rust"</a> &mdash; the Read States service (per-user unread/mention tracking), referenced in the Follow-up Interview Questions.</li>
+          <li>Discord Engineering, <a href="https://discord.com/blog/how-discord-handles-two-and-half-million-concurrent-voice-users-using-webrtc" target="_blank" rel="noopener">"How Discord Handles Two and Half Million Concurrent Voice Users Using WebRTC"</a> &mdash; the real SFU architecture (forwards, does not mix, audio) this design's Voice/SFU Cluster is modeled on.</li>
+          <li>Discord Engineering, <a href="https://discord.com/blog/how-discord-stores-trillions-of-messages" target="_blank" rel="noopener">"How Discord Stores Trillions of Messages"</a> &mdash; the real message-store partitioning by channel_id + time bucket (MongoDB &rarr; Cassandra &rarr; ScyllaDB) this design's Database Schema and Data Sharding sections are based on.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="chatgpt.html"><span class="dir">Previous</span>Design ChatGPT</a>
+          <a class="next" href="notification-system.html"><span class="dir">Next</span>Design a Notification System</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

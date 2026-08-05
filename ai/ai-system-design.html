@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI System Design | AI | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">AI</a><span class="sep">/</span><span class="current">AI System Design (RAG &amp; Embeddings)</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to AI overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#designing-a-rag-pipeline">Designing a RAG Pipeline</a></li>
+        <li><a href="#agentic-rag">Agentic RAG — the 2026 Twist</a></li>
+        <li><a href="#fine-tune-vs-rag-vs-prompt-engineer">Fine-Tune vs. RAG vs. Prompt-Engineer</a></li>
+        <li><a href="#evaluating-llm-systems">Evaluating LLM Systems</a></li>
+        <li><a href="#latency-and-cost-trade-offs-at-scale">Latency &amp; Cost Trade-offs at Scale</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">AI</span>
+          <h1>AI System Design (RAG &amp; Embeddings)</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Applied AI interviews increasingly focus less on model internals and more on how you'd architect a real system around an LLM: how to ground it in your own data, when to fine-tune versus prompt-engineer versus retrieve, how to evaluate quality, and how to keep the system fast and affordable at scale.</p>
+
+        <h2 id="designing-a-rag-pipeline">Designing a RAG Pipeline</h2>
+        <p>Retrieval-Augmented Generation grounds an LLM's answer in relevant documents retrieved at query time, rather than relying solely on what was baked into its weights during training. A useful mental model: your company has a 500-page benefits handbook, and someone asks "how many sick days do new hires get?" Rather than guessing from general knowledge, RAG turns the question into an embedding, searches a vector database of handbook chunks for the closest matches, pulls back the 2-3 most relevant passages, and hands both the question and those passages to the model — which now answers using the actual policy text, and can even quote it. A typical production pipeline breaks this into six stages:</p>
+
+        <div class="diagram-box">
+          <img src="../images/ai/rag-pipeline-6-steps.png" alt="Six-step RAG pipeline diagram: chunk, embed, index, retrieve, re-rank, generate">
+          <div class="diagram-caption">Retrieval-Augmented Generation, end to end: source documents are chunked and embedded ahead of time; a query is embedded and matched at request time; the top matches are re-ranked and handed to the model as grounding context.</div>
+        </div>
+
+        <table>
+          <tr><th>Stage</th><th>What happens</th><th>Key design decisions</th></tr>
+          <tr><td>1. Chunking</td><td>Split source documents into smaller passages</td><td>Chunk size (too small loses context, too large dilutes relevance), overlap between chunks, splitting on semantic boundaries (headings/paragraphs) vs. fixed token counts</td></tr>
+          <tr><td>2. Embedding</td><td>Convert each chunk into a dense vector</td><td>Choice of embedding model, dimensionality, whether to embed queries with the same model as documents</td></tr>
+          <tr><td>3. Indexing</td><td>Store vectors in a vector database for fast similarity search</td><td>Exact vs. approximate nearest neighbor (ANN) search, index type (HNSW, IVF), metadata filtering support</td></tr>
+          <tr><td>4. Retrieval</td><td>Embed the incoming query and fetch the top-k most similar chunks</td><td>k (how many chunks to retrieve), hybrid search (combining dense vector search with keyword/BM25 search)</td></tr>
+          <tr><td>5. Re-ranking</td><td>Re-score the retrieved candidates with a more precise (often cross-encoder) model</td><td>Trade latency for precision; typically re-rank a small candidate set (e.g. top 50 &rarr; top 5)</td></tr>
+          <tr><td>6. Generation</td><td>Feed the top re-ranked chunks plus the query into the LLM as context</td><td>Prompt template, how many chunks fit the context window, citation formatting</td></tr>
+        </table>
+        <p><strong>Why re-ranking matters</strong>: the initial vector search (bi-encoder) is fast because it embeds queries and documents independently, but it's less precise than a cross-encoder that jointly processes the query and each candidate document — too slow to run over the whole corpus but cheap enough to run over the retrieval's top candidates. Combining both gives good recall (from vector search) and good precision (from re-ranking) without paying cross-encoder cost on the entire index.</p>
+
+        <h3>Vector Similarity</h3>
+        <p>Retrieval ranks candidate chunks by how similar their embedding is to the query embedding. The most common metric is cosine similarity, which measures the angle between two vectors independent of their magnitude.</p>
+
+        <div class="formula-box">
+          <span class="formula-label">Cosine similarity</span>
+          cos(&theta;) = (A &middot; B) / (||A|| &times; ||B||)
+          <br>Ranges from -1 (opposite) to 1 (identical direction); most embedding models normalize vectors so cosine similarity reduces to a simple dot product.
+        </div>
+
+        <h2 id="agentic-rag">Agentic RAG — the 2026 Twist</h2>
+        <p>Plain RAG, as described above, retrieves once and generates an answer. <strong>Agentic RAG</strong> lets the model decide what to search for, evaluate whether the results it got back are actually sufficient, and issue follow-up searches — or even switch retrieval strategies (keyword, semantic, hierarchical) — before committing to a final answer. It's closer to how a person would research a genuinely hard question themselves: look something up, notice it's incomplete or ambiguous, and go look up the missing piece rather than answering from a single search.</p>
+        <p>This matters most on multi-step or ambiguous questions where a single retrieval pass is unlikely to surface everything needed — for example, a question that implicitly requires combining facts from two unrelated sections of a handbook. The trade-off is cost: each additional retrieval-and-reasoning round is another model call and another round of latency, so agentic RAG typically costs roughly 2-5x what a single-pass RAG lookup costs. It's a deliberate architectural choice for cases where accuracy on hard questions is worth the extra spend, not a strict upgrade you should reach for by default.</p>
+
+        <div class="callout">
+          <div class="callout-title">When to reach for agentic RAG</div>
+          Start with plain, single-pass RAG. Move to agentic RAG only once you have evidence (from evaluation, not intuition) that a meaningful share of failures are caused by insufficient or off-target retrieval on complex questions — not by generation quality, prompt design, or chunking choices, which are cheaper problems to fix first.
+        </div>
+
+        <h2 id="fine-tune-vs-rag-vs-prompt-engineer">Fine-Tune vs. RAG vs. Prompt-Engineer</h2>
+        <table>
+          <tr><th>Approach</th><th>Best for</th><th>Cost/effort</th><th>Limitation</th></tr>
+          <tr><td>Prompt engineering</td><td>Quick iteration, format/behavior control, few-shot examples</td><td>Lowest — no training, instant iteration</td><td>Limited by context window; can't teach genuinely new knowledge or skills reliably</td></tr>
+          <tr><td>RAG</td><td>Grounding answers in current, proprietary, or frequently-changing knowledge</td><td>Moderate — build/maintain a retrieval pipeline, no model training</td><td>Answer quality depends on retrieval quality; doesn't change the model's underlying reasoning style</td></tr>
+          <tr><td>Fine-tuning</td><td>Teaching a consistent style/format, domain-specific behavior, or compressing a complex prompt into model weights</td><td>Highest — needs labeled data, training infra, evaluation, and re-training as requirements evolve</td><td>Doesn't solve the "stale/missing knowledge" problem well since knowledge is frozen at training time; still needs RAG for current facts</td></tr>
+        </table>
+        <p>A common rule of thumb: reach for prompt engineering first, add RAG when you need grounding in facts the model doesn't (or shouldn't) have memorized, and only fine-tune when you have a persistent behavior/format/style requirement that prompting can't reliably achieve — and even then, RAG and fine-tuning are often used together rather than as an either/or choice.</p>
+
+        <h2 id="evaluating-llm-systems">Evaluating LLM Systems</h2>
+        <p>Evaluation for generative systems is harder than classic ML because there's rarely one "correct" output. Common approaches:</p>
+        <ul>
+          <li><strong>Retrieval metrics</strong> (for the RAG layer) — recall@k, precision@k, mean reciprocal rank (MRR) against a labeled set of query/relevant-document pairs.</li>
+          <li><strong>Generation quality metrics</strong> — faithfulness/groundedness (does the answer actually follow from the retrieved context?), answer relevance, and reference-based metrics like ROUGE/BLEU for tasks with a known target text.</li>
+          <li><strong>LLM-as-judge</strong> — using a strong LLM to score responses against a rubric (helpfulness, correctness, tone), which scales better than human review but needs its own calibration against human judgment.</li>
+          <li><strong>Human evaluation</strong> — the gold standard for subjective quality, typically sampled rather than run on 100% of traffic due to cost.</li>
+          <li><strong>Online metrics</strong> — task completion rate, user thumbs up/down, escalation rate to a human agent — the ultimate test of whether the system works in production.</li>
+        </ul>
+
+        <h2 id="latency-and-cost-trade-offs-at-scale">Latency &amp; Cost Trade-offs at Scale</h2>
+        <p>Every stage of a RAG system adds latency: embedding the query, vector search, re-ranking, and the LLM generation call itself (which dominates total latency, especially for long outputs generated token-by-token). At scale, common levers include:</p>
+        <ul>
+          <li><strong>Caching</strong> — cache embeddings for static documents, and cache full responses for repeated/similar queries.</li>
+          <li><strong>Smaller/distilled models</strong> — use a smaller model for latency-sensitive paths (e.g. re-ranking or simple queries) and reserve the largest model for complex requests.</li>
+          <li><strong>Streaming responses</strong> — stream tokens to the user as they're generated so perceived latency (time-to-first-token) is much lower than total generation time.</li>
+          <li><strong>Batching</strong> — batch concurrent requests on the inference server to improve GPU utilization and throughput, at the cost of some added per-request latency.</li>
+          <li><strong>Retrieval tuning</strong> — reduce k (fewer chunks retrieved/re-ranked) or use approximate nearest neighbor search to cut vector search latency, trading a small amount of recall for speed.</li>
+        </ul>
+
+        <div class="callout">
+          <div class="callout-title">Interview framing</div>
+          When asked to "design a RAG system," walk through the pipeline stage by stage (chunking &rarr; embedding &rarr; indexing &rarr; retrieval &rarr; re-ranking &rarr; generation), name the key design decision at each stage, and proactively raise evaluation and cost/latency trade-offs before being asked — that's what separates a strong answer from a purely descriptive one.
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you choose a chunk size for a RAG pipeline over a corpus of technical documentation?</div>
+          <div class="qa-a">Chunk on semantic boundaries where possible (sections, paragraphs) rather than a fixed token count, and target a size that keeps each chunk coherent on its own — large enough to retain context, small enough that a single chunk doesn't dilute relevance with unrelated content. Adding modest overlap between adjacent chunks helps avoid splitting a relevant fact exactly at a chunk boundary. In practice this is tuned empirically against retrieval evaluation metrics like recall@k.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why add a re-ranking step if vector search already returns the top-k most similar chunks?</div>
+          <div class="qa-a">Vector search (bi-encoder) embeds the query and documents independently for speed, which loses some precision from not letting the query and document interact. A cross-encoder re-ranker jointly processes the query with each candidate, producing a much more accurate relevance score — too expensive to run over the whole index, but cheap enough over the initial top-k candidates, giving both good recall and good precision.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Your RAG system answers correctly with the right context but hallucinates when retrieval fails to find a relevant document. How do you address this?</div>
+          <div class="qa-a">Add a groundedness check: instruct/constrain the model to only answer from the provided context and explicitly say "I don't know" when the retrieved chunks don't contain the answer, and evaluate faithfulness as a first-class metric. Improving retrieval quality (better chunking, hybrid search, re-ranking) reduces how often this situation arises in the first place.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">When would you fine-tune a model instead of just using RAG?</div>
+          <div class="qa-a">Fine-tune when you need a consistent behavior, output format, or domain "voice" baked into the model itself — something prompting struggles to enforce reliably across many inputs — or when you want to reduce prompt length/cost by compressing instructions into the weights. Fine-tuning is a poor fit for frequently changing factual knowledge, which RAG handles far better since it doesn't require retraining when the underlying data changes.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you reduce end-to-end latency in a RAG system that feels too slow to users?</div>
+          <div class="qa-a">Profile each stage first — retrieval, re-ranking, and generation — since the LLM call typically dominates. Options include streaming the response for lower perceived latency, using a smaller/faster model where quality allows, caching frequent queries or embeddings, reducing the number of chunks retrieved/re-ranked, and using approximate nearest neighbor indexes to speed up vector search.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          A RAG pipeline is chunking &rarr; embedding &rarr; indexing &rarr; retrieval &rarr; re-ranking &rarr; generation, with cosine similarity as the standard vector comparison. Prefer prompt engineering first, RAG for grounding in facts, and fine-tuning for consistent behavior/format — they're complementary, not mutually exclusive. Agentic RAG (letting the model decide what to search and whether to re-query) improves accuracy on hard multi-step questions at roughly 2-5x the cost of a single-pass lookup — reach for it only once evaluation shows retrieval, not generation, is the bottleneck. Evaluate with retrieval metrics, groundedness/faithfulness, and (sampled) human review, not just vibes. Manage latency and cost with caching, smaller models, streaming, and retrieval tuning.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="generative-ai-llms.html"><span class="dir">Previous</span>Generative AI &amp; LLMs</a>
+          <a class="next" href="ai-engineering-roadmap.html"><span class="dir">Next</span>AI Engineering Roadmap</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring Security | Spring | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Spring</a><span class="sep">/</span><span class="current">Spring Security</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Spring overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#the-security-filter-chain">The Security Filter Chain</a></li>
+        <li><a href="#authentication">Authentication</a></li>
+        <li><a href="#authorization">Authorization</a></li>
+        <li><a href="#jwt-based-stateless-authentication">JWT-Based Stateless Authentication</a></li>
+        <li><a href="#csrf-and-cors">CSRF &amp; CORS</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SPRING</span>
+          <h1>Spring Security</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Spring Security is a filter-chain-based framework that handles two related but distinct concerns: <strong>authentication</strong> (confirming who a caller is) and <strong>authorization</strong> (deciding what an authenticated caller is allowed to do). It plugs into the Servlet container as a series of <code>Filter</code> objects that intercept every request before it reaches your application code, and the same core model applies whether you're building a traditional session-based web app with login forms and cookies, or a stateless REST API where every request carries its own credentials (typically a JWT). Understanding the filter chain, the authentication flow, and the authorization model is the foundation for almost every Spring Security interview question.</p>
+
+        <h2 id="the-security-filter-chain">The Security Filter Chain</h2>
+        <p>Every incoming HTTP request passes through a chain of servlet <code>Filter</code>s before it ever reaches the <code>DispatcherServlet</code> and your controllers. Spring Security registers itself into this chain via a single <code>DelegatingFilterProxy</code> (named <code>springSecurityFilterChain</code>), which internally delegates to an ordered list of security filters &mdash; things like <code>UsernamePasswordAuthenticationFilter</code> (form login), <code>BasicAuthenticationFilter</code> (HTTP Basic), <code>BearerTokenAuthenticationFilter</code> or a custom JWT filter, <code>ExceptionTranslationFilter</code> (converts security exceptions into 401/403 responses), and <code>FilterSecurityInterceptor</code>/<code>AuthorizationFilter</code> (the final authorization decision point).</p>
+        <p>Order matters: authentication filters must run before the authorization check, and each filter either processes the request (e.g. extracts and validates credentials) or passes it along the chain untouched. If any filter throws an <code>AuthenticationException</code> or <code>AccessDeniedException</code>, the chain short-circuits and the client gets a 401 or 403 without ever touching your controller.</p>
+        <p>Since Spring Security 5.7, <code>WebSecurityConfigurerAdapter</code> is deprecated (removed in Spring Security 6/Boot 3) in favor of a component-based style: you expose a <code>SecurityFilterChain</code> bean and configure it with the <code>HttpSecurity</code> lambda DSL. This is now the idiomatic way to configure security.</p>
+        <pre><code>@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -&gt; csrf.disable())
+            .sessionManagement(sm -&gt;
+                sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(authz -&gt; authz
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+}
+</code></pre>
+
+        <h2 id="authentication">Authentication</h2>
+        <p>Authentication answers "who is making this request?". In the classic username/password model, Spring Security delegates to a <code>UserDetailsService</code>, which loads a <code>UserDetails</code> object (username, hashed password, granted authorities, and account-status flags such as expired/locked/disabled) given a username. The supplied raw password is compared against the stored hash using a <code>PasswordEncoder</code> &mdash; almost always <code>BCryptPasswordEncoder</code> today, since it's adaptive (tunable work factor) and salts automatically.</p>
+        <p>The orchestration happens through an <code>AuthenticationManager</code>, which delegates to one or more <code>AuthenticationProvider</code>s. <code>DaoAuthenticationProvider</code> is the standard provider for username/password auth: it calls the <code>UserDetailsService</code>, encodes and compares the password, and on success returns a fully populated, authenticated <code>Authentication</code> object that gets stored in the <code>SecurityContextHolder</code> for the duration of the request (or session).</p>
+        <pre><code>@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+    private final UserRepository userRepository;
+
+    public CustomUserDetailsService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username)
+            throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -&gt;
+                new UsernameNotFoundException("No user: " + username));
+
+        return org.springframework.security.core.userdetails.User
+            .withUsername(user.getUsername())
+            .password(user.getPasswordHash())
+            .authorities(user.getRoles().toArray(new String[0]))
+            .accountLocked(!user.isActive())
+            .build();
+    }
+}
+
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+}
+</code></pre>
+
+        <h2 id="authorization">Authorization</h2>
+        <p>Authorization answers "what is this (now-identified) caller allowed to do?". Spring Security offers two complementary layers:</p>
+        <p><strong>URL-based rules</strong>, configured once in the <code>SecurityFilterChain</code> via <code>.authorizeHttpRequests(...)</code>, apply broad, coarse-grained rules matched against the request path and HTTP method &mdash; e.g. "anything under <code>/api/admin/**</code> requires <code>ROLE_ADMIN</code>". These are evaluated top-to-bottom, first match wins, so ordering matters (more specific patterns before general ones, with <code>anyRequest()</code> last).</p>
+        <p><strong>Method-level security</strong> (enabled with <code>@EnableMethodSecurity</code>) is fine-grained and lives directly on service or controller methods using annotations like <code>@PreAuthorize</code> (evaluated before the method runs, can reference method arguments via SpEL), <code>@PostAuthorize</code> (evaluated after the method runs, can reference the return value), and the older <code>@Secured</code> (simpler, role-list-only, no SpEL). <code>@PreAuthorize</code> is the most flexible and most commonly used in modern codebases.</p>
+        <pre><code>@PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+public UserDto getUser(Long userId) {
+    return userService.findById(userId);
+}
+
+@PostAuthorize("returnObject.ownerId == authentication.principal.id")
+public Document getDocument(Long docId) {
+    return documentService.findById(docId);
+}
+</code></pre>
+        <p>A frequently-missed distinction: <em>roles</em> and <em>authorities</em> are the same underlying concept (<code>GrantedAuthority</code>) with a naming convention layered on top. <code>hasRole("ADMIN")</code> is sugar for <code>hasAuthority("ROLE_ADMIN")</code> &mdash; Spring Security automatically prepends the <code>ROLE_</code> prefix when you use the role-based methods. Authorities without that prefix (e.g. <code>SCOPE_read</code>, <code>read:orders</code>) represent finer-grained permissions and must be checked with <code>hasAuthority(...)</code> directly, since <code>hasRole(...)</code> always adds the prefix.</p>
+
+        <h2 id="jwt-based-stateless-authentication">JWT-Based Stateless Authentication</h2>
+        <p>Traditional session-based authentication stores authentication state server-side (an <code>HttpSession</code> keyed by a cookie), which requires sticky sessions or a shared session store to scale horizontally. REST APIs typically avoid this by going <strong>stateless</strong>: the server holds no session at all, and every request is authenticated independently based on a credential the client presents.</p>
+        <p>The standard approach is JWT (JSON Web Token): the client authenticates once against a login endpoint (username/password, OAuth code exchange, etc.), the server verifies the credentials and returns a signed token containing claims (subject, roles, expiry) as its response body. The client then stores that token and sends it on every subsequent request in the <code>Authorization: Bearer &lt;token&gt;</code> header. Because the token is self-contained and cryptographically signed, the server can verify it on each request without touching a database or a session store &mdash; that's what makes the approach horizontally scalable.</p>
+        <p>To wire this into Spring Security, you write a custom filter &mdash; extending <code>OncePerRequestFilter</code> so it's guaranteed to run exactly once per request &mdash; that extracts the bearer token, validates its signature and expiry, and, if valid, manually populates the <code>SecurityContextHolder</code> with an authenticated <code>Authentication</code> object before letting the request continue down the chain.</p>
+        <pre><code>public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private final JwtService jwtService;
+
+    public JwtAuthenticationFilter(JwtService jwtService) {
+        this.jwtService = jwtService;
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                     HttpServletResponse response,
+                                     FilterChain filterChain)
+            throws ServletException, IOException {
+
+        String header = request.getHeader("Authorization");
+        if (header == null || !header.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String token = header.substring(7);
+
+        if (jwtService.isValid(token)) {
+            String username = jwtService.extractUsername(token);
+            List&lt;GrantedAuthority&gt; authorities = jwtService.extractAuthorities(token);
+
+            UsernamePasswordAuthenticationToken authToken =
+                new UsernamePasswordAuthenticationToken(username, null, authorities);
+            authToken.setDetails(
+                new WebAuthenticationDetailsSource().buildDetails(request));
+
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}
+</code></pre>
+        <p>This filter is registered before <code>UsernamePasswordAuthenticationFilter</code> in the chain (see <code>addFilterBefore</code> in the earlier config), so by the time the request reaches <code>FilterSecurityInterceptor</code>/<code>AuthorizationFilter</code>, the <code>SecurityContext</code> already holds a fully authenticated principal for the URL and method-level checks to evaluate against.</p>
+
+        <h2 id="csrf-and-cors">CSRF &amp; CORS</h2>
+        <p>CSRF (Cross-Site Request Forgery) attacks exploit the browser's automatic inclusion of cookies on cross-site requests &mdash; a malicious site can trigger a request to your app, and the browser happily attaches the victim's session cookie. Spring Security enables CSRF protection by default for session-based, cookie-authenticated apps. For a stateless JWT-based REST API, though, there's no session cookie for a browser to silently attach: the client must explicitly read the token (from local storage, memory, etc.) and attach it as an <code>Authorization</code> header, which a forged cross-site request cannot do. That's why <code>.csrf(csrf -&gt; csrf.disable())</code> is standard for stateless token-based APIs &mdash; but only when authentication genuinely never relies on cookies. If a JWT is ever stored in a cookie instead of a header, CSRF protection is still required.</p>
+        <p>CORS (Cross-Origin Resource Sharing) is a separate, unrelated concern: it's a browser-enforced policy about which origins are allowed to call your API from client-side JavaScript. When your frontend (e.g. <code>app.example.com</code>) and your API (<code>api.example.com</code>) live on different origins, you must explicitly configure CORS or the browser will block the response.</p>
+        <pre><code>@Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
+    config.setAllowedOrigins(List.of("https://app.example.com"));
+    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+    config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+    config.setAllowCredentials(true);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+    return source;
+}
+</code></pre>
+        <p>Then wire it into the filter chain with <code>.cors(cors -&gt; cors.configurationSource(corsConfigurationSource()))</code>. Note that CORS is enforced by the browser, not by Spring Security itself &mdash; it's purely a set of response headers that tell the browser what's allowed, so it offers no protection against non-browser clients (e.g. curl or server-to-server calls).</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">How does Spring Security's filter chain work?</div>
+          <div class="qa-a">Every request passes through an ordered chain of servlet <code>Filter</code>s registered under a single <code>DelegatingFilterProxy</code>. Authentication filters (form login, Basic auth, a custom JWT filter) run first and populate the <code>SecurityContextHolder</code> if credentials are valid; <code>ExceptionTranslationFilter</code> catches security exceptions and converts them to HTTP 401/403; and <code>FilterSecurityInterceptor</code>/<code>AuthorizationFilter</code> makes the final authorization decision at the end of the chain. If any filter rejects the request, it never reaches the <code>DispatcherServlet</code> or your controller.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you secure a REST API with JWT instead of session cookies?</div>
+          <div class="qa-a">Set session creation policy to <code>STATELESS</code> so Spring Security never creates or relies on an <code>HttpSession</code>. Add a custom <code>OncePerRequestFilter</code> before <code>UsernamePasswordAuthenticationFilter</code> that:
+          <ul>
+            <li>Extracts the token from the <code>Authorization: Bearer &lt;token&gt;</code> header</li>
+            <li>Validates its signature and expiry</li>
+            <li>Builds an authenticated <code>Authentication</code> object from its claims and stores it in the <code>SecurityContextHolder</code></li>
+          </ul>
+          Downstream URL-based and method-level authorization checks then work exactly as they would in a session-based app, because they only depend on the <code>SecurityContext</code>, not on how it was populated.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between authentication and authorization in Spring Security?</div>
+          <div class="qa-a">Authentication establishes identity &mdash; verifying credentials via an <code>AuthenticationManager</code>/<code>AuthenticationProvider</code> and producing an authenticated <code>Authentication</code> object. Authorization is a separate, later step that decides whether that identity is permitted to perform a given action, evaluated either as coarse-grained URL rules (<code>.authorizeHttpRequests(...)</code>) or fine-grained method-level checks (<code>@PreAuthorize</code>). Authentication always happens first; authorization decisions depend on its result.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why is CSRF protection typically disabled for stateless JWT-based APIs?</div>
+          <div class="qa-a">CSRF attacks work by having the browser automatically attach a session cookie to a forged cross-site request. A stateless JWT-based API doesn't authenticate via cookies &mdash; the client must explicitly attach the token as an <code>Authorization</code> header, which a forged request from another site cannot do. Since there's no ambient credential for the browser to auto-attach, the CSRF threat model doesn't apply, so it's safe (and standard) to disable it &mdash; as long as the token is genuinely never stored in a cookie.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between @PreAuthorize and URL-pattern-based authorization rules?</div>
+          <div class="qa-a">URL-based rules, set once in <code>.authorizeHttpRequests(...)</code>, are coarse-grained and matched purely on request path/method &mdash; good for broad boundaries like "everything under <code>/api/admin/**</code> needs <code>ROLE_ADMIN</code>". <code>@PreAuthorize</code> is fine-grained, lives directly on a service or controller method, supports full SpEL expressions, and can reference method arguments (e.g. <code>#userId == authentication.principal.id</code>) &mdash; useful for ownership checks that a URL pattern alone can't express. Most real systems use both: URL rules as a coarse first gate, method-level annotations for precise business-rule enforcement.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>Spring Security is fundamentally a chain of servlet filters; understanding filter order explains almost all of its behavior.</li>
+          <li>Use the <code>SecurityFilterChain</code> bean with the <code>HttpSecurity</code> lambda DSL &mdash; <code>WebSecurityConfigurerAdapter</code> is deprecated/removed.</li>
+          <li>Authentication (<code>UserDetailsService</code> + <code>PasswordEncoder</code> + <code>AuthenticationManager</code>) and authorization (URL rules + <code>@PreAuthorize</code>) are separate layers that compose together.</li>
+          <li>Stateless REST APIs authenticate every request independently via a signed JWT validated in a custom <code>OncePerRequestFilter</code>, avoiding server-side session storage entirely.</li>
+          <li>CSRF matters for cookie-based session auth but is safely disabled for token-based stateless APIs; CORS is a separate, browser-enforced cross-origin policy that must be configured independently.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="spring-data-jpa.html"><span class="dir">Previous</span>Spring Data JPA &amp; Hibernate</a>
+          <a class="next" href="interview-questions.html"><span class="dir">Next</span>Interview Questions</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

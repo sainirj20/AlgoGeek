@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Rate Limiter | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">API Rate Limiter</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-motivation">Problem Statement &amp; Motivation</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-back-of-the-envelope">Capacity Estimation (Back-of-the-Envelope)</a></li>
+        <li><a href="#where-should-rate-limiting-live">Where Should Rate Limiting Live?</a></li>
+        <li><a href="#high-level-architecture">High-Level Architecture</a></li>
+        <li><a href="#rate-limiting-algorithms-deep-dive">Rate-Limiting Algorithms — Deep Dive</a></li>
+        <li><a href="#detailed-component-design">Detailed Component Design</a></li>
+        <li><a href="#distributed-and-multi-region-design">Distributed &amp; Multi-Region Design</a></li>
+        <li><a href="#api-contract-and-client-experience">API Contract &amp; Client Experience</a></li>
+        <li><a href="#choosing-the-rate-limit-key-ip-vs-user-vs-api-key-vs-hybrid">Choosing the Rate-Limit Key: IP vs. User vs. API Key vs. Hybrid</a></li>
+        <li><a href="#failure-modes-edge-cases-and-trade-offs">Failure Modes, Edge Cases &amp; Trade-offs</a></li>
+        <li><a href="#scalability-performance-and-monitoring">Scalability, Performance &amp; Monitoring</a></li>
+        <li><a href="#real-world-case-studies">Real-World Case Studies</a></li>
+        <li><a href="#design-summary-the-60-second-interview-answer">Design Summary — the 60-Second Interview Answer</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing an API Rate Limiter</h1>
+        </div>
+
+        <p><em>A complete architecture, algorithms, and trade-off playbook: requirements, capacity estimation, where rate limiting should live, algorithms deep dive (fixed window, sliding window, token bucket, leaky bucket, GCRA), distributed &amp; multi-region design, API contract, failure modes, and 26 follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement-and-motivation">Problem Statement &amp; Motivation</h2>
+        <p>A rate limiter caps how many requests a client — a user, device, IP address, or API key — may make to a service within a given time window, rejecting or delaying requests once that cap is reached. It sits on the critical path of every inbound request, so it has to make an allow/deny decision in microseconds without becoming a bottleneck itself.</p>
+
+        <h3>Common Real-World Examples</h3>
+        <ul>
+          <li>A messaging API allows 1 message per second per user.</li>
+          <li>A payments API allows only 3 failed card-charge attempts per day per account.</li>
+          <li>A public API allows 5,000 requests/hour per API key on the free tier, and 50,000/hour on the paid tier.</li>
+          <li>A login endpoint allows 5 failed attempts per 15 minutes per account, to blunt credential-stuffing.</li>
+          <li>A single IP can create at most 20 new accounts per day.</li>
+        </ul>
+
+        <h3>Why It Matters</h3>
+        <ul>
+          <li><strong>Availability &amp; DoS protection:</strong> throttle abusive or bot traffic before it exhausts CPU, DB connections, or downstream quotas.</li>
+          <li><strong>Security:</strong> bound brute-force attempts against auth, OTP, and payment endpoints.</li>
+          <li><strong>Cost control:</strong> a single misbehaving client can otherwise generate unbounded compute and egress cost.</li>
+          <li><strong>Fair use:</strong> one tenant's traffic burst shouldn't degrade latency for everyone else sharing the service (the "noisy neighbor" problem).</li>
+          <li><strong>Monetization:</strong> different limits per pricing tier is a legitimate product lever — this is how Stripe, GitHub, and Twitter/X structure their public APIs.</li>
+          <li><strong>Traffic shaping:</strong> smooth spiky, bursty traffic into a steadier stream that downstream services can actually handle.</li>
+        </ul>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Open with the motivation before diving into design — it signals you understand this is a protection mechanism with real product and security implications, not just a counting exercise.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ul>
+          <li><strong>FR1 — Core throttling:</strong> given an identity (user ID, API key, IP, or a composite key) and a rule (N requests per T seconds), accept or reject each incoming request accordingly.</li>
+          <li><strong>FR2 — Configurable rules:</strong> support multiple, independently configurable limits — per user, per API endpoint, per tenant/plan tier — and combinations of them (e.g. a burst cap per minute AND a sustained cap per day).</li>
+          <li><strong>FR3 — Cluster-wide correctness:</strong> enforce the limit consistently across a horizontally scaled fleet of stateless servers, not per server instance.</li>
+          <li><strong>FR4 — Clear client signal:</strong> when throttled, return a clear, machine-readable signal (HTTP 429) telling the client how long to wait before retrying.</li>
+          <li><strong>FR5 — Dynamic configuration:</strong> allow limits and rules to be updated or deployed without restarting the service.</li>
+        </ul>
+
+        <h3>Non-Functional Requirements</h3>
+        <ul>
+          <li><strong>NFR1 — High availability:</strong> the limiter is in the request hot path; an outage in the limiter must not take down the whole API (see Failure Modes below).</li>
+          <li><strong>NFR2 — Low latency overhead:</strong> target well under 10 ms p99 added latency per request; ideally sub-millisecond once local caching is in place.</li>
+          <li><strong>NFR3 — Horizontal scalability:</strong> must handle the same order of magnitude of QPS as the API it protects — potentially millions of checks per second.</li>
+          <li><strong>NFR4 — Approximate accuracy is fine:</strong> reasonable accuracy, not perfect accuracy — being off by a small percentage under load is an acceptable trade for throughput and availability. Rate limiting is a protection mechanism, not a financial ledger.</li>
+          <li><strong>NFR5 — Small memory footprint:</strong> tens of millions of identities may be tracked concurrently, so per-identity state must be small and close to O(1).</li>
+        </ul>
+
+        <h3>Explicitly Out of Scope</h3>
+        <p>Authentication/authorization itself, billing reconciliation, and network-layer (L3/L4) DDoS scrubbing — those are handled by separate systems (an identity provider, a billing pipeline, and a CDN/scrubbing layer respectively). Calling this out explicitly in an interview shows you understand where this component's boundary sits.</p>
+
+        <h2 id="capacity-estimation-back-of-the-envelope">Capacity Estimation (Back-of-the-Envelope)</h2>
+        <p>Assume a platform with 10 million registered users and roughly 500,000 requests per second at peak across all API servers. Every one of those requests needs a rate-limit check, so the limiter subsystem itself must sustain on the order of 500K decisions/sec. This single number drives most of the design choices below.</p>
+
+        <h3>Memory Footprint by Algorithm</h3>
+        <div class="formula-box">
+          <span class="formula-label">Fixed window counter</span>
+          UserID (8B) + Count (2B) + WindowStart (2B) = 12B raw, + ~20B hash-table overhead &asymp; 32B/identity
+          <br>&rarr; for 10M concurrently tracked identities &asymp; 320 MB. Cheap, but doesn't fix the boundary-burst correctness problem (see Algorithms Deep Dive).
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Sliding window log</span>
+          For a rule of 500 req/hour, up to 500 timestamps &times; (4B + ~20B sorted-set overhead) &asymp; 12 KB/identity
+          <br>&rarr; 10M identities &asymp; 120 GB. This is why nobody runs sliding-window-log at real scale without a memory-saving variant.
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Sliding window counter / token bucket / GCRA</span>
+          O(1) state per identity — roughly (8B key + 8B tokens + 8B timestamp + ~20B overhead) &asymp; 44B/identity
+          <br>&rarr; 10M identities &asymp; 440 MB. This is the practical sweet spot, and it's why almost every production rate limiter (Stripe, GitHub, Cloudflare) converges on constant-space, token-bucket-like state.
+        </div>
+
+        <h3>Redis Throughput</h3>
+        <p>A single, well-provisioned Redis node comfortably serves 100K&ndash;200K simple ops/sec; a Lua-scripted check-and-decrement is a handful of internal ops, so one node can realistically serve on the order of 50K&ndash;100K rate-limit decisions/sec. To reach 500K decisions/sec we either shard across 6&ndash;10 Redis shards, or add a local-cache pre-filter layer that absorbs most traffic before it ever reaches Redis — in practice, production systems do both.</p>
+        <div class="callout">
+          <div class="callout-title">Key takeaway</div>
+          The single most important design decision here: track O(1) state per identity (a couple of numbers), never O(N) requests. That choice alone is what makes this scale.
+        </div>
+
+        <h2 id="where-should-rate-limiting-live">Where Should Rate Limiting Live?</h2>
+        <p>Rate limiting can be enforced at several layers of the stack, and a strong answer names the trade-offs across all of them before committing to one.</p>
+        <table class="sortable">
+          <tr><th>Layer</th><th>Description</th><th>Pros</th><th>Cons</th></tr>
+          <tr><td>Client-side (SDK)</td><td>Client tracks its own usage and self-throttles before sending.</td><td>Cheapest option; saves a network round trip for requests that would be rejected anyway.</td><td>Not trustworthy alone — a malicious or buggy client can simply ignore it. Advisory only; must be paired with server-side enforcement.</td></tr>
+          <tr><td>API Gateway / Edge (Kong, Envoy, NGINX, AWS API Gateway, Cloudflare)</td><td>Centralized middleware sitting in front of all backend services.</td><td>One place to configure and observe all limits; protects every backend uniformly; rejects before any application compute is spent.</td><td>Becomes a shared dependency for the whole platform; needs its own high-availability story.</td></tr>
+          <tr><td>Dedicated rate-limiter service / sidecar (e.g. Envoy ext_authz, Istio)</td><td>A separate deployable service the gateway or mesh calls out to.</td><td>Reusable across many services and languages; independently scalable; clean separation of concerns.</td><td>Adds an extra network hop &rarr; extra latency; one more moving part to operate.</td></tr>
+          <tr><td>Embedded in each service</td><td>A library linked directly inside each service's process.</td><td>No extra network hop; language-native.</td><td>Limits fragment per service instance unless backed by shared storage anyway; logic gets duplicated across services.</td></tr>
+        </table>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          State a combined answer: a cheap client-side self-throttle as a courtesy, enforced centrally at the API Gateway (or a sidecar) and backed by a shared, distributed store so the limit is correct cluster-wide. That's also what the architecture below assumes.
+        </div>
+
+        <h2 id="high-level-architecture">High-Level Architecture</h2>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/ratelimiter-fig1-architecture.png" alt="End-to-end rate limiter architecture diagram showing clients, load balancer, API Gateway with rate-limiter middleware, backend API servers, a Rate Limiter Service with local in-memory cache, a Redis cluster sharded by user ID/API key, a rule/config store, and async usage events flowing to Kafka and analytics/monitoring">
+          <div class="diagram-caption">Figure 1. End-to-end request flow: rejected requests short-circuit at the gateway and never reach business logic.</div>
+        </div>
+
+        <h3>Walk-Through</h3>
+        <ol>
+          <li>A client sends a request; it hits a Load Balancer, then the API Gateway / Edge layer.</li>
+          <li>The Gateway's rate-limiter middleware extracts the identity (user ID / API key / IP) and the applicable rule (which API, which plan) and asks the Rate Limiter Service — or decides inline — "is this allowed?"</li>
+          <li>The Rate Limiter Service consults the Redis cluster holding counters/token buckets, atomically checks-and-updates the state, and returns an allow/deny decision.</li>
+          <li>Allowed requests are forwarded to the backend API servers; denied requests short-circuit at the edge with HTTP 429. This matters: rejected traffic never touches business logic, which is exactly what protects downstream capacity.</li>
+          <li>A rule/config store (can be Redis itself, or a small config service backed by Postgres/etcd and cached locally) holds the actual limits per plan/tenant/API, so limits can change without a code deploy.</li>
+          <li>Usage events stream asynchronously (e.g. via Kafka) to analytics and monitoring — this path is off the request's critical path, so it never adds latency to the allow/deny decision itself.</li>
+        </ol>
+
+        <h2 id="rate-limiting-algorithms-deep-dive">Rate-Limiting Algorithms — Deep Dive</h2>
+
+        <h3>Fixed Window Counter</h3>
+        <p>Bucket time into fixed-size windows (e.g. 00:00&ndash;00:59); keep a single counter per identity per window; increment on each request; reject once the counter exceeds the limit; reset the counter when the window rolls over.</p>
+        <ul>
+          <li><strong>Pros:</strong> trivial to implement; O(1) memory; easy to reason about.</li>
+          <li><strong>Cons:</strong> the boundary-burst problem — a client can send N requests at the very end of one window and N more immediately at the start of the next, achieving 2N requests in a short span, double the intended rate.</li>
+        </ul>
+
+        <h3>Sliding Window Log</h3>
+        <p>Store the exact timestamp of every accepted request (e.g. in a Redis Sorted Set keyed by identity). On each new request: evict entries older than (now &minus; window), count what's left, allow if under the limit, then insert the new timestamp.</p>
+        <ul>
+          <li><strong>Pros:</strong> perfectly accurate — no boundary problem at all.</li>
+          <li><strong>Cons:</strong> memory scales linearly with the limit itself, since every timestamp in the window must be remembered — expensive at scale (12 KB/identity vs. 44B/identity for the counter variants).</li>
+        </ul>
+
+        <h3>Sliding Window Counter</h3>
+        <p>Keep small fixed-window counters at a finer granularity than the overall limit (e.g. per-minute counters for an hourly limit). On each check, take a weighted sum of the current partial window and the previous window based on how far into the current window we are:</p>
+        <pre><code>allowed_count &asymp; previous_window_count &times; (1 - elapsed_fraction_of_current_window)
+                + current_window_count</code></pre>
+        <ul>
+          <li><strong>Pros:</strong> approximates sliding-window accuracy with a small, constant number of counters (60 for per-minute granularity on an hourly limit) — roughly an 86% memory reduction versus the log approach.</li>
+          <li><strong>Cons:</strong> still an approximation (small error possible near window edges); a bit more logic than a single counter.</li>
+        </ul>
+
+        <h3>Token Bucket</h3>
+        <p>Each identity has a bucket with capacity C. Tokens refill continuously at rate R tokens/sec, up to the cap. A request is allowed only if at least 1 token is available, which is then deducted; an empty bucket means reject (or, in a queueing variant, wait).</p>
+        <ul>
+          <li><strong>Pros:</strong> naturally allows short bursts up to the bucket size while still enforcing a strict long-run average rate — this matches real client behavior (bursty, not perfectly uniform). State is O(1): just the current token count and the last-refill timestamp; refill is computed lazily from elapsed time on read, no background job needed. This is the industry-default algorithm for public APIs — Stripe, AWS, and Google Cloud all expose token-bucket-flavored limits.</li>
+          <li><strong>Cons:</strong> burst capacity is a second tunable parameter (in addition to rate) — slightly more API surface to explain to consumers.</li>
+        </ul>
+
+        <h3>Leaky Bucket (as a Queue)</h3>
+        <p>Incoming requests are enqueued into a fixed-size FIFO queue. A worker drains (processes) the queue at a constant, fixed rate. If the queue is full, new requests are dropped.</p>
+        <ul>
+          <li><strong>Pros:</strong> perfectly smooths traffic into a constant output rate — ideal when the real concern is protecting a downstream system that cannot tolerate any burst at all (a legacy database, a hardware interface, general network traffic shaping).</li>
+          <li><strong>Cons:</strong> no burst tolerance whatsoever (unlike token bucket) — a perfectly legitimate short burst gets queued and delayed rather than served promptly; introduces queuing latency; a less natural fit for an immediate HTTP allow/deny decision, more natural for traffic-shaping or job-processing pipelines.</li>
+        </ul>
+
+        <h3>GCRA — Generic Cell Rate Algorithm (Production-Grade Token Bucket)</h3>
+        <p>Instead of storing a token count that must be incremented, decremented, and refilled, GCRA stores a single value: the theoretical arrival time (TAT) of the next allowed request. On each request, compare now vs. TAT; if now is late enough (accounting for the burst allowance), allow the request and advance TAT by the emission interval; otherwise reject. It is mathematically equivalent to token bucket, but the state is a single timestamp, which is trivial to update atomically — a SET, not an increment-with-clamping.</p>
+        <ul>
+          <li><strong>Pros:</strong> same burst-plus-average-rate guarantees as token bucket, but the simplest possible shape for a distributed store: one Redis key, one atomic write, easy TTL-based cleanup, no periodic refill job. This is what Cloudflare's edge limiter and Stripe's open-source "throttled" library use in production behind Redis Lua scripts.</li>
+          <li><strong>Cons:</strong> less intuitive to derive on a whiteboard than "tokens in a bucket" — worth naming to show depth, but token bucket is the safer primary answer to lead with in an interview.</li>
+        </ul>
+
+        <h3>Comparison at a Glance</h3>
+        <table class="sortable">
+          <tr><th>Algorithm</th><th>Handles bursts?</th><th>Memory / identity</th><th>Accuracy</th><th>Distributed fit</th><th>Typical use</th></tr>
+          <tr><td>Fixed Window</td><td>No (boundary spike)</td><td>O(1) — smallest</td><td>Low</td><td>Trivial</td><td>Simple internal quotas, non-critical paths</td></tr>
+          <tr><td>Sliding Window Log</td><td>Yes</td><td>O(limit) — largest</td><td>Exact</td><td>Costly at scale</td><td>Low-QPS, high-precision needs</td></tr>
+          <tr><td>Sliding Window Counter</td><td>Mostly</td><td>O(buckets), small</td><td>Approximate, good</td><td>Good</td><td>General-purpose default</td></tr>
+          <tr><td>Token Bucket</td><td>Yes, by design</td><td>O(1)</td><td>Good, intentional bursts</td><td>Good</td><td>Public APIs, per-user / per-key limits</td></tr>
+          <tr><td>Leaky Bucket (queue)</td><td>No — smooths only</td><td>O(queue size)</td><td>Exact output rate</td><td>Needs a queue</td><td>Traffic shaping, fragile downstreams</td></tr>
+          <tr><td>GCRA</td><td>Yes</td><td>O(1), one timestamp</td><td>Good</td><td>Best — single atomic write</td><td>High-scale production (Cloudflare, Stripe)</td></tr>
+        </table>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Lead with Token Bucket (or name-drop GCRA to show depth) as the primary algorithm for a general-purpose API rate limiter. Mention Sliding Window Counter as the pragmatic alternative when product wants a strict "N per rolling hour" semantic that's easy to explain to customers.
+        </div>
+
+        <h2 id="detailed-component-design">Detailed Component Design</h2>
+
+        <h3>Data Model / Key Schema (Redis)</h3>
+        <p>Key naming convention:</p>
+        <pre><code>rl:{tenant}:{api_route}:{identifier}
+e.g. rl:acme-corp:/v1/charges:user_98213</code></pre>
+        <ul>
+          <li><strong>Token bucket representation:</strong> a Redis Hash per key: <code>{ tokens: &lt;float&gt;, last_refill_ts: &lt;epoch_ms&gt; }</code>, with a TTL of roughly 2&times; the bucket's full-refill time so idle identities naturally expire and don't leak memory forever.</li>
+          <li><strong>Sliding window counter representation:</strong> a Redis Hash of <code>{ minute_bucket_epoch: count }</code>, TTL = window length — e.g. 60&ndash;70 minute-keys for an hourly limit, matching the memory derivation above.</li>
+        </ul>
+
+        <h3>Atomicity via Server-Side Scripting</h3>
+        <p>The classic bug this design must avoid is the read-then-write race: two concurrent requests both read count = 2 (under a limit of 3), both decide "allow," and both write count = 3 — net effect, two requests admitted when only one slot was actually left.</p>
+        <p>The fix is to make "read, decide, update" a single atomic operation on the data store, not three separate round trips:</p>
+        <ul>
+          <li><strong>Redis Lua scripting (EVAL):</strong> runs the whole check-and-update as one atomic unit on the Redis server, so no other client can interleave. This is the standard approach — used by GitHub's rate limiter, redis-gcra, and most production systems.</li>
+          <li><strong>Alternatives:</strong> Redis's native atomic primitives (INCR + EXPIRE) work for simple counters; a distributed lock (Redlock) also works but is heavier-weight and adds latency — Lua scripting is generally preferred because it avoids the extra network round trips a lock would need.</li>
+        </ul>
+
+        <h4>Pseudocode — Token Bucket Check via Lua (Conceptual)</h4>
+        <pre><code>-- KEYS[1] = bucket key; ARGV = capacity, refill_rate, now, cost
+local bucket = redis.call('HMGET', KEYS[1], 'tokens', 'ts')
+local tokens = tonumber(bucket[1]) or capacity
+local last_ts = tonumber(bucket[2]) or now
+local elapsed = math.max(0, now - last_ts)
+tokens = math.min(capacity, tokens + elapsed * refill_rate)
+local allowed = tokens >= cost
+if allowed then tokens = tokens - cost end
+redis.call('HMSET', KEYS[1], 'tokens', tokens, 'ts', now)
+redis.call('PEXPIRE', KEYS[1], ttl_ms)
+return allowed</code></pre>
+        <p>This single round trip both reads and writes atomically — no separate lock required.</p>
+
+        <h4>Middleware Decision Flow (Pseudocode)</h4>
+        <pre><code>function onRequest(req):
+  identity = extractIdentity(req)  # user_id / api_key / ip, per policy
+  rule = lookupRule(req.route, identity.plan)  # from cached config store
+  key = buildKey(rule, identity)
+  allowed = rateLimiterStore.checkAndConsume(key, rule)  # atomic op
+
+  if not allowed:
+    return 429 with Retry-After + RateLimit-* headers
+  else:
+    forward to backend
+    emit usage event (async, non-blocking)</code></pre>
+
+        <h3>Local Caching / Pre-Aggregation to Cut Redis Load</h3>
+        <p>Every gateway node keeps a small, local, short-TTL (roughly 1 second) in-memory cache of recent decisions per identity. Two common patterns show up in production systems:</p>
+        <ul>
+          <li><strong>Optimistic local counting:</strong> each node tracks its own local share of the limit (limit &divide; number of nodes) and only syncs with Redis periodically or when close to exhausting its local share — trading a small, bounded amount of precision for a large reduction in Redis round trips. This is the pattern that lets real systems survive the last-mile QPS estimated above.</li>
+          <li><strong>Negative-result caching:</strong> once an identity is confirmed over its limit, cache "deny" locally for the rest of the window so repeated hammering from one bad actor doesn't even reach Redis.</li>
+        </ul>
+        <p>Eviction policy: LRU is a sane default for the local cache — active identities stay hot, idle ones fall out naturally.</p>
+
+        <h3>Sharding &amp; High Availability</h3>
+        <p>Shard the Redis layer by hashing the identifier (user ID / API key) using consistent hashing, so adding or removing a shard only reshuffles a small fraction of keys — this minimizes the "everyone temporarily loses their rate-limit history" blast radius during a resize. Replicate each shard (primary + at least one replica, via Redis Cluster or Sentinel) so a single node failure doesn't take down rate limiting for the identities hashed to it. If one identity is unusually hot — a very large customer, or a viral bot target — consider a secondary tier: a dedicated shard, or a two-level check (a cheap approximate local check first, an exact check only for requests near the edge of the limit) so a single Redis key never becomes a systemic hotspot.</p>
+
+        <h2 id="distributed-and-multi-region-design">Distributed &amp; Multi-Region Design</h2>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/ratelimiter-fig2-multi-region.png" alt="Multi-region rate limiter diagram showing US-East and EU-West regions each with gateway nodes and a local Redis cluster sharded by user_id/api_key, feeding an optional Global Counter Aggregator that async-syncs partial counts every 1-2 seconds and reads from a shared rule/plan config store">
+          <div class="diagram-caption">Figure 2. Region-local decisions stay fast; only cross-region aggregation for a truly global limit is eventually consistent.</div>
+        </div>
+
+        <p>Most rate limits — per-user, per-API-key — are naturally regional: a client's requests usually land in one region (the nearest edge), so a region-local Redis cluster gives correct, low-latency (single-digit millisecond) decisions without needing any cross-region coordination. This covers the large majority of real-world limits.</p>
+        <p>The harder case is a true global limit — e.g. "this tenant may make at most 10,000 requests/minute across every region combined." Strict global correctness would require synchronous cross-region consensus on every single request, which is unacceptable for latency. The practical answer is to accept eventual consistency: each region tracks its own regional counters, and a lightweight, asynchronous aggregator periodically (every 1&ndash;2 seconds) exchanges partial counts between regions so each region can approximate the global picture and self-correct its own slice of the budget.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Separate the two cases explicitly up front: "is this limit per-region, or truly global?" — that single question changes the entire distributed-systems story, and most interviewers are testing whether you recognize you don't need strong consistency for a per-region limit, and that you can reason clearly about the trade-off when a limit really must be global.
+        </div>
+
+        <h2 id="api-contract-and-client-experience">API Contract &amp; Client Experience</h2>
+        <p>When a request is throttled, return HTTP 429 Too Many Requests — not 503, which implies a server-side problem rather than a client-side quota issue.</p>
+
+        <h3>Recommended Response Headers</h3>
+        <p>The IETF's draft-ietf-httpapi-ratelimit-headers is consolidating the older, ad hoc X-RateLimit-* convention (popularized by GitHub and Twitter) into standardized fields:</p>
+        <ul>
+          <li><strong>RateLimit-Limit:</strong> the quota for the current window (e.g. "100").</li>
+          <li><strong>RateLimit-Remaining:</strong> requests left in the current window.</li>
+          <li><strong>RateLimit-Reset:</strong> seconds until the window resets.</li>
+          <li><strong>RateLimit-Policy:</strong> optionally describes the policy itself (limit and window together).</li>
+          <li><strong>Retry-After:</strong> the standard HTTP header telling the client how many seconds to wait before retrying; should be present on the 429 response and be consistent with RateLimit-Reset.</li>
+        </ul>
+        <p>Legacy but still extremely common in the wild: <code>X-RateLimit-Limit</code> / <code>X-RateLimit-Remaining</code> / <code>X-RateLimit-Reset</code> — mentioning both conventions shows awareness of the current ecosystem.</p>
+
+        <h3>Example 429 Response</h3>
+        <pre><code>HTTP/1.1 429 Too Many Requests
+Retry-After: 37
+RateLimit-Limit: 100
+RateLimit-Remaining: 0
+RateLimit-Reset: 37
+
+{
+  "error": "rate_limit_exceeded",
+  "message": "You have exceeded 100 requests per minute.",
+  "retry_after_seconds": 37
+}</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Well-behaved clients should treat a 429 as a signal to back off exponentially with jitter, not retry immediately — honoring Retry-After specifically prevents the "everyone retries at the exact same instant" thundering-herd failure mode. Return RateLimit-* headers on successful (200) responses too, not only on 429s, so clients can self-throttle proactively before ever getting rejected.
+        </div>
+
+        <h2 id="choosing-the-rate-limit-key-ip-vs-user-vs-api-key-vs-hybrid">Choosing the Rate-Limit Key: IP vs. User vs. API Key vs. Hybrid</h2>
+        <table class="sortable">
+          <tr><th>Key</th><th>Pros</th><th>Cons</th></tr>
+          <tr><td>IP address</td><td>Works pre-authentication (protects the login endpoint itself); simple to implement.</td><td>Multiple genuine users can share one IP (NAT, corporate proxy, carrier-grade NAT) — one bad actor throttles innocent users behind the same address. IPv6's enormous address space also makes naive per-IP tracking a memory-exhaustion vector for an attacker.</td></tr>
+          <tr><td>Authenticated user / account ID</td><td>Fair — ties the limit to the actual actor; unaffected by shared IPs.</td><td>Requires the request to already be authenticated — doesn't help protect the authentication endpoint itself.</td></tr>
+          <tr><td>API key / client ID</td><td>Natural fit for B2B and public APIs with tiered plans (free / pro / enterprise limits).</td><td>A leaked key can still be abused up to its own limit; doesn't distinguish end-users behind that one key.</td></tr>
+          <tr><td>Hybrid (IP + user/key, or IP + endpoint)</td><td>Covers both authenticated and pre-auth traffic; layered defense — e.g. a strict per-IP cap on /login plus a per-account cap on failed attempts.</td><td>More cache entries and memory; more rules to reason about and test.</td></tr>
+        </table>
+
+        <h3>The Login-Endpoint Trap</h3>
+        <p>Rate limiting the login/auth endpoint is uniquely tricky. Pure per-account limiting lets an attacker deliberately fail a victim's login repeatedly to lock them out — a denial-of-service against one specific person. Pure per-IP limiting, meanwhile, is porous behind shared IPs and NAT. The standard answer is a hybrid: a looser per-IP limit plus a per-account mechanism that slows down the attempt counter — exponential backoff per account, or a temporary lock resolved via an out-of-band unlock/CAPTCHA flow — rather than a hard account lock, so the system degrades gracefully instead of enabling a trivial account-lockout attack.</p>
+
+        <h2 id="failure-modes-edge-cases-and-trade-offs">Failure Modes, Edge Cases &amp; Trade-offs</h2>
+
+        <h3>Store Outage — Fail-Open vs. Fail-Closed</h3>
+        <p>If Redis (or whatever backs the limiter) becomes unreachable, the system must decide: fail-open (let all requests through, unthrottled) or fail-closed (reject everything). For most consumer/SaaS APIs, fail-open is the right default — a temporary loss of rate limiting is far less damaging than a full API outage, and the gap is covered by a coarse, local, in-memory fallback limiter on each node as a stopgap. For security-sensitive endpoints (login, payments, OTP), fail-closed — or a much stricter fallback limit — is usually safer, since the whole point of the limiter there is abuse prevention, not just capacity protection.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          State both options and say which you'd pick and why, per endpoint sensitivity — this is a genuine business trade-off, not a purely technical one, and interviewers want to see you recognize that.
+        </div>
+
+        <h3>Other Edge Cases Worth Naming Proactively</h3>
+        <ul>
+          <li><strong>Boundary-burst problem:</strong> inherent to fixed-window counters; solved by sliding window counter or token bucket.</li>
+          <li><strong>Race conditions / atomicity:</strong> inherent to any "read state, decide, write state" pattern under concurrency; solved with Lua scripting or an equivalent atomic primitive.</li>
+          <li><strong>Clock skew:</strong> token bucket / GCRA math depends on elapsed time; small skew across nodes is generally tolerable if all reads and writes to a given key hit the same authoritative store (Redis's own clock) — but never trust a client-supplied timestamp for anything security-relevant.</li>
+          <li><strong>Thundering herd on retry:</strong> many throttled clients retrying at the exact same moment (e.g. right when a window resets) can create a secondary traffic spike; mitigate with jittered backoff guidance to clients and by favoring sliding window/token bucket over fixed window, which avoids perfectly synchronized reset boundaries.</li>
+          <li><strong>Hot keys:</strong> one extremely high-traffic identity can turn a single Redis key into a bottleneck even when the cluster overall has headroom; mitigate with local pre-aggregation so most of that identity's traffic never reaches the shared store.</li>
+          <li><strong>Cache eviction:</strong> LRU is a sane default for local/edge caches; tie TTLs to the rate-limit window so a stale "allowed" decision can never outlive its window.</li>
+          <li><strong>Retroactive limit changes:</strong> if a plan or tenant's limit changes (e.g. a customer upgrades), the config store needs to propagate promptly — a short cache TTL or a pub/sub invalidation — so the new limit takes effect without a deploy.</li>
+        </ul>
+
+        <h2 id="scalability-performance-and-monitoring">Scalability, Performance &amp; Monitoring</h2>
+
+        <h3>Scalability Levers</h3>
+        <ol>
+          <li>Stateless rate-limiter workers behind the gateway scale horizontally by simply adding instances — no coordination needed, since all state lives in the shared store.</li>
+          <li>Shard the shared store by identity via consistent hashing.</li>
+          <li>Absorb the bulk of read/decrement traffic in local caches so the shared store only handles a fraction of total request volume.</li>
+          <li>Prefer O(1)-state algorithms (token bucket / GCRA / sliding-window-counter) over O(N)-state ones (sliding window log) as QPS grows.</li>
+        </ol>
+
+        <h3>Performance Budget</h3>
+        <p>Target the rate limiter's contribution to end-to-end latency at low single-digit milliseconds p99 — achievable with a local cache hit. A same-AZ Redis round trip typically costs sub-millisecond to a few milliseconds, which is exactly why the local-cache layer matters most under high load and high fan-out.</p>
+
+        <h3>What to Actually Monitor</h3>
+        <ul>
+          <li><strong>Allow-rate vs. deny-rate per tenant/API:</strong> a sudden spike in denies could mean either an attack or a misconfigured limit — both need paging.</li>
+          <li><strong>Redis latency and error rate:</strong> for the rate limiter's own critical dependency.</li>
+          <li><strong>Per-shard load:</strong> to catch hot keys early, before they become an incident.</li>
+          <li><strong>Audit trail of denied requests:</strong> identity, route, and timestamp, for security review of credential-stuffing and abuse patterns.</li>
+        </ul>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Treat an unusually high deny-rate as an alert, not just a metric — it is often the earliest signal of an attack already in progress.
+        </div>
+
+        <h2 id="real-world-case-studies">Real-World Case Studies</h2>
+
+        <h3>Stripe</h3>
+        <p>Implements rate limiting with a GCRA / token-bucket algorithm — via their open-source "throttled" library — against Redis. Limiters are dark-launched behind feature flags before being switched into enforcing mode, and are explicitly designed to fail open if Redis becomes unavailable: availability of the core API is prioritized over strict enforcement.</p>
+
+        <h3>GitHub</h3>
+        <p>Scaled their API rate limiter using a replicated, client-side-sharded Redis backend, with the check-and-update logic implemented in Lua for atomicity. They rely on Redis key expiration so stale counters disappear automatically, rather than needing an explicit cleanup job.</p>
+
+        <h3>Cloudflare</h3>
+        <p>Enforces sliding-window-counter-style limits at the edge across many points of presence, processing a very high volume of decisions daily. They lean on a fast, existing in-memory cache tier at each edge location — rather than a centralized Redis — specifically to keep added latency at or below their round-trip budget, accepting per-PoP approximation in exchange for edge-local speed.</p>
+
+        <div class="callout">
+          <div class="callout-title">Pattern to notice</div>
+          The common thread across all three: constant-space-per-identity algorithms, atomic single-round-trip updates, and an explicit, deliberate choice about what happens when the limiter's own store is unavailable.
+        </div>
+
+        <h2 id="design-summary-the-60-second-interview-answer">Design Summary — the 60-Second Interview Answer</h2>
+        <p>If asked to summarize the whole design in one breath:</p>
+        <div class="callout">
+          <div class="callout-title">Say this</div>
+          "I'd rate limit at the API Gateway layer using a token-bucket (or GCRA) algorithm per identity — user ID, API key, or IP depending on the endpoint — with bucket state held in a sharded, replicated Redis cluster and checked/updated atomically via a Lua script to avoid race conditions. Each gateway node keeps a small local cache to absorb the bulk of traffic and avoid round-tripping to Redis on every request. Throttled requests get a 429 with Retry-After and RateLimit-* headers. Limits and rules live in a separately updatable config store so they can change without a deploy. If Redis goes down, I fail open with a conservative local fallback limit for general endpoints, and fail closed for security-sensitive ones like login. For multi-region deployments, I keep decisions region-local for speed and only eventually-consistently aggregate counts across regions for the rare truly-global limit."
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme. Use these to rehearse out loud, not to memorize verbatim.</p>
+
+        <h3>Algorithms</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Walk me through why a naive fixed-window counter can let through up to 2&times; the intended rate.</div>
+          <div class="qa-a">Describe the boundary-burst example: N requests at the tail of one window plus N more at the head of the next — 2N requests land within a short span even though each window individually stayed under its cap.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does token bucket differ from leaky bucket in terms of burst behavior?</div>
+          <div class="qa-a">Token bucket allows bursts up to bucket capacity while enforcing an average rate; leaky bucket smooths to a strictly constant output rate via a queue, with no burst tolerance.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is GCRA, and why do production systems like Cloudflare and Stripe prefer it over a literal token-counter implementation?</div>
+          <div class="qa-a">Single-timestamp state, one atomic write, easier to reason about and clean up in a distributed store than an incrementing counter with a refill job.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you implement a "N requests per rolling hour" limit without storing every timestamp?</div>
+          <div class="qa-a">Sliding window counter: per-minute sub-buckets plus a weighted interpolation between the previous and current window.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">If asked to support both a burst limit (10/sec) and a sustained limit (1,000/hour) for the same user, how would you structure that?</div>
+          <div class="qa-a">Two independent buckets/counters checked together — the request must pass both to be allowed.</div>
+        </div>
+
+        <h3>Distributed Systems &amp; Correctness</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent a race condition when two servers check-and-increment the same counter concurrently?</div>
+          <div class="qa-a">Atomic operations on the data store — Lua scripting on Redis, not an application-level lock.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Would you use a distributed lock (e.g. Redlock) for this? Why or why not?</div>
+          <div class="qa-a">Generally no — it adds latency and complexity versus a single atomic Lua script. A lock might still be justified for cross-key transactions that a single Lua script can't express.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you shard rate-limit state across multiple Redis nodes, and what happens when you add or remove a shard?</div>
+          <div class="qa-a">Consistent hashing minimizes key movement; expect a brief accuracy blip for the small slice of keys that do move during a rebalance.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you rate-limit a genuinely global quota (all regions combined) without a synchronous cross-region call on every request?</div>
+          <div class="qa-a">Eventually-consistent async aggregation of per-region partial counts; accept a small, bounded overshoot in exchange for low latency.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What consistency guarantees does your design actually provide, and are they good enough?</div>
+          <div class="qa-a">Articulate that rate limiting tolerates approximate/eventual consistency; contrast with something like a financial ledger that would not.</div>
+        </div>
+
+        <h3>Scaling &amp; Performance</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Your rate limiter's Redis cluster is becoming a bottleneck at your target QPS — what do you do?</div>
+          <div class="qa-a">Add local pre-aggregation/caching, shard further, move to a cheaper O(1) algorithm, or add read replicas for read-heavy paths.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">One single user or IP is generating a disproportionate share of traffic and creating a hot key — how do you handle it?</div>
+          <div class="qa-a">Local counters absorbing most of the traffic, a dedicated shard for that key, or a two-tier check (cheap approximate first, exact only near the limit).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How much memory does your design need for 50 million tracked identities, and how did you get that number?</div>
+          <div class="qa-a">Walk through the O(1)-state byte math — roughly 44 bytes/identity for token-bucket-style state, so 50M identities &asymp; 2.2 GB.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you reduce the added latency of a rate-limit check to sub-millisecond?</div>
+          <div class="qa-a">A local in-memory cache layer, keeping Redis in the same availability zone, and considering sidecar co-location to avoid extra network hops.</div>
+        </div>
+
+        <h3>Failure Handling &amp; Trade-offs</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Your rate-limiting store goes down. What happens to traffic, and how did you decide that behavior?</div>
+          <div class="qa-a">Fail-open vs. fail-closed, and explain that the right choice differs by endpoint sensitivity (general traffic vs. login/payments).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you stop clients from retry-storming right after being throttled?</div>
+          <div class="qa-a">Retry-After plus jittered exponential backoff on the client side; avoid perfectly synchronized window resets on the server side.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would rate limiting the login endpoint differ from rate limiting a generic read API, and what attack does naive per-account limiting enable?</div>
+          <div class="qa-a">Naive per-account limiting enables an account-lockout DoS; describe the hybrid IP-plus-account approach with backoff instead of a hard lock.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if a client's clock, or your servers' clocks, drift — does your algorithm still work?</div>
+          <div class="qa-a">Rely on the data store's own clock/atomic timestamp rather than trusting any client-supplied time.</div>
+        </div>
+
+        <h3>Product / API Design</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">What HTTP status code and headers would you return when a client is throttled, and why those specifically?</div>
+          <div class="qa-a">429, not 503; Retry-After; RateLimit-* headers — 429 correctly signals a client-side quota issue rather than a server fault, and the headers give the client everything needed to back off correctly.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you let different customers have different limits (free vs. paid tier) without redeploying code?</div>
+          <div class="qa-a">An externalized, cacheable rule/config store keyed by plan, with short-TTL or pub/sub invalidation.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Should rate limits be enforced per API key, per user, or per IP — and how do you decide?</div>
+          <div class="qa-a">Depends on authentication state and the abuse model; a hybrid is typical for pre-auth endpoints.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you communicate rate limits to API consumers proactively, before they get throttled?</div>
+          <div class="qa-a">Always return RateLimit-Remaining/Limit headers on successful responses too, not just on 429s, and publish documented limits.</div>
+        </div>
+
+        <h3>Extensions / Curveballs</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would this design change if you needed to rate-limit at the granularity of a database connection pool, or a downstream third-party API you depend on (egress rate limiting), rather than inbound traffic?</div>
+          <div class="qa-a">Same algorithms apply, but the "identity" becomes the downstream dependency itself, and the goal shifts to protecting that dependency — often paired with a circuit breaker.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you unit-test and load-test a rate limiter to prove it behaves correctly at the boundary and under concurrency?</div>
+          <div class="qa-a">Deterministic clock injection for boundary tests, concurrent-request race tests, and a load test that empirically verifies "no more than X requests in any T-second sliding interval."</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you evolve this into "adaptive" or "elastic" rate limiting that loosens limits automatically when the backend has spare capacity?</div>
+          <div class="qa-a">Feed real backend health/load metrics into the limiter to dynamically raise or lower thresholds — ties back to the "elastic throttling" concept.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">If your interviewer asks you to design this in five minutes at a whiteboard, what's the minimum viable version you'd draw first?</div>
+          <div class="qa-a">A single counter with Redis INCR/EXPIRE and a 429 response; then layer in sliding window/token bucket and sharding as they push for more depth.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Track O(1) state per identity — never O(N) requests — that single choice is what makes a rate limiter scale to millions of decisions per second. Lead with Token Bucket (name-drop GCRA for depth) as the default algorithm; reserve Sliding Window Log for low-QPS, high-precision needs and Fixed Window for simple, non-critical quotas. Atomicity matters more than raw algorithm choice: a Lua script doing read-decide-write in one round trip avoids the classic check-then-increment race, and is cheaper than a distributed lock. Enforce centrally at the API Gateway backed by a shared, sharded, replicated Redis cluster, with a local per-node cache absorbing the bulk of traffic. Return 429 with Retry-After and RateLimit-* headers — on both throttled and successful responses. Decide fail-open vs. fail-closed per endpoint sensitivity (general traffic vs. login/payments), and keep multi-region limits region-local for speed, aggregating globally only when a limit truly must be global, accepting eventual consistency there.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li><a href="https://www.educative.io/courses/grokking-the-system-design-interview/3jYKmrVAPGQ" target="_blank" rel="noopener">"Designing an API Rate Limiter"</a> — Grokking the System Design Interview (educative.io)</li>
+          <li><a href="https://www.geeksforgeeks.org/system-design/token-bucket-vs-leaky-bucket-algorithm-system-design/" target="_blank" rel="noopener">"Token Bucket vs. Leaky Bucket Algorithm — System Design"</a> (GeeksforGeeks)</li>
+          <li><a href="https://github.blog/engineering/infrastructure/how-we-scaled-github-api-sharded-replicated-rate-limiter-redis/" target="_blank" rel="noopener">"How we scaled the GitHub API with a sharded, replicated rate limiter in Redis"</a> (The GitHub Blog)</li>
+          <li><a href="https://brandur.org/rate-limiting" target="_blank" rel="noopener">"Rate Limiting, Cells, and GCRA"</a> (brandur.org)</li>
+          <li><a href="https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/" target="_blank" rel="noopener">"RateLimit header fields for HTTP"</a> — IETF draft (draft-ietf-httpapi-ratelimit-headers)</li>
+          <li><a href="https://www.hellointerview.com/learn/system-design/problem-breakdowns/distributed-rate-limiter" target="_blank" rel="noopener">"Design a Distributed Rate Limiter"</a> (Hello Interview — System Design in a Hurry)</li>
+          <li><a href="https://github.com/rwz/redis-gcra" target="_blank" rel="noopener">redis-gcra — Redis-backed rate limiting based on the Generic Cell Rate Algorithm</a> (GitHub)</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="typeahead-suggestion.html"><span class="dir">Previous</span>Typeahead Suggestion System</a>
+          <a class="next" href="bloom-filter.html"><span class="dir">Next</span>Bloom Filters</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

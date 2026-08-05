@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paytm | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Paytm</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-scope">Problem Statement &amp; Scope</a></li>
+        <li><a href="#functional-requirements">Functional Requirements</a></li>
+        <li><a href="#non-functional-requirements">Non-Functional Requirements</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#api-design">API Design</a></li>
+        <li><a href="#low-level-design-deep-dive">Low-Level Design (Deep Dive)</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-sharding-and-partitioning">Data Sharding and Partitioning</a></li>
+        <li><a href="#feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#caching-strategy">Caching Strategy</a></li>
+        <li><a href="#monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</a></li>
+        <li><a href="#security-considerations">Security Considerations</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing Paytm</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a Paytm/PhonePe/Venmo-style digital payments platform covering card payments, wallet-balance payments, real-time P2P transfers, and idempotency handling: requirements and capacity estimation, high-level architecture, API and low-level design, database schema, sharding, feature-specific deep dives (the P2P timing budget, the concurrent-debit correctness walkthrough, reconciliation), replication and fault tolerance, caching, monitoring, security, and a bank of follow-up interview questions. The theme running through every section is <strong>correctness of money movement</strong> &mdash; no double-spend, no lost updates, no double-credit on retry &mdash; even under concurrency, retries, and partial failure.</em></p>
+
+        <h2 id="problem-statement-and-scope">Problem Statement &amp; Scope</h2>
+        <p>Design a digital payments platform, similar to Paytm/PhonePe/Venmo, that lets users:</p>
+        <ul>
+          <li>Load money into a stored-value <strong>wallet</strong> (top-up from a bank account or card).</li>
+          <li><strong>Pay merchants</strong> either by charging a card (via a payment gateway/PSP) or by debiting the wallet balance.</li>
+          <li>Send money to other users in <strong>real time</strong> (P2P), wallet-to-wallet or wallet-to-bank.</li>
+          <li><strong>Refund</strong> completed payments and <strong>view transaction history</strong>.</li>
+          <li>Safely <strong>retry</strong> any request without risk of a duplicate charge or duplicate transfer (idempotency).</li>
+        </ul>
+
+        <h3>In scope</h3>
+        <p>The money-movement core: payment orchestration, the wallet ledger, the card integration boundary, P2P, the idempotency layer, the double-entry ledger, and reconciliation.</p>
+
+        <h3>Out of scope (acknowledged, not designed in depth)</h3>
+        <p>Full PCI-DSS certification, the actual card-network/acquirer contracts, full KYC/AML rule engines, lending/BNPL, rewards, and the mobile client. We mention PCI/KYC/AML as <strong>constraints and integration hooks</strong>, not as features to build here.</p>
+
+        <div class="callout">
+          <div class="callout-title">Key design tension</div>
+          Payments are a domain where a "mostly works" system is unacceptable. A lost update or a double-spend is a real financial loss and a compliance incident. We therefore trade some availability and latency for <strong>strong consistency and durability</strong> on the write path, while keeping read paths cheap and cacheable.
+        </div>
+
+        <h2 id="functional-requirements">Functional Requirements</h2>
+        <table>
+          <tr><th>#</th><th>Requirement</th><th>Notes</th></tr>
+          <tr><td>FR1</td><td>Card payment via PSP</td><td>User pays a merchant with a card. We never store the raw PAN; we tokenize and route through a payment gateway/acquirer to the card networks (Visa/Mastercard/RuPay). Supports 3-D Secure step-up.</td></tr>
+          <tr><td>FR2</td><td>Wallet top-up</td><td>Load funds into the wallet from a bank account (UPI/net-banking) or card. Increases wallet balance via a ledger credit.</td></tr>
+          <tr><td>FR3</td><td>Pay by wallet balance</td><td>Debit the user's wallet to pay a merchant or peer. Must reject if insufficient funds &mdash; atomically, with no race.</td></tr>
+          <tr><td>FR4</td><td>Real-time P2P transfer</td><td>Move money user&rarr;user (wallet&rarr;wallet) or wallet&rarr;bank in near real time (target sub-second internal confirmation).</td></tr>
+          <tr><td>FR5</td><td>Refunds</td><td>Full or partial reversal of a completed payment; produces compensating ledger entries and, for card, a refund call to the PSP.</td></tr>
+          <tr><td>FR6</td><td>Transaction history</td><td>Per-user, paginated, filterable statement view derived from the ledger/transaction store.</td></tr>
+          <tr><td>FR7</td><td>Idempotent retries</td><td>Every state-changing API accepts an idempotency key; a retried request returns the original result and never re-executes the money movement.</td></tr>
+        </table>
+        <p>Non-goals for this doc: merchant onboarding, dispute/chargeback workflow (mentioned in reconciliation), interest/float management on the wallet pool account.</p>
+
+        <h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+        <p>These are the constraints that actually shape the architecture.</p>
+        <ul>
+          <li><strong>Strong consistency &amp; durability for money movement.</strong> Balance and ledger writes are <strong>ACID</strong>. Once a payment is confirmed to the client, it is durably committed (survives a node crash). No double-spend, no lost updates, no double-credit. This is non-negotiable and drives most later choices (quorum writes, single-writer-per-account, double-entry ledger).</li>
+          <li><strong>High availability: 99.99%</strong> target (&asymp;52 min/year downtime). Achieved via multi-AZ redundancy, health-checked stateless services, and graceful degradation (e.g., if the fraud service is down, fail <em>closed</em> for high-risk flows, <em>open</em> with tighter limits for low-risk). Note the deliberate trade-off: for money movement we will sometimes <strong>reject rather than risk inconsistency</strong> &mdash; availability is bounded by the CP choice on the write path.</li>
+          <li><strong>Low latency:</strong> P95 payment confirmation &lt; 1&ndash;2 s excluding external bank/card-network hops. Wallet and P2P are fully internal and should be well under 1 s. Card flows add PSP/network round-trips (2&ndash;5 s, sometimes 3-DS user interaction) which we explicitly exclude from our internal SLO and handle asynchronously.</li>
+          <li><strong>Auditability:</strong> an <strong>immutable, append-only ledger</strong> is the source of truth. Ledger rows are never updated or deleted; corrections are new compensating entries. Supports 10-year retention and tamper-evidence (hash chaining, see Monitoring section).</li>
+          <li><strong>Regulatory constraints (hooks, not full builds):</strong>
+            <ul>
+              <li><strong>PCI-DSS:</strong> minimize cardholder-data scope via tokenization; raw PAN never touches our core services or DB.</li>
+              <li><strong>KYC/AML:</strong> wallet limits and P2P require KYC tiering; every transfer passes an AML screening hook (sanctions list, velocity, structuring detection).</li>
+            </ul>
+          </li>
+          <li><strong>Scalability &amp; elasticity:</strong> horizontally scalable stateless services; shardable data stores; handle 8&times; festive peaks.</li>
+          <li><strong>Security:</strong> encryption at rest and in transit, least privilege, rate limiting, fraud/velocity checks.</li>
+        </ul>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p><strong>Given assumptions:</strong> 60M registered users; 8M DAU; 20% of DAU transact; those active payers do &asymp;2 transactions/day; peak = 8&times; average; &asymp;1 KB per transaction record; ledger retained 10 years.</p>
+
+        <h3>Transaction volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Active payers = 8M DAU &times; 20% = 1.6M payers/day
+          <br>Transactions/day = 1.6M &times; 2 txns = 3.2M txns/day
+          <br>Annual transactions = 3.2M &times; 365 &asymp; 1.168B txns/year (&asymp;1.17B)
+        </div>
+
+        <h3>Throughput (TPS)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Average TPS = 3.2M &divide; 86,400 s &asymp; 37 TPS
+          <br>Peak TPS = 37 &times; 8 &asymp; 296 &asymp; 300 TPS (payment writes)
+        </div>
+        <p>300 TPS of payment writes is modest; the real engineering cost is correctness and the read/fan-out multiplier, not raw write volume.</p>
+
+        <h3>Storage growth (ledger DB)</h3>
+        <p>Each transaction produces: 1 transaction-header record (&asymp;1 KB) <strong>plus</strong> double-entry ledger rows (minimum 2 legs; assume &asymp;2.5 legs average once fees/taxes/settlement legs are included, &asymp;0.5 KB each).</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Per txn ledger bytes &asymp; 2.5 legs &times; 0.5 KB = 1.25 KB
+          <br>Per txn total (hdr+leg) &asymp; 1 KB + 1.25 KB &asymp; 2.25 KB &rarr; round to &asymp;2.5 KB with index/row overhead
+          <br>Annual raw = 1.17B &times; 2.5 KB &asymp; 2.9 TB/year (&asymp;3 TB/yr)
+          <br>+ secondary indexes (&asymp;50%) &asymp; 4.4 TB/year
+          <br>10-year retention (raw+idx) &asymp; 44 TB
+          <br>&times; 3 replicas (quorum) &asymp; 132 TB provisioned (&asymp;130 TB)
+        </div>
+        <p>So plan for <strong>&asymp;3 TB/year of raw ledger growth</strong>, &asymp;4.5 TB/yr with indexes, and roughly <strong>130 TB provisioned</strong> over the 10-year window with 3&times; replication. Old partitions move to cheaper cold storage (see Data Sharding, below) so hot storage stays small.</p>
+
+        <h3>Database write IOPS</h3>
+        <p>Writes per transaction (worst case, wallet-to-wallet):</p>
+        <table>
+          <tr><th>Write</th><th>Count</th></tr>
+          <tr><td>Idempotency-key insert</td><td>1</td></tr>
+          <tr><td>Transaction header insert + 2 state transitions</td><td>3</td></tr>
+          <tr><td>Ledger legs (debit + credit)</td><td>2</td></tr>
+          <tr><td>Wallet balance update(s) (payer + payee)</td><td>2</td></tr>
+          <tr><td>Outbox event row</td><td>1</td></tr>
+          <tr><td><strong>Total</strong></td><td><strong>&asymp;9 writes/txn</strong></td></tr>
+        </table>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Peak write IOPS = 300 TPS &times; 9 &asymp; 2,700 IOPS &rarr; provision &asymp;5,000 with headroom.
+        </div>
+        <p>Reads per transaction on the sync path (idempotency lookup, balance read, risk features): &asymp;3&ndash;4, plus heavy history browsing traffic.</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Peak sync read IOPS &asymp; 300 &times; 4 &asymp; 1,200 IOPS
+          <br>+ history/read traffic (assume 4&times; payment RPS of pure reads) &rarr; provision &asymp;5,000 read IOPS.
+        </div>
+        <p>A single well-provisioned primary comfortably serves &asymp;5k write IOPS; read replicas + cache absorb reads. Sharding (see below) is driven by <strong>operational blast-radius and per-account write isolation</strong>, not by hitting an IOPS ceiling at this scale.</p>
+
+        <h3>Event bus (Kafka) throughput</h3>
+        <p>Events per transaction across its lifecycle: payment.initiated, risk.checked, debit.reserved, credit.applied, payment.completed, notification.requested &asymp; <strong>&asymp;6 events/txn</strong>.</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Produced msgs/s (peak) = 300 &times; 6 &asymp; 1,800 msg/s
+        </div>
+        <p>Consumer groups (ledger projector, history projector, notification, fraud analytics, reconciliation feed &asymp; 5 groups) each read the stream:</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Consumed msgs/s (peak) &asymp; 1,800 &times; 5 &asymp; 9,000 msg/s
+        </div>
+        <p>At &asymp;1 KB/msg this is &asymp;1.8 MB/s produced, &asymp;9 MB/s consumed &mdash; trivially within a modest 3-broker cluster. Partition count is driven by <strong>per-account ordering</strong> and consumer parallelism, not throughput (see Data Sharding).</p>
+
+        <h3>App-server instances at peak</h3>
+        <p>Traffic is a mix of long-held payment requests and short reads. Use Little's Law (concurrency = arrival_rate &times; hold_time):</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Card payments (async, but size for sync-wait worst case): &asymp;40% of 300 TPS = 120 TPS &times; &asymp;3 s hold = 360 concurrent
+          <br>Wallet + P2P: &asymp;60% of 300 TPS = 180 TPS &times; &asymp;0.8 s = 144 concurrent
+          <br>Read traffic (status polls, history, profile): &asymp;1,500 RPS &times; &asymp;0.15 s = 225 concurrent
+          <br>Total &asymp; 730 concurrent requests
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Instances (raw) = 730 / 500 concurrent-per-instance &asymp; 1.5 &rarr; 2 instances
+        </div>
+        <p>Raw compute need is tiny (&asymp;2 instances). The instance count is actually set by <strong>availability and burst headroom</strong>, not load: spread across 3 AZs, apply N+2 redundancy, and keep 2&times; headroom for beyond-model festive spikes:</p>
+        <div class="formula-box">
+          <span class="formula-label">Result</span>
+          Provision &asymp; 3 AZs &times; 4 instances = 12 app-server instances at peak.
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Takeaway</div>
+          At this scale the system is <strong>not throughput-bound; it is correctness-bound.</strong> Design effort goes into consistency, idempotency, and reconciliation &mdash; not into shaving CPU.
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+
+        <h3>Services</h3>
+        <table>
+          <tr><th>Service</th><th>Responsibility</th></tr>
+          <tr><td>API Gateway / BFF</td><td>TLS termination, authN/Z (OAuth2/mTLS for merchants), rate limiting, request validation, idempotency-key pass-through. Backends-for-frontends shape responses for app/web/merchant.</td></tr>
+          <tr><td>Payment Orchestrator (Payment Service)</td><td>The <strong>state-machine coordinator</strong>. Owns the transactions header, drives each payment through its states, invokes the saga, and is the single place that decides "did this payment succeed?" Stateless; state lives in the DB.</td></tr>
+          <tr><td>Wallet Service</td><td>Owns wallet balances; the <strong>only writer</strong> to a given wallet (single-writer-per-account). Exposes reserve/debit/credit/release operations that are themselves idempotent.</td></tr>
+          <tr><td>Card Payment Service</td><td>Tokenization + PSP/acquirer integration (Visa/Mastercard/RuPay). Handles 3-DS step-up, PSP webhooks, and never persists PAN (delegates to the token vault).</td></tr>
+          <tr><td>P2P Transfer Service</td><td>Orchestrates wallet&harr;wallet and wallet&harr;bank transfers as a saga across two wallets + ledger.</td></tr>
+          <tr><td>Ledger Service</td><td><strong>Double-entry bookkeeping</strong>, append-only, the <strong>source of truth</strong> for money. Every movement is &ge;2 balanced legs written atomically. Wallet balances are reconciled against ledger sums.</td></tr>
+          <tr><td>Idempotency Service</td><td>Dedupe layer (may be a library + shared store rather than a network hop, to save latency). Stores key &rarr; request-hash &rarr; status &rarr; response.</td></tr>
+          <tr><td>Risk / Fraud Service</td><td><strong>Synchronous pre-transaction</strong> check (velocity, device, AML/sanctions screening). Returns allow/deny/step-up within a tight budget (&asymp;50&ndash;150 ms) or the orchestrator applies a fallback policy.</td></tr>
+          <tr><td>Notification Service</td><td>Async push/SMS/email on success/failure/received/low-balance.</td></tr>
+          <tr><td>Reconciliation Service</td><td><strong>Async settlement matching</strong>: compares the internal ledger against PSP/bank settlement files and flags mismatches.</td></tr>
+          <tr><td>Supporting infra</td><td>Token Vault (PCI zone), Event Bus (Kafka), Config/Feature flags, and per-service datastores.</td></tr>
+        </table>
+
+        <h3>Architecture overview</h3>
+        <p>The diagram below turns the service list into a wiring diagram: a single API Gateway routes into the Payment Orchestrator, which runs a synchronous Risk/Fraud check and the idempotency lookup, then drives Wallet, Card, or P2P services &mdash; each of which writes through to the Ledger Service, the single source of truth. Notification and Reconciliation sit off to the side as async consumers of the event bus, never on the payment's critical path.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 650" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ptm-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ptm-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-ptm-1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="290" y="10" width="160" height="40" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="35" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client (App/Web/Merchant)</text>
+
+            <rect x="270" y="70" width="200" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="92" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">API Gateway / BFF</text>
+            <text x="370" y="108" text-anchor="middle" fill="#cbd8ef" font-size="9">TLS &#183; authN/Z &#183; idempotency pass-through</text>
+
+            <rect x="15" y="145" width="710" height="470" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="25" y="165" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.04em">PAYMENT DOMAIN</text>
+
+            <rect x="30" y="180" width="150" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="105" y="202" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Idempotency Service</text>
+            <text x="105" y="217" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">dedupe layer</text>
+
+            <rect x="290" y="175" width="200" height="60" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="390" y="200" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Payment Orchestrator</text>
+            <text x="390" y="217" text-anchor="middle" fill="#cbd8ef" font-size="9">state-machine coordinator</text>
+
+            <rect x="560" y="180" width="150" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="635" y="202" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Risk / Fraud Service</text>
+            <text x="635" y="217" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">sync pre-txn check</text>
+
+            <rect x="30" y="265" width="215" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="137" y="290" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Wallet Service</text>
+            <text x="137" y="306" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">single-writer-per-account</text>
+
+            <rect x="262" y="265" width="215" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="290" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Card Payment Service</text>
+            <text x="370" y="306" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">tokenize + PSP/acquirer</text>
+
+            <rect x="495" y="265" width="215" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="602" y="290" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">P2P Transfer Service</text>
+            <text x="602" y="306" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">saga across two wallets</text>
+
+            <rect x="30" y="355" width="680" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="370" y="378" text-anchor="middle" fill="#6b4a10" font-size="12" font-weight="700">Ledger Service</text>
+            <text x="370" y="394" text-anchor="middle" fill="#6b4a10" font-size="9">double-entry, append-only &mdash; source of truth for money</text>
+
+            <rect x="30" y="435" width="150" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="105" y="457" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Token Vault</text>
+            <text x="105" y="471" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">PCI-scoped, no PAN</text>
+
+            <rect x="295" y="435" width="190" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="390" y="457" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Event Bus (Kafka)</text>
+            <text x="390" y="471" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">outbox &rarr; per-account partitions</text>
+
+            <rect x="560" y="435" width="150" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="635" y="457" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Notification Service</text>
+            <text x="635" y="471" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">async push/SMS/email</text>
+
+            <rect x="295" y="505" width="190" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="390" y="527" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Reconciliation Service</text>
+            <text x="390" y="541" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">async settlement matching</text>
+
+            <rect x="295" y="580" width="190" height="45" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="390" y="600" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">PSP / Bank</text>
+            <text x="390" y="614" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">Settlement Files</text>
+
+            <line x1="370" y1="50" x2="370" y2="68" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ptm-1)"></line>
+            <line x1="330" y1="120" x2="150" y2="178" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ptm-1)"></line>
+            <line x1="370" y1="120" x2="390" y2="173" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ptm-1)"></line>
+            <line x1="180" y1="205" x2="288" y2="205" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ptm-1b)" marker-start="url(#arrow-ptm-1b)"></line>
+            <line x1="490" y1="205" x2="558" y2="205" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ptm-1b)" marker-start="url(#arrow-ptm-1b)"></line>
+
+            <line x1="350" y1="235" x2="180" y2="263" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ptm-1)"></line>
+            <line x1="390" y1="235" x2="390" y2="263" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ptm-1)"></line>
+            <line x1="430" y1="235" x2="600" y2="263" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ptm-1)"></line>
+
+            <line x1="137" y1="325" x2="220" y2="353" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ptm-1b)"></line>
+            <line x1="370" y1="325" x2="370" y2="353" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ptm-1b)"></line>
+            <line x1="602" y1="325" x2="520" y2="353" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ptm-1b)"></line>
+
+            <line x1="105" y1="410" x2="105" y2="433" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ptm-1m)"></line>
+            <line x1="370" y1="410" x2="390" y2="433" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ptm-1m)"></line>
+            <line x1="390" y1="480" x2="390" y2="503" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ptm-1m)"></line>
+            <line x1="390" y1="550" x2="390" y2="578" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ptm-1m)" marker-start="url(#arrow-ptm-1m)"></line>
+            <line x1="485" y1="527" x2="608" y2="410" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ptm-1m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. Service topology: the API Gateway routes into the Payment Orchestrator, which runs a synchronous Risk/Fraud check and an idempotency lookup, then drives Wallet, Card, or P2P services &mdash; all of which write through to the Ledger Service. Notification and Reconciliation are async consumers off the event bus; the Token Vault keeps the raw card PAN out of the core.</div>
+        </div>
+
+        <h3>Data flow (a): Pay with wallet balance</h3>
+        <ol>
+          <li>Client &rarr; Gateway &rarr;(Idempotency-Key)&rarr; Payment Orchestrator.</li>
+          <li>Idempotency check (new key &rarr; status=PROCESSING inserted).</li>
+          <li>Risk/Fraud sync check (allow/deny/step-up).</li>
+          <li>Wallet Service: atomic conditional debit (balance &ge; amount) &mdash; single-writer.</li>
+          <li>Ledger Service: write balanced legs (DEBIT payer wallet, CREDIT merchant payable) atomically.</li>
+          <li>Orchestrator marks txn COMPLETED, stores response under the idempotency key.</li>
+          <li>Outbox &rarr; Kafka &rarr; Notification / History projector.</li>
+        </ol>
+        <p>Steps 4&ndash;5 can be a <strong>single local ACID transaction</strong> if wallet + ledger share a DB (co-located), which is the common and simplest case &mdash; no distributed transaction needed for pay-by-balance to a merchant payable account.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 420" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ptm-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ptm-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="10" y="15" width="110" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="65" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Client</text>
+            <rect x="165" y="15" width="110" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="220" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Gateway</text>
+            <rect x="320" y="15" width="140" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="390" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Orchestrator</text>
+            <rect x="505" y="15" width="110" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="560" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Wallet Svc</text>
+            <rect x="640" y="15" width="90" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="685" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Ledger</text>
+
+            <line x1="65" y1="51" x2="65" y2="390" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="220" y1="51" x2="220" y2="390" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="390" y1="51" x2="390" y2="390" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="560" y1="51" x2="560" y2="390" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="685" y1="51" x2="685" y2="390" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+
+            <line x1="65" y1="80" x2="220" y2="80" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-2)"></line>
+            <text x="142" y="72" text-anchor="middle" font-size="9" fill="var(--color-text)">1. POST /v1/payments (WALLET, Idempotency-Key)</text>
+
+            <line x1="220" y1="115" x2="390" y2="115" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-2)"></line>
+            <text x="305" y="107" text-anchor="middle" font-size="9" fill="var(--color-text)">2. idempotency check &rarr; insert PROCESSING</text>
+            <text x="390" y="140" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">3. Risk/Fraud sync check (allow)</text>
+
+            <line x1="390" y1="175" x2="560" y2="175" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-2)"></line>
+            <text x="475" y="167" text-anchor="middle" font-size="9" fill="var(--color-text)">4. atomic conditional debit (balance &ge; amount)</text>
+
+            <rect x="500" y="195" width="230" height="55" rx="6" fill="none" stroke="var(--color-accent)" stroke-dasharray="3,3"></rect>
+            <text x="615" y="210" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">single local ACID transaction</text>
+            <line x1="560" y1="225" x2="685" y2="225" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-2)"></line>
+            <text x="622" y="242" text-anchor="middle" font-size="9" fill="var(--color-text)">5. write balanced legs (debit/credit)</text>
+
+            <text x="390" y="280" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">6. mark txn COMPLETED, store idempotent response</text>
+
+            <line x1="390" y1="310" x2="65" y2="310" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-2)"></line>
+            <text x="227" y="302" text-anchor="middle" font-size="9" fill="var(--color-text)">7. 201 Created, status: COMPLETED</text>
+
+            <line x1="390" y1="350" x2="685" y2="350" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-ptm-2m)"></line>
+            <text x="537" y="342" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">8. outbox &rarr; Kafka &rarr; Notification / History (async)</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Pay-by-wallet-balance: after the synchronous idempotency and risk checks, the wallet debit and the ledger legs commit in a single local ACID transaction because payer wallet and merchant payable share a database &mdash; no distributed transaction is needed.</div>
+        </div>
+
+        <h3>Data flow (b): Pay with card</h3>
+        <ol>
+          <li>Client &rarr; Gateway &rarr; Payment Orchestrator.</li>
+          <li>Idempotency check.</li>
+          <li>Risk check.</li>
+          <li>Card Payment Service: tokenize (or use stored token), call PSP authorize. PSP may require 3-DS step-up (redirect/OTP) &mdash; flow goes async.</li>
+          <li>Orchestrator sets txn = AUTHORIZING; returns "pending" to client.</li>
+          <li>PSP responds via WEBHOOK (auth success/fail) &mdash; webhook is idempotent &amp; handles out-of-order.</li>
+          <li>On auth success: Ledger writes legs (DEBIT card-settlement-receivable, CREDIT merchant payable).</li>
+          <li>txn = COMPLETED; notify. If wallet top-up, CREDIT user wallet instead.</li>
+          <li>If no webhook within timeout &rarr; Reconciliation job queries PSP / settlement file to resolve.</li>
+        </ol>
+        <p>The <strong>money moves in the card network asynchronously</strong>; our ledger records the <em>authorization</em> immediately and the <em>settlement</em> is confirmed later by reconciliation.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ptm-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ptm-3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="10" y="15" width="100" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="60" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Client</text>
+            <rect x="150" y="15" width="140" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="220" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Orchestrator</text>
+            <rect x="330" y="15" width="150" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="405" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Card Payment Svc</text>
+            <rect x="520" y="15" width="90" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="565" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">PSP</text>
+            <rect x="650" y="15" width="80" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="690" y="38" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="600">Recon.</text>
+
+            <line x1="60" y1="51" x2="60" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="220" y1="51" x2="220" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="405" y1="51" x2="405" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="565" y1="51" x2="565" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="690" y1="51" x2="690" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+
+            <line x1="60" y1="75" x2="220" y2="75" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-3)"></line>
+            <text x="140" y="67" text-anchor="middle" font-size="9" fill="var(--color-text)">1. initiate card payment</text>
+
+            <line x1="220" y1="110" x2="405" y2="110" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-3)"></line>
+            <text x="312" y="102" text-anchor="middle" font-size="9" fill="var(--color-text)">2. tokenize / charge</text>
+
+            <line x1="405" y1="145" x2="565" y2="145" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-3)"></line>
+            <text x="485" y="137" text-anchor="middle" font-size="9" fill="var(--color-text)">3. authorize (+ 3-DS step-up if required)</text>
+
+            <line x1="220" y1="180" x2="60" y2="180" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-ptm-3m)"></line>
+            <text x="140" y="172" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">4. txn=AUTHORIZING, return "pending"</text>
+
+            <line x1="565" y1="240" x2="405" y2="240" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-ptm-3m)"></line>
+            <text x="485" y="225" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">5. async webhook: auth success/fail</text>
+            <text x="485" y="252" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">(HMAC-verified, deduped, out-of-order safe)</text>
+
+            <line x1="405" y1="285" x2="220" y2="285" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-3)"></line>
+            <text x="312" y="277" text-anchor="middle" font-size="9" fill="var(--color-text)">6. ledger legs written, txn=COMPLETED</text>
+
+            <line x1="220" y1="320" x2="60" y2="320" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-3)"></line>
+            <text x="140" y="312" text-anchor="middle" font-size="9" fill="var(--color-text)">7. notify success (async)</text>
+
+            <rect x="30" y="345" width="670" height="70" rx="6" fill="none" stroke="var(--color-formula-border)" stroke-dasharray="4,3"></rect>
+            <text x="365" y="362" text-anchor="middle" font-size="9" fill="#6b4a10" font-weight="600">Fallback: no webhook within SLA window</text>
+            <line x1="690" y1="385" x2="565" y2="385" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-ptm-3m)" marker-start="url(#arrow-ptm-3m)"></line>
+            <text x="627" y="405" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">8. poll PSP status API / settlement file &rarr; resolve to COMPLETED or FAILED</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Pay-by-card: authorization is round-tripped to the PSP and the outcome arrives asynchronously via webhook; if the webhook never arrives, Reconciliation resolves the true state from the PSP's status API or settlement file &mdash; the transaction is never guessed into COMPLETED.</div>
+        </div>
+
+        <h3>Data flow (c): P2P real-time transfer (wallet&rarr;wallet) &mdash; the distributed case</h3>
+        <p>If payer and payee wallets may live on <strong>different shards</strong>, we cannot use a single local transaction. We use a <strong>saga</strong> across Wallet Service (two accounts) + Ledger Service, coordinated by the P2P/Orchestrator:</p>
+        <div class="formula-box">
+          <span class="formula-label">Saga</span>
+          INITIATED
+          <br>&rarr; DEBIT_RESERVED (payer wallet: reserve/hold amount, single-writer, idempotent)
+          <br>&rarr; CREDIT_APPLIED (payee wallet: credit amount, idempotent)
+          <br>&rarr; COMPLETED (ledger: both balanced legs finalized; reservation settled)
+          <br><br>Compensation: reserve ok but credit fails &rarr; RELEASE reservation (reverse debit) &rarr; FAILED
+        </div>
+        <p><strong>Where idempotency keys are checked:</strong> at the Gateway/Orchestrator entry (client-supplied Idempotency-Key), <em>and</em> at each saga step (each Wallet/Ledger operation carries a deterministic step-id derived from transaction_id + step, so retried steps are no-ops). <strong>Distributed-transaction boundary:</strong> we deliberately <strong>avoid 2PC</strong>; the boundary is the saga with idempotent steps and compensating actions (see Low-Level Design and Data Sharding, below).</p>
+
+        <h2 id="api-design">API Design</h2>
+        <p>Conventions: JSON over HTTPS (REST) for external/merchant; gRPC internally between services. All <strong>state-changing</strong> endpoints require an Idempotency-Key header (client-generated UUID/ULID, unique per logical operation). Amounts are integers in <strong>minor units</strong> (paise/cents) with an explicit currency &mdash; never floats.</p>
+
+        <h3>Initiate payment</h3>
+        <pre><code>POST /v1/payments
+Idempotency-Key: 6f1c...e2 (required)
+Authorization: Bearer &lt;token&gt;
+
+{
+  "amount": 25000, "currency": "INR",
+  "method": "WALLET" | "CARD",
+  "payee": { "type": "MERCHANT", "id": "mrc_123" },
+  "card_token": "tok_abc", // only for CARD
+  "metadata": { "order_id": "ord_789" }
+}
+
+201 Created
+{ "payment_id": "pay_01H...", "status": "PROCESSING|AUTHORIZING|COMPLETED",
+  "next_action": null | { "type": "3DS_REDIRECT", "url": "..." } }</code></pre>
+
+        <h3>Confirm payment (post 3-DS / explicit confirm)</h3>
+        <pre><code>POST /v1/payments/{payment_id}/confirm
+Idempotency-Key: &lt;same-or-new-per-confirm&gt;
+
+{ "authentication_token": "3ds_..." }
+
+&#8594; 200 { "payment_id": "...", "status": "COMPLETED|FAILED" }</code></pre>
+
+        <h3>Get transaction status</h3>
+        <pre><code>GET /v1/payments/{payment_id}
+
+&#8594; 200 {
+  "payment_id", "status", "amount", "currency", "created_at",
+  "legs": [...], "failure_reason": null }</code></pre>
+        <p>Idempotent read; safe to poll; served from read replica/cache.</p>
+
+        <h3>Wallet top-up</h3>
+        <pre><code>POST /v1/wallets/{wallet_id}/topups
+Idempotency-Key: &lt;uuid&gt;
+
+{ "amount": 100000, "currency":"INR", "funding_source": "CARD|BANK",
+  "source_ref":"..." }
+
+&#8594; 201 { "topup_id","status":"PROCESSING|COMPLETED" }</code></pre>
+
+        <h3>P2P transfer</h3>
+        <pre><code>POST /v1/transfers
+Idempotency-Key: &lt;uuid&gt;
+
+{ "amount": 50000, "currency":"INR",
+  "from_wallet_id": "wlt_1",
+  "to": { "type":"WALLET|BANK", "id":"wlt_2|acc_ifsc" },
+  "note": "dinner" }
+
+&#8594; 201 { "transfer_id","status":"PROCESSING|COMPLETED" }</code></pre>
+
+        <h3>Refund</h3>
+        <pre><code>POST /v1/payments/{payment_id}/refunds
+Idempotency-Key: &lt;uuid&gt;
+
+{ "amount": 25000, "reason":"customer_request" } // amount &le; original
+
+&#8594; 201 { "refund_id","status":"PROCESSING|COMPLETED" }</code></pre>
+
+        <h3>What the server does with the Idempotency-Key</h3>
+        <ol>
+          <li>Compute request_hash = SHA-256(method + path + canonical(body)).</li>
+          <li>Look up the key in the idempotency store (scoped to the authenticated principal).</li>
+          <li><strong>Miss</strong> &rarr; atomically insert (key, request_hash, status=PROCESSING) guarded by a <strong>unique constraint</strong>; proceed to execute; on completion persist the response and set status=COMPLETED.</li>
+          <li><strong>Hit, COMPLETED, same hash</strong> &rarr; return the <strong>stored response</strong> verbatim (same status code/body). No re-execution.</li>
+          <li><strong>Hit, PROCESSING</strong> (original still in flight or crashed mid-flight) &rarr; return 409 Conflict (or 425 Too Early) with Retry-After; do <strong>not</strong> start a second execution.</li>
+          <li><strong>Hit, different hash</strong> (same key, different body) &rarr; return 422 Unprocessable Entity &mdash; the client reused a key for a different request, which is a client bug we must not silently mask.</li>
+        </ol>
+
+        <h2 id="low-level-design-deep-dive">Low-Level Design (Deep Dive)</h2>
+
+        <h3>7.1 Idempotency implementation</h3>
+        <p><strong>Store schema (see Database Schema for full DDL):</strong> idempotency_keys(idempotency_key PK, principal_id, request_hash, status, response_code, response_body, resource_id, created_at, expires_at).</p>
+        <p><strong>Exact algorithm (check-then-insert with a unique constraint):</strong></p>
+        <pre><code>def handle(key, principal, req):
+  h = sha256(canonical(req))
+  try:
+    INSERT INTO idempotency_keys(key, principal, request_hash, status)
+    VALUES(key, principal, h, 'PROCESSING') # unique(key, principal)
+  except UniqueViolation:
+    row = SELECT ... WHERE key=key AND principal=principal
+    if row.request_hash != h: return 422 # same key, different body
+    if row.status == 'COMPLETED': return replay(row.response_code, row.response_body)
+    if row.status == 'PROCESSING': return 409 Retry-After # in-flight / crashed
+    return  # unreachable
+
+  # we won the insert &#8594; we own execution
+  result = execute(req) # the real money movement
+  UPDATE idempotency_keys SET status='COMPLETED',
+    response_code=result.code, response_body=result.body, resource_id=result.id
+  WHERE key=key AND principal=principal
+  return result</code></pre>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 560" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ptm-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ptm-4b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="10" width="220" height="45" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="380" y="30" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Request arrives</text>
+            <text x="380" y="45" text-anchor="middle" fill="#cbd8ef" font-size="9">Idempotency-Key + body</text>
+
+            <rect x="250" y="85" width="260" height="50" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="380" y="105" text-anchor="middle" fill="#6b4a10" font-size="11" font-weight="700">INSERT (key, hash, PROCESSING)</text>
+            <text x="380" y="120" text-anchor="middle" fill="#6b4a10" font-size="9">guarded by a unique constraint</text>
+
+            <line x1="380" y1="55" x2="380" y2="83" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-4)"></line>
+
+            <line x1="290" y1="135" x2="150" y2="168" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ptm-4)"></line>
+            <text x="185" y="155" text-anchor="middle" font-size="9" fill="var(--color-primary)" font-weight="600">insert OK (miss)</text>
+
+            <line x1="470" y1="135" x2="590" y2="168" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ptm-4b)"></line>
+            <text x="565" y="155" text-anchor="middle" font-size="9" fill="var(--color-accent-dark)" font-weight="600">unique violation (hit)</text>
+
+            <rect x="40" y="175" width="220" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="150" y="205" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Execute request (real money movement)</text>
+
+            <line x1="150" y1="225" x2="150" y2="253" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ptm-4)"></line>
+
+            <rect x="40" y="255" width="220" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="150" y="278" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">UPDATE status=COMPLETED,</text>
+            <text x="150" y="293" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">store response</text>
+
+            <line x1="150" y1="305" x2="150" y2="333" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ptm-4)"></line>
+
+            <rect x="40" y="335" width="220" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="150" y="362" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Return result (200/201)</text>
+
+            <rect x="480" y="175" width="220" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="590" y="202" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">SELECT existing row</text>
+
+            <line x1="590" y1="220" x2="590" y2="243" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-ptm-4b)"></line>
+
+            <rect x="480" y="245" width="220" height="48" rx="6" fill="var(--color-surface)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="590" y="265" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">hash mismatch</text>
+            <text x="590" y="280" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">&rarr; 422 Unprocessable Entity</text>
+
+            <line x1="590" y1="293" x2="590" y2="313" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-ptm-4b)"></line>
+
+            <rect x="480" y="315" width="220" height="48" rx="6" fill="var(--color-surface)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="590" y="333" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">hash matches, status COMPLETED</text>
+            <text x="590" y="348" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">&rarr; replay stored response</text>
+
+            <line x1="590" y1="363" x2="590" y2="383" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-ptm-4b)"></line>
+
+            <rect x="480" y="385" width="220" height="48" rx="6" fill="var(--color-surface)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="590" y="403" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">hash matches, status PROCESSING</text>
+            <text x="590" y="418" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">&rarr; 409 Conflict + Retry-After</text>
+
+            <text x="370" y="480" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">The unique-constraint INSERT is the race-safe boundary: two concurrent duplicates both</text>
+            <text x="370" y="495" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">attempt to INSERT; exactly one succeeds and owns execution, the other becomes a replay/409.</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Idempotency check-then-insert flow: an INSERT guarded by a unique constraint decides, in one atomic step, whether this request is new (miss, owns execution) or a duplicate (hit, branches on stored hash and status).</div>
+        </div>
+        <p><strong>Why insert-first (not read-then-write):</strong> the <strong>unique constraint</strong> is what makes it race-safe. Two concurrent duplicates both try to INSERT; the DB guarantees exactly one succeeds and the other gets a violation and becomes a replay/409. A read-then-write check has a TOCTOU gap where both reads miss and both execute.</p>
+        <p><strong>In-flight vs completed responses:</strong> PROCESSING &rarr; 409/425 + Retry-After (client backs off and polls status); COMPLETED &rarr; replay stored response with the original status code. Never execute twice.</p>
+        <p><strong>Crash recovery:</strong> if the owner crashes after INSERT but before UPDATE, the row is stuck in PROCESSING. A reaper (or the expires_at + a "lease/heartbeat" timestamp) flips abandoned PROCESSING rows so a later retry can take over &mdash; but only after confirming via the transactions table whether the money actually moved (the transaction record, not the idempotency row, is the ground truth). This is why resource_id links the idempotency row to the real transaction.</p>
+        <p><strong>TTL/cleanup:</strong> keys have expires_at (e.g., 24&ndash;72 h &mdash; long enough to cover client retry windows, short enough to bound storage). A background job (or DB TTL/partition drop) purges expired rows. TTL must exceed the maximum realistic client retry window.</p>
+        <p><strong>Same key, different body:</strong> always 422. We do <strong>not</strong> overwrite or "upsert" &mdash; that would let a client accidentally mutate a prior operation. The idempotency guarantee is: <em>same key &rArr; same effect as the first request</em>.</p>
+
+        <h3>7.2 Double-entry ledger</h3>
+        <p>Every money movement writes <strong>&ge;2 balanced legs</strong> whose signed amounts sum to zero, in <strong>one atomic transaction</strong>:</p>
+        <div class="formula-box">
+          <span class="formula-label">Example</span>
+          Pay &#8377;250 by wallet to merchant:
+          <br>leg1: account=wallet:user_A amount = -25000 (debit)
+          <br>leg2: account=merchant_payable amount = +25000 (credit)
+          <br>&Sigma; = 0 &#10003;
+        </div>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ptm-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+            <rect x="220" y="10" width="260" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="350" y="30" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Transaction: pay &#8377;250 by wallet</text>
+            <text x="350" y="45" text-anchor="middle" fill="#cbd8ef" font-size="9">one posting_group_id, one transaction_id</text>
+
+            <line x1="300" y1="60" x2="150" y2="98" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-5)"></line>
+            <line x1="400" y1="60" x2="550" y2="98" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-5)"></line>
+
+            <rect x="40" y="100" width="220" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="150" y="122" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">Leg 1 &mdash; DEBIT</text>
+            <text x="150" y="138" text-anchor="middle" fill="var(--color-primary)" font-size="9">account: wallet:user_A</text>
+            <text x="150" y="153" text-anchor="middle" fill="var(--color-primary)" font-size="9">signed_amount: -25000</text>
+
+            <rect x="440" y="100" width="220" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="550" y="122" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">Leg 2 &mdash; CREDIT</text>
+            <text x="550" y="138" text-anchor="middle" fill="var(--color-primary)" font-size="9">account: merchant_payable</text>
+            <text x="550" y="153" text-anchor="middle" fill="var(--color-primary)" font-size="9">signed_amount: +25000</text>
+
+            <line x1="150" y1="170" x2="330" y2="205" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ptm-5)"></line>
+            <line x1="550" y1="170" x2="370" y2="205" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ptm-5)"></line>
+
+            <rect x="245" y="207" width="210" height="42" rx="20" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="350" y="234" text-anchor="middle" fill="#6b4a10" font-size="12" font-weight="700">&Sigma; signed_amount = 0 &#10003;</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Double-entry ledger: every movement writes balanced legs sharing one posting_group_id, appended atomically; the group must sum to zero before commit &mdash; rows are never updated or deleted, only reversed by a new opposite-signed group.</div>
+        </div>
+        <ul>
+          <li>Legs share a transaction_id and a posting_group_id; a DB constraint/trigger (or an application invariant enforced in the same txn) asserts the group sums to zero before commit.</li>
+          <li>Rows are <strong>append-only</strong> &mdash; never updated/deleted. A reversal is a <em>new</em> group with opposite signs, referencing the original.</li>
+        </ul>
+        <p><strong>Balance derivation &mdash; materialized vs computed:</strong></p>
+        <table>
+          <tr><th>Approach</th><th>Pros</th><th>Cons</th></tr>
+          <tr><td>Computed = SUM(amount) WHERE account=X</td><td>Always correct by construction; nothing to keep in sync</td><td>O(rows) &mdash; infeasible to read on the hot path once an account has millions of legs</td></tr>
+          <tr><td>Materialized running balance (a balance column on wallets, updated in the same transaction as the ledger legs)</td><td>O(1) read; enforces "no negative balance" cheaply</td><td>Must be updated atomically with legs or it drifts</td></tr>
+        </table>
+        <p><strong>Chosen: materialized running balance, updated in the same ACID transaction as the ledger legs</strong>, with a <strong>periodic reconciliation job</strong> that recomputes SUM(legs) per account and asserts it equals the stored balance. Any drift is an incident. This gives O(1) hot-path reads <em>and</em> a self-auditing ground truth. Optionally store balance_after on each leg for point-in-time auditing.</p>
+
+        <h3>7.3 Saga for wallet-to-wallet transfer</h3>
+        <p>State machine (persisted on the transactions/p2p_transfers header; each transition is durable):</p>
+        <table>
+          <tr><th>From</th><th>Event</th><th>To</th><th>Action</th><th>Compensation if this step fails</th></tr>
+          <tr><td>&mdash;</td><td>create</td><td>INITIATED</td><td>write header, idempotency PROCESSING</td><td>return error, no money moved</td></tr>
+          <tr><td>INITIATED</td><td>reserve</td><td>DEBIT_RESERVED</td><td>payer wallet: hold amount (balance&rarr;available&darr;), ledger debit leg into a reservation/suspense account</td><td>none needed; nothing committed downstream</td></tr>
+          <tr><td>DEBIT_RESERVED</td><td>credit</td><td>CREDIT_APPLIED</td><td>payee wallet: credit amount, ledger credit leg</td><td><strong>RELEASE</strong>: reverse the reservation (credit payer back), &rarr; FAILED</td></tr>
+          <tr><td>CREDIT_APPLIED</td><td>settle</td><td>COMPLETED</td><td>finalize: move reservation &rarr; settled, close posting group</td><td>idempotent retry of settle; on repeated failure &rarr; alert, stay retryable</td></tr>
+          <tr><td>any</td><td>fatal</td><td>FAILED</td><td>run compensations for completed steps</td><td>&mdash;</td></tr>
+        </table>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 320" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ptm-6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ptm-6b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="15" y="50" width="140" height="55" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="85" y="82" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">INITIATED</text>
+
+            <rect x="200" y="50" width="160" height="55" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="280" y="82" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">DEBIT_RESERVED</text>
+
+            <rect x="405" y="50" width="160" height="55" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="485" y="82" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">CREDIT_APPLIED</text>
+
+            <rect x="610" y="50" width="115" height="55" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="667" y="82" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">COMPLETED</text>
+
+            <line x1="155" y1="77" x2="198" y2="77" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ptm-6)"></line>
+            <text x="176" y="65" text-anchor="middle" font-size="9" fill="var(--color-text)">reserve</text>
+            <line x1="360" y1="77" x2="403" y2="77" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ptm-6)"></line>
+            <text x="382" y="65" text-anchor="middle" font-size="9" fill="var(--color-text)">credit</text>
+            <line x1="565" y1="77" x2="608" y2="77" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ptm-6)"></line>
+            <text x="586" y="65" text-anchor="middle" font-size="9" fill="var(--color-text)">settle</text>
+
+            <rect x="255" y="220" width="160" height="55" rx="8" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.8"></rect>
+            <text x="335" y="253" text-anchor="middle" fill="var(--color-accent-dark)" font-size="12" font-weight="700">FAILED</text>
+
+            <line x1="260" y1="105" x2="335" y2="218" stroke="var(--color-accent-dark)" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-ptm-6b)"></line>
+            <text x="245" y="165" text-anchor="middle" font-size="8" fill="var(--color-accent-dark)" font-weight="600">credit fails</text>
+            <text x="245" y="177" text-anchor="middle" font-size="8" fill="var(--color-accent-dark)" font-weight="600">&rarr; RELEASE reservation</text>
+            <text x="245" y="189" text-anchor="middle" font-size="8" fill="var(--color-accent-dark)" font-weight="600">(reverse debit)</text>
+
+            <line x1="85" y1="105" x2="290" y2="218" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ptm-6b)"></line>
+            <text x="80" y="155" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">any state, fatal error</text>
+            <text x="80" y="167" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">&rarr; run compensations</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. P2P saga state machine: each transition (reserve/credit/settle) is idempotent and durably persisted; a failure after a successful reservation triggers a compensating RELEASE rather than an in-place edit.</div>
+        </div>
+        <p>Each step is <strong>idempotent</strong> (keyed by transaction_id + step_name), so a retried or duplicated step is a no-op. Compensation is itself an idempotent ledger operation (a reversing posting group), never an in-place edit. The saga log (the header row's status + a step-events table) lets a recovery worker resume any transfer stuck mid-flight.</p>
+
+        <h3>7.4 Preventing double-spend / race conditions on wallet balance</h3>
+        <p>The classic bug: two debits read balance = &#8377;10, each for &#8377;8, both pass the "&ge; amount" check, both commit &rarr; balance = &minus;&#8377;6 (double-spend). Options:</p>
+        <table>
+          <tr><th>Strategy</th><th>How</th><th>Pros</th><th>Cons</th></tr>
+          <tr><td>Pessimistic row lock (SELECT ... FOR UPDATE)</td><td>lock the wallet row, re-read balance, check, update, commit</td><td>simple, correct, works within one DB</td><td>lock contention on hot accounts (popular merchants); risk of deadlock across two wallets in P2P (mitigate by locking in a canonical order, e.g. ascending account_id)</td></tr>
+          <tr><td>Optimistic concurrency (version column, compare-and-set)</td><td>read balance+version; UPDATE ... WHERE id=X AND version=v; retry on 0 rows affected</td><td>no locks held; great when contention is low</td><td>livelock/retries on hot accounts; wasted work under contention</td></tr>
+          <tr><td>Single-writer-per-account queue</td><td>route all mutations for account X to one owner (partition/actor) that processes serially</td><td>no locks, no contention pathologies, natural ordering, easy to reason about</td><td>requires partitioning + sticky routing; the partition owner is an availability unit</td></tr>
+        </table>
+        <p><strong>Chosen: single-writer-per-account, backed by an atomic conditional update as the safety net.</strong> Route all writes for a wallet to the shard/partition that owns it (see Data Sharding), so mutations for one account are serialized. The actual DB write is still a <strong>guarded conditional update</strong>:</p>
+        <pre><code>UPDATE wallets
+SET balance = balance - :amount, version = version + 1
+WHERE wallet_id = :id AND balance &gt;= :amount; -- returns rows_affected
+
+-- rows_affected = 0 &#8594; INSUFFICIENT_FUNDS (rejected atomically; no read-then-check gap)</code></pre>
+        <p>This single statement is the atomicity boundary: the balance &ge; :amount predicate is evaluated <em>inside</em> the write under the row's lock, so the check-and-decrement is indivisible. Single-writer routing keeps contention off the hot path; the conditional update guarantees correctness even if routing ever misbehaves. For P2P we lock/mutate the two wallets in a <strong>canonical order</strong> to avoid deadlock. Justification: at 300 TPS we don't need lock-free throughput heroics; we need <em>provable</em> correctness and simple reasoning &mdash; single-writer + conditional CAS gives both.</p>
+
+        <h3>7.5 Card payment flow specifics</h3>
+        <ul>
+          <li><strong>Tokenization:</strong> the app/SDK sends the PAN directly to the PCI-scoped <strong>Token Vault</strong> (or PSP's tokenization endpoint); it returns a card_token. Our core services and DB store <strong>only the token + last4 + brand + expiry</strong>, never the PAN. This keeps 99% of the system out of PCI-DSS scope.</li>
+          <li><strong>3-D Secure step-up:</strong> on authorize, the PSP may demand SCA. We return next_action = 3DS_REDIRECT; the client completes the challenge; the result comes back on /confirm and/or the webhook. Payment sits in AUTHORIZING meanwhile.</li>
+          <li><strong>Async webhook from PSP:</strong> authorization/settlement outcomes arrive via webhook. Webhooks are:
+            <ul>
+              <li><strong>Authenticated</strong> (HMAC signature verified against the PSP secret).</li>
+              <li><strong>Idempotent:</strong> we dedupe on the PSP event id (external_event_id unique constraint). A redelivered webhook is a no-op replay.</li>
+              <li><strong>Out-of-order tolerant:</strong> we compare the event's status against a <strong>state-transition guard</strong> on the transaction (e.g., ignore a stale authorized webhook that arrives <em>after</em> we already recorded captured/failed). The transaction state machine only accepts forward-valid transitions.</li>
+            </ul>
+          </li>
+          <li><strong>PSP timeout / no response:</strong> if authorize times out or no webhook arrives within an SLA window, the payment stays AUTHORIZING (never assumed success). A <strong>reconciliation/poller job</strong> queries the PSP's status API or the daily settlement file to determine the true outcome, then drives the transaction to COMPLETED or FAILED. <strong>We never guess</strong> &mdash; an unknown card outcome is resolved by authoritative reconciliation, because assuming success risks a phantom credit and assuming failure risks a double-charge on retry.</li>
+        </ul>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>Postgres-style DDL. Monetary amounts are BIGINT minor units. IDs are Snowflake-style BIGINT/ULID (see Data Sharding). Ledger and wallet tables are the strongly-consistent core; history/analytics are projections.</p>
+
+        <h3>users / accounts</h3>
+        <pre><code>CREATE TABLE users (
+  user_id BIGINT PRIMARY KEY, -- snowflake
+  phone VARCHAR(20) NOT NULL,
+  email VARCHAR(255),
+  kyc_tier SMALLINT NOT NULL DEFAULT 0, -- 0=min,1=full; gates limits
+  status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (phone) -- one account per verified phone
+);
+
+CREATE INDEX idx_users_email ON users(email);</code></pre>
+
+        <h3>wallets</h3>
+        <pre><code>CREATE TABLE wallets (
+  wallet_id BIGINT PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(user_id),
+  currency CHAR(3) NOT NULL,
+  balance BIGINT NOT NULL DEFAULT 0, -- materialized running balance (minor units)
+  reserved BIGINT NOT NULL DEFAULT 0, -- funds held by open reservations
+  version BIGINT NOT NULL DEFAULT 0, -- optimistic-lock guard
+  status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT chk_balance_nonneg CHECK (balance &gt;= 0),
+  UNIQUE (user_id, currency) -- one wallet per user per currency
+);</code></pre>
+
+        <h3>ledger_entries (double-entry, append-only)</h3>
+        <pre><code>CREATE TABLE ledger_entries (
+  entry_id BIGINT PRIMARY KEY, -- snowflake, sortable
+  posting_group_id BIGINT NOT NULL, -- all legs of one movement share this
+  transaction_id BIGINT NOT NULL,
+  account_id BIGINT NOT NULL, -- wallet_id or GL account (merchant_payable, suspense...)
+  direction CHAR(1) NOT NULL, -- 'D' or 'C'
+  amount BIGINT NOT NULL CHECK (amount &gt; 0),
+  signed_amount BIGINT NOT NULL, -- +credit / -debit; group SUM must = 0
+  currency CHAR(3) NOT NULL,
+  balance_after BIGINT, -- optional point-in-time balance for audit
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  -- NO updated_at, NO deletes: append-only
+);
+
+CREATE INDEX idx_ledger_account_time ON ledger_entries(account_id, created_at DESC); -- history
+CREATE INDEX idx_ledger_txn ON ledger_entries(transaction_id);
+CREATE INDEX idx_ledger_group ON ledger_entries(posting_group_id);
+-- Invariant (enforced in-txn or via deferred trigger):
+-- SUM(signed_amount) per posting_group_id = 0</code></pre>
+
+        <h3>transactions (header / state machine)</h3>
+        <pre><code>CREATE TABLE transactions (
+  transaction_id BIGINT PRIMARY KEY, -- snowflake (embeds shard+time)
+  type VARCHAR(16) NOT NULL, -- PAYMENT|TOPUP|P2P|REFUND
+  method VARCHAR(16), -- WALLET|CARD
+  payer_account BIGINT,
+  payee_account BIGINT,
+  amount BIGINT NOT NULL,
+  currency CHAR(3) NOT NULL,
+  status VARCHAR(24) NOT NULL, -- INITIATED|AUTHORIZING|DEBIT_RESERVED|CREDIT_APPLIED|COMPLETED|FAILED|REVERSED
+  external_ref VARCHAR(64), -- PSP txn id / bank UTR
+  parent_txn_id BIGINT, -- for refunds/reversals
+  idempotency_key VARCHAR(64),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_txn_payer_time ON transactions(payer_account, created_at DESC); -- user history
+CREATE INDEX idx_txn_status ON transactions(status) WHERE status NOT IN ('COMPLETED','FAILED'); -- stuck-saga scan
+CREATE UNIQUE INDEX uq_txn_external ON transactions(external_ref) WHERE external_ref IS NOT NULL; -- reconciliation lookup</code></pre>
+
+        <h3>idempotency_keys</h3>
+        <pre><code>CREATE TABLE idempotency_keys (
+  idempotency_key VARCHAR(64) NOT NULL,
+  principal_id BIGINT NOT NULL,
+  request_hash CHAR(64) NOT NULL, -- sha256 of canonical request
+  status VARCHAR(12) NOT NULL, -- PROCESSING|COMPLETED
+  response_code INT,
+  response_body JSONB,
+  resource_id BIGINT, -- links to transaction_id (ground truth)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (idempotency_key, principal_id) -- UNIQUE &#8594; race-safe insert
+);
+
+CREATE INDEX idx_idem_expiry ON idempotency_keys(expires_at); -- TTL sweeper</code></pre>
+
+        <h3>card_tokens (no PAN)</h3>
+        <pre><code>CREATE TABLE card_tokens (
+  card_token VARCHAR(64) PRIMARY KEY, -- vault token, NOT the PAN
+  user_id BIGINT NOT NULL REFERENCES users(user_id),
+  brand VARCHAR(16), -- VISA|MASTERCARD|RUPAY
+  last4 CHAR(4),
+  exp_month SMALLINT, exp_year SMALLINT,
+  psp_customer_ref VARCHAR(64),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_cardtok_user ON card_tokens(user_id);</code></pre>
+
+        <h3>p2p_transfers</h3>
+        <pre><code>CREATE TABLE p2p_transfers (
+  transfer_id BIGINT PRIMARY KEY, -- may equal transaction_id
+  from_wallet BIGINT NOT NULL,
+  to_type VARCHAR(8) NOT NULL, -- WALLET|BANK
+  to_ref VARCHAR(64) NOT NULL, -- wallet_id or account+IFSC
+  amount BIGINT NOT NULL,
+  currency CHAR(3) NOT NULL,
+  saga_state VARCHAR(24) NOT NULL, -- INITIATED|DEBIT_RESERVED|CREDIT_APPLIED|COMPLETED|FAILED
+  note VARCHAR(140),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_p2p_from_time ON p2p_transfers(from_wallet, created_at DESC);
+CREATE INDEX idx_p2p_state ON p2p_transfers(saga_state) WHERE saga_state NOT IN ('COMPLETED','FAILED');</code></pre>
+
+        <p><strong>Unique constraints that matter:</strong> idempotency_keys(key, principal) (dedupe race-safety), transactions(external_ref) (webhook/reconciliation dedupe), wallets(user_id, currency), users(phone). <strong>Indexes for query patterns:</strong> history by user &rarr; (payer_account/from_wallet, created_at DESC); get-by-id &rarr; PK; reconciliation &rarr; external_ref; stuck-saga sweeps &rarr; partial index on non-terminal status.</p>
+
+        <h2 id="data-sharding-and-partitioning">Data Sharding and Partitioning</h2>
+        <p><strong>Shard key: <code>account_id</code> (&asymp; user_id).</strong> Wallet and ledger rows for an account live together on one shard &rarr; the wallet's <strong>single-writer</strong> and its debit/credit legs are co-located, so a <em>single-account</em> mutation is a <strong>local ACID transaction</strong>. Consistent-hashing (or range-by-hash) maps account_id &rarr; shard.</p>
+
+        <p><strong>The hard part &mdash; both legs of a P2P transfer may land on different shards.</strong> Payer on shard 3, payee on shard 7: there is no single local transaction spanning them.</p>
+        <ul>
+          <li>We <strong>avoid 2PC</strong> (blocking coordinator, poor availability, holds locks across the network). Instead we use the <strong>saga with idempotent compensating actions</strong> (see Low-Level Design): reserve on the payer's shard, credit on the payee's shard, settle; if credit fails, release the reservation. Each cross-shard step is idempotent (keyed by transaction_id+step), so retries and partial failures converge to a consistent state without distributed locks.</li>
+          <li><strong>Co-location optimization:</strong> frequently-paired accounts (e.g., a merchant and its settlement account, or a family group) can be pinned to the same shard to make common transfers local. This is an optimization, not a correctness requirement &mdash; the saga is always the fallback.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ptm-7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+              <marker id="arrow-ptm-7m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="20" width="150" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="95" y="47" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">account_id</text>
+            <rect x="270" y="20" width="160" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="350" y="47" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">hash(account_id)</text>
+            <rect x="530" y="20" width="150" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="605" y="47" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">mod N shards</text>
+
+            <line x1="170" y1="42" x2="268" y2="42" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-7)"></line>
+            <line x1="430" y1="42" x2="528" y2="42" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ptm-7)"></line>
+
+            <rect x="20" y="130" width="200" height="120" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="120" y="152" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">Shard 3 (payer)</text>
+            <rect x="35" y="165" width="170" height="30" rx="4" fill="var(--color-surface)" stroke="var(--color-accent-dark)"></rect>
+            <text x="120" y="184" text-anchor="middle" fill="var(--color-primary)" font-size="9">wallet + ledger co-located</text>
+            <rect x="35" y="205" width="170" height="30" rx="4" fill="var(--color-surface)" stroke="var(--color-accent-dark)"></rect>
+            <text x="120" y="224" text-anchor="middle" fill="var(--color-primary)" font-size="9">DEBIT_RESERVED here</text>
+
+            <rect x="480" y="130" width="200" height="120" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="580" y="152" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">Shard 7 (payee)</text>
+            <rect x="495" y="165" width="170" height="30" rx="4" fill="var(--color-surface)" stroke="var(--color-accent-dark)"></rect>
+            <text x="580" y="184" text-anchor="middle" fill="var(--color-primary)" font-size="9">wallet + ledger co-located</text>
+            <rect x="495" y="205" width="170" height="30" rx="4" fill="var(--color-surface)" stroke="var(--color-accent-dark)"></rect>
+            <text x="580" y="224" text-anchor="middle" fill="var(--color-primary)" font-size="9">CREDIT_APPLIED here</text>
+
+            <rect x="250" y="150" width="200" height="90" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3"></rect>
+            <text x="350" y="172" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">no single local txn spans</text>
+            <text x="350" y="185" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">shard 3 and shard 7 &mdash;</text>
+            <text x="350" y="198" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">saga bridges the gap instead</text>
+            <text x="350" y="222" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">(no 2PC, no cross-shard lock)</text>
+
+            <line x1="220" y1="190" x2="478" y2="190" stroke="var(--color-text-muted)" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#arrow-ptm-7m)"></line>
+            <text x="350" y="270" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">saga: reserve (shard 3) &rarr; credit (shard 7) &rarr; settle</text>
+
+            <rect x="130" y="300" width="440" height="70" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="350" y="320" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Snowflake ID: [ 41 bits time ][ 10 bits shard/worker ][ 12 bits sequence ]</text>
+            <text x="350" y="338" text-anchor="middle" fill="#6b4a10" font-size="9">time-sortable &#183; shard-embedding (routes without a directory hop) &#183; collision-free</text>
+            <text x="350" y="354" text-anchor="middle" fill="#6b4a10" font-size="9">Kafka partitioned by account_id &rarr; per-account ordering for consumers</text>
+          </svg>
+          <div class="diagram-caption">Figure 7. Sharding by account_id co-locates a wallet with its own ledger legs for local ACID writes; a P2P transfer whose legs land on different shards (payer on shard 3, payee on shard 7) is bridged by the saga, never by a cross-shard lock.</div>
+        </div>
+
+        <p><strong>Transaction ID generation &mdash; Snowflake-style 64-bit, sortable and shard-aware:</strong> [ 41 bits: ms since epoch ] [ 10 bits: shard/worker id ] [ 12 bits: per-ms sequence ].</p>
+        <ul>
+          <li><strong>Time-sortable:</strong> IDs increase with time &rarr; natural ordering for history and range scans, good index locality.</li>
+          <li><strong>Shard-embedding:</strong> the worker/shard bits let a service route a lookup to the owning shard <em>from the ID alone</em>, without a directory hop.</li>
+          <li><strong>Collision-free &amp; decentralized:</strong> each node mints IDs locally (no central sequence bottleneck).</li>
+        </ul>
+        <p><strong>Event bus partitioning &mdash; partition Kafka by <code>account_id</code>.</strong> All events for one account go to the same partition &rarr; <strong>per-account ordering is preserved</strong> (debit before credit, older state before newer), which consumers (ledger projector, history) rely on. Partition count sized for consumer parallelism (e.g., 64&ndash;128 partitions), far above the &asymp;1.8k msg/s throughput need.</p>
+        <p><strong>Retention/tiering:</strong> partition ledger/transactions tables by month; hot months on fast storage, older partitions moved to cheap cold storage (still queryable for compliance) &mdash; keeps the 10-year, &asymp;130 TB footprint affordable while hot working set stays small.</p>
+
+        <h2 id="feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</h2>
+
+        <h3>10.1 Real-time P2P transfer end-to-end with timing budget</h3>
+        <table>
+          <tr><th>Time</th><th>Step</th><th>Duration</th></tr>
+          <tr><td>t=0</td><td>Gateway: authN, rate-limit, idempotency insert</td><td>&asymp;5 ms</td></tr>
+          <tr><td>t+5</td><td>Risk/Fraud sync check (velocity, AML/sanctions)</td><td>&asymp;50&ndash;120 ms</td></tr>
+          <tr><td>t+125</td><td>Saga step 1: DEBIT_RESERVED on payer shard (single-writer conditional update + ledger leg)</td><td>&asymp;15 ms</td></tr>
+          <tr><td>t+140</td><td>Saga step 2: CREDIT_APPLIED on payee shard (cross-shard call)</td><td>&asymp;15 ms</td></tr>
+          <tr><td>t+155</td><td>Saga step 3: COMPLETED (finalize reservation, ledger)</td><td>&asymp;10 ms</td></tr>
+          <tr><td>t+165</td><td>Persist idempotency response, return 200 to client</td><td>&mdash;</td></tr>
+          <tr><td>t+165</td><td>Outbox &rarr; Kafka &rarr; Notification ("&#8377;X received"), async, not on critical path</td><td>async</td></tr>
+        </table>
+        <p><strong>Internal P95 well under the 1&ndash;2 s SLO</strong> (&asymp;200&ndash;400 ms typical); fraud check and the cross-shard hop are the largest terms. Notifications are async and never block confirmation.</p>
+
+        <h3>10.2 Wallet balance consistency under concurrent debits (the interview classic)</h3>
+        <p>Scenario: wallet balance &#8377;10; two concurrent debits of &#8377;8 each. Walkthrough with the chosen <strong>single-writer + conditional update</strong>:</p>
+        <ol>
+          <li>Both requests carry different idempotency keys (different logical operations), so both pass idempotency and reach the Wallet Service.</li>
+          <li>Both are routed to the <strong>single owner</strong> of that account_id (same shard/partition), which serializes them &mdash; request A is processed, then request B.</li>
+          <li>Request A executes: <code>UPDATE wallets SET balance = balance - 800 WHERE wallet_id=X AND balance &gt;= 800;</code> &rarr; 1 row affected, balance 1000&rarr;200. Ledger legs written in the same txn. Commit.</li>
+          <li>Request B executes: same statement, but now <code>balance(200) &gt;= 800</code> is <strong>false</strong> &rarr; <strong>0 rows affected</strong> &rarr; Wallet Service returns INSUFFICIENT_FUNDS. No money created.</li>
+        </ol>
+        <p>Even without single-writer routing, the <strong>conditional predicate inside the UPDATE</strong> (evaluated under the row lock) prevents the double-spend: the two UPDATEs serialize at the row level; whichever commits first wins, the second sees the decremented balance and fails. Single-writer routing simply removes the contention and makes ordering explicit. The old bug ("read balance &rarr; check in app &rarr; write") is eliminated because we <strong>never check in the app layer against a stale read</strong> &mdash; the check is atomic with the decrement.</p>
+
+        <h3>10.3 Idempotency across retries AND across saga steps (effectively-once)</h3>
+        <ul>
+          <li><strong>Across client retries:</strong> the Idempotency-Key layer (see Low-Level Design) guarantees a retried API call returns the original result and never re-executes.</li>
+          <li><strong>Across saga steps / Kafka:</strong> each producer stamps events with a deterministic key (transaction_id + step). Consumers are <strong>idempotent</strong>: they dedupe on that key (unique constraint or processed-offset table) so reprocessing a redelivered message is a no-op.</li>
+          <li><strong>Exactly-once vs at-least-once:</strong> true end-to-end exactly-once across network + DB + external PSP is impossible in general. We use <strong>at-least-once delivery + idempotent consumers</strong>, which yields <strong>effectively-once</strong>: messages may be delivered/processed more than once, but the <em>effect</em> on money is applied once. Kafka's transactional producer + read_committed gives exactly-once <em>within</em> Kafka; the <strong>transactional outbox</strong> (see Replication and Fault Tolerance) makes "DB commit &rArr; event published" atomic in effect; and idempotent consumers close the loop to the datastore.</li>
+        </ul>
+
+        <h3>10.4 Reconciliation job design</h3>
+        <p>Purpose: prove the internal ledger equals what the external world (PSP/bank) actually settled, and catch anything stuck.</p>
+        <ol>
+          <li>Nightly (and intraday for card): ingest PSP/bank settlement file (CSV/API): rows of external_ref, amount, status, ts.</li>
+          <li>For each external row &rarr; match to transactions by external_ref (unique index).</li>
+          <li>Classify each row:</li>
+        </ol>
+        <table>
+          <tr><th>Classification</th><th>Meaning / action</th></tr>
+          <tr><td>MATCHED</td><td>internal COMPLETED, amounts equal &rarr; ok</td></tr>
+          <tr><td>MISSING_INTERNAL</td><td>settled externally, no/incomplete internal record &rarr; investigate: likely a lost webhook; drive txn to COMPLETED if valid, else manual queue</td></tr>
+          <tr><td>MISSING_EXTERNAL</td><td>internal COMPLETED, not in settlement &rarr; chase PSP / possible failed-but-marked-success &rarr; reverse if confirmed absent</td></tr>
+          <tr><td>AMOUNT_MISMATCH</td><td>fees/fx differences &rarr; post fee-adjustment legs</td></tr>
+          <tr><td>STUCK</td><td>internal AUTHORIZING/DEBIT_RESERVED past SLA &rarr; resolve via saga recovery</td></tr>
+        </table>
+        <ol start="4">
+          <li>Every mismatch &rarr; ledger <em>suspense</em> posting + an incident/exception record; nothing is silently written off. Reconciliation mismatch count is a first-class SLI (see Monitoring).</li>
+          <li>Also recompute SUM(ledger legs) per account == wallets.balance (internal self-recon).</li>
+        </ol>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li><strong>Synchronous / quorum writes for the ledger DB.</strong> Money-movement writes replicate <strong>synchronously to a quorum</strong> (e.g., primary + &ge;1 sync replica, or a Raft/Paxos majority) <strong>before ack</strong>. Rationale: with async replication, a primary crash after ack-but-before-replication <strong>loses a committed money movement</strong> &mdash; a client saw "success" but the funds vanished. For payments that is intolerable, so we accept the added write latency (a few ms intra-region) of quorum durability. This is the deliberate CP choice.</li>
+          <li><strong>Multi-region: active-passive (per region), strong consistency, not active-active for money.</strong> A single region owns writes for a given account (or the whole ledger), with a warm standby region kept current via replication and promoted on region failure. <strong>Active-active for money is risky</strong> because concurrent writes to the same account in two regions create split-brain: reconciling divergent balances after a partition can require <em>inventing</em> or <em>destroying</em> money. We prefer bounded failover downtime (measured RTO/RPO) over the possibility of an unreconcilable balance. Read traffic can be served active-active from replicas; <strong>writes are single-region-authoritative per account.</strong></li>
+          <li><strong>Circuit breakers around the PSP/card network &amp; banks.</strong> If PSP error-rate/latency crosses a threshold, open the breaker: fast-fail card auth (or route to a backup PSP) instead of piling up threads. Half-open probes restore traffic. Protects our SLO from a slow external dependency.</li>
+          <li><strong>Retry-with-backoff, made safe by idempotency.</strong> All retries (client&rarr;us, us&rarr;PSP, saga steps) use exponential backoff + jitter and <strong>carry the same idempotency/step key</strong>, so a retry can never double-charge or double-transfer. Retries are only safe <em>because</em> the whole stack is idempotent &mdash; the two designs are inseparable.</li>
+        </ul>
+
+        <h3>Transactional outbox pattern</h3>
+        <p>To publish an event reliably <em>after</em> a DB commit without dual-write inconsistency: within the same local transaction that writes the ledger/txn, insert a row into an outbox table. A relay process (or CDC/Debezium) reads committed outbox rows and publishes to Kafka, marking them sent. Guarantees <strong>"committed &rArr; eventually published"</strong> with no lost or phantom events, even if the app crashes between the DB commit and the publish.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ptm-8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ptm-8m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="20" width="190" height="70" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="115" y="48" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">App writes ledger/txn</text>
+            <text x="115" y="63" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">row + outbox row</text>
+            <text x="115" y="78" text-anchor="middle" fill="#cbd8ef" font-size="8">same local ACID transaction</text>
+
+            <rect x="255" y="20" width="190" height="70" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="350" y="50" text-anchor="middle" fill="#6b4a10" font-size="11" font-weight="700">DB commit</text>
+            <text x="350" y="66" text-anchor="middle" fill="#6b4a10" font-size="9">outbox row status=unsent</text>
+
+            <rect x="490" y="20" width="190" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="585" y="48" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Relay / CDC</text>
+            <text x="585" y="63" text-anchor="middle" fill="var(--color-primary)" font-size="9">(e.g. Debezium)</text>
+            <text x="585" y="78" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">reads committed outbox rows</text>
+
+            <line x1="210" y1="55" x2="253" y2="55" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ptm-8)"></line>
+            <line x1="445" y1="55" x2="488" y2="55" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ptm-8)"></line>
+
+            <line x1="585" y1="90" x2="585" y2="128" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ptm-8)"></line>
+
+            <rect x="490" y="130" width="190" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="585" y="152" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Kafka</text>
+            <text x="585" y="168" text-anchor="middle" fill="#cbd8ef" font-size="8">mark outbox row status=sent</text>
+
+            <line x1="490" y1="157" x2="447" y2="157" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ptm-8m)"></line>
+            <text x="470" y="145" text-anchor="middle" font-size="7" fill="var(--color-text-muted)" font-style="italic">ack</text>
+
+            <line x1="585" y1="185" x2="585" y2="223" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ptm-8)"></line>
+
+            <rect x="130" y="225" width="540" height="90" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="400" y="248" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Consumers</text>
+            <rect x="150" y="258" width="150" height="42" rx="4" fill="var(--color-surface)" stroke="var(--color-accent-dark)"></rect>
+            <text x="225" y="283" text-anchor="middle" fill="var(--color-primary)" font-size="9">Notification Service</text>
+            <rect x="325" y="258" width="150" height="42" rx="4" fill="var(--color-surface)" stroke="var(--color-accent-dark)"></rect>
+            <text x="400" y="283" text-anchor="middle" fill="var(--color-primary)" font-size="9">History Projector</text>
+            <rect x="500" y="258" width="150" height="42" rx="4" fill="var(--color-surface)" stroke="var(--color-accent-dark)"></rect>
+            <text x="575" y="283" text-anchor="middle" fill="var(--color-primary)" font-size="9">Reconciliation Feed</text>
+
+            <text x="115" y="120" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">if the app crashes between commit and</text>
+            <text x="115" y="132" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">publish, the outbox row is still there</text>
+            <text x="115" y="144" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">and gets published on restart</text>
+          </svg>
+          <div class="diagram-caption">Figure 8. Transactional outbox pattern: the outbox row commits atomically alongside the ledger/txn row, so a relay/CDC process can publish to Kafka after the fact with a "committed &rArr; eventually published" guarantee &mdash; no dual-write race, no phantom events.</div>
+        </div>
+
+        <h2 id="caching-strategy">Caching Strategy</h2>
+        <p>Guiding rule: <strong>cache reads that are safe to be slightly stale; never cache anything a money-write decision depends on.</strong></p>
+        <table>
+          <tr><th>Data</th><th>Cache?</th><th>Rationale / invalidation</th></tr>
+          <tr><td>User profile, KYC tier, limits config</td><td><strong>Yes</strong> (read-through, TTL minutes)</td><td>Rarely changes; staleness harmless; invalidate on profile update.</td></tr>
+          <tr><td>Card token metadata (last4/brand)</td><td><strong>Yes</strong></td><td>Immutable-ish; safe.</td></tr>
+          <tr><td><strong>Wallet balance for a debit decision</strong></td><td><strong>No</strong></td><td>The authoritative balance must be read/locked in the DB at write time. Caching it reintroduces the double-spend race. A <em>display</em> balance may be cached for UI with a "may be stale" contract, but the debit path always uses the DB conditional update.</td></tr>
+          <tr><td>Transaction history (list views)</td><td><strong>Yes</strong> (read-through)</td><td>Invalidate/append on payment.completed events from the bus; new transaction pushes into the user's cached history so reads stay fresh.</td></tr>
+          <tr><td>Fraud/velocity counters</td><td>Specialized store (Redis)</td><td>Not a generic cache &mdash; an authoritative fast counter with atomic increments; still consulted synchronously.</td></tr>
+          <tr><td>Idempotency lookups</td><td>Hot-path store (could be Redis+DB)</td><td>The durable store is authoritative; a cache can front reads but the <strong>unique-constraint insert</strong> must hit the durable store.</td></tr>
+        </table>
+
+        <h2 id="monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</h2>
+        <p><strong>Key SLIs / metrics:</strong></p>
+        <ul>
+          <li><strong>Payment success rate</strong> (per method: wallet/card/P2P) &mdash; the top-line health metric; alert on drop.</li>
+          <li><strong>Latency P95/P99</strong> for confirmation (internal, excluding external hops) vs the 1&ndash;2 s SLO.</li>
+          <li><strong>Saga stuck/timeout rate</strong> &mdash; count of transfers lingering in non-terminal states past SLA (drives recovery worker + alerts).</li>
+          <li><strong>Reconciliation mismatch count</strong> and <strong>aging</strong> &mdash; any nonzero mismatch is investigated; trend is a compliance signal.</li>
+          <li><strong>Wallet balance drift</strong> &mdash; count of accounts where SUM(legs) &ne; balance (should be zero).</li>
+          <li><strong>PSP error rate / circuit-breaker state</strong>, <strong>idempotency replay rate</strong>, <strong>duplicate-suppressed count</strong>, DLQ depth.</li>
+        </ul>
+        <p><strong>Audit logging (immutable, tamper-evident):</strong> the ledger is append-only. For tamper-evidence, chain entries with a hash: each record stores prev_hash and hash = H(prev_hash || record), forming a <strong>hash chain</strong> (optionally anchor periodic checkpoints to a WORM store). Any retroactive edit breaks the chain and is detectable. Audit logs are write-once, access-controlled, and retained 10 years.</p>
+        <p><strong>Fraud analytics feed:</strong> every transaction event streams (via Kafka) to a fraud/analytics pipeline for near-real-time scoring and offline model training; feeds back into the sync Risk service's rules/features.</p>
+        <p><strong>Notification triggers:</strong> payment success/failure, <strong>money received</strong> (P2P), refund processed, <strong>low balance</strong>, suspicious-activity/step-up-required. Delivered async off the event bus so they never block the payment path.</p>
+
+        <h2 id="security-considerations">Security Considerations</h2>
+        <ul>
+          <li><strong>PCI-DSS scope minimization via tokenization.</strong> PAN is captured client-side into a PCI-scoped vault/PSP and replaced by a card_token. Core services, logs, and DBs store only token+last4 &mdash; dramatically shrinking the PCI audit boundary.</li>
+          <li><strong>Encryption in transit &amp; at rest.</strong> TLS 1.2+/mTLS between services; DB and backups encrypted (AES-256); secrets/keys in a KMS/HSM with rotation. Field-level encryption for any sensitive PII.</li>
+          <li><strong>AuthN/Z &amp; least privilege.</strong> OAuth2/OIDC for users, mTLS + signed requests for merchants/services; per-service DB creds scoped to their tables; no service can read PAN.</li>
+          <li><strong>Rate limiting &amp; velocity checks.</strong> Per-user/per-device/per-IP limits at the gateway; <strong>velocity rules</strong> (N transfers per minute, amount thresholds) in the Risk service to throttle account-takeover and fraud rings.</li>
+          <li><strong>Fraud checks &amp; step-up.</strong> Synchronous risk scoring with allow/deny/step-up (3-DS/OTP) for anomalous transactions; device fingerprinting.</li>
+          <li><strong>KYC/AML hooks.</strong> Wallet/P2P limits gated by kyc_tier; every transfer passes AML screening (sanctions/PEP lists, structuring detection); suspicious activity generates SAR-ready records. (Hooks, not the full compliance engine.)</li>
+          <li><strong>Idempotency as a security control.</strong> Prevents replay-based double-charging, whether from client bugs or malicious retries.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <p>Interviewers commonly push into these areas after the base design. Rehearse the reasoning out loud, not just the one-line answer &mdash; the "why" is what actually gets evaluated.</p>
+
+        <h3>Concurrency, Idempotency &amp; Correctness</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q1. Two concurrent debits hit the same wallet with balance &#8377;10, each for &#8377;8 &mdash; walk me through exactly how you prevent both from succeeding.</div>
+          <div class="qa-a">Both requests route to the single writer for that account and serialize. Each executes <code>UPDATE wallets SET balance=balance-800 WHERE wallet_id=X AND balance&gt;=800</code>. The first commits (1000&rarr;200); the second's predicate <code>200&gt;=800</code> is false &rarr; 0 rows affected &rarr; INSUFFICIENT_FUNDS. The check is atomic with the decrement inside the row lock, so there is no read-then-check gap and no double-spend.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q2. The client crashes after sending the request but before receiving the response, and retries 10 minutes later. How does idempotency handle it?</div>
+          <div class="qa-a">The retry carries the same Idempotency-Key. If the original completed, the key row is COMPLETED and we replay the stored response &mdash; no re-execution. If the original crashed mid-flight, the row is PROCESSING; we return 409 and consult the transactions ground truth (via resource_id) to determine whether money actually moved, resuming or completing accordingly. This works only if the key's TTL (24&ndash;72 h) exceeds the retry window &mdash; 10 minutes is well within it.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q8. At-least-once Kafka delivery means consumers see duplicates. How do you avoid double-crediting?</div>
+          <div class="qa-a">Consumers are idempotent: they dedupe on a deterministic key (transaction_id+step or the event id) via a unique constraint or a processed-offsets table, so reprocessing is a no-op. Combined with the outbox and transactional producer, we get effectively-once <em>effects</em> on money even though delivery is at-least-once. True end-to-end exactly-once is not achievable, so we engineer idempotent effect instead.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q11. Client sends the same idempotency key but a different request body. What do you do and why?</div>
+          <div class="qa-a">Return 422. The idempotency contract is "same key &rArr; same effect as the first request." Silently serving the first result would hide a real client bug, and executing the new body under the old key would break the guarantee. We compare the stored request_hash to the incoming one and reject mismatches.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q12. How do you handle refunds correctly and idempotently, including partial refunds?</div>
+          <div class="qa-a">A refund is a new transaction referencing parent_txn_id, with its own idempotency key, producing a compensating (reversing) posting group; the sum of refunds is constrained &le; the original amount. For card, we call the PSP refund API (idempotent, keyed) and confirm via webhook/reconciliation. Multiple refund attempts with the same key replay the same result; the ledger never over-refunds because we validate against already-refunded totals atomically.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q14. How do you detect and handle balance drift between the materialized balance and the ledger?</div>
+          <div class="qa-a">A reconciliation job periodically computes SUM(signed_amount) per account and asserts it equals wallets.balance; drift raises an incident and can freeze the account pending investigation. Because both are written in the same ACID transaction on the hot path, drift should be zero &mdash; a nonzero result means a bug or corruption, not a normal condition, and is treated as a Sev incident.</div>
+        </div>
+
+        <h3>Sharding, Replication &amp; Recovery</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q3. How would you migrate a wallet from one shard to another with zero downtime?</div>
+          <div class="qa-a">Dual-write/replicate the account's ledger+wallet to the target shard while the source stays authoritative; when caught up, briefly <strong>freeze writes for that single account</strong> (single-writer makes this a tiny blast radius &mdash; one account, not the shard), flip the routing/directory entry to the target, verify balance == SUM(legs) on the target, then unfreeze. Idempotent, resumable steps; only that one account sees a sub-second write pause, everyone else is unaffected.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q5. Why saga instead of two-phase commit for cross-shard P2P?</div>
+          <div class="qa-a">2PC blocks: the coordinator holds locks across the network and stalls all participants if any is slow or the coordinator dies, crushing availability and latency. The saga uses local transactions per shard with idempotent compensating actions, so it degrades gracefully and never holds distributed locks. The trade-off is eventual (not instantaneous) consistency between the two legs, which we bound with fast reservation/settle steps and a recovery worker.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q6. A saga leaves a transfer in DEBIT_RESERVED forever (credit shard is down). How do you recover?</div>
+          <div class="qa-a">A recovery worker scans non-terminal sagas past SLA (partial index on saga_state). For each, it retries the next idempotent step; if the credit is unrecoverable it runs the compensation &mdash; release the reservation (credit the payer back) &mdash; moving to FAILED. Because reserve/credit/release are all idempotent, retries and compensations are safe even if the original attempt partially applied.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q7. How do you guarantee "commit to DB" and "publish event" happen together without dual-write bugs?</div>
+          <div class="qa-a">The transactional outbox: within the same DB transaction as the ledger write, insert an outbox row. A relay/CDC publishes committed outbox rows to Kafka and marks them sent. If we crash between commit and publish, the row is still there and gets published on restart &mdash; guaranteeing committed&rArr;published with no phantom events (which a naive "write DB then publish" cannot).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q9. Why quorum/synchronous replication for the ledger, given the latency cost?</div>
+          <div class="qa-a">With async replication, a primary crash after acking a commit but before it replicates loses a committed money movement &mdash; the client saw success but funds disappear, which is unacceptable and unauditable. Quorum writes ensure a committed transaction survives a node loss. The few extra milliseconds intra-region are a cheap price for durability of money.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q10. Why not active-active multi-region for writes?</div>
+          <div class="qa-a">Concurrent writes to the same account in two regions can diverge during a partition (split-brain), and reconciling two authoritative balances afterward may require inventing or destroying money. We keep writes single-region-authoritative per account (active-passive with fast failover), accepting bounded failover downtime over the risk of an unreconcilable balance. Reads can still be served from multiple regions.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q13. Merchant is a hot account (thousands of incoming payments/sec) &mdash; single-writer becomes a bottleneck. What now?</div>
+          <div class="qa-a">Shard the hot account into N sub-accounts/sub-ledgers (e.g., merchant:123#00..#0N) that accept credits in parallel; the true balance is the sum, computed asynchronously. Credits commute (order-independent) so parallelism is safe; only rare debits/settlements need to fold the sub-accounts. This removes the single-writer hotspot while preserving correctness.</div>
+        </div>
+
+        <h3>Reconciliation &amp; Extensions</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q4. What happens if the PSP webhook never arrives?</div>
+          <div class="qa-a">The transaction stays AUTHORIZING &mdash; never assumed success. A reconciliation/poller job queries the PSP status API or the daily settlement file to learn the true outcome and drives the txn to COMPLETED or FAILED. We never guess, because a wrong guess is either a phantom credit or a double-charge on the client's retry.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q15. How do you keep transaction history reads fast and consistent without endangering the write path?</div>
+          <div class="qa-a">History is a read projection: consumers of payment.completed events build a denormalized, indexed history store / cache keyed by user, invalidated-by-append on each new transaction. Reads never touch the write-path wallet/ledger locks. The projection is eventually consistent (sub-second via the bus), and if a user needs an authoritative view we can read the ledger directly with the (account_id, created_at DESC) index.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q16. How do you handle a duplicate or out-of-order PSP webhook?</div>
+          <div class="qa-a">Webhooks are HMAC-verified and deduped on the PSP external_event_id (unique constraint) so redelivery is a no-op. Out-of-order events are filtered by the transaction state machine, which only accepts forward-valid transitions &mdash; a stale authorized arriving after captured/failed is ignored. This makes webhook processing safe regardless of PSP delivery guarantees.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This is a correctness-bound system, not a throughput-bound one: 300 TPS peak is trivial compute, but every design decision exists to guarantee no double-spend, no lost update, and no double-credit on retry. The load-bearing ideas are (1) a single-writer-per-account plus an atomic conditional UPDATE, which turns "check then decrement" into one indivisible statement; (2) an append-only, double-entry ledger as the one source of truth, with a materialized balance kept in the same transaction as a fast path and reconciliation as the self-auditing safety net; (3) an idempotency layer built on an INSERT guarded by a unique constraint, never read-then-write, so retries are always safe; (4) a saga &mdash; not 2PC &mdash; for any transfer whose two legs cross a shard boundary, with every step idempotent and every failure compensated, never patched in place; and (5) a transactional outbox so "committed to the ledger" and "published to Kafka" can never drift apart. Know your alternatives at every decision point (pessimistic lock vs optimistic CAS vs single-writer, saga vs 2PC, quorum vs async replication, active-passive vs active-active) since "why not X instead?" is close to guaranteed as a follow-up.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Martin Fowler, <a href="https://martinfowler.com/eaaCatalog/" target="_blank" rel="noopener">"Patterns of Enterprise Application Architecture"</a> &mdash; foundational background on transactional patterns and enterprise data consistency</li>
+          <li>Chris Richardson, microservices.io, <a href="https://microservices.io/patterns/data/saga.html" target="_blank" rel="noopener">"Pattern: Saga"</a> &mdash; the saga pattern as an alternative to distributed transactions</li>
+          <li>Chris Richardson, microservices.io, <a href="https://microservices.io/patterns/data/transactional-outbox.html" target="_blank" rel="noopener">"Pattern: Transactional outbox"</a> &mdash; reliably publishing events as part of a database transaction</li>
+          <li>Stripe Docs, <a href="https://stripe.com/docs/api/idempotent_requests" target="_blank" rel="noopener">"Idempotent Requests"</a> &mdash; a widely-referenced production idempotency-key design</li>
+          <li>AWS Builders' Library, <a href="https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-apis/" target="_blank" rel="noopener">"Making retries safe with idempotent APIs"</a></li>
+          <li>Wikipedia, <a href="https://en.wikipedia.org/wiki/Double-entry_bookkeeping" target="_blank" rel="noopener">"Double-entry bookkeeping system"</a> &mdash; the accounting foundation behind the ledger design</li>
+          <li>Pat Helland, <a href="https://www.ics.uci.edu/~cs223/papers/cidr07p15.pdf" target="_blank" rel="noopener">"Life beyond Distributed Transactions: an Apostate's Opinion"</a> &mdash; classic argument against 2PC at scale, in favor of idempotent, compensable operations</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="uber.html"><span class="dir">Previous</span>Uber</a>
+          <a class="next" href="hackerrank.html"><span class="dir">Next</span>HackerRank</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

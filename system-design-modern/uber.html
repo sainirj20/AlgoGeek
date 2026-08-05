@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uber Backend | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Uber Backend</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-scope">Problem Statement &amp; Scope</a></li>
+        <li><a href="#functional-requirements">Functional Requirements</a></li>
+        <li><a href="#non-functional-requirements">Non-Functional Requirements</a></li>
+        <li><a href="#assumptions-and-constraints">Assumptions &amp; Constraints</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-client-apis">System / Client APIs</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design">Low-Level Design</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-sharding">Data Sharding</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging &amp; Analytics</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing Uber Backend</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a ride-hailing dispatch backend comparable to Uber, Lyft, or Ola: requirements and capacity estimation, system/client APIs, high-level architecture, a deep dive into the Location Service and its quadtree/geo-tile spatial indexing scheme, low-level classes and the Mercator tile-math formula, database schema and sharding (including online tile re-sharding via dual-write), feature-specific logic for nearby-cab discovery and trip lifecycle management, replication and fault tolerance, monitoring/analytics/notifications, and a bank of follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement-and-scope">Problem Statement &amp; Scope</h2>
+        <p>Design the backend for a ride-hailing dispatch system comparable to Uber, Lyft, or Ola. A rider opens the app, sees nearby available cabs on a map, requests a ride, and is shown an ETA and estimated cost before/while a driver is matched and dispatched.</p>
+
+        <h3>In scope (deep design)</h3>
+        <ul>
+          <li>Nearby-cab discovery (real-time geospatial search over moving drivers)</li>
+          <li>Cab booking / trip request and lifecycle management</li>
+          <li>ETA and cost computation</li>
+          <li>Driver location ingestion at scale (constant GPS pings)</li>
+          <li>Supporting analytics (Kafka &rarr; Spark &rarr; Hadoop pipeline) that feeds back into geo-partition tuning, fraud detection, and profiling</li>
+        </ul>
+
+        <h3>Explicitly out of scope, but shown as pluggable hooks</h3>
+        <p>Two capabilities are explicitly out of scope for deep design per the source requirements, but the design still shows exactly where they hook in, so an interviewer can see the boundary was a deliberate choice rather than an omission:</p>
+        <ul>
+          <li><strong>Payment flow</strong> &mdash; Cab Request Service makes a call out to a Payments component when a trip is set up/completed (charge on completion, refund on cancellation), but the internals of the payment gateway, PCI compliance, and wallet/card handling are not designed here. Treated as a black-box downstream dependency invoked from Trip Service on COMPLETED.</li>
+          <li><strong>Notification Service</strong> &mdash; a consumer sits on the same Kafka topics (trip assigned, driver arriving, trip complete) to push SMS/push notifications, but push infrastructure, templating, and delivery guarantees are not designed here. See the Monitoring, Logging &amp; Analytics section for the hook sketch.</li>
+        </ul>
+
+        <div class="callout">
+          <div class="callout-title">Why the Location Service is the centerpiece</div>
+          The centerpiece of this design is the <strong>Location Service</strong> and its geospatial indexing scheme (quadtree / geo-tile sharding), since that is what makes &ldquo;nearby cabs&rdquo; tractable at planet scale. Nearly every interesting decision in this walkthrough &mdash; the capacity math, the choice of Cassandra + Redis over a single store, the sharding scheme, the boundary-expansion logic, even the fraud-detection signals &mdash; ultimately traces back to how that service encodes coordinates into shard keys.
+        </div>
+
+        <h2 id="functional-requirements">Functional Requirements</h2>
+        <p>These are the concrete, testable behaviors the system must support. State them explicitly at the start of an interview so both you and the interviewer are anchored to the same scope before any boxes get drawn.</p>
+        <table>
+          <tr><th>#</th><th>Requirement</th></tr>
+          <tr><td>FR1</td><td>A customer can view nearby available cabs on a map in real time.</td></tr>
+          <tr><td>FR2</td><td>A customer can request/book a cab from their current (or a specified pickup) location to a destination.</td></tr>
+          <tr><td>FR3</td><td>The system returns an ETA (time for the assigned cab to arrive, and/or trip duration) to the customer.</td></tr>
+          <tr><td>FR4</td><td>The system returns an estimated/final cost for the trip.</td></tr>
+          <tr><td>FR5</td><td>Drivers continuously report their live GPS location so the system always has a fresh view of cab supply.</td></tr>
+          <tr><td>FR6</td><td>A customer can view trip status while a trip is in progress and view trip history afterward.</td></tr>
+          <tr><td>FR7 <em>(out of scope &mdash; hook only)</em></td><td>Payment is captured/settled when a trip completes.</td></tr>
+          <tr><td>FR8 <em>(out of scope &mdash; hook only)</em></td><td>Riders/drivers are notified of key trip events.</td></tr>
+        </table>
+
+        <h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+        <p>The source notes are functional-requirement-heavy and terse on NFRs, so the following seven are added as standard senior-level expectations for this class of system &mdash; the kind of requirements an interviewer expects you to state proactively even if not prompted.</p>
+        <table>
+          <tr><th>NFR</th><th>Target / Rationale</th></tr>
+          <tr><td><strong>Low-latency nearby-cab lookup</strong></td><td><code>getNearByCabs</code> should respond in <strong>&lt; 200 ms p99</strong> &mdash; it's on the critical path of the app's home-screen map.</td></tr>
+          <tr><td><strong>High write throughput</strong></td><td>Location-ping ingestion is the dominant write path (hundreds of thousands of writes/sec globally, see Capacity Estimation) and must not become a bottleneck or back-pressure the WebSocket layer.</td></tr>
+          <tr><td><strong>High availability</strong></td><td>Cab discovery and booking must stay up even during partial regional outages; target 99.95%+ for read paths.</td></tr>
+          <tr><td><strong>Eventual consistency acceptable for driver location</strong></td><td>A driver's location being a few seconds stale is fine &mdash; riders don't need millisecond-fresh GPS, just &ldquo;close enough.&rdquo; This lets us pick AP-leaning stores (Cassandra, Redis) for the hot path.</td></tr>
+          <tr><td><strong>Strong consistency required for trip/booking state</strong></td><td>Two riders must never be double-assigned the same driver; a trip's state transitions must be atomic and durable &mdash; this pushes us toward MySQL/ACID for Trip and User/Driver profile data.</td></tr>
+          <tr><td><strong>Horizontal scalability of Location Service</strong></td><td>As city count and fleet size grow, WebSocket Handlers, the geo-shard count, and Cassandra/Redis capacity must scale out linearly by adding nodes/shards, not by re-architecting.</td></tr>
+          <tr><td><strong>Durability of location history</strong></td><td>Even though &ldquo;current location&rdquo; can be fuzzy, historical location data feeds analytics/fraud detection and must not be silently lost &mdash; hence replicated Cassandra rather than pure in-memory.</td></tr>
+        </table>
+
+        <h2 id="assumptions-and-constraints">Assumptions &amp; Constraints</h2>
+        <ul>
+          <li>Driver GPS ping interval: <strong>every 5&ndash;10 seconds</strong> (assume uniform, average 7.5s) over a <strong>persistent WebSocket connection</strong> established through the API Gateway.</li>
+          <li>Payments and Notifications are <strong>out of scope for deep design</strong> &mdash; treated as external calls/consumers.</li>
+          <li>This is a <strong>single global system</strong> operating across <strong>multiple cities</strong>, each of which may be configured with a <strong>different zoom level</strong> for its geospatial grid depending on cab density (e.g., zoom 10 for a dense metro, zoom 8 for a newly launched low-density market).</li>
+          <li>Maps/roads/ETA data comes from an external provider (<strong>Google Maps</strong>), accessed only through an internal <strong>Map Service</strong> abstraction (so the provider could be swapped later).</li>
+          <li>Drivers and riders are both mobile-app clients; all traffic enters through a single <strong>API Gateway</strong>.</li>
+          <li>Cab matching is <strong>1 driver : 1 active trip</strong> at a time (no ride-pooling in this scope).</li>
+        </ul>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>Always state assumptions explicitly, then derive numbers &mdash; interviewers care about the method, not decimal precision. This section derives location-update write throughput, <code>getNearByCabs</code> read throughput, Cassandra storage for location history, and the quadtree/geo-tile shard-count math, in that order, because each stresses a different part of the Location Service.</p>
+
+        <h3>Assumptions used for the math below</h3>
+        <table>
+          <tr><th>Assumption</th><th>Value</th></tr>
+          <tr><td>Globally active drivers (pinging)</td><td>5,000,000</td></tr>
+          <tr><td>Ping interval</td><td>5&ndash;10s, avg <strong>7.5s</strong></td></tr>
+          <tr><td>Ride requests/day (global)</td><td>10,000,000</td></tr>
+          <tr><td><code>getNearByCabs</code> calls per ride request (map refresh while browsing/deciding)</td><td>&asymp;4&times;</td></tr>
+          <tr><td>Peak-to-average traffic multiplier (rush hour)</td><td>&asymp;8&times;</td></tr>
+          <tr><td>Bytes per location-ping row in Cassandra (driverID + lat/long + timestamp + segment info + row overhead)</td><td>&asymp;100 bytes</td></tr>
+          <tr><td>Retention window for raw location history (hot tier)</td><td>30 days</td></tr>
+          <tr><td>Cassandra replication factor (RF)</td><td>3</td></tr>
+        </table>
+
+        <h3>Location-update write QPS</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          QPS = active_drivers / avg_ping_interval
+          <br>= 5,000,000 / 7.5s
+          <br>&asymp; 666,667 writes/sec (&asymp;667K WPS sustained, globally)
+        </div>
+        <p>This is a <strong>sustained</strong>, not spiky, load &mdash; drivers ping continuously regardless of rider demand &mdash; though the number of <em>active</em> drivers itself has a diurnal curve (more drivers online during commute/evening peaks), so provision for roughly <strong>1M WPS at peak</strong> (&asymp;1.5&times;).</p>
+
+        <h3><code>getNearByCabs</code> read QPS</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          calls/day = 10,000,000 requests/day &times; 4 refreshes/request = 40,000,000 calls/day
+          <br>avg QPS = 40,000,000 / 86,400s &asymp; 463 QPS (average)
+          <br>peak QPS = 463 &times; 8 &asymp; 3,700 QPS (peak, rush hour)
+        </div>
+        <p>At the &asymp;200ms p99 target, this is comfortably servable from <strong>Redis-backed tile lookups</strong> (in-memory set reads), not from Cassandra directly.</p>
+
+        <h3>Cassandra storage for driver location history</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          pings/day/driver = 86,400s / 7.5s &asymp; 11,520 pings/day
+          <br>total pings/day = 5,000,000 drivers &times; 11,520 &asymp; 57.6 billion pings/day
+          <br>raw bytes/day = 57.6B &times; 100 bytes &asymp; 5.76 TB/day
+          <br>30-day raw total = 5.76 TB &times; 30 &asymp; 172.8 TB
+          <br>with RF = 3 &asymp; <strong>518 TB cluster storage</strong> for location history alone
+        </div>
+        <div class="callout">
+          <div class="callout-title">Compression and retention caveat</div>
+          In practice, Cassandra's SSTable compression (typically 2&ndash;4&times;) brings physical disk usage down to roughly <strong>130&ndash;260 TB</strong>, and older data (&gt;30 days) should be down-sampled or rolled off to cold storage / deleted rather than retained at full fidelity &mdash; raw per-second-ish location pings have little value beyond the recent window except in aggregate (analytics already extracts what it needs via the Kafka &rarr; Spark &rarr; Hadoop pipeline). Current-location footprint in <strong>Redis</strong> is tiny by comparison: 5M drivers &times; &asymp;100 bytes (driverID, lat/long, tileId, TTL metadata) &asymp; <strong>500 MB</strong>, trivially fitting in a Redis cluster with room for replicas.
+        </div>
+
+        <h3>Quadtree / geo-tile shard counts</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          tiles_at_zoom(z) = 4^z
+          <br>zoom 10 (metro) &rarr; 4^10 = 1,048,576 possible tiles worldwide
+          <br>zoom 8 (low-density) &rarr; 4^8 = 65,536 possible tiles worldwide
+        </div>
+        <p>Note this is <strong>not</strong> &ldquo;1M physical database shards&rdquo; &mdash; most of the planet's surface (oceans, poles, unpopulated land) has zero driver activity, so tile addressing is <strong>sparse</strong>: a directory/routing layer maps only <em>active</em> tile prefixes to a physical Cassandra/Redis shard. Empty tiles resolve instantly to &ldquo;no cabs&rdquo; without owning a dedicated shard. A single physical shard commonly backs many low-traffic tiles that are colocated by hashing, while a genuinely hot tile (e.g., downtown SF at zoom 10) may get its own dedicated shard or even be split further if it becomes a hotspot (see Data Sharding).</p>
+        <div class="callout">
+          <div class="callout-title">How exponential is this? The zoom-24 illustration</div>
+          As a reference point on how exponential this scale is: <strong>zoom level 24 yields &asymp;2.3 meter square tiles</strong> &mdash; i.e., going from zoom 10 to zoom 24 (14 more levels) shrinks tile size by roughly 4^14 &asymp; 268 million&times; in area. This is why zoom level is chosen per market based on cab density rather than using one global fixed resolution: a low-density market wastes shard/index overhead at zoom 10, while a dense metro would suffer from too many cabs per tile at zoom 8 (ambiguous, slow-to-rank candidate sets).
+        </div>
+
+        <h2 id="system-client-apis">System / Client APIs</h2>
+        <p>In an interview, sketch a handful of the most important APIs &mdash; depth over breadth. The two below are the core Location Service APIs as given in the source requirements, reproduced verbatim, followed by reasonable extensions needed to support the full booking flow.</p>
+
+        <h3>Location Service APIs (core, as given)</h3>
+        <pre><code>void saveDriverLocation(driverID, lat, long, timestamp);
+
+List&lt;Cab&gt; getNearByCabs(lat, long);</code></pre>
+        <table>
+          <tr><th>API</th><th>Caller</th><th>Params</th><th>Returns</th></tr>
+          <tr><td>saveDriverLocation</td><td>Driver client (via WebSocket &rarr; WS Handler &rarr; Location Service)</td><td>driverID, lat, long, timestamp</td><td>void (fire-and-forget ack over the socket)</td></tr>
+          <tr><td>getNearByCabs</td><td>Rider client / Cab Finder</td><td>lat, long</td><td>List&lt;Cab&gt; &mdash; candidate cabs near that coordinate</td></tr>
+        </table>
+
+        <h3>Additional APIs (reasonable extensions for the full booking flow)</h3>
+        <table>
+          <tr><th>API</th><th>Params</th><th>Returns</th></tr>
+          <tr><td>requestCab</td><td>userID, pickupLat, pickupLong, destLat, destLong</td><td>tripID, assigned driver (if any), ETA, fare estimate</td></tr>
+          <tr><td>getTripStatus</td><td>tripID</td><td>current trip state, driver location, live ETA</td></tr>
+          <tr><td>getTripHistory</td><td>userID</td><td>paginated list of past trips</td></tr>
+        </table>
+
+        <h3>Parameter tables</h3>
+        <p><code>requestCab(userID, pickupLat, pickupLong, destLat, destLong)</code></p>
+        <table>
+          <tr><th>Param</th><th>Type</th><th>Description</th></tr>
+          <tr><td>userID</td><td>string</td><td>requesting rider</td></tr>
+          <tr><td>pickupLat / pickupLong</td><td>double</td><td>pickup coordinate</td></tr>
+          <tr><td>destLat / destLong</td><td>double</td><td>destination coordinate</td></tr>
+        </table>
+        <p><code>getTripStatus(tripID)</code></p>
+        <table>
+          <tr><th>Param</th><th>Type</th><th>Description</th></tr>
+          <tr><td>tripID</td><td>string</td><td>trip identifier returned by requestCab</td></tr>
+        </table>
+        <p><code>getTripHistory(userID)</code></p>
+        <table>
+          <tr><th>Param</th><th>Type</th><th>Description</th></tr>
+          <tr><td>userID</td><td>string</td><td>rider (or driver) whose history is requested</td></tr>
+          <tr><td>page / pageSize</td><td>int (optional)</td><td>pagination</td></tr>
+        </table>
+
+        <h3>Example JSON &mdash; <code>getNearByCabs</code> response</h3>
+        <pre><code>{
+  "cabs": [
+    { "driverId": "d_8213", "lat": 37.7739, "long": -122.4194,
+      "vehicleType": "sedan", "etaMinutes": 3.2 },
+    { "driverId": "d_5502", "lat": 37.7750, "long": -122.4180,
+      "vehicleType": "suv", "etaMinutes": 4.8 }
+  ]
+}</code></pre>
+
+        <h3>Example JSON &mdash; <code>requestCab</code> response</h3>
+        <pre><code>{
+  "tripId": "t_9931827",
+  "status": "DRIVER_ASSIGNED",
+  "driver": { "driverId": "d_8213", "name": "A. Kumar",
+              "vehicleInfo": "White Toyota Camry - KA01AB1234" },
+  "eta": { "minutesToPickup": 3.2 },
+  "cost": { "estimatedFare": 214.50, "currency": "INR" }
+}</code></pre>
+
+        <h3>Example JSON &mdash; <code>getTripStatus</code> response</h3>
+        <pre><code>{
+  "tripId": "t_9931827",
+  "status": "IN_PROGRESS",
+  "driverLocation": { "lat": 37.7745, "long": -122.4185 },
+  "etaMinutesToDestination": 11.4
+}</code></pre>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Every request enters through a single API Gateway that terminates SSL, authenticates/authorizes, serves static assets via CDN, applies rate limiting, and wraps backend calls with a circuit breaker + timeout, plus load balancing across service instances. From there, traffic fans out into a profile plane (User/Driver Service), a dispatch/geo plane centered on the Location Service, and an analytics plane fed entirely off Kafka.</p>
+
+        <h3>Component walkthrough</h3>
+        <ol>
+          <li><strong>API Gateway</strong> &mdash; single entry point for both rider and driver apps; SSL termination, authN/Z, CDN static assets, rate limiting, circuit breaker + timeout, load balancing.</li>
+          <li><strong>User Service</strong> and <strong>Driver Service</strong> are symmetric: each owns signup/login/profile/history for its entity, backed by <strong>MySQL</strong> (source of truth, ACID) with a <strong>Redis</strong> cache in front for hot reads; MySQL is also queried directly for ad-hoc SQL analytics.</li>
+          <li><strong>Cab Request Service</strong> is the orchestrator a rider hits to request a cab. It talks to <strong>Location Service</strong> (via <strong>Cab Finder</strong>) to find nearby cabs, to <strong>Trip Service</strong> to persist trip state, and to <strong>Payments</strong> (out of scope) once a trip is set up/completed.</li>
+          <li><strong>Location Service</strong> is the geospatial core: drivers hold a persistent <strong>WebSocket</strong> connection (through the API Gateway) and push GPS coordinates every 5&ndash;10s. A horizontally scaled pool of <strong>WebSocket Handlers</strong> receives these pings. A <strong>WebSocket Manager</strong> coordinates the pool and stores in <strong>Redis</strong> which handler/connection is bound to which driver, so any handler node can route a message to the correct driver regardless of which node physically holds that socket. Handlers forward each ping to Location Service, which (a) persists updated location + route info to <strong>Cassandra</strong> (durable history, chosen for high write throughput) and <strong>Redis</strong> (hot &ldquo;current location&rdquo; / tile membership), (b) calls <strong>Map Service</strong> to resolve the &ldquo;segment info&rdquo; (which geo-tile/road-segment the coordinate falls in), and (c) emits the ping to <strong>Kafka</strong> for downstream analytics.</li>
+          <li><strong>Map Service</strong> wraps the external <strong>Google Maps</strong> API for segment/road lookups and is reused later by Cab Finder for ETA computation using roads data.</li>
+          <li><strong>Cab Finder</strong> (subcomponent invoked by Cab Request Service) calls <code>Location Service.getNearByCabs</code>, ranks candidates by real ETA (not straight-line distance) via Map Service, and picks the best match. It emits two analytics events to Kafka: &ldquo;cab found + ETA&rdquo; and &ldquo;no cab found.&rdquo;</li>
+          <li><strong>Trip Service</strong> manages trip state: active trips live in <strong>MySQL</strong>; a <strong>Trip Archiver</strong> cron migrates completed/cancelled trips into a Cassandra <code>trip_history</code> store on a schedule. Trip Service serves <code>getTripHistory</code> by querying MySQL (active) and Cassandra (archived) and merging results. <strong>Payments</strong> (out of scope for deep design) is invoked by Cab Request Service/Trip Service at trip completion.</li>
+          <li><strong>Analytics pipeline</strong>: Kafka fans out to (a) a <strong>driver feedback</strong> consumer listening for &ldquo;trip complete&rdquo; events, (b) a <strong>Notification Service</strong> consumer (out of scope, hook only), and (c) <strong>Spark Streaming</strong>, which pushes raw events into <strong>Hadoop</strong>. A batch <strong>Spark ML</strong> job runs over Hadoop's accumulated data producing: Maps/segment optimization (feeds back into geo-tile tuning), User/Driver profiling, and Fraud detection.</li>
+        </ol>
+
+        <h3>Architecture overview</h3>
+        <p>The diagram below turns the component table into a wiring diagram. Notice that the Location Service is drawn as its own sub-system: WebSocket Handlers and the WebSocket Manager sit in front of the core save/lookup logic, which fans out to Cassandra, Redis, and Kafka, and calls out to Map Service for segment info. Cab Finder sits logically between Cab Request Service and Location Service, since its whole job is to re-rank Location Service's candidates by real ETA.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 700" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ub-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ub-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="40" y="15" width="150" height="40" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="115" y="40" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Rider App</text>
+
+            <rect x="550" y="15" width="150" height="40" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="625" y="40" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Driver App</text>
+
+            <rect x="270" y="90" width="200" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="112" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">API Gateway</text>
+            <text x="370" y="128" text-anchor="middle" fill="#cbd8ef" font-size="10">SSL &#183; authN/Z &#183; rate limit &#183; LB</text>
+
+            <rect x="20" y="175" width="160" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="100" y="200" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">User Service</text>
+            <text x="100" y="216" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">MySQL (ACID) + Redis</text>
+
+            <rect x="200" y="175" width="160" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="280" y="200" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Driver Service</text>
+            <text x="280" y="216" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">MySQL (ACID) + Redis</text>
+
+            <rect x="380" y="175" width="160" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="460" y="200" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Cab Request Service</text>
+            <text x="460" y="216" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">orchestrator</text>
+
+            <rect x="560" y="175" width="160" height="60" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="640" y="200" text-anchor="middle" fill="var(--color-text-muted)" font-size="11" font-weight="600">Payments</text>
+            <text x="640" y="216" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">(out of scope hook)</text>
+
+            <rect x="15" y="270" width="470" height="260" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="25" y="290" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.03em">LOCATION SERVICE &mdash; geospatial core</text>
+
+            <rect x="35" y="305" width="190" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="130" y="327" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">WebSocket Handler</text>
+            <text x="130" y="342" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">pool, horizontally scaled</text>
+
+            <rect x="250" y="305" width="210" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="355" y="327" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">WebSocket Manager</text>
+            <text x="355" y="342" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">Redis: driverId &#8594; handlerId</text>
+
+            <rect x="35" y="390" width="430" height="45" rx="6" fill="var(--color-surface)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="250" y="417" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">saveDriverLocation() / getNearByCabs()</text>
+
+            <rect x="35" y="460" width="140" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="105" y="481" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Cassandra</text>
+            <text x="105" y="495" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">location history</text>
+
+            <rect x="190" y="460" width="140" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="260" y="481" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Redis</text>
+            <text x="260" y="495" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">current loc + tile:cabs</text>
+
+            <rect x="345" y="460" width="120" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="405" y="481" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Kafka</text>
+            <text x="405" y="495" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">location.ping</text>
+
+            <rect x="505" y="390" width="200" height="90" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="605" y="415" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Map Service</text>
+            <text x="605" y="430" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">wraps external Google Maps</text>
+            <text x="605" y="443" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">segment info &amp; roads-based ETA</text>
+            <text x="605" y="456" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">(circuit breaker + fallback)</text>
+
+            <rect x="15" y="550" width="230" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="130" y="573" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Cab Finder</text>
+            <text x="130" y="588" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">ranks by real ETA (Map Service),</text>
+            <text x="130" y="601" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">emits cab_found / no_cab_found</text>
+
+            <rect x="505" y="550" width="200" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="605" y="573" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Trip Service</text>
+            <text x="605" y="588" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">MySQL: active trips</text>
+            <text x="605" y="601" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">(state machine, row-level lock)</text>
+
+            <rect x="505" y="635" width="200" height="45" rx="6" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.3"></rect>
+            <text x="605" y="655" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Trip Archiver cron</text>
+            <text x="605" y="669" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">&rarr; Cassandra trip_history</text>
+
+            <line x1="115" y1="55" x2="320" y2="90" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="625" y1="55" x2="420" y2="90" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ub-1)"></line>
+
+            <line x1="330" y1="140" x2="100" y2="173" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="360" y1="140" x2="280" y2="173" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="400" y1="140" x2="460" y2="173" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="420" y1="140" x2="640" y2="173" stroke="var(--color-primary)" stroke-width="1.1" marker-end="url(#arrow-ub-1)"></line>
+
+            <line x1="130" y1="360" x2="130" y2="388" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="355" y1="360" x2="355" y2="388" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="105" y1="435" x2="105" y2="458" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="260" y1="435" x2="260" y2="458" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="405" y1="435" x2="405" y2="458" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="465" y1="412" x2="503" y2="412" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ub-1)"></line>
+
+            <line x1="440" y1="235" x2="130" y2="548" stroke="var(--color-primary)" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrow-ub-1m)"></line>
+            <line x1="480" y1="235" x2="605" y2="548" stroke="var(--color-primary)" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrow-ub-1m)"></line>
+            <line x1="130" y1="548" x2="80" y2="532" stroke="var(--color-accent-dark)" stroke-width="1.2" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="230" y1="585" x2="503" y2="450" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-ub-1m)"></line>
+            <line x1="605" y1="620" x2="605" y2="633" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-ub-1)"></line>
+            <line x1="605" y1="548" x2="640" y2="237" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-ub-1m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level topology: the API Gateway fans out to the profile plane (User/Driver Service), the orchestrating Cab Request Service, and the Location Service's geospatial core (WebSocket Handlers/Manager &rarr; Cassandra + Redis + Kafka, with Map Service resolving segment info). Cab Finder sits between Cab Request Service and Location Service, re-ranking candidates by real ETA before Trip Service persists the resulting trip.</div>
+        </div>
+
+        <h3>Analytics fan-out</h3>
+        <p>Every ping, trip-state transition, and Cab Finder outcome is published to Kafka off the critical path (fire-and-forget), which is what lets the analytics/fraud/notification pipeline exist without ever slowing down booking or dispatch.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 390" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ub-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="15" width="200" height="45" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Kafka</text>
+            <text x="370" y="49" text-anchor="middle" fill="#cbd8ef" font-size="8">location pings &#183; trip events &#183; cab_found/no_cab_found</text>
+
+            <rect x="20" y="100" width="210" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="125" y="122" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Driver Feedback</text>
+            <text x="125" y="137" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">"trip complete" &rarr; rating flow</text>
+
+            <rect x="260" y="100" width="210" height="55" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="365" y="122" text-anchor="middle" fill="var(--color-text-muted)" font-size="11" font-weight="600">Notification Service</text>
+            <text x="365" y="137" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(out of scope, hook only)</text>
+
+            <rect x="500" y="100" width="220" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="610" y="122" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Spark Streaming</text>
+            <text x="610" y="137" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">&rarr; Hadoop event lake</text>
+
+            <rect x="500" y="185" width="220" height="45" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="610" y="212" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">Hadoop cluster (raw events)</text>
+
+            <rect x="500" y="255" width="220" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.3"></rect>
+            <text x="610" y="282" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Batch Spark ML jobs</text>
+
+            <rect x="340" y="325" width="130" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="405" y="346" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Maps/Segment</text>
+            <text x="405" y="359" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">optimization</text>
+
+            <rect x="480" y="325" width="130" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="545" y="346" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">User/Driver</text>
+            <text x="545" y="359" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">profiling</text>
+
+            <rect x="620" y="325" width="110" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="675" y="346" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Fraud</text>
+            <text x="675" y="359" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">detection</text>
+
+            <line x1="330" y1="60" x2="150" y2="98" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ub-2)"></line>
+            <line x1="370" y1="60" x2="370" y2="98" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ub-2)"></line>
+            <line x1="410" y1="60" x2="600" y2="98" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ub-2)"></line>
+            <line x1="610" y1="155" x2="610" y2="183" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ub-2)"></line>
+            <line x1="610" y1="230" x2="610" y2="253" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ub-2)"></line>
+            <line x1="560" y1="300" x2="420" y2="323" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-ub-2)"></line>
+            <line x1="595" y1="300" x2="555" y2="323" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-ub-2)"></line>
+            <line x1="640" y1="300" x2="670" y2="323" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-ub-2)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 2. Analytics fan-out: Kafka feeds a driver-feedback consumer, the (out-of-scope) Notification Service hook, and Spark Streaming into Hadoop, where batch Spark ML jobs later produce Maps/segment tuning signals, rider/driver profiling, and fraud detection output.</div>
+        </div>
+
+        <h2 id="low-level-design">Low-Level Design</h2>
+        <p>The classes below sketch how the API-level contract (<code>saveDriverLocation</code> / <code>getNearByCabs</code>) is actually implemented on top of the quadtree encoding, Redis tile sets, and Cassandra history table.</p>
+
+        <h3>Core classes / interfaces</h3>
+        <pre><code>class DriverLocationPing {
+  String driverId;
+  double lat;
+  double lon;
+  long timestamp;
+  String segmentInfo; // resolved via Map Service
+}</code></pre>
+        <pre><code>interface QuadrantIndex {
+  // Encodes a coordinate into a shard/tile identifier at a given zoom level.
+  // Returns either a prefix string (e.g. "ADBC") or an equivalent (x, y, zoom) tuple.
+  String encode(double lat, double lon, int zoom);
+
+  // Returns the (up to) 8 neighboring tileIds around a tile, used for
+  // boundary expansion when a query's home tile has too few cabs.
+  List&lt;String&gt; neighbors(String tileId);
+}</code></pre>
+        <pre><code>class LocationService {
+  void saveDriverLocation(String driverId, double lat, double lon, long timestamp) {
+    String tileId = quadrantIndex.encode(lat, lon, zoomFor(driverId's region));
+    cassandra.insert(driver_location_history, driverId, lat, lon, timestamp, tileId);
+    redis.set("current_loc:" + driverId, {lat, lon, tileId}, ttl = pingInterval * 3);
+    redis.sadd("tile:" + tileId + ":cabs", driverId);
+    String segmentInfo = mapService.getSegmentInfo(lat, lon);
+    kafka.publish("location.ping", {driverId, lat, lon, timestamp, tileId, segmentInfo});
+  }
+
+  List&lt;Cab&gt; getNearByCabs(double lat, double lon) {
+    int zoom = zoomForRegion(lat, lon); // e.g. 10 metro, 8 low-density
+    String tileId = quadrantIndex.encode(lat, lon, zoom);
+    Set&lt;String&gt; driverIds = redis.smembers("tile:" + tileId + ":cabs");
+
+    if (driverIds.size() &lt; MIN_CANDIDATES) {
+      for (String nbr : quadrantIndex.neighbors(tileId)) {
+        driverIds.addAll(redis.smembers("tile:" + nbr + ":cabs"));
+      }
+    }
+    return hydrateAndFilterOnline(driverIds);
+  }
+}</code></pre>
+        <pre><code>class CabFinder {
+  Cab findBestCab(double riderLat, double riderLon) {
+    List&lt;Cab&gt; candidates = locationService.getNearByCabs(riderLat, riderLon);
+    if (candidates.isEmpty()) {
+      kafka.publish("cab_finder.no_cab_found", {riderLat, riderLon, ts: now()});
+      return null;
+    }
+    for (Cab c : candidates) {
+      c.eta = mapService.getETA(c.lat, c.lon, riderLat, riderLon); // roads data, not haversine
+    }
+    Cab best = min(candidates, by = c -&gt; c.eta);
+    kafka.publish("cab_finder.cab_found", {driverId: best.driverId, eta: best.eta, ts: now()});
+    return best;
+  }
+}</code></pre>
+        <pre><code>class TripService {
+  // State machine: REQUESTED -&gt; DRIVER_ASSIGNED -&gt; ARRIVED -&gt; IN_PROGRESS -&gt; COMPLETED
+  //                -&gt; CANCELLED (from any pre-IN_PROGRESS state)
+
+  Trip requestCab(String userId, double pLat, double pLon, double dLat, double dLon) { ... }
+
+  void transition(String tripId, TripStatus newStatus) { ... } // validated state transitions, MySQL row-level lock
+
+  TripHistoryPage getTripHistory(String userId, int page) {
+    // active trips from MySQL + archived trips from Cassandra trip_history, merged &amp; sorted
+  }
+}</code></pre>
+        <pre><code>class TripArchiverJob {
+  // Scheduled cron (e.g. hourly): moves COMPLETED/CANCELLED trips older than N hours
+  // from MySQL `trips` (active) into Cassandra `trip_history`, then deletes/archives
+  // the MySQL row to keep the active-trips table small and fast.
+  void run() {
+    List&lt;Trip&gt; done = mysql.query("SELECT * FROM trips WHERE status IN (COMPLETED, CANCELLED) AND completedAt &lt; NOW() - INTERVAL N HOUR");
+    cassandra.batchInsert(trip_history, done);
+    mysql.deleteBatch(done.ids);
+  }
+}</code></pre>
+
+        <h3>Mercator tile-math (verbatim, as given in source notes)</h3>
+        <p>Used by <code>QuadrantIndex.encode()</code> to convert a lat/long into pixel/tile coordinates at a given zoom level (standard Web Mercator / Bing Maps tile system formula):</p>
+        <div class="formula-box">
+          <span class="formula-label">Formula</span>
+          sinLatitude = sin(latitude * PI / 180)
+          <br>pixelX = ((longitude + 180) / 360) * tileSize * 2^zoom
+          <br>pixelY = (0.5 - ln((1 + sinLatitude) / (1 - sinLatitude)) / (4 * PI)) * tileSize * 2^zoom
+        </div>
+        <ul>
+          <li>longitude maps <strong>linearly</strong> into pixelX &mdash; the world is evenly divided east-to-west.</li>
+          <li>latitude is <strong>not</strong> linear &mdash; the log term is the Mercator projection's latitude-warping function, which stretches tiles near the poles so that on-screen tile density visually matches the projection (the same reason Greenland looks huge on a Mercator map).</li>
+          <li>Both terms are scaled by <code>tileSize * 2^zoom</code> &mdash; this is what makes the grid exponentially finer as zoom increases: doubling zoom doubles resolution along each axis (2^zoom), and total tile count grows as 4^zoom (see Capacity Estimation).</li>
+          <li>At <strong>zoom level 24</strong>, this produces roughly <strong>2.3 meter square tiles</strong> &mdash; illustrating that the zoom-to-tile-size relationship is exponential, not linear; going from a coarse metro zoom (10) to zoom 24 shrinks tiles by many orders of magnitude.</li>
+        </ul>
+
+        <h3><code>getNearByCabs</code> pseudocode (boundary expansion)</h3>
+        <pre><code>function getNearByCabs(lat, long):
+  zoom = configuredZoomForRegion(lat, long) // e.g. 10 metro, 8 low-density
+  tileId = QuadrantIndex.encode(lat, long, zoom)
+  cabs = Redis.SMEMBERS("tile:" + tileId + ":cabs")
+
+  if size(cabs) &lt; MIN_CANDIDATES_THRESHOLD:
+    for neighborTileId in QuadrantIndex.neighbors(tileId): // up to 8 surrounding tiles
+      cabs = cabs UNION Redis.SMEMBERS("tile:" + neighborTileId + ":cabs")
+
+  candidates = hydrate(cabs) // fetch lat/long/status from Redis
+  candidates = filter(candidates, status == ONLINE)
+  return candidates // Cab Finder subsequently ranks these by real ETA, not raw distance</code></pre>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>The schema splits along the same fault line as the NFRs: MySQL for anything requiring ACID/strong consistency (users, drivers, active trips), Cassandra for high-throughput durable time-series and archival data, and Redis for hot, short-lived lookups.</p>
+
+        <h3>MySQL &mdash; <code>User</code></h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+          <tr><td>userID</td><td>PK</td><td></td></tr>
+          <tr><td>name</td><td>varchar</td><td></td></tr>
+          <tr><td>phone</td><td>varchar</td><td>unique, indexed</td></tr>
+          <tr><td>email</td><td>varchar</td><td>unique, indexed</td></tr>
+          <tr><td>rating</td><td>decimal</td><td>rolling average</td></tr>
+          <tr><td>createdAt</td><td>timestamp</td><td></td></tr>
+        </table>
+
+        <h3>MySQL &mdash; <code>Driver</code></h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+          <tr><td>driverID</td><td>PK</td><td></td></tr>
+          <tr><td>name</td><td>varchar</td><td></td></tr>
+          <tr><td>phone</td><td>varchar</td><td>unique, indexed</td></tr>
+          <tr><td>vehicleInfo</td><td>varchar</td><td>make/model/plate</td></tr>
+          <tr><td>rating</td><td>decimal</td><td>rolling average</td></tr>
+          <tr><td>status</td><td>enum</td><td>online / offline / on-trip</td></tr>
+        </table>
+
+        <h3>MySQL &mdash; <code>Trip</code> (active trips)</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+          <tr><td>tripID</td><td>PK</td><td></td></tr>
+          <tr><td>userID</td><td>FK &rarr; User</td><td>indexed</td></tr>
+          <tr><td>driverID</td><td>FK &rarr; Driver</td><td>indexed</td></tr>
+          <tr><td>pickupLat / pickupLong</td><td>double</td><td></td></tr>
+          <tr><td>destLat / destLong</td><td>double</td><td></td></tr>
+          <tr><td>status</td><td>enum</td><td>REQUESTED, DRIVER_ASSIGNED, ARRIVED, IN_PROGRESS, COMPLETED, CANCELLED</td></tr>
+          <tr><td>requestedAt</td><td>timestamp</td><td></td></tr>
+          <tr><td>startedAt</td><td>timestamp</td><td>nullable</td></tr>
+          <tr><td>completedAt</td><td>timestamp</td><td>nullable</td></tr>
+          <tr><td>fareEstimate</td><td>decimal</td><td>set at request time</td></tr>
+          <tr><td>finalFare</td><td>decimal</td><td>set at completion</td></tr>
+        </table>
+
+        <h3>Cassandra &mdash; <code>driver_location_current</code></h3>
+        <table>
+          <tr><th>Column</th><th>Role</th></tr>
+          <tr><td>driverID (or tileID)</td><td>partition key</td></tr>
+          <tr><td>lat, long, timestamp, tileId</td><td>data columns</td></tr>
+        </table>
+        <p>Used as a durable backstop / cross-check for the Redis hot path; Redis is the primary read source for live lookups, Cassandra guarantees the current-location fact isn't lost if Redis evicts/restarts.</p>
+
+        <h3>Cassandra &mdash; <code>driver_location_history</code></h3>
+        <table>
+          <tr><th>Column</th><th>Role</th></tr>
+          <tr><td>driverID</td><td>partition key</td></tr>
+          <tr><td>timestamp</td><td>clustering key (descending)</td></tr>
+          <tr><td>lat, long, tileId, segmentInfo</td><td>data columns</td></tr>
+        </table>
+        <p>Optimized for high write throughput (append-only time series) and for range scans &mdash; &ldquo;give me driver X's path over the last hour&rdquo; (analytics/fraud use case).</p>
+
+        <h3>Cassandra &mdash; <code>trip_history</code></h3>
+        <table>
+          <tr><th>Column</th><th>Role</th></tr>
+          <tr><td>userID (or tripID)</td><td>partition key</td></tr>
+          <tr><td>requestedAt / tripID</td><td>clustering key</td></tr>
+          <tr><td>driverID, fare, status, timestamps</td><td>data columns</td></tr>
+        </table>
+        <p>Populated by the <strong>Trip Archiver</strong> cron from MySQL Trip rows once they reach a terminal state and age past the active-retention window.</p>
+
+        <h3>Redis key schema</h3>
+        <table>
+          <tr><th>Key pattern</th><th>Type</th><th>Purpose</th><th>TTL / refresh</th></tr>
+          <tr><td>ws:driver:{driverID}:handlerId</td><td>string</td><td>WebSocket Manager's binding of driver &rarr; handler node</td><td>refreshed on (re)connect</td></tr>
+          <tr><td>current_loc:{driverID}</td><td>hash</td><td>last known lat/long/tileId for a driver</td><td>&asymp;3&times; ping interval</td></tr>
+          <tr><td>tile:{tileId}:cabs</td><td>set</td><td>driverIDs currently located in that tile</td><td>short TTL, heartbeat-refreshed on every saveDriverLocation</td></tr>
+        </table>
+
+        <h2 id="data-sharding">Data Sharding</h2>
+        <p>The Location Service's shard key is not an afterthought &mdash; it <em>is</em> the quadtree encoding described in Low-Level Design. This section spells out the two equivalent ways to name a tile, how zoom level is chosen per market, how the Trip database is sharded separately, and how a tile is split online without ever stopping writes.</p>
+
+        <h3>Quadtree prefix naming (as given)</h3>
+        <p>The world map is recursively divided into 4 sub-quadrants. Top level:</p>
+        <pre><code>World
+&#9500;&#9472;&#9472; AA
+&#9500;&#9472;&#9472; AB
+&#9500;&#9472;&#9472; AC
+&#9492;&#9472;&#9472; AD</code></pre>
+        <p>Busier quadrants are subdivided further based on usage/density. E.g., AD splits into:</p>
+        <pre><code>AD
+&#9500;&#9472;&#9472; ADA
+&#9500;&#9472;&#9472; ADB
+&#9500;&#9472;&#9472; ADC
+&#9492;&#9472;&#9472; ADD</code></pre>
+        <p>Each additional character narrows the search into one of 4 children of the current tile &mdash; a simple <strong>prefix string</strong> that doubles as both a spatial index and a <strong>shard key</strong>: the database is sharded by quadrant-name prefix. A query first walks/matches the prefix to determine which quadrant(s) a coordinate falls into, then queries only that shard (plus neighboring shards for boundary cases, per the <code>getNearByCabs</code> pseudocode) instead of scanning the whole world.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ub-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="300" y="15" width="140" height="45" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="43" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">World</text>
+
+            <rect x="40" y="110" width="130" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="105" y="142" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">AA</text>
+            <rect x="190" y="110" width="130" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="255" y="142" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">AB</text>
+            <rect x="340" y="110" width="130" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="405" y="142" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">AC</text>
+            <rect x="490" y="110" width="130" height="55" rx="6" fill="var(--color-surface)" stroke="var(--color-accent-dark)" stroke-width="2"></rect>
+            <text x="555" y="142" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">AD</text>
+            <text x="555" y="155" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">busiest &mdash; splits further</text>
+
+            <line x1="330" y1="60" x2="105" y2="108" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-ub-3)"></line>
+            <line x1="355" y1="60" x2="255" y2="108" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-ub-3)"></line>
+            <line x1="385" y1="60" x2="405" y2="108" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-ub-3)"></line>
+            <line x1="410" y1="60" x2="555" y2="108" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-ub-3)"></line>
+
+            <rect x="350" y="220" width="90" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="395" y="252" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">ADA</text>
+            <rect x="450" y="220" width="90" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="495" y="252" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">ADB</text>
+            <rect x="550" y="220" width="90" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="595" y="252" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">ADC</text>
+            <rect x="650" y="220" width="90" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="695" y="252" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">ADD</text>
+
+            <line x1="530" y1="165" x2="395" y2="218" stroke="var(--color-accent-dark)" stroke-width="1.1" marker-end="url(#arrow-ub-3)"></line>
+            <line x1="545" y1="165" x2="495" y2="218" stroke="var(--color-accent-dark)" stroke-width="1.1" marker-end="url(#arrow-ub-3)"></line>
+            <line x1="565" y1="165" x2="595" y2="218" stroke="var(--color-accent-dark)" stroke-width="1.1" marker-end="url(#arrow-ub-3)"></line>
+            <line x1="580" y1="165" x2="695" y2="218" stroke="var(--color-accent-dark)" stroke-width="1.1" marker-end="url(#arrow-ub-3)"></line>
+
+            <text x="380" y="315" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-style="italic">Only busy quadrants (e.g., AD) are subdivided further &mdash; sparse tiles never earn their own physical shard.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Quadtree recursive split: the world divides into AA/AB/AC/AD; the busiest quadrant, AD, is further split into ADA/ADB/ADC/ADD, and so on &mdash; each extra character is one more level of the same base-4 encoding.</div>
+        </div>
+
+        <h3>Numeric (x, y) @ zoom grid &mdash; equivalent representation</h3>
+        <p>The same idea expressed numerically: at zoom level z there are 2^z &times; 2^z tiles per axis (4^z total). A coordinate resolves to an integer tile address (x, y) at that zoom level via the Mercator pixel formula above, then <code>tileX = floor(pixelX / tileSize)</code>, <code>tileY = floor(pixelY / tileSize)</code>. (x, y, zoom) and the AA/AB/AC/ADA&hellip; prefix string are two encodings of the identical quadtree node &mdash; the prefix string form is just a base-4 encoding of interleaved (x, y) bits, useful for range queries and human-readable shard naming; the (x, y, zoom) form is useful for neighbor math (x&plusmn;1, y&plusmn;1).</p>
+        <table>
+          <tr><th>Representation</th><th>Example</th><th>Good for</th></tr>
+          <tr><td>Prefix string</td><td>ADBC</td><td>shard-key naming, prefix range scans, hierarchical rollup (drop last char = parent tile)</td></tr>
+          <tr><td>Numeric grid</td><td>(x=412, y=201, zoom=10)</td><td>neighbor lookups (x&plusmn;1, y&plusmn;1), direct array/grid math</td></tr>
+        </table>
+
+        <h3>Zoom level per market</h3>
+        <table>
+          <tr><th>Market type</th><th>Zoom level</th><th>Tile size</th><th>Reasoning</th></tr>
+          <tr><td>Dense metro (e.g., SF, Bengaluru)</td><td>10</td><td>small tiles</td><td>many cabs per unit area; fine resolution needed to disambiguate</td></tr>
+          <tr><td>Newly launched / low-density</td><td>8</td><td>larger tiles</td><td>fewer cabs; coarse resolution is sufficient and cheaper to index</td></tr>
+        </table>
+
+        <h3>Trip DB sharding</h3>
+        <p>Trip (MySQL) is sharded by tripID hash (or userID hash if user-centric access patterns dominate, e.g. &ldquo;show me my trips&rdquo; without a cross-shard fan-out). Cassandra <code>trip_history</code> is naturally partitioned by userID/tripID as its partition key, giving even distribution and locality for history reads.</p>
+
+        <h3>Re-sharding a growing tile</h3>
+        <p>When a previously low-density area (zoom 8) grows and needs finer resolution (zoom 9 or 10):</p>
+        <ol>
+          <li>Detect via the Maps/Segment optimization analytics output that a tile is approaching a cab-density threshold that degrades <code>getNearByCabs</code> candidate-set quality.</li>
+          <li>Split the tile into its 4 (or 16) children at the new zoom level, computing each driver's new child-tile membership from its last known (lat, long).</li>
+          <li><strong>Dual-write</strong> during migration: new pings write to both old (coarse) and new (fine) tile keys; reads continue against the old tile key until backfill/verification completes, then reads cut over atomically.</li>
+          <li>Retire the old coarse tile's Redis set and Cassandra shard mapping once cutover is confirmed, updating the routing/directory layer that maps tile-prefix &rarr; physical shard.</li>
+        </ol>
+        <p>This mirrors standard shard-splitting playbooks (dual-write + cutover) rather than a stop-the-world migration, so in-flight location pings are never dropped mid-split.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ub-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+              <marker id="arrow-ub-4m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="25" y="30" width="180" height="90" rx="8" fill="var(--color-surface)" stroke="var(--color-accent-dark)" stroke-width="1.6"></rect>
+            <text x="115" y="60" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">Tile AD (zoom 8)</text>
+            <text x="115" y="76" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">hot &amp; oversized &mdash;</text>
+            <text x="115" y="90" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">candidate sets too big</text>
+
+            <rect x="320" y="30" width="80" height="90" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="360" y="80" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">ADA</text>
+            <rect x="410" y="30" width="80" height="90" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="450" y="80" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">ADB</text>
+            <rect x="500" y="30" width="80" height="90" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="540" y="80" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">ADC</text>
+            <rect x="590" y="30" width="80" height="90" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="630" y="80" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">ADD</text>
+            <text x="495" y="140" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">4 children at zoom 9, computed from each driver's last known (lat, long)</text>
+
+            <line x1="205" y1="75" x2="318" y2="60" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-ub-4)"></line>
+            <line x1="205" y1="75" x2="408" y2="70" stroke="var(--color-accent-dark)" stroke-width="1.1" marker-end="url(#arrow-ub-4)"></line>
+            <line x1="205" y1="75" x2="498" y2="80" stroke="var(--color-accent-dark)" stroke-width="1.1" marker-end="url(#arrow-ub-4)"></line>
+            <line x1="205" y1="75" x2="588" y2="90" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-ub-4)"></line>
+
+            <rect x="25" y="195" width="310" height="65" rx="7" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="180" y="218" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Phase 1&ndash;2: Dual-write + backfill</text>
+            <text x="180" y="234" text-anchor="middle" fill="#6b4a10" font-size="9">new pings write to BOTH old &amp; new keys;</text>
+            <text x="180" y="248" text-anchor="middle" fill="#6b4a10" font-size="9">reads still served from the old (AD) key</text>
+
+            <rect x="365" y="195" width="310" height="65" rx="7" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="520" y="218" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Phase 3&ndash;4: Cutover + retire</text>
+            <text x="520" y="234" text-anchor="middle" fill="#6b4a10" font-size="9">reads switch atomically to child keys;</text>
+            <text x="520" y="248" text-anchor="middle" fill="#6b4a10" font-size="9">old AD Redis set + shard mapping retired</text>
+
+            <line x1="335" y1="227" x2="363" y2="227" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ub-4)"></line>
+
+            <text x="350" y="300" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-style="italic">No stop-the-world lock &mdash; in-flight location pings are never dropped mid-split.</text>
+            <line x1="115" y1="120" x2="180" y2="193" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-ub-4m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 4. Tile re-sharding via dual-write: a hot coarse tile (AD) splits into 4 fine children (ADA&ndash;ADD); new pings dual-write to both generations during backfill, then reads cut over atomically and the old shard mapping is retired.</div>
+        </div>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+
+        <h3>Nearby-cab algorithm</h3>
+        <ol>
+          <li>Resolve the requesting coordinate to its tile at the region's configured zoom level (<code>QuadrantIndex.encode</code>).</li>
+          <li>Read <code>tile:{tileId}:cabs</code> from Redis (fast, in-memory set of driverIDs currently in that tile).</li>
+          <li>If the candidate count is below a minimum threshold, expand to the up-to-8 neighboring tiles (<code>QuadrantIndex.neighbors</code>) and union their cab sets &mdash; this handles the boundary case where the rider is near a tile edge and genuinely-close cabs sit just across the line.</li>
+          <li>Hydrate candidate driver records (current lat/long, status) and filter to online/available.</li>
+          <li>Pass candidates to <strong>Cab Finder</strong>, which re-ranks by <strong>real ETA</strong> (via Map Service &rarr; Google Maps roads data), not straight-line/haversine distance &mdash; a cab 400m away by straight line but blocked by a one-way system or river can easily have a worse ETA than one 900m away on a direct route.</li>
+        </ol>
+        <div class="diagram-box">
+          <svg viewBox="0 0 500 520" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ub-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="35" y="55" width="430" height="430" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.4"></rect>
+            <text x="250" y="42" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-style="italic">expand to neighbors if size(cabs) &lt; MIN_CANDIDATES_THRESHOLD</text>
+
+            <rect x="45" y="60" width="130" height="130" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="110" y="130" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">neighbor</text>
+            <rect x="185" y="60" width="130" height="130" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="250" y="130" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">neighbor</text>
+            <rect x="325" y="60" width="130" height="130" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="390" y="130" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">neighbor</text>
+
+            <rect x="45" y="200" width="130" height="130" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="110" y="270" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">neighbor</text>
+            <rect x="185" y="200" width="130" height="130" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="2.2"></rect>
+            <circle cx="250" cy="252" r="8" fill="var(--color-primary)"></circle>
+            <text x="250" y="285" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">HOME TILE</text>
+            <text x="250" y="298" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">rider (lat,long)</text>
+            <rect x="325" y="200" width="130" height="130" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="390" y="270" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">neighbor</text>
+
+            <rect x="45" y="340" width="130" height="130" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="110" y="410" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">neighbor</text>
+            <rect x="185" y="340" width="130" height="130" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="250" y="410" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">neighbor</text>
+            <rect x="325" y="340" width="130" height="130" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="390" y="410" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">neighbor</text>
+
+            <text x="250" y="500" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-style="italic">up to 8 neighbor tiles unioned when the home tile alone is too sparse</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Boundary expansion: the rider's coordinate resolves to a home tile; if that tile's <code>tile:cabs</code> set is below <code>MIN_CANDIDATES_THRESHOLD</code>, up to 8 neighboring tiles are unioned in before Cab Finder ranks the combined set by real ETA.</div>
+        </div>
+
+        <h3>Cab Finder matching/ranking &amp; analytics outcomes</h3>
+        <ul>
+          <li>Cab Finder calls <code>getNearByCabs</code>, computes ETA per candidate, and selects the minimum-ETA driver (ties broken by rating or idle time, as a further refinement).</li>
+          <li>Two named analytics events are emitted to Kafka:
+            <ul>
+              <li><strong><code>cab_found</code> (with ETA)</strong> &mdash; feeds dashboards on match quality, average ETA per tile/city, and (upstream) surge-pricing signals (persistently low ETA/high supply vs. persistently high ETA/low supply).</li>
+              <li><strong><code>no_cab_found</code></strong> &mdash; a strong signal for tile-level supply shortages; aggregated over time this drives both <strong>surge pricing decisions</strong> and <strong>geo-expansion/tile-tuning decisions</strong>, e.g. flagging a tile that consistently returns &ldquo;no cab found&rdquo; as needing either more driver incentives or a coarser tile (fewer, larger tiles reduce false negatives in genuinely sparse areas).</li>
+            </ul>
+          </li>
+        </ul>
+
+        <h3>Driver-location ingestion pipeline</h3>
+        <p>Driver (WS ping, 5&ndash;10s) &rarr; API Gateway &rarr; WebSocket Handler (pool) &rarr; [lookup handler binding via WebSocket Manager/Redis if re-routing needed] &rarr; <code>Location Service.saveDriverLocation</code> &rarr; {Cassandra (durable history) + Redis (current loc + tile set)} + Map Service (segment info) + Kafka (fan-out for analytics).</p>
+        <p>Because the WebSocket Handler pool is stateless (any handler can look up any driver's binding via Redis), the ping path tolerates individual handler-node failures with just a client reconnect &mdash; no ping is silently dropped into a dead node.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ub-6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ub-6m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="15" width="140" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.4"></rect>
+            <text x="90" y="40" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Driver (WS ping)</text>
+
+            <rect x="280" y="15" width="160" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.4"></rect>
+            <text x="360" y="40" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">WS Handler pool</text>
+
+            <rect x="520" y="15" width="160" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.4"></rect>
+            <text x="600" y="40" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Location Service</text>
+
+            <line x1="90" y1="55" x2="90" y2="250" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+            <line x1="360" y1="55" x2="360" y2="250" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+            <line x1="600" y1="55" x2="600" y2="250" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+
+            <line x1="90" y1="90" x2="360" y2="90" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ub-6)"></line>
+            <text x="225" y="82" text-anchor="middle" fill="var(--color-text)" font-size="9">1. GPS ping (driverId, lat, long, ts) over persistent WebSocket</text>
+
+            <line x1="360" y1="140" x2="600" y2="140" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ub-6)"></line>
+            <text x="480" y="132" text-anchor="middle" fill="var(--color-text)" font-size="9">2. forward ping (lookup binding via WS Manager/Redis)</text>
+
+            <text x="600" y="170" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">3. saveDriverLocation(driverId, lat, long, ts)</text>
+
+            <rect x="20" y="270" width="150" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="95" y="295" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Cassandra</text>
+            <text x="95" y="310" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">durable location history</text>
+
+            <rect x="190" y="270" width="150" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="265" y="295" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Redis</text>
+            <text x="265" y="310" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">current loc + tile:{tileId}:cabs</text>
+
+            <rect x="360" y="270" width="150" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="435" y="295" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Map Service</text>
+            <text x="435" y="310" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">segment info lookup</text>
+
+            <rect x="530" y="270" width="150" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="605" y="295" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Kafka</text>
+            <text x="605" y="310" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">location.ping fan-out</text>
+
+            <line x1="600" y1="250" x2="95" y2="268" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-ub-6m)"></line>
+            <line x1="600" y1="250" x2="265" y2="268" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-ub-6m)"></line>
+            <line x1="600" y1="250" x2="435" y2="268" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-ub-6m)"></line>
+            <line x1="600" y1="250" x2="605" y2="268" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-ub-6m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 6. Driver-location ingestion pipeline: a stateless WebSocket Handler pool forwards each ping to Location Service, which writes durably to Cassandra, updates the hot Redis tile set, calls Map Service for segment info, and fans the event out to Kafka &mdash; all off the critical path of the next ping.</div>
+        </div>
+
+        <h3>Trip lifecycle state machine</h3>
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ub-7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ub-7c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="15" y="90" width="125" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="77" y="130" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">REQUESTED</text>
+
+            <rect x="160" y="90" width="150" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="235" y="130" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">DRIVER_ASSIGNED</text>
+
+            <rect x="330" y="90" width="110" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="385" y="130" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">ARRIVED</text>
+
+            <rect x="460" y="90" width="140" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="530" y="130" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">IN_PROGRESS</text>
+
+            <rect x="620" y="90" width="120" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="680" y="130" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">COMPLETED</text>
+
+            <line x1="140" y1="125" x2="158" y2="125" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ub-7)"></line>
+            <line x1="310" y1="125" x2="328" y2="125" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ub-7)"></line>
+            <line x1="440" y1="125" x2="458" y2="125" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ub-7)"></line>
+            <line x1="600" y1="125" x2="618" y2="125" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ub-7)"></line>
+
+            <rect x="320" y="230" width="150" height="55" rx="8" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.7" stroke-dasharray="5,3"></rect>
+            <text x="395" y="263" text-anchor="middle" fill="var(--color-accent-dark)" font-size="11" font-weight="700">CANCELLED</text>
+
+            <line x1="60" y1="160" x2="345" y2="230" stroke="var(--color-accent-dark)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-ub-7c)"></line>
+            <line x1="220" y1="160" x2="375" y2="230" stroke="var(--color-accent-dark)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-ub-7c)"></line>
+            <line x1="375" y1="160" x2="400" y2="230" stroke="var(--color-accent-dark)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-ub-7c)"></line>
+
+            <text x="77" y="190" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">rider hit requestCab;</text>
+            <text x="77" y="201" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Cab Finder searching</text>
+
+            <text x="235" y="190" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Cab Finder matched a driver;</text>
+            <text x="235" y="201" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">rider notified w/ ETA</text>
+
+            <text x="385" y="190" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">driver's tile matches</text>
+            <text x="385" y="201" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">pickup tile / explicit mark</text>
+
+            <text x="530" y="190" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">trip started;</text>
+            <text x="530" y="201" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Payments pre-auth may occur</text>
+
+            <text x="680" y="190" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">terminal; Payments capture +</text>
+            <text x="680" y="201" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">trip_complete Kafka event</text>
+
+            <text x="395" y="305" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">CANCELLED reachable from any pre-IN_PROGRESS state; also terminal, also triggers a trip_complete-style Kafka event.</text>
+          </svg>
+          <div class="diagram-caption">Figure 7. Trip lifecycle: REQUESTED &rarr; DRIVER_ASSIGNED &rarr; ARRIVED &rarr; IN_PROGRESS &rarr; COMPLETED, with a CANCELLED branch reachable from any state prior to IN_PROGRESS.</div>
+        </div>
+        <ul>
+          <li><strong>REQUESTED</strong>: rider hit <code>requestCab</code>; Cab Finder is searching.</li>
+          <li><strong>DRIVER_ASSIGNED</strong>: Cab Finder matched a driver; rider notified (hook to Notification Service) with ETA.</li>
+          <li><strong>ARRIVED</strong>: driver's live location tile matches pickup tile within tolerance (or driver explicitly marks arrival).</li>
+          <li><strong>IN_PROGRESS</strong>: trip started; Payments pre-auth may occur here (out of scope detail).</li>
+          <li><strong>COMPLETED / CANCELLED</strong>: terminal; triggers Payments capture (if completed) and a <code>trip_complete</code> Kafka event consumed by the driver-feedback service and Notification Service.</li>
+        </ul>
+
+        <h3>Trip Archiver cron</h3>
+        <p>Runs on a schedule (e.g., hourly), selects Trip rows in a terminal state older than a retention threshold, batch-inserts them into Cassandra <code>trip_history</code>, and removes/archives them from the MySQL active table &mdash; keeping the hot Trip table small (fast writes/reads for in-flight trips) while preserving full history for <code>getTripHistory</code> via a MySQL + Cassandra merge read.</p>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <table>
+          <tr><th>Store / Component</th><th>Strategy</th><th>Rationale</th></tr>
+          <tr><td>MySQL (User, Driver, Trip-active)</td><td>Master-replica (sync or semi-sync to at least one replica), automatic failover</td><td>Needs ACID + strong consistency &mdash; no double-booking, no lost profile writes.</td></tr>
+          <tr><td>Cassandra (location history, trip history)</td><td>Multi-node replication, RF = 3 typical</td><td>Tunable consistency; e.g. writes at LOCAL_QUORUM for location pings, since a slightly stale/occasionally-retried ping is tolerable per the eventual-consistency NFR.</td></tr>
+          <tr><td>Redis (WS-binding table, tile:{tileId}:cabs, current-location cache)</td><td>Redis Sentinel / Cluster</td><td>Losing this data only causes a brief re-registration window (driver's next ping within 5&ndash;10s repopulates it) &mdash; not a data-loss event, so we can trade some durability for speed here.</td></tr>
+          <tr><td>WebSocket Handler pool</td><td>Stateless nodes; binding lives in Redis, not node-local memory</td><td>Any handler can serve any driver via the Redis binding lookup; a handler crash just forces affected drivers to reconnect (their next ping registers with a new handler) rather than losing location data.</td></tr>
+          <tr><td>Kafka</td><td>Replicated topics (RF &ge; 3), consumer-group offsets committed</td><td>Protects the analytics/fraud/notification pipelines from data loss even if a broker or consumer instance fails; consumers resume from last committed offset.</td></tr>
+          <tr><td>Map Service / Google Maps</td><td>Circuit breaker + timeout (via API Gateway pattern) + fallback to cached/approximate ETA</td><td>External dependency; a slow/unavailable Maps API shouldn't take down cab discovery &mdash; fall back to straight-line-distance-based rough ETA if needed.</td></tr>
+        </table>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging &amp; Analytics</h2>
+
+        <h3>Key metrics</h3>
+        <table>
+          <tr><th>Metric</th><th>Why it matters</th></tr>
+          <tr><td>Location-ping ingestion rate &amp; consumer lag</td><td>Detects WebSocket Handler or Kafka backpressure before it degrades freshness of &ldquo;current location.&rdquo;</td></tr>
+          <tr><td><code>getNearByCabs</code> p50/p99 latency</td><td>Directly tied to the &lt; 200ms NFR; regressions here hurt the core UX.</td></tr>
+          <tr><td>Tile hot-spot detection (cabs/requests per tile over time)</td><td>Feeds tile re-sharding decisions and Maps/Segment optimization.</td></tr>
+          <tr><td><code>cab_found</code> vs <code>no_cab_found</code> ratio, per city/tile</td><td>Core supply-demand signal driving surge pricing and driver incentive targeting.</td></tr>
+          <tr><td>Trip completion rate (vs. cancellation)</td><td>Product health / matching quality signal.</td></tr>
+          <tr><td>Driver online/offline churn rate</td><td>Supply forecasting input.</td></tr>
+        </table>
+
+        <h3>Logging</h3>
+        <ul>
+          <li>Structured, append-only <strong>trip lifecycle audit trail</strong> (every state transition with timestamp, actor, and relevant IDs) &mdash; needed for support/dispute resolution and feeds the Trip Archiver.</li>
+          <li><strong>Fraud-relevant signals</strong> logged alongside location pings: implausible speed/teleportation between consecutive pings (GPS spoofing indicator), driver location inconsistent with claimed trip route, repeated <code>no_cab_found</code> immediately followed by a suspiciously fast <code>cab_found</code> (potential app-level manipulation).</li>
+        </ul>
+
+        <h3>Analytics pipeline (exactly as given)</h3>
+        <pre><code>Kafka (location pings, trip events, cab_found/no_cab_found)
+  |
+  |--&gt; Driver Feedback consumer --- listens for "trip complete" --&gt; prompts driver rating flow
+  |--&gt; Notification Service --- listens for trip/driver events (out of scope for deep design,
+  |      hook only) --&gt; push/SMS: "driver assigned", "driver arriving",
+  |      "trip complete - rate your driver"
+  `--&gt; Spark Streaming --&gt; Hadoop cluster (raw event lake)
+         |
+         v
+       Batch Spark ML / jobs cluster
+         |
+         |------------------|--------------------|
+         v                  v                    v
+   Maps/Segment       User/Driver          Fraud detection
+   optimization       profiling
+   (feeds back into   (rider/driver        (GPS spoofing,
+    geo-tile tuning:   behavior models,      collusion, fake
+    default pickup     personalization,      trips, etc.)
+    points, congestion, rating trends)
+    low-density areas)</code></pre>
+
+        <h3>Notification hook (out of scope for deep design, sketch only)</h3>
+        <p>Even though notifications aren't designed in depth here, the integration point is simple because everything already flows through Kafka: a <strong>Notification Service</strong> consumer subscribes to the same trip-event topics (DRIVER_ASSIGNED, ARRIVED, trip_complete) and, per event type, renders and dispatches a push notification or SMS (&ldquo;Your driver is 3 minutes away&rdquo;, &ldquo;Trip complete &mdash; rate your driver&rdquo;). No changes to Cab Request Service / Trip Service are needed beyond ensuring every state transition is published to Kafka, which the design already does for the driver-feedback consumer.</p>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <p>Interviewers commonly push into these areas after the base design. Answers are grouped by theme below rather than left as one-line prompts, so you can rehearse how you'd actually talk through each follow-up out loud.</p>
+
+        <h3>Geo-Indexing &amp; Sharding</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you handle a tile at a zoom level that suddenly needs to be split online without dropping in-flight location pings?</div>
+          <div class="qa-a">Use a dual-write migration: new pings write to both the old coarse tile key and the new fine child-tile keys computed from the driver's last known coordinate; reads stay on the old key until backfill is verified, then cut over atomically and retire the old key. No stop-the-world lock is needed.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend <code>getNearByCabs</code> to account for real road distance/ETA rather than tile proximity?</div>
+          <div class="qa-a">Tile lookup is only a cheap candidate-generation step; the actual ranking happens in Cab Finder, which calls Map Service (Google Maps roads data) to get a real driving ETA per candidate and sorts by that instead of raw distance, as described in Low-Level Design and Feature-Specific Logic.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you choose the zoom level for a new city, and can it change over time?</div>
+          <div class="qa-a">Zoom level is a per-region config picked from initial expected cab density (start conservative, e.g. zoom 8) and revisited using the Maps/Segment optimization analytics output &mdash; if no_cab_found/candidate-set-quality metrics indicate the grid is too coarse as the city grows, the region is migrated to a finer zoom via the re-sharding process in Data Sharding.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you detect and rebalance a &ldquo;hot&rdquo; physical shard that backs multiple sparse tiles but one of them suddenly spikes?</div>
+          <div class="qa-a">Per-tile write/read metrics (see Monitoring, Logging &amp; Analytics) detect the imbalance; the directory/routing layer that maps tile-prefix &rarr; physical shard can migrate just the hot tile's key range to its own dedicated shard, independent of resharding to a finer zoom level.</div>
+        </div>
+
+        <h3>Matching, Consistency &amp; Fault Tolerance</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent two passengers from both being matched to the same driver in a race condition?</div>
+          <div class="qa-a">Driver assignment must be an atomic compare-and-set (e.g., a conditional update on Driver.status from online to on-trip, or a distributed lock keyed by driverID) inside Trip Service's MySQL transaction; the first assignment wins and the loser's Cab Finder falls back to the next-best candidate.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why Cassandra for location data instead of just Redis or just MySQL?</div>
+          <div class="qa-a">Redis alone isn't durable/queryable for historical range scans and risks losing recent-but-not-yet-flushed data on failover; MySQL can't sustain &asymp;667K+ writes/sec at this scale with acceptable latency. Cassandra's append-only, tunable-consistency write path is built for exactly this throughput, while Redis stays as the low-latency &ldquo;current state&rdquo; cache on top.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if the WebSocket Manager's Redis binding table becomes unavailable?</div>
+          <div class="qa-a">Drivers re-ping every 5&ndash;10s regardless, so a handler can simply re-register the binding on the next ping; worst case is a few seconds of &ldquo;who owns this driver's socket&rdquo; ambiguity, not data loss &mdash; consistent with the eventual-consistency NFR for location.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you scale the WebSocket Handler tier as fleet size grows?</div>
+          <div class="qa-a">Handlers are stateless and horizontally scalable behind the API Gateway's load balancer; the only shared state is the Redis binding table, so adding handler nodes is a simple capacity change, not a re-architecture.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the failure mode if Map Service/Google Maps is down or slow?</div>
+          <div class="qa-a">Wrapped in a circuit breaker with timeout (per the API Gateway pattern); on trip it falls back to a straight-line-distance-based rough ETA/cost estimate rather than blocking the booking flow entirely, trading accuracy for availability.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you keep the Kafka-based analytics pipeline from becoming a single point of failure for core booking flow?</div>
+          <div class="qa-a">Kafka publishing from Location Service/Cab Finder/Trip Service is fire-and-forget/async and off the critical path of saveDriverLocation, getNearByCabs, and trip state transitions &mdash; a Kafka outage degrades analytics/fraud/notifications freshness but does not block booking or dispatch.</div>
+        </div>
+
+        <h3>Extensions &amp; Edge Cases</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would surge pricing plug into this design?</div>
+          <div class="qa-a">The cab_found/no_cab_found ratio per tile is exactly the signal surge pricing needs &mdash; a pricing service consuming the same Kafka events can compute a per-tile demand/supply multiplier and Cab Request Service applies it when computing fareEstimate.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you detect and mitigate GPS spoofing/fraud?</div>
+          <div class="qa-a">Flag implausible speed/teleportation between consecutive driver_location_history rows (distance/time &gt; physically possible), cross-check against Map Service road segments (is the driver even on a road), and feed these signals into the batch Fraud detection job; repeated violations suspend the driver account pending review.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support ride-pooling/shared rides on top of this design?</div>
+          <div class="qa-a">Cab Finder's matching logic would need to consider multiple active requests against a single driver's route (via Map Service) instead of 1:1 matching, and Trip Service's state machine would need a multi-passenger trip variant &mdash; a meaningfully larger scope change, but the geo-index and ingestion pipeline are unaffected.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How is <code>getTripHistory</code> kept fast if it has to query two databases (MySQL + Cassandra)?</div>
+          <div class="qa-a">Most history requests skew toward recent trips, which are still in MySQL or have just been archived; Trip Service can query MySQL and Cassandra in parallel and merge/sort results, and cache the merged page in Redis for a short TTL for repeat pagination requests.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support multiple vehicle types (e.g., sedan, SUV, auto) in the same city?</div>
+          <div class="qa-a">Add vehicleType as a filter dimension in the tile:{tileId}:cabs set (e.g., separate sets per type, or a type field on hydrated candidates) so getNearByCabs/Cab Finder can filter/rank within a requested vehicle class without changing the underlying quadtree/geo-tile indexing scheme.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Everything in this design radiates outward from one decision: how a (lat, long) coordinate becomes a shard key. The quadtree/geo-tile prefix (AA/AB/AC/AD&hellip;) and the numeric (x, y, zoom) grid are the same encoding viewed two ways, both derived from the standard Web Mercator pixel formula &mdash; and that single encoding is what makes tiles a spatial index, a Redis key, and a Cassandra/physical shard boundary all at once. Zoom level is a per-market dial, not a global constant: dense metros need fine tiles to disambiguate candidates, sparse markets need coarse tiles to avoid empty results, and a tile that outgrows its zoom level is split online via dual-write, never a stop-the-world migration. Consistency requirements split cleanly along the same line as the NFRs &mdash; eventually-consistent, AP-leaning Cassandra/Redis for driver location (a few stale seconds is fine), strongly-consistent ACID MySQL for trip/booking state (never double-assign a driver). <code>getNearByCabs</code> is deliberately a two-step process: a cheap Redis tile lookup for candidate generation, then Cab Finder re-ranking by real Map-Service ETA, because straight-line distance is a poor proxy for actual arrival time. And the cab_found/no_cab_found signal, emitted on literally every dispatch attempt, quietly powers three different downstream systems &mdash; surge pricing, geo-expansion tuning, and fraud detection &mdash; for free, because the whole pipeline was built Kafka-first from the start.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Microsoft Learn, <a href="https://learn.microsoft.com/en-us/bingmaps/articles/bing-maps-tile-system" target="_blank" rel="noopener">"Bing Maps Tile System"</a> &mdash; the canonical write-up of the sinLatitude/pixelX/pixelY Web Mercator tile-math formula used by QuadrantIndex.encode() above</li>
+          <li>Wikipedia, <a href="https://en.wikipedia.org/wiki/Web_Mercator_projection" target="_blank" rel="noopener">"Web Mercator projection"</a> &mdash; background on why latitude warps non-linearly while longitude stays linear</li>
+          <li>Wikipedia, <a href="https://en.wikipedia.org/wiki/Quadtree" target="_blank" rel="noopener">"Quadtree"</a> &mdash; the general recursive spatial-subdivision data structure behind the AA/AB/AC/AD prefix scheme</li>
+          <li>Wikipedia, <a href="https://en.wikipedia.org/wiki/Geohash" target="_blank" rel="noopener">"Geohash"</a> &mdash; a closely related alternative geospatial indexing/prefix scheme worth contrasting with quadtree tiles in an interview</li>
+          <li>Apache Cassandra documentation, <a href="https://cassandra.apache.org/doc/latest/cassandra/data_modeling/index.html" target="_blank" rel="noopener">"Data Modeling"</a> &mdash; write-heavy, append-only time-series patterns applicable to driver_location_history</li>
+          <li>Martin Fowler, <a href="https://martinfowler.com/bliki/CircuitBreaker.html" target="_blank" rel="noopener">"CircuitBreaker"</a> &mdash; the pattern behind the Map Service / Google Maps fallback-to-straight-line-ETA behavior</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="bookmyshow.html"><span class="dir">Previous</span>BookMyShow</a>
+          <a class="next" href="paytm.html"><span class="dir">Next</span>Paytm</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

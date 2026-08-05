@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing an On-Call Escalation System | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">On-Call Escalation System</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-the-escalation-state-machine">Deep Dive &mdash; The Escalation State Machine</a></li>
+        <li><a href="#deep-dive-alert-deduplication-and-grouping">Deep Dive &mdash; Alert Deduplication and Grouping</a></li>
+        <li><a href="#deep-dive-on-call-schedule-resolution">Deep Dive &mdash; On-Call Schedule Resolution</a></li>
+        <li><a href="#deep-dive-notification-dispatch-and-channel-failover">Deep Dive &mdash; Notification Dispatch and Channel Failover</a></li>
+        <li><a href="#deep-dive-durable-escalation-timers-and-the-scheduler-fleet">Deep Dive &mdash; Durable Escalation Timers and the Scheduler Fleet</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-multi-region-fault-tolerance-and-the-dead-mans-switch">Replication, Multi-Region Fault Tolerance, and the Dead Man's Switch</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging, and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing an On-Call Escalation System</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a PagerDuty/Opsgenie-style incident alerting and escalation platform: requirements, capacity estimation, API &amp; data model, the escalation state machine, deduplication, schedule resolution, notification failover, durable timers, multi-region fault tolerance, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design an on-call escalation system like PagerDuty, Opsgenie, or VictorOps. Monitoring tools (Prometheus, Datadog, CloudWatch, custom health checks) fire alerts into the system via webhook or API. The system must correlate related alerts into a single incident, figure out which team owns it and who is currently on-call for that team, notify that person across multiple channels, and — if nobody acknowledges in time — escalate to the next person or level, repeating until someone acknowledges or resolves the incident. It must also manage on-call schedules (rotations, overrides, time-off swaps), suppress alerts during planned maintenance windows, and keep a durable, auditable timeline of everything that happened.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It is one of the few "classic" system design questions where the non-functional requirements are more interesting than the functional ones. Every other system on this site can tolerate a brief outage with degraded service; this one cannot — if the on-call system itself goes down, the very outages it exists to surface go unnoticed. That single constraint (this system must be more reliable than everything it monitors) cascades into almost every design decision: multi-region active-active instead of active-passive, multiple independent third-party providers per notification channel, durable server-side timers instead of in-process ones, and a "who pages the pager" fallback mechanism. A strong candidate treats availability and durability as first-class design constraints from minute one, not an afterthought bolted on at the end.</p>
+
+        <h3>Why do organizations use a system like this?</h3>
+        <ul>
+          <li>Modern services emit thousands of independent monitoring signals; a human cannot watch dashboards 24/7, so software has to decide who gets woken up and when.</li>
+          <li>A single root cause (e.g. a database running out of connections) can trip dozens of downstream monitors simultaneously — without correlation, the on-call engineer would be paged 30 times for one problem.</li>
+          <li>Teams rotate on-call responsibility across people and time zones; someone has to compute, at any given second, exactly one truthful answer to "who is on call right now."</li>
+          <li>Regulated industries (finance, healthcare, payments) need an immutable audit trail of who was notified, when, and who acknowledged — both for postmortems and for compliance.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>As with any system design interview, spend the first few minutes narrowing scope before drawing boxes.</p>
+        <ol>
+          <li>What scale are we targeting — how many customer organizations, and roughly how many monitored services/alerts per organization?</li>
+          <li>Do we need to support arbitrary monitoring-tool integrations (Prometheus, Datadog, CloudWatch, Nagios, custom scripts), or a fixed small set?</li>
+          <li>What escalation policy shapes must we support — a simple linear chain of people, or branching policies (e.g. notify a whole team in parallel at the final level)?</li>
+          <li>Do we need on-call schedule management (rotations, layers, overrides) as part of this system, or is "who is on-call" supplied by an external system?</li>
+          <li>What channels must we support for notification — push, SMS, voice call, email, chat-ops (Slack/Teams)?</li>
+          <li>What is an acceptable end-to-end latency from "alert received" to "first human notified"? Seconds? Tens of seconds?</li>
+          <li>Do we need maintenance windows / alert suppression for planned work?</li>
+          <li>Is multi-region / disaster-recovery an explicit requirement, given the nature of the system?</li>
+          <li>Do we need analytics (MTTA/MTTR dashboards) as part of the core design, or is that out of scope?</li>
+          <li>Single-tenant internal tool, or multi-tenant SaaS serving many independent customer organizations?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          State reasonable defaults out loud and move on: "I'll assume a multi-tenant SaaS product, ~10,000 enterprise customers, a linear escalation policy with up to 5 levels, push/SMS/voice/email as channels, and a hard target of notifying a human within 30 seconds of alert ingestion — I'll flag anywhere that assumption materially changes the design." This shows judgment under time pressure rather than indecision.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Ingest alerts from external monitoring systems via webhook/API, normalizing many source formats (Prometheus Alertmanager, Datadog, CloudWatch/SNS, generic custom payloads) into one internal schema.</li>
+          <li>Route an incoming alert to the correct team and escalation policy, and resolve that policy's target(s) — which may be a specific user or the currently-on-call user(s) of one or more schedules.</li>
+          <li>Notify the current responder across multiple channels (push, SMS, voice call, email) with escalating urgency.</li>
+          <li>If unacknowledged within a configurable timeout, escalate to the next person or level, repeating per the policy until acknowledged, resolved, or the policy is exhausted.</li>
+          <li>Allow a responder to acknowledge, resolve, or snooze (temporarily silence) an incident from any channel.</li>
+          <li>Manage on-call schedules: rotations (daily/weekly), layers (e.g. primary + secondary), one-off overrides (vacation swaps), and computing "who is on-call right now."</li>
+          <li>Deduplicate and group related alerts sharing a root cause into a single incident, so responders are not paged repeatedly for the same underlying problem.</li>
+          <li>Support maintenance windows that suppress notification for alerts matching a declared scope and time range, without silently discarding unrelated incidents.</li>
+          <li>Maintain a durable, append-only incident timeline / audit log (created, acknowledged, escalated, resolved, notification attempts and outcomes).</li>
+          <li>(Extended) Provide MTTA/MTTR and escalation-rate analytics per team.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Extremely high availability:</strong> this system is the alerting safety net for every other system its customers run — it must be more reliable than the systems it monitors, not merely "highly available" in the generic sense.</li>
+          <li><strong>Very low end-to-end latency:</strong> alert-ingested-to-human-notified must be measured in seconds, not minutes — every additional second is time an outage goes unaddressed.</li>
+          <li><strong>Durability:</strong> an ingested alert must never be silently dropped, even under a traffic storm or partial infrastructure failure.</li>
+          <li><strong>Resilience to widespread infrastructure outages:</strong> the system must keep working — and keep reaching humans — even during a major cloud-provider or telecom outage, which argues for multi-region and multi-provider redundancy on the notification path specifically.</li>
+          <li><strong>Idempotency:</strong> a monitoring tool retrying its webhook (because it didn't see our 200 OK) must never create a duplicate incident or fire a duplicate escalation.</li>
+          <li><strong>Horizontal scalability:</strong> ingestion, dedup, routing, and notification fan-out must each scale independently, since a single customer's alert storm should not degrade another customer's routing or notification latency.</li>
+          <li><strong>Auditability:</strong> every state transition and every notification attempt must be durably logged for postmortems and compliance.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We go deep on ingestion, deduplication, routing, the escalation state machine, notification dispatch/failover, durable timers, and multi-region fault tolerance — the parts of this system that are genuinely hard and differentiate a strong answer. We call out but don't fully design a general-purpose status-page product, a full incident postmortem/retrospective workflow tool, or a runbook-authoring UI, since those are large adjacent products in their own right.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>This system has an unusual capacity profile compared to most of the other systems on this site: steady-state load is fairly modest, but the system must be provisioned for an "alert storm" burst that can be one to two orders of magnitude above steady state — and that burst is precisely the moment the system's correctness matters most. We size both cases explicitly and never provision only for the average.</p>
+
+        <h3>Steady-State Traffic</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          10,000 enterprise customer organizations, averaging 50 raw monitoring alerts/customer/day
+          <br>Total raw alerts/day = 10,000 &times; 50 = 500,000
+          <br>Raw ingestion rate (avg) = 500,000 &divide; 86,400 &asymp; 5.8/sec &rarr; round to ~6 QPS average
+          <br>Alert volume is bursty across the day (deploys, business hours), so provision baseline ingestion capacity for ~5&times; average &asymp; 30 QPS, well below the storm scenario below
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Deduplication</span>
+          Assume a steady-state dedup ratio of 8:1 (a single root cause commonly trips several correlated monitors at once)
+          <br>Incidents/day = 500,000 &divide; 8 &asymp; 62,500
+          <br>Incidents/sec (avg) = 62,500 &divide; 86,400 &asymp; 0.72/sec
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Notification amplification</span>
+          Each incident's escalation policy may need to reach 1&ndash;5 people across 2&ndash;3 channels each = an amplification factor of roughly 2&times;&ndash;15&times; per incident
+          <br>Steady-state average: ~1.8 people notified/incident (most incidents ack at level 1) &times; ~1.5 channels attempted/person (many ack on push before SMS fires) &asymp; 2.7&times; &rarr; round to ~3 notification-provider calls/incident
+          <br>Notification sends/day = 62,500 &times; 3 &asymp; 187,500
+          <br>Notification QPS (avg) = 187,500 &divide; 86,400 &asymp; 2.2/sec
+        </div>
+
+        <h3>Alert-Storm Burst (Major Cloud-Provider Outage)</h3>
+        <p>The scenario that actually stresses this system: a major cloud region degrades, and every customer with infrastructure in that region alerts nearly simultaneously.</p>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          15% of the 10,000 customers (1,500 orgs) have workloads in the affected region; each fires ~150 raw alerts within a 5-minute (300-second) window as multiple services cascade (DB timeouts, queue backlogs, HTTP 5xxs, failed health checks)
+          <br>Raw alerts in window = 1,500 &times; 150 = 225,000
+          <br>Peak ingestion QPS = 225,000 &divide; 300 = 750 QPS &mdash; &asymp;125&times; the steady-state average (~6 QPS), &asymp;25&times; the padded steady-state design ceiling (~30 QPS)
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Dedup and fan-out under storm</span>
+          Correlated storms dedup harder (shared root cause, tight time window) &mdash; assume a 25:1 ratio &rarr; incidents in window = 225,000 &divide; 25 = 9,000; incident creation rate = 9,000 &divide; 300 = 30/sec
+          <br>Fewer quick acks under stress (responders are overwhelmed) &rarr; assume ~3 people notified/incident &times; ~2 channels/person &asymp; 6&times; amplification
+          <br>Notification calls in window = 9,000 &times; 6 = 54,000 &rarr; peak notification QPS = 54,000 &divide; 300 = 180 QPS
+        </div>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Steady-state avg</th><th>Provisioned steady-state ceiling</th><th>Alert-storm burst (5-min window)</th><th>Storm vs. avg</th></tr>
+          <tr><td>Raw alert ingestion</td><td>~6 QPS</td><td>~30 QPS</td><td>~750 QPS</td><td>~125&times;</td></tr>
+          <tr><td>Incidents created</td><td>~0.72/sec</td><td>~4/sec</td><td>~30/sec</td><td>~40&times;</td></tr>
+          <tr><td>Notification-provider calls</td><td>~2.2 QPS</td><td>~11 QPS</td><td>~180 QPS</td><td>~80&times;</td></tr>
+        </table>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          The single most important capacity insight here: this system must be provisioned and load-tested for the storm column, not the average column &mdash; under-provisioning for the 125&times; burst is precisely equivalent to the system failing at the one moment it exists to help. Say this out loud; it's the same instinct that drives the multi-region/multi-provider design later in the interview.
+        </div>
+
+        <h3>Storage Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Alerts table</span>
+          Raw alert record (normalized fields + source payload) &asymp; 2 KB average
+          <br>Alerts/year &asymp; 500,000 &times; 365 &asymp; 182.5 million (steady-state; storms add a small fraction on top)
+          <br>Raw storage/year &asymp; 182.5M &times; 2 KB &asymp; 365 GB; with 3&times; replication &asymp; 1.1 TB/year
+          <br>5-year audit/compliance retention &asymp; 5.5 TB (alerts table alone, replicated)
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Incidents and notification_log</span>
+          Incidents/year &asymp; 62,500 &times; 365 &asymp; 22.8 million, &asymp;1 KB/row &asymp; 22.8 GB/year raw, &asymp;68 GB/year replicated
+          <br>Notification log rows/year &asymp; 187,500 &times; 365 &asymp; 68.4 million, &asymp;500 bytes/row (actor, channel, provider, outcome, latency, timestamp) &asymp; 34 GB/year raw, &asymp;~100 GB/year replicated
+          <br>Total growth across the three core tables &asymp; ~1.3 TB/year replicated &mdash; modest; the real engineering challenge here is latency and correctness under burst, not raw volume
+        </div>
+
+        <h3>Bandwidth Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Bandwidth</span>
+          Ingestion inbound (steady): ~30 QPS &times; 2 KB &asymp; 60 KB/sec &mdash; (storm peak): ~750 QPS &times; 2 KB &asymp; 1.5 MB/sec
+          <br>Notification dispatch outbound to providers (steady): ~2.2/sec &times; 1 KB &asymp; 2.2 KB/sec &mdash; (storm peak): ~180/sec &times; 1 KB &asymp; 180 KB/sec
+        </div>
+        <p>Bandwidth is trivial at this scale in absolute terms &mdash; this system is not throughput-bound. The bottlenecks that actually matter are notification fan-out latency under burst, the correctness of the escalation-timer mechanism, and the reachability of third-party channel providers, which is why the rest of this design concentrates there.</p>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>A REST API over HTTPS is the natural fit: webhook ingestion maps directly onto POST semantics, and every downstream action (acknowledge, resolve, snooze) is a simple state-changing call against an incident resource.</p>
+
+        <h3>Ingest an Alert (Webhook)</h3>
+        <pre><code>POST /api/v1/integrations/{integration_id}/alerts
+Headers: X-Signature: hmac-sha256=&lt;signature over raw body using the integration's secret&gt;
+
+Request body (generic normalized schema; per-integration parsers map
+Prometheus Alertmanager / Datadog / CloudWatch-SNS payloads into this shape):
+{
+  "dedup_key": "high-cpu-web-03",       // optional, source-supplied; else we compute a fingerprint
+  "event_action": "trigger" | "acknowledge" | "resolve",
+  "summary": "CPU > 95% on web-03 for 5m",
+  "source": "prometheus",
+  "severity": "critical" | "warning" | "info",
+  "custom_details": { "host": "web-03", "metric": "cpu_pct", "value": 97.2 },
+  "links": [ { "href": "https://grafana/d/abc", "text": "Dashboard" } ],
+  "timestamp": "2026-07-18T09:03:11Z"
+}
+
+Response 202 Accepted:
+{ "incident_id": "INC-88213", "status": "triggered", "deduped": false }
+
+Errors: 401 invalid signature &middot; 400 malformed payload &middot; 429 integration rate-limited</code></pre>
+
+        <h3>Acknowledge an Incident</h3>
+        <pre><code>POST /api/v1/incidents/{incident_id}/actions/acknowledge
+{ "actor": { "user_id": "U-4471", "via": "mobile_push" } }
+
+Response 200:
+{ "incident_id": "INC-88213", "status": "acknowledged", "acknowledged_by": "U-4471", "acknowledged_at": "2026-07-18T09:04:02Z" }</code></pre>
+
+        <h3>Resolve an Incident</h3>
+        <pre><code>POST /api/v1/incidents/{incident_id}/actions/resolve
+{ "actor": { "user_id": "U-4471" }, "resolution_note": "restarted the affected service" }
+
+Response 200:
+{ "incident_id": "INC-88213", "status": "resolved", "resolved_at": "2026-07-18T09:17:40Z" }</code></pre>
+
+        <h3>Get the Current On-Call for a Schedule</h3>
+        <pre><code>GET /api/v1/schedules/{schedule_id}/oncall?at=2026-07-18T09:00:00Z
+
+Response 200:
+{
+  "schedule_id": "SCH-12",
+  "at": "2026-07-18T09:00:00Z",
+  "oncall": [
+    { "layer": "primary", "user_id": "U-4471", "source": "override" },
+    { "layer": "secondary", "user_id": "U-2290", "source": "rotation" }
+  ]
+}</code></pre>
+
+        <h3>Create an Escalation Policy</h3>
+        <pre><code>POST /api/v1/escalation-policies
+{
+  "team_id": "T-990",
+  "name": "Payments On-Call - Primary",
+  "repeat_count": 1,
+  "levels": [
+    { "level": 1, "targets": [{ "type": "schedule", "id": "SCH-12" }], "ack_timeout_sec": 300, "channels": ["push", "sms"] },
+    { "level": 2, "targets": [{ "type": "schedule", "id": "SCH-13" }], "ack_timeout_sec": 300, "channels": ["push", "sms", "voice"] },
+    { "level": 3, "targets": [{ "type": "user", "id": "U-1000" }],   "ack_timeout_sec": 600, "channels": ["voice", "email"] }
+  ]
+}
+
+Response 201 Created: { "policy_id": "EP-501" }</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Notice the ingestion endpoint returns <code>202 Accepted</code>, not <code>200/201</code> with the full incident state. The ingestion path only needs to durably record the alert and hand back an identifier fast &mdash; dedup, routing, and escalation kick-off can (and should) continue asynchronously so the monitoring tool's webhook call is never held open waiting on notification fan-out.
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>Two very different access patterns coexist: a high-volume, append-mostly write path (alerts, notification_log) and a small, latency-critical, strongly-consistent read/write path (the single incident row being escalated right now).</li>
+          <li>Incident and escalation-timer state must never be silently lost — this is the one place in the whole system where a torn write or a lost update is a genuine correctness bug, not a performance blip.</li>
+          <li>On-call schedules and overrides are a comparatively tiny dataset (thousands of schedules, not billions of rows) but are read on nearly every alert, so they benefit heavily from caching.</li>
+        </ul>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">Table: alerts</th></tr>
+          <tr><td>alert_id (PK)</td><td>bigint</td></tr>
+          <tr><td>integration_id (FK)</td><td>varchar(32)</td></tr>
+          <tr><td>team_id / organization_id (FK, shard key)</td><td>bigint</td></tr>
+          <tr><td>dedup_key (nullable, source-supplied)</td><td>varchar(255)</td></tr>
+          <tr><td>fingerprint (computed, indexed)</td><td>varchar(64)</td></tr>
+          <tr><td>incident_id (FK, set once grouped)</td><td>bigint</td></tr>
+          <tr><td>event_action</td><td>enum(trigger, acknowledge, resolve)</td></tr>
+          <tr><td>severity</td><td>enum(critical, warning, info)</td></tr>
+          <tr><td>summary</td><td>varchar(512)</td></tr>
+          <tr><td>raw_payload</td><td>jsonb / text</td></tr>
+          <tr><td>received_at</td><td>datetime</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: incidents</th></tr>
+          <tr><td>incident_id (PK)</td><td>bigint</td></tr>
+          <tr><td>team_id (FK, shard key)</td><td>bigint</td></tr>
+          <tr><td>fingerprint (indexed, for dedup lookups within window)</td><td>varchar(64)</td></tr>
+          <tr><td>escalation_policy_id (FK)</td><td>bigint</td></tr>
+          <tr><td>status</td><td>enum(TRIGGERED, ACKNOWLEDGED, ESCALATING, RESOLVED)</td></tr>
+          <tr><td>escalation_level</td><td>int</td></tr>
+          <tr><td>next_escalation_at (nullable, indexed)</td><td>datetime</td></tr>
+          <tr><td>claimed_by (nullable, scheduler worker id)</td><td>varchar(64)</td></tr>
+          <tr><td>claim_expires_at (nullable)</td><td>datetime</td></tr>
+          <tr><td>alert_count (denormalized dedup counter)</td><td>int</td></tr>
+          <tr><td>acknowledged_by / acknowledged_at (nullable)</td><td>bigint / datetime</td></tr>
+          <tr><td>resolved_at (nullable)</td><td>datetime</td></tr>
+          <tr><td>created_at / updated_at</td><td>datetime</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: escalation_policies</th></tr>
+          <tr><td>policy_id (PK)</td><td>bigint</td></tr>
+          <tr><td>team_id (FK)</td><td>bigint</td></tr>
+          <tr><td>name</td><td>varchar(128)</td></tr>
+          <tr><td>repeat_count</td><td>int</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: escalation_policy_levels</th></tr>
+          <tr><td>policy_id + level (composite PK)</td><td>bigint + int</td></tr>
+          <tr><td>target_type</td><td>enum(schedule, user, team_all)</td></tr>
+          <tr><td>target_id</td><td>bigint</td></tr>
+          <tr><td>ack_timeout_sec</td><td>int</td></tr>
+          <tr><td>channels (ordered)</td><td>json array, e.g. ["push","sms","voice"]</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: on_call_schedules</th></tr>
+          <tr><td>schedule_id (PK)</td><td>bigint</td></tr>
+          <tr><td>team_id (FK)</td><td>bigint</td></tr>
+          <tr><td>name</td><td>varchar(128)</td></tr>
+          <tr><td>timezone</td><td>varchar(64)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: schedule_layers</th></tr>
+          <tr><td>layer_id (PK)</td><td>bigint</td></tr>
+          <tr><td>schedule_id (FK)</td><td>bigint</td></tr>
+          <tr><td>rotation_type</td><td>enum(daily, weekly, custom)</td></tr>
+          <tr><td>rotation_start</td><td>datetime</td></tr>
+          <tr><td>rotation_length_sec</td><td>bigint</td></tr>
+          <tr><td>users (ordered list)</td><td>json array of user_id</td></tr>
+          <tr><td>priority (layer ordering)</td><td>int</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: overrides</th></tr>
+          <tr><td>override_id (PK)</td><td>bigint</td></tr>
+          <tr><td>schedule_id (FK)</td><td>bigint</td></tr>
+          <tr><td>layer_id (FK, nullable)</td><td>bigint</td></tr>
+          <tr><td>user_id (FK)</td><td>bigint</td></tr>
+          <tr><td>start_at (indexed)</td><td>datetime</td></tr>
+          <tr><td>end_at (indexed)</td><td>datetime</td></tr>
+          <tr><td>created_by / created_at</td><td>bigint / datetime</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: notification_log</th></tr>
+          <tr><td>notification_id (PK)</td><td>bigint</td></tr>
+          <tr><td>incident_id (FK)</td><td>bigint</td></tr>
+          <tr><td>escalation_level</td><td>int</td></tr>
+          <tr><td>user_id (FK)</td><td>bigint</td></tr>
+          <tr><td>channel</td><td>enum(push, sms, voice, email)</td></tr>
+          <tr><td>provider</td><td>varchar(32)</td></tr>
+          <tr><td>attempt_at</td><td>datetime</td></tr>
+          <tr><td>outcome</td><td>enum(sent, delivered, failed, acked, timed_out)</td></tr>
+          <tr><td>provider_response</td><td>varchar(256)</td></tr>
+          <tr><td>latency_ms</td><td>int</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Tables: teams / users / contact_methods</th></tr>
+          <tr><td>teams.team_id (PK), organization_id (FK), name, default_escalation_policy_id</td><td>&nbsp;</td></tr>
+          <tr><td>users.user_id (PK), organization_id (FK), name, email, phone, timezone</td><td>&nbsp;</td></tr>
+          <tr><td>contact_methods.contact_method_id (PK), user_id (FK), channel, address, priority, verified</td><td>&nbsp;</td></tr>
+        </table>
+
+        <h3>SQL vs. NoSQL &mdash; a Hybrid, Not a Single Choice</h3>
+        <p>The <code>incidents</code> row being actively escalated is a small, low-volume, coordination-heavy record that must support atomic conditional updates (the escalation-claim mechanism below) &mdash; a strong-consistency relational database (Postgres/MySQL, or a distributed SQL store like CockroachDB/Spanner for multi-region) is the right fit. The high-volume, append-mostly <code>alerts</code> and <code>notification_log</code> tables are simple, wide, mostly-write, rarely-updated records with no complex joins on the hot path &mdash; a natural fit for a horizontally-scalable wide-column/NoSQL store (Cassandra, DynamoDB, Bigtable) or a well-sharded relational store, depending on operational preference. This "SQL for the coordination-heavy control plane, NoSQL (or sharded SQL) for the bulk append-only data plane" split mirrors the same reasoning used for the URL Shortener's key-generation service, applied here to the escalation-timer claim instead of key issuance.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If pushed toward an all-NoSQL answer for uniformity: that's workable for <code>alerts</code>/<code>notification_log</code>, but be explicit that the <code>incidents</code> table's conditional-update claim mechanism needs either genuine ACID transactions or a data store with strong compare-and-swap semantics (e.g. DynamoDB conditional writes) &mdash; "eventually consistent" is not an acceptable model for "did exactly one worker claim this escalation."
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Monitoring tools call the Alert Ingestion API, which authenticates the integration and normalizes the payload. The Dedup/Grouping Service fingerprints the alert and either folds it into an existing open incident or creates a new one. The Routing Engine resolves which team owns the incident and which escalation policy and on-call schedule applies, consulting the On-Call Schedules service (rotations + overrides). The Escalation Engine is the core state machine: it notifies the current target via the Notification Dispatch service, starts a durable timer, and — if unacknowledged — advances to the next level. Notification Dispatch fans out across push/SMS/voice/email, each through a primary and backup third-party provider. All state changes land durably in the Incident Store, which a fleet of Scheduler Workers polls to fire due escalations, and which feeds an Analytics pipeline for MTTA/MTTR dashboards.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 1040 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="oc-fig1-title">
+            <title id="oc-fig1-title">High-level architecture: ingestion, dedup, routing, escalation, notification dispatch, incident store, and analytics</title>
+            <defs>
+              <marker id="arrow-oc-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"></path>
+              </marker>
+            </defs>
+            <style>
+              .oc1-box{fill:#ffffff;stroke:#0f2545;stroke-width:1.5;rx:8;}
+              .oc1-title{font-family:Segoe UI, Arial, sans-serif;font-size:12px;font-weight:600;fill:#0f2545;}
+              .oc1-sub{font-family:Segoe UI, Arial, sans-serif;font-size:8.6px;fill:#5a6472;}
+              .oc1-line{stroke:#2563eb;stroke-width:2;fill:none;marker-end:url(#arrow-oc-1);}
+              .oc1-label{font-family:Segoe UI, Arial, sans-serif;font-size:8px;fill:#5a6472;font-style:italic;}
+            </style>
+
+            <rect class="oc1-box" x="10" y="20" width="170" height="60"></rect>
+            <text class="oc1-title" x="95" y="45" text-anchor="middle">Monitoring Tools</text>
+            <text class="oc1-sub" x="95" y="60" text-anchor="middle">Prometheus, Datadog,</text>
+            <text class="oc1-sub" x="95" y="71" text-anchor="middle">CloudWatch, custom</text>
+
+            <rect class="oc1-box" x="200" y="20" width="170" height="60"></rect>
+            <text class="oc1-title" x="285" y="45" text-anchor="middle">Alert Ingestion API</text>
+            <text class="oc1-sub" x="285" y="60" text-anchor="middle">webhook + per-integration</text>
+            <text class="oc1-sub" x="285" y="71" text-anchor="middle">parsers, HMAC auth</text>
+
+            <rect class="oc1-box" x="390" y="20" width="175" height="60"></rect>
+            <text class="oc1-title" x="477" y="45" text-anchor="middle">Dedup / Grouping</text>
+            <text class="oc1-sub" x="477" y="60" text-anchor="middle">fingerprint + correlation</text>
+            <text class="oc1-sub" x="477" y="71" text-anchor="middle">window</text>
+
+            <rect class="oc1-box" x="585" y="20" width="175" height="60"></rect>
+            <text class="oc1-title" x="672" y="45" text-anchor="middle">Routing Engine</text>
+            <text class="oc1-sub" x="672" y="60" text-anchor="middle">alert &rarr; team &rarr; policy</text>
+            <text class="oc1-sub" x="672" y="71" text-anchor="middle">&rarr; schedule</text>
+
+            <rect class="oc1-box" x="780" y="20" width="200" height="60"></rect>
+            <text class="oc1-title" x="880" y="45" text-anchor="middle">Escalation Engine</text>
+            <text class="oc1-sub" x="880" y="60" text-anchor="middle">state machine + per-level</text>
+            <text class="oc1-sub" x="880" y="71" text-anchor="middle">timers</text>
+
+            <line class="oc1-line" x1="180" y1="50" x2="197" y2="50"></line>
+            <line class="oc1-line" x1="370" y1="50" x2="387" y2="50"></line>
+            <line class="oc1-line" x1="565" y1="50" x2="582" y2="50"></line>
+            <line class="oc1-line" x1="760" y1="50" x2="777" y2="50"></line>
+
+            <rect class="oc1-box" x="585" y="140" width="175" height="60"></rect>
+            <text class="oc1-title" x="672" y="163" text-anchor="middle">On-Call Schedules</text>
+            <text class="oc1-sub" x="672" y="178" text-anchor="middle">rotations, layers,</text>
+            <text class="oc1-sub" x="672" y="189" text-anchor="middle">overrides</text>
+            <line class="oc1-line" x1="672" y1="137" x2="672" y2="83"></line>
+
+            <rect class="oc1-box" x="390" y="140" width="175" height="60"></rect>
+            <text class="oc1-title" x="477" y="163" text-anchor="middle">Scheduler Worker Fleet</text>
+            <text class="oc1-sub" x="477" y="178" text-anchor="middle">polls + atomically claims</text>
+            <text class="oc1-sub" x="477" y="189" text-anchor="middle">due escalations</text>
+
+            <rect class="oc1-box" x="780" y="140" width="200" height="60"></rect>
+            <text class="oc1-title" x="880" y="163" text-anchor="middle">Incident Store</text>
+            <text class="oc1-sub" x="880" y="178" text-anchor="middle">durable source of truth</text>
+            <text class="oc1-sub" x="880" y="189" text-anchor="middle">+ timeline</text>
+            <line class="oc1-line" x1="880" y1="83" x2="880" y2="137"></line>
+
+            <path class="oc1-line" d="M740,80 L740,110 L800,110 L800,137"></path>
+            <text class="oc1-label" x="745" y="105">persists routing decision</text>
+
+            <path class="oc1-line" d="M565,200 L565,220 L850,220 L850,200"></path>
+            <text class="oc1-label" x="600" y="234">poll due-escalations index + atomic claim</text>
+
+            <rect class="oc1-box" x="10" y="260" width="175" height="60"></rect>
+            <text class="oc1-title" x="97" y="283" text-anchor="middle">Analytics</text>
+            <text class="oc1-sub" x="97" y="298" text-anchor="middle">MTTA, MTTR, escalation</text>
+            <text class="oc1-sub" x="97" y="309" text-anchor="middle">rate, dedup ratio</text>
+
+            <path class="oc1-line" d="M800,200 L800,240 L97,240 L97,257"></path>
+
+            <rect class="oc1-box" x="780" y="260" width="200" height="60"></rect>
+            <text class="oc1-title" x="880" y="283" text-anchor="middle">Notification Dispatch</text>
+            <text class="oc1-sub" x="880" y="298" text-anchor="middle">channel + provider</text>
+            <text class="oc1-sub" x="880" y="309" text-anchor="middle">failover</text>
+            <line class="oc1-line" x1="930" y1="200" x2="930" y2="257"></line>
+
+            <rect class="oc1-box" x="670" y="345" width="115" height="55"></rect>
+            <text class="oc1-title" x="727" y="368" text-anchor="middle" style="font-size:11px;">Push</text>
+            <text class="oc1-sub" x="727" y="382" text-anchor="middle">FCM, APNs, web push</text>
+
+            <rect class="oc1-box" x="800" y="345" width="140" height="55"></rect>
+            <text class="oc1-title" x="870" y="368" text-anchor="middle" style="font-size:11px;">SMS / Voice</text>
+            <text class="oc1-sub" x="870" y="382" text-anchor="middle">Twilio + backup carrier</text>
+
+            <rect class="oc1-box" x="955" y="345" width="105" height="55"></rect>
+            <text class="oc1-title" x="1007" y="368" text-anchor="middle" style="font-size:11px;">Email</text>
+            <text class="oc1-sub" x="1007" y="382" text-anchor="middle">SendGrid, SES</text>
+
+            <path class="oc1-line" d="M830,320 L727,342"></path>
+            <path class="oc1-line" d="M880,320 L870,342"></path>
+            <path class="oc1-line" d="M930,320 L1007,342"></path>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level topology &mdash; ingestion and dedup feed routing and escalation; the durable Incident Store sits underneath both the Escalation Engine and the Scheduler Worker Fleet; Notification Dispatch fans out across three independently-failing channel families.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Nothing waits on notification fan-out:</strong> ingestion returns as soon as the alert is durably recorded; dedup, routing, and escalation continue asynchronously, and notification attempts happen off the ingestion request's critical path.</li>
+          <li><strong>The Incident Store is the single source of truth for escalation state</strong> &mdash; not application-server memory &mdash; which is what makes the Scheduler Worker Fleet able to resume cleanly after any individual worker (or the whole fleet) restarts.</li>
+          <li><strong>Every notification channel has an independent backup provider</strong> baked into the topology, not bolted on later &mdash; reaching a human is the one job this system cannot fail at.</li>
+          <li><strong>Analytics is fully decoupled</strong> from the hot escalation path, so a slow or backlogged analytics pipeline never adds latency to notifying a human.</li>
+        </ul>
+
+        <h2 id="deep-dive-the-escalation-state-machine">Deep Dive &mdash; The Escalation State Machine</h2>
+        <p>Every incident's lifecycle is governed by a small, explicit state machine. An incident starts <code>TRIGGERED</code>, immediately enters <code>ESCALATING</code> at level 1 as the first notification goes out, and either gets <code>ACKNOWLEDGED</code> by a human (which cancels the pending escalation timer) or, if the per-level timeout elapses with no acknowledgment, advances to the next level and repeats. From <code>ACKNOWLEDGED</code>, a responder eventually marks the incident <code>RESOLVED</code>; alternatively, if the underlying monitoring tool itself sends a resolve event (the source alert cleared on its own), the incident auto-resolves directly from any state.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="oc-fig2-title">
+            <title id="oc-fig2-title">Escalation state machine: TRIGGERED through ESCALATING levels to ACKNOWLEDGED or RESOLVED</title>
+            <defs>
+              <marker id="arrow-oc-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"></path>
+              </marker>
+            </defs>
+            <style>
+              .oc2-box{fill:#eaf1ff;stroke:#0f2545;stroke-width:1.5;rx:26;}
+              .oc2-box2{fill:#ffffff;stroke:#1a7f37;stroke-width:1.8;rx:10;}
+              .oc2-title{font-family:Segoe UI, Arial, sans-serif;font-size:12px;font-weight:700;fill:#0f2545;}
+              .oc2-line{stroke:#2563eb;stroke-width:2;fill:none;marker-end:url(#arrow-oc-2);}
+              .oc2-dash{stroke:#d9a441;stroke-width:2;fill:none;stroke-dasharray:6,4;marker-end:url(#arrow-oc-2);}
+              .oc2-label{font-family:Segoe UI, Arial, sans-serif;font-size:8.6px;fill:#5a6472;font-style:italic;}
+            </style>
+
+            <rect class="oc2-box" x="20" y="30" width="140" height="55"></rect>
+            <text class="oc2-title" x="90" y="63" text-anchor="middle">TRIGGERED</text>
+
+            <rect class="oc2-box" x="210" y="30" width="150" height="55"></rect>
+            <text class="oc2-title" x="285" y="57" text-anchor="middle">ESCALATING</text>
+            <text class="oc2-label" x="285" y="70" text-anchor="middle">level 1</text>
+
+            <rect class="oc2-box" x="410" y="30" width="150" height="55"></rect>
+            <text class="oc2-title" x="485" y="57" text-anchor="middle">ESCALATING</text>
+            <text class="oc2-label" x="485" y="70" text-anchor="middle">level 2</text>
+
+            <rect class="oc2-box" x="610" y="30" width="170" height="55"></rect>
+            <text class="oc2-title" x="695" y="57" text-anchor="middle">ESCALATING</text>
+            <text class="oc2-label" x="695" y="70" text-anchor="middle">level 3 (max)</text>
+
+            <line class="oc2-line" x1="160" y1="57" x2="207" y2="57"></line>
+            <text class="oc2-label" x="163" y="48">first notify</text>
+            <line class="oc2-line" x1="360" y1="57" x2="407" y2="57"></line>
+            <text class="oc2-label" x="365" y="48">timeout, no ack</text>
+            <line class="oc2-line" x1="560" y1="57" x2="607" y2="57"></line>
+            <text class="oc2-label" x="565" y="48">timeout, no ack</text>
+
+            <line class="oc2-line" x1="90" y1="85" x2="90" y2="140"></line>
+            <line class="oc2-line" x1="285" y1="85" x2="285" y2="140"></line>
+            <line class="oc2-line" x1="485" y1="85" x2="485" y2="140"></line>
+            <line class="oc2-line" x1="695" y1="85" x2="695" y2="140"></line>
+            <line class="oc2-line" x1="90" y1="140" x2="695" y2="140"></line>
+            <line class="oc2-line" x1="395" y1="140" x2="395" y2="170"></line>
+
+            <rect class="oc2-box2" x="310" y="170" width="170" height="55"></rect>
+            <text class="oc2-title" x="395" y="203" text-anchor="middle" style="fill:#1a7f37;">ACKNOWLEDGED</text>
+            <text class="oc2-label" x="395" y="153" text-anchor="middle">ack received (any level)</text>
+
+            <line class="oc2-line" x1="395" y1="225" x2="395" y2="280"></line>
+            <text class="oc2-label" x="405" y="255">resolve</text>
+
+            <rect class="oc2-box2" x="310" y="280" width="170" height="55" style="stroke:#0f2545;"></rect>
+            <text class="oc2-title" x="395" y="313" text-anchor="middle">RESOLVED</text>
+
+            <path class="oc2-dash" d="M350,85 L550,85 L550,300 L483,300"></path>
+            <text class="oc2-label" x="555" y="200" transform="rotate(90 555 200)" text-anchor="middle">auto-resolve: source clears (any level)</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Escalation state machine &mdash; each level has its own ack timeout; an ack at any level jumps straight to ACKNOWLEDGED and cancels the pending timer; the source system clearing the alert auto-resolves directly.</div>
+        </div>
+
+        <p>Concretely, the transition table an implementation enforces is small and total (every state + event pair has exactly one defined next state):</p>
+        <table class="sortable">
+          <tr><th>Current state</th><th>Event</th><th>Next state</th><th>Side effect</th></tr>
+          <tr><td>(none)</td><td>alert creates new incident</td><td>ESCALATING (level 1)</td><td>notify level-1 target, set next_escalation_at</td></tr>
+          <tr><td>ESCALATING (level N)</td><td>ack_timeout elapses</td><td>ESCALATING (level N+1), or RESOLVED/held if policy exhausted</td><td>notify level-(N+1) target, set new next_escalation_at</td></tr>
+          <tr><td>ESCALATING (any level)</td><td>responder acknowledges</td><td>ACKNOWLEDGED</td><td>cancel pending timer, log actor + timestamp</td></tr>
+          <tr><td>TRIGGERED / ESCALATING (any level)</td><td>source sends resolve</td><td>RESOLVED</td><td>cancel pending timer, log auto-resolve</td></tr>
+          <tr><td>ACKNOWLEDGED</td><td>responder resolves</td><td>RESOLVED</td><td>log actor + timestamp, close timeline</td></tr>
+          <tr><td>ACKNOWLEDGED</td><td>a new alert with the same fingerprint arrives</td><td>ESCALATING (same level) &mdash; re-open</td><td>notify current target again (problem recurred before resolution)</td></tr>
+        </table>
+
+        <h2 id="deep-dive-alert-deduplication-and-grouping">Deep Dive &mdash; Alert Deduplication and Grouping</h2>
+        <p>Without deduplication, one root cause (say, a shared database losing connectivity) can trip dozens of independent monitors &mdash; latency, error rate, queue depth, health checks &mdash; each of which would otherwise open its own incident and page the on-call engineer separately. The fix is a fingerprinting + correlation-window algorithm.</p>
+        <ol>
+          <li><strong>Fingerprint computation:</strong> <code>fingerprint = hash(integration_id + normalized_key_fields)</code>, where the key fields are whichever attributes the source system considers identity-defining (commonly host + check/metric name + service), or simply the source-supplied <code>dedup_key</code> when the integration provides one. URL/label ordering is normalized first so semantically-identical alerts always hash identically.</li>
+          <li><strong>Open-incident lookup:</strong> look up the fingerprint against an index of currently-open incidents (status not RESOLVED) created within a configurable correlation window (e.g. the last 4 hours, or since the incident opened, whichever is shorter).</li>
+          <li><strong>Match found:</strong> append the new alert to that incident's alert list, increment <code>alert_count</code>, and suppress a new notification &mdash; the incident is already being escalated.</li>
+          <li><strong>No match:</strong> create a new incident with this fingerprint and kick off routing + escalation.</li>
+        </ol>
+        <div class="diagram-box">
+          <svg viewBox="0 0 940 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="oc-fig3-title">
+            <title id="oc-fig3-title">Alert deduplication and grouping flow using a fingerprint and correlation window</title>
+            <defs>
+              <marker id="arrow-oc-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"></path>
+              </marker>
+            </defs>
+            <style>
+              .oc3-box{fill:#ffffff;stroke:#0f2545;stroke-width:1.5;rx:8;}
+              .oc3-title{font-family:Segoe UI, Arial, sans-serif;font-size:11.5px;font-weight:600;fill:#0f2545;}
+              .oc3-sub{font-family:Segoe UI, Arial, sans-serif;font-size:8.6px;fill:#5a6472;}
+              .oc3-line{stroke:#2563eb;stroke-width:2;fill:none;marker-end:url(#arrow-oc-3);}
+              .oc3-label{font-family:Segoe UI, Arial, sans-serif;font-size:9px;fill:#5a6472;font-style:italic;}
+              .oc3-diamond{fill:#fff9ec;stroke:#d9a441;stroke-width:1.8;}
+            </style>
+
+            <rect class="oc3-box" x="20" y="30" width="150" height="55"></rect>
+            <text class="oc3-title" x="95" y="63" text-anchor="middle">Incoming Alert</text>
+
+            <rect class="oc3-box" x="210" y="30" width="230" height="55"></rect>
+            <text class="oc3-title" x="325" y="53" text-anchor="middle">Compute Fingerprint</text>
+            <text class="oc3-sub" x="325" y="68" text-anchor="middle">hash(integration_id + normalized key fields)</text>
+
+            <rect class="oc3-box" x="480" y="30" width="260" height="55"></rect>
+            <text class="oc3-title" x="610" y="53" text-anchor="middle">Fingerprint Index Lookup</text>
+            <text class="oc3-sub" x="610" y="68" text-anchor="middle">open incidents within correlation window</text>
+
+            <line class="oc3-line" x1="170" y1="57" x2="207" y2="57"></line>
+            <line class="oc3-line" x1="440" y1="57" x2="477" y2="57"></line>
+
+            <polygon class="oc3-diamond" points="450,120 570,155 450,190 330,155"></polygon>
+            <text class="oc3-title" x="450" y="150" text-anchor="middle" style="font-size:10px;">Existing open incident</text>
+            <text class="oc3-title" x="450" y="163" text-anchor="middle" style="font-size:10px;">same fingerprint?</text>
+
+            <line class="oc3-line" x1="450" y1="85" x2="450" y2="117"></line>
+
+            <rect class="oc3-box" x="60" y="240" width="280" height="60"></rect>
+            <text class="oc3-title" x="200" y="263" text-anchor="middle">Append alert to incident</text>
+            <text class="oc3-sub" x="200" y="278" text-anchor="middle">no new notification &mdash; suppressed</text>
+            <line class="oc3-line" x1="360" y1="180" x2="220" y2="237"></line>
+            <text class="oc3-label" x="245" y="215">yes</text>
+
+            <rect class="oc3-box" x="560" y="240" width="280" height="60"></rect>
+            <text class="oc3-title" x="700" y="263" text-anchor="middle">Create new incident</text>
+            <text class="oc3-sub" x="700" y="278" text-anchor="middle">+ trigger Escalation Engine</text>
+            <line class="oc3-line" x1="540" y1="180" x2="680" y2="237"></line>
+            <text class="oc3-label" x="635" y="215">no</text>
+
+            <text class="oc3-label" x="470" y="325" text-anchor="middle">Example: 500 raw CPU / latency / error-rate alerts from one outage share one fingerprint &mdash; they collapse into 1 incident and 1 escalation chain.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Deduplication flow &mdash; a shared fingerprint within the correlation window folds many raw alerts into one incident instead of one escalation per alert.</div>
+        </div>
+        <div class="callout">
+          <div class="callout-title">Beyond exact-match fingerprints</div>
+          Exact fingerprint matching handles the common case (the same check firing repeatedly). Some production systems layer a second, fuzzier correlation pass on top &mdash; grouping alerts that share a team and an overlapping time window even with different fingerprints (e.g. CPU and memory alerts on the same host within 60 seconds of each other) using content-similarity heuristics or a lightweight ML classifier. That's a valuable extension to mention, but the exact-fingerprint + time-window algorithm above is the load-bearing mechanism and the one to implement first.
+        </div>
+
+        <h2 id="deep-dive-on-call-schedule-resolution">Deep Dive &mdash; On-Call Schedule Resolution</h2>
+        <p>"Who is on-call right now?" is a small but easy-to-get-wrong interval-overlap problem. A schedule is built from one or more <strong>layers</strong> (e.g. a primary rotation and a separate secondary/escalation rotation), each layer defined by an ordered list of users, a <code>rotation_start</code> timestamp, and a <code>rotation_length_sec</code> (e.g. one week). On top of the base rotation, <strong>overrides</strong> let a specific user substitute for whoever the rotation would otherwise pick, for an explicit time range (a vacation swap, a sick day).</p>
+        <div class="formula-box">
+          <span class="formula-label">Base rotation resolution &mdash; O(1)</span>
+          index = floor((now &minus; rotation_start) &divide; rotation_length_sec) mod length(users)
+          <br>on_call_user = users[index]
+        </div>
+        <p>Overrides are resolved by an indexed range query &mdash; <code>WHERE schedule_id = ? AND start_at &le; now AND end_at &gt; now</code>, backed by an index on <code>(schedule_id, start_at, end_at)</code> &mdash; against a table that is small relative to alert volume (organizations create far fewer overrides than alerts). An override, when present for the current instant, always wins over the base rotation. The final algorithm: for each layer (highest priority first), check for an active override; if none, fall back to the O(1) rotation arithmetic; the result across all layers is "who is on-call right now."</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 900 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="oc-fig4-title">
+            <title id="oc-fig4-title">On-call schedule resolution: weekly rotation layer with an override interval taking precedence</title>
+            <defs>
+              <marker id="arrow-oc-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#0f2545"></path>
+              </marker>
+            </defs>
+            <style>
+              .oc4-seg{stroke:#0f2545;stroke-width:1.5;}
+              .oc4-a{fill:#eaf1ff;}
+              .oc4-b{fill:#cfe0fb;}
+              .oc4-c{fill:#a9c9f5;}
+              .oc4-title{font-family:Segoe UI, Arial, sans-serif;font-size:11px;font-weight:600;fill:#0f2545;}
+              .oc4-sub{font-family:Segoe UI, Arial, sans-serif;font-size:9px;fill:#334;}
+              .oc4-label{font-family:Segoe UI, Arial, sans-serif;font-size:9px;fill:#5a6472;font-style:italic;}
+              .oc4-override{fill:#fff9ec;stroke:#d9a441;stroke-width:2;}
+            </style>
+
+            <text class="oc4-label" x="40" y="45">Primary Layer (weekly rotation)</text>
+            <rect class="oc4-seg oc4-a" x="40" y="60" width="270" height="50"></rect>
+            <text class="oc4-title" x="175" y="90" text-anchor="middle">Alice &mdash; Week 1</text>
+            <rect class="oc4-seg oc4-b" x="310" y="60" width="270" height="50"></rect>
+            <text class="oc4-title" x="445" y="90" text-anchor="middle">Bob &mdash; Week 2</text>
+            <rect class="oc4-seg oc4-c" x="580" y="60" width="280" height="50"></rect>
+            <text class="oc4-title" x="720" y="90" text-anchor="middle">Carol &mdash; Week 3</text>
+
+            <rect class="oc4-override" x="380" y="140" width="130" height="45"></rect>
+            <text class="oc4-title" x="445" y="158" text-anchor="middle" style="font-size:9.5px;">Override: Dana</text>
+            <text class="oc4-sub" x="445" y="171" text-anchor="middle" style="font-size:8px;">vacation swap, Tue&ndash;Thu</text>
+            <line class="oc4-seg" x1="445" y1="140" x2="445" y2="110" marker-end="url(#arrow-oc-4)"></line>
+
+            <line x1="40" y1="250" x2="860" y2="250" stroke="#5a6472" stroke-width="1.5"></line>
+            <line x1="430" y1="185" x2="430" y2="250" stroke="#d9a441" stroke-width="2" stroke-dasharray="5,4"></line>
+            <text class="oc4-label" x="430" y="205" text-anchor="middle">now = Wed 09:00</text>
+
+            <rect class="oc4-box" x="230" y="270" width="440" height="45" fill="#ffffff" stroke="#0f2545" stroke-width="1.5" rx="8"></rect>
+            <text class="oc4-title" x="450" y="292" text-anchor="middle" style="font-size:10.5px;">Resolved on-call: Dana</text>
+            <text class="oc4-sub" x="450" y="306" text-anchor="middle" style="font-size:8.3px;">override checked first &mdash; supersedes Bob's base rotation for this interval</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Overrides are checked before falling back to the base rotation, so a short vacation swap for Dana correctly wins over Bob's underlying weekly assignment.</div>
+        </div>
+
+        <h2 id="deep-dive-notification-dispatch-and-channel-failover">Deep Dive &mdash; Notification Dispatch and Channel Failover</h2>
+        <p>Person-level escalation (advancing from responder A to responder B) is the Escalation Engine's job; nested inside each person-level attempt is a separate <strong>channel-level escalation</strong>, handled by Notification Dispatch: try the fastest, least-intrusive channel first, and escalate through progressively more insistent channels if there's no acknowledgment, with an independent backup provider for every channel in case the primary provider itself fails.</p>
+        <ol>
+          <li>Attempt <strong>push</strong> via the mobile push provider (FCM/APNs/web push). Wait a short timeout (e.g. 60&ndash;90 seconds).</li>
+          <li>No ack &rarr; attempt <strong>SMS</strong> via the primary SMS provider (e.g. Twilio). If the provider itself errors or times out (not just "no ack" &mdash; an actual send failure), immediately fail over to a backup SMS provider (e.g. a second, carrier-diverse vendor) rather than waiting out the ack timeout on a request that never delivered.</li>
+          <li>No ack on SMS &rarr; attempt a <strong>voice call</strong> via an automated dialer, with the same primary/backup provider failover pattern.</li>
+          <li>No ack after exhausting channels &rarr; control returns to the Escalation Engine, which advances to the next person/level per the policy.</li>
+        </ol>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1000 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="oc-fig5-title">
+            <title id="oc-fig5-title">Notification channel failover cascade: push to SMS to voice, with provider failover nested within each channel</title>
+            <defs>
+              <marker id="arrow-oc-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"></path>
+              </marker>
+            </defs>
+            <style>
+              .oc5-box{fill:#ffffff;stroke:#0f2545;stroke-width:1.5;rx:8;}
+              .oc5-boxb{fill:#fff9ec;stroke:#d9a441;stroke-width:1.5;rx:8;stroke-dasharray:5,3;}
+              .oc5-title{font-family:Segoe UI, Arial, sans-serif;font-size:11px;font-weight:600;fill:#0f2545;}
+              .oc5-sub{font-family:Segoe UI, Arial, sans-serif;font-size:8.3px;fill:#5a6472;}
+              .oc5-line{stroke:#2563eb;stroke-width:2;fill:none;marker-end:url(#arrow-oc-5);}
+              .oc5-dash{stroke:#d9a441;stroke-width:1.8;fill:none;stroke-dasharray:5,4;marker-end:url(#arrow-oc-5);}
+              .oc5-label{font-family:Segoe UI, Arial, sans-serif;font-size:8px;fill:#5a6472;font-style:italic;}
+            </style>
+
+            <rect class="oc5-box" x="20" y="30" width="150" height="55"></rect>
+            <text class="oc5-title" x="95" y="53" text-anchor="middle">Push Notification</text>
+            <text class="oc5-sub" x="95" y="68" text-anchor="middle">FCM / APNs</text>
+
+            <rect class="oc5-box" x="220" y="30" width="160" height="55"></rect>
+            <text class="oc5-title" x="300" y="53" text-anchor="middle">SMS &mdash; Provider A</text>
+            <text class="oc5-sub" x="300" y="68" text-anchor="middle">e.g. Twilio</text>
+            <line class="oc5-line" x1="170" y1="57" x2="217" y2="57"></line>
+            <text class="oc5-label" x="172" y="45">no ack in ~60&ndash;90s</text>
+
+            <rect class="oc5-boxb" x="220" y="140" width="160" height="55"></rect>
+            <text class="oc5-title" x="300" y="163" text-anchor="middle">SMS &mdash; Provider B</text>
+            <text class="oc5-sub" x="300" y="178" text-anchor="middle">backup, e.g. Bandwidth</text>
+            <line class="oc5-dash" x1="300" y1="85" x2="300" y2="137"></line>
+            <text class="oc5-label" x="305" y="112">provider error / send failure</text>
+
+            <rect class="oc5-box" x="420" y="30" width="160" height="55"></rect>
+            <text class="oc5-title" x="500" y="53" text-anchor="middle">Voice Call</text>
+            <text class="oc5-sub" x="500" y="68" text-anchor="middle">automated dialer</text>
+            <line class="oc5-line" x1="380" y1="57" x2="417" y2="57"></line>
+            <text class="oc5-label" x="382" y="45">no ack in ~90&ndash;120s</text>
+            <path class="oc5-line" d="M380,170 L410,170 L410,60 L417,60"></path>
+
+            <rect class="oc5-boxb" x="420" y="140" width="160" height="55"></rect>
+            <text class="oc5-title" x="500" y="163" text-anchor="middle">Voice &mdash; Backup Carrier</text>
+            <text class="oc5-sub" x="500" y="178" text-anchor="middle">provider failover</text>
+            <line class="oc5-dash" x1="500" y1="85" x2="500" y2="137"></line>
+            <path class="oc5-line" d="M580,167 L610,167 L610,60 L617,60"></path>
+
+            <rect class="oc5-box" x="620" y="30" width="220" height="55"></rect>
+            <text class="oc5-title" x="730" y="53" text-anchor="middle">Escalate to Next Level</text>
+            <text class="oc5-sub" x="730" y="68" text-anchor="middle">Escalation Engine advances policy</text>
+            <line class="oc5-line" x1="580" y1="57" x2="617" y2="57"></line>
+            <text class="oc5-label" x="583" y="45">no ack in ~120&ndash;180s</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Channel escalation nested inside person escalation &mdash; solid arrows are ack-timeout progressions between channels; dashed arrows are provider failover triggered by an actual send failure, not just silence.</div>
+        </div>
+        <p>Note the important distinction encoded in the diagram: a <em>timeout with no acknowledgment</em> (solid arrows) means the responder saw or could have seen the notification and didn't respond &mdash; escalate to a more insistent channel. A <em>provider error</em> (dashed arrows) means the message may never have been delivered at all &mdash; failover to a backup provider on the same channel immediately, without waiting out the full ack timeout.</p>
+
+        <h2 id="deep-dive-durable-escalation-timers-and-the-scheduler-fleet">Deep Dive &mdash; Durable Escalation Timers and the Scheduler Fleet</h2>
+        <p>The escalation timer is the single most safety-critical mechanism in the whole system, and it must never be an in-process <code>setTimeout</code>/in-memory timer &mdash; a server restart, deploy, or crash would silently lose every pending escalation. Instead, the "when does this incident need to escalate next" fact is stored directly on the durable incident row as <code>next_escalation_at</code> and <code>escalation_level</code>. A stateless fleet of Scheduler Workers continuously polls (or subscribes to a change feed on) an index of incidents where <code>status = 'ESCALATING' AND next_escalation_at &le; now()</code>.</p>
+        <p>Because many workers poll the same due-escalations index concurrently, exactly one of them must win the right to process any given incident &mdash; otherwise two workers could both notify the next level for the same incident. This is solved with an atomic conditional update (a compare-and-swap at the database layer):</p>
+        <pre><code>UPDATE incidents
+SET claimed_by = :worker_id, claim_expires_at = now() + interval '30 seconds'
+WHERE incident_id = :id
+  AND status = 'ESCALATING'
+  AND next_escalation_at &lt;= now()
+  AND (claimed_by IS NULL OR claim_expires_at &lt; now());
+-- exactly one worker's UPDATE affects 1 row; every other worker's identical
+-- UPDATE affects 0 rows for that incident_id and moves on to the next candidate</code></pre>
+        <p>The winning worker then executes the escalation (invokes Notification Dispatch for the next level's target), advances <code>escalation_level</code>, recomputes <code>next_escalation_at</code> from that level's <code>ack_timeout_sec</code>, and clears <code>claimed_by</code>. The short claim lease (<code>claim_expires_at</code>) protects against a worker crashing mid-processing: after the lease expires, the row becomes claimable again, so no incident can get permanently stuck behind a dead worker.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="oc-fig6-title">
+            <title id="oc-fig6-title">Durable escalation timer polling with atomic claim across a scheduler worker fleet</title>
+            <defs>
+              <marker id="arrow-oc-6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"></path>
+              </marker>
+            </defs>
+            <style>
+              .oc6-box{fill:#ffffff;stroke:#0f2545;stroke-width:1.5;rx:8;}
+              .oc6-win{fill:#eafbea;stroke:#1a7f37;stroke-width:1.8;rx:8;}
+              .oc6-lose{fill:#f4f6fb;stroke:#94a3b8;stroke-width:1.5;rx:8;}
+              .oc6-title{font-family:Segoe UI, Arial, sans-serif;font-size:11px;font-weight:600;fill:#0f2545;}
+              .oc6-sub{font-family:Segoe UI, Arial, sans-serif;font-size:8.6px;fill:#5a6472;}
+              .oc6-mono{font-family:Consolas, monospace;font-size:8px;fill:#334;}
+              .oc6-line{stroke:#2563eb;stroke-width:2;fill:none;marker-end:url(#arrow-oc-6);}
+              .oc6-label{font-family:Segoe UI, Arial, sans-serif;font-size:8.3px;fill:#5a6472;font-style:italic;}
+            </style>
+
+            <rect class="oc6-box" x="250" y="15" width="400" height="65"></rect>
+            <text class="oc6-title" x="450" y="35" text-anchor="middle">incidents (indexed on next_escalation_at)</text>
+            <text class="oc6-mono" x="450" y="52" text-anchor="middle">INC-88213 | status=ESCALATING | level=1</text>
+            <text class="oc6-mono" x="450" y="65" text-anchor="middle">next_escalation_at=09:05:00 | claimed_by=NULL</text>
+
+            <rect class="oc6-box" x="40" y="150" width="220" height="55"></rect>
+            <text class="oc6-title" x="150" y="173" text-anchor="middle">Scheduler Worker A</text>
+            <text class="oc6-sub" x="150" y="188" text-anchor="middle">polls due-escalations index</text>
+            <line class="oc6-line" x1="150" y1="147" x2="330" y2="83"></line>
+
+            <rect class="oc6-box" x="340" y="150" width="220" height="55"></rect>
+            <text class="oc6-title" x="450" y="173" text-anchor="middle">Scheduler Worker B</text>
+            <text class="oc6-sub" x="450" y="188" text-anchor="middle">polls due-escalations index</text>
+            <line class="oc6-line" x1="450" y1="147" x2="450" y2="83"></line>
+
+            <rect class="oc6-box" x="640" y="150" width="220" height="55"></rect>
+            <text class="oc6-title" x="750" y="173" text-anchor="middle">Scheduler Worker C</text>
+            <text class="oc6-sub" x="750" y="188" text-anchor="middle">polls due-escalations index</text>
+            <line class="oc6-line" x1="750" y1="147" x2="570" y2="83"></line>
+
+            <rect class="oc6-win" x="40" y="240" width="390" height="60"></rect>
+            <text class="oc6-title" x="235" y="262" text-anchor="middle" style="fill:#1a7f37;">Worker A: conditional UPDATE</text>
+            <text class="oc6-sub" x="235" y="277" text-anchor="middle">1 row affected &mdash; WINS the claim</text>
+            <line class="oc6-line" x1="150" y1="205" x2="200" y2="237"></line>
+
+            <rect class="oc6-lose" x="470" y="240" width="390" height="60"></rect>
+            <text class="oc6-title" x="665" y="262" text-anchor="middle" style="fill:#5a6472;">Workers B and C: same UPDATE</text>
+            <text class="oc6-sub" x="665" y="277" text-anchor="middle">0 rows affected &mdash; claim lost, poll again later</text>
+            <line class="oc6-line" x1="450" y1="205" x2="620" y2="237"></line>
+            <line class="oc6-line" x1="750" y1="205" x2="720" y2="237"></line>
+
+            <rect class="oc6-box" x="150" y="330" width="600" height="55"></rect>
+            <text class="oc6-title" x="450" y="352" text-anchor="middle">Worker A processes the escalation</text>
+            <text class="oc6-sub" x="450" y="367" text-anchor="middle">notify level 2, advance escalation_level, recompute next_escalation_at, clear claimed_by</text>
+            <line class="oc6-line" x1="235" y1="300" x2="330" y2="327"></line>
+          </svg>
+          <div class="diagram-caption">Figure 6. Three scheduler workers race to claim the same due escalation; the database's atomic conditional update guarantees exactly one wins, so restarts or a growing worker fleet can never double-escalate an incident.</div>
+        </div>
+        <p>An alternative worth naming in an interview: instead of a polled "due escalations" index, use a durable delayed-delivery queue (an SQS delay queue, a Kafka topic paired with a per-partition delay, or a Redis sorted set keyed by due-timestamp acting as a timer wheel, popped via <code>ZRANGEBYSCORE</code> + an atomic <code>ZREM</code>). These give push-based wakeups instead of poll-interval latency, at the cost of an extra moving piece; the claim semantics (exactly one consumer processes a given due item) are conceptually identical either way. The DB-polling approach above is simpler to reason about and to make durable, and is a perfectly good default answer.</p>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <p>The natural multi-tenant boundary is <code>team_id</code>/<code>organization_id</code>: shard <code>alerts</code>, <code>incidents</code>, and <code>notification_log</code> by (a hash of) this key. This keeps one customer's alert storm from ever affecting another customer's routing or escalation latency &mdash; a noisy tenant's shard gets hot, but every other tenant's shard is untouched.</p>
+        <ul>
+          <li><strong>Alerts and notification_log</strong> are the highest-volume tables; hash-partition by organization_id with consistent hashing so adding shard capacity only reshuffles a small, bounded fraction of tenants.</li>
+          <li><strong>Incidents</strong> shard the same way, which is what makes the escalation-timer claim mechanism scale: the "due escalations" index is naturally partitioned per shard, and a fleet of scheduler workers can be assigned (or dynamically balanced) across shards so one organization's storm doesn't starve another organization's due-escalation polling.</li>
+          <li><strong>On-call schedules and overrides</strong> are small enough per organization to be cached in full alongside the shard that owns them, keeping schedule resolution effectively a cache hit on the hot path.</li>
+          <li>A single very large enterprise customer can still become a "hot shard" on its own; the standard mitigation is to further split that one tenant's data across multiple sub-shards by team_id within the organization, rather than resharding everyone.</li>
+        </ul>
+        <p>The reason the escalation-timer state specifically needs a <em>reliable distributed scheduler</em> rather than any in-process timer deserves restating here in partitioning terms: a service restart, a rolling deploy, or an autoscaling event must never lose a pending escalation. Because <code>next_escalation_at</code> lives in the sharded, replicated incidents table (not in any one process's memory), any scheduler worker, on any node, in any region reachable to that shard, can pick up the polling work at any time &mdash; the durable "next escalation due" index is what makes horizontal scaling of the scheduler fleet safe.</p>
+
+        <h2 id="replication-multi-region-fault-tolerance-and-the-dead-mans-switch">Replication, Multi-Region Fault Tolerance, and the Dead Man's Switch</h2>
+        <div class="callout">
+          <div class="callout-title">This is the section to get right</div>
+          Every other design on this site treats multi-region replication as a scaling and latency optimization. Here it is a correctness requirement: the system that pages you about an outage cannot itself be a casualty of the same outage. If this system and the infrastructure it monitors share a single cloud region, a single cloud provider, or a single notification vendor, that shared dependency is a design flaw, not a footnote.
+        </div>
+
+        <h3>Multi-Region Active-Active</h3>
+        <p>Run the application tier and the incident data store active-active across at least two, ideally geographically distant, regions. Incident and escalation-timer state &mdash; the one place a lost or forked write is catastrophic &mdash; uses synchronous or near-synchronous cross-region replication (a Raft/Paxos-based distributed SQL store such as CockroachDB or Spanner-style replication, or synchronous replication to a designated hot-standby region) even though this costs extra write latency (tens to low hundreds of milliseconds). That trade is worth it: losing an incident's escalation state during a region failure is a far worse outcome than a slower write. Everything else &mdash; analytics, notification logs, schedule display caches &mdash; can be eventually consistent and asynchronously replicated.</p>
+
+        <h3>No Single Point of Failure in Actually Reaching a Human</h3>
+        <p>This is the part of the design that's easy to get catastrophically wrong: it's not enough for the software to decide correctly who to notify if the notification never physically reaches a phone. Every channel needs at least two independent, non-correlated providers:</p>
+        <table>
+          <tr><th>Channel</th><th>Primary provider (example)</th><th>Independent backup (example)</th></tr>
+          <tr><td>Push</td><td>FCM (Android) / APNs (iOS)</td><td>Web push as a channel-of-last-resort; platforms are inherently split already</td></tr>
+          <tr><td>SMS</td><td>Twilio</td><td>A second, carrier-diverse SMS aggregator (e.g. Bandwidth, Vonage)</td></tr>
+          <tr><td>Voice</td><td>Twilio Voice / automated dialer</td><td>A second telephony provider on a different carrier network</td></tr>
+          <tr><td>Email</td><td>SendGrid</td><td>Amazon SES (different infrastructure and deliverability pipeline)</td></tr>
+        </table>
+        <p>Providers are health-checked continuously; a circuit breaker trips to the backup on an elevated error rate or timeout &mdash; not only on an outright API failure &mdash; so a degrading-but-not-fully-down provider doesn't quietly swallow notifications for minutes before anyone notices. It's also worth deliberately hosting the platform itself across infrastructure not perfectly correlated with the biggest and most common outage causes its customers will page about (e.g., not depending entirely on the exact same cloud region and vendor that a large fraction of the customer base itself runs on).</p>
+
+        <h3>The Dead Man's Switch</h3>
+        <p>The final layer of defense addresses the question "what if this whole system is down?" The escalation platform emits a periodic heartbeat to a small, independently-hosted watchdog service &mdash; ideally on entirely different infrastructure and a different vendor account, so a failure mode that takes down the main platform is unlikely to take down the watchdog too. If the heartbeat goes missing for longer than a defined threshold, the watchdog itself triggers a minimal, dependency-light "break-glass" page: a direct SMS or phone call, through a completely separate provider/account, to a small fixed list of senior engineers. This mirrors the "who pages the pager" instinct behind real production safety nets &mdash; the fallback path is deliberately dumb and has as few dependencies as possible, because its entire job is to still work when the sophisticated system has failed.</p>
+
+        <h2 id="security">Security</h2>
+        <ul>
+          <li><strong>Webhook authentication:</strong> every integration is issued its own secret, used either as a bearer token or (preferably) to HMAC-sign the raw webhook payload; the ingestion API verifies the signature before accepting the request and returns 401 otherwise. Scoping secrets per-integration rather than per-organization means a single leaked credential only exposes that one integration's ability to create alerts.</li>
+          <li><strong>Tenant isolation:</strong> every query is scoped by organization_id/team_id at the application layer, reinforced by partition-level isolation from the sharding scheme above; a bug in one tenant's escalation policy cannot leak another tenant's incident data or on-call roster.</li>
+          <li><strong>Audit trail for compliance:</strong> the incident timeline and notification_log are append-only and immutable &mdash; who acknowledged what, when, from which channel, and every notification attempt's outcome is durably recorded, which matters both for blameless postmortems and for regulated-industry compliance requirements.</li>
+          <li><strong>Authorization on responder actions:</strong> acknowledge/resolve/snooze actions are scoped to users who belong to the owning team (or an admin), and the actor identity is recorded on every action, not just accepted at face value from the request.</li>
+          <li><strong>Rate limiting per integration:</strong> doubles as both an abuse-prevention control and a noisy-neighbor control (see the Bottlenecks section) &mdash; a compromised or misconfigured integration credential can't be used to flood shared infrastructure.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Load balancing sits at three points: between monitoring tools and the Alert Ingestion API, between application services and the incident data store, and between the Escalation Engine/Notification Dispatch and the third-party provider APIs.</p>
+        <ol>
+          <li>Start with health-checked round-robin at the ingestion edge &mdash; simple, and automatically drains traffic from an unhealthy instance.</li>
+          <li>Ingestion instances should scale independently of escalation/dispatch instances, since an alert storm's ingestion burst and its downstream notification fan-out burst have different shapes and different scaling knobs (see the capacity table above &mdash; ingestion peaks at ~125&times; average while notification calls peak at ~80&times;).</li>
+          <li>Toward third-party providers, use per-provider connection pools with independent concurrency limits, so one provider throttling under a storm doesn't starve requests destined for a different, healthy provider.</li>
+        </ol>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Pin each organization to a home region for normal writes (lowest latency, simplest reasoning about the escalation-timer claim mechanism), but replicate incident/escalation state synchronously enough to a secondary region that a home-region outage can fail over without losing in-flight escalations.</li>
+          <li>Route ingestion via geo-aware DNS/anycast to the nearest healthy region; a health-checked failover redirects an organization's traffic to its secondary region automatically if the home region becomes unreachable.</li>
+          <li>Scheduler worker fleets run per-region against that region's shard of the incidents table, with cross-region failover of the polling responsibility itself if a region's worker fleet goes dark &mdash; the durable "next escalation due" state is what makes this handoff safe.</li>
+          <li>Analytics pipelines can run per-region and roll up into a global analytics store on a slower, asynchronous cadence &mdash; there's no correctness reason MTTA/MTTR aggregation needs to be synchronous across regions.</li>
+          <li>Notification Dispatch should be able to reach every provider from every region, so a region failover doesn't also have to fail over notification connectivity as a separate step.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging, and Analytics</h2>
+        <p>Because this system's job is to surface problems in other systems, its own observability has to be unusually rigorous &mdash; a slow degradation here is exactly the kind of failure it's designed to catch elsewhere.</p>
+        <ul>
+          <li><strong>MTTA (mean time to acknowledge)</strong> and <strong>MTTR (mean time to resolve)</strong> per team, computed by writing the deltas (acknowledged_at &minus; created_at, resolved_at &minus; acknowledged_at) at transition time and rolling them up into per-team, per-day materialized aggregates rather than recomputing from raw timestamps on every dashboard load.</li>
+          <li><strong>Escalation rate</strong> &mdash; the fraction of incidents that go unacknowledged past level 1 &mdash; is a direct signal of on-call fatigue or under-staffing; a team whose escalation rate creeps upward over weeks is a strong leading indicator worth alerting on in its own right.</li>
+          <li><strong>Notification delivery success rate per channel and per provider</strong>, tracked continuously, is what lets a circuit breaker (and a human) notice a degrading SMS or voice provider before it fully fails.</li>
+          <li><strong>Dedup effectiveness</strong> &mdash; the ratio of raw alerts to incidents created, per integration &mdash; flags a noisy or misconfigured monitor before it erodes on-call trust in the whole system ("alert fatigue").</li>
+          <li><strong>The core latency SLO</strong>: p50/p95/p99 of alert-ingested-to-first-notification-sent, targeting single-digit-to-low-tens of seconds at p99, not minutes &mdash; this is the number that should headline any dashboard for this system.</li>
+          <li>A continuous synthetic canary &mdash; a small, harmless test alert sent on a fixed cadence all the way through ingestion, dedup, routing, escalation, and delivery to a real test device &mdash; is the closest thing to an always-on, production, end-to-end correctness check for a system whose entire value is "did a human actually get paged."</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>In-process escalation timers lost on restart</td><td>Durable next_escalation_at on the incident row + stateless scheduler worker fleet polling/claiming (see Deep Dive above)</td></tr>
+          <tr><td>Two scheduler workers double-escalating one incident</td><td>Atomic conditional UPDATE (compare-and-swap) with a short, expiring claim lease</td></tr>
+          <tr><td>Single point of failure reaching a human (one SMS/voice vendor)</td><td>Independent primary + backup provider per channel, health-checked circuit breaker failover</td></tr>
+          <tr><td>Region-wide cloud outage taking down the alerting system itself</td><td>Multi-region active-active with synchronous-enough replication of incident/escalation state, plus a dead man's switch fallback</td></tr>
+          <tr><td>500 correlated alerts paging the same person 500 times</td><td>Fingerprint + correlation-window deduplication into a single incident</td></tr>
+          <tr><td>Monitoring tool retries its webhook, creating a duplicate incident</td><td>Idempotency via dedup_key/fingerprint match plus a short-TTL idempotency cache on raw payload hash</td></tr>
+          <tr><td>One customer's alert storm degrades another customer's routing/notification latency</td><td>Shard alerts/incidents/notification_log by team_id/organization_id; per-tenant scheduler and rate-limit isolation</td></tr>
+          <tr><td>A noisy/misconfigured integration floods shared ingestion capacity</td><td>Per-integration token-bucket rate limiting with generous ceilings, queue-and-alert rather than hard-drop</td></tr>
+          <tr><td>Analytics backlog affecting the escalation hot path</td><td>Fully decoupled, asynchronous analytics pipeline &mdash; never on the notification critical path</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor strong consistency (C) for the incidents table's escalation-timer state specifically &mdash; the system must never fork or lose the "what happens next" fact for an actively-escalating incident, even at the cost of extra cross-region write latency during a partition. Favor availability and partition tolerance (AP) almost everywhere else: a slightly stale on-call-schedule cache, a delayed analytics rollup, or a notification log that catches up a few seconds late are all vastly preferable to blocking the one thing that matters &mdash; getting a human notified.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Ingestion</td><td>Webhook API with per-integration HMAC secrets and per-integration parsers; returns 202 immediately, dedup/routing/escalation proceed asynchronously</td></tr>
+          <tr><td>Deduplication</td><td>Fingerprint (hash of integration + normalized key fields, or source dedup_key) matched against open incidents within a correlation window</td></tr>
+          <tr><td>Routing</td><td>Alert &rarr; team &rarr; escalation policy &rarr; on-call schedule, with schedule resolution cached at short TTL</td></tr>
+          <tr><td>Escalation core</td><td>Explicit TRIGGERED/ESCALATING(level)/ACKNOWLEDGED/RESOLVED state machine with a per-level ack timeout</td></tr>
+          <tr><td>Escalation timers</td><td>Durable next_escalation_at on the incident row; stateless scheduler worker fleet polls and claims via atomic conditional UPDATE</td></tr>
+          <tr><td>Notification dispatch</td><td>Push &rarr; SMS &rarr; voice channel escalation, each channel backed by a primary + independent backup provider</td></tr>
+          <tr><td>Primary datastore</td><td>Strongly-consistent SQL (or distributed SQL) for incidents; sharded SQL/NoSQL for high-volume alerts and notification_log</td></tr>
+          <tr><td>Partitioning</td><td>Hash by team_id/organization_id, consistent hashing for elastic resharding</td></tr>
+          <tr><td>Replication</td><td>Multi-region active-active; synchronous-enough replication for incident/escalation state; async elsewhere</td></tr>
+          <tr><td>Reachability fallback</td><td>Independent backup provider per channel; a dead man's switch break-glass path if the whole platform stops heartbeating</td></tr>
+          <tr><td>Idempotency</td><td>Fingerprint/dedup_key match + short-TTL idempotency cache on raw payload hash for webhook retries</td></tr>
+          <tr><td>Consistency model</td><td>Strong consistency for escalation-timer state; AP for schedules cache, analytics, notification logs</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Interviewers love to pressure-test one mechanism at a time. These are grouped by theme &mdash; use them to rehearse, or expect a real interview to pick a handful as "and then what?" follow-ups.</p>
+
+        <h3>Scaling and Performance</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">A burst of 50,000 alerts arrives in one minute because a monitoring tool's own bug goes haywire &mdash; walk through what happens end to end.</div>
+          <div class="qa-a">A per-integration token-bucket at the API gateway caps that integration's rate at a documented ceiling well above normal volume but below a level that endangers shared infrastructure; requests over the burst allowance are queued briefly or answered with 429 and Retry-After rather than silently dropped. Genuine cross-customer storm traffic still needs to get through, so rate-limit counters are partitioned by integration_id in a fast, co-located store (e.g. Redis) rather than a single shared global limiter becoming the bottleneck.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you keep p99 ingestion-to-first-notification latency low when notification providers themselves start throttling you during a storm?</div>
+          <div class="qa-a">Queue-and-drain instead of block: ingestion durably records the alert and returns immediately; Notification Dispatch consumes from a durable queue with provider-aware concurrency limits, backing off per-provider (not globally) on 429/5xx, and failing over to a backup provider for that channel rather than stalling the entire queue behind one degraded provider.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you compute MTTA and MTTR at scale across millions of incidents without expensive full-table scans?</div>
+          <div class="qa-a">Write the deltas at transition time &mdash; acknowledged_at minus created_at, resolved_at minus acknowledged_at &mdash; directly onto the incident row (or a narrow per-incident metrics fact table) the moment each transition happens, then pre-aggregate into per-team, per-day rollup tables, instead of recomputing from raw timestamps across the whole incidents table on every dashboard load.</div>
+        </div>
+
+        <h3>Correctness and Data</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you guarantee an escalation timer fires even if the service restarts mid-wait?</div>
+          <div class="qa-a">Never hold the timer only in process memory. Persist next_escalation_at and escalation_level directly on the durable incident row; a stateless fleet of scheduler workers polls for rows past due. A restart just restarts the polling loop &mdash; no in-flight timer state is lost because none ever lived only in memory.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent two scheduler workers from double-escalating the same incident?</div>
+          <div class="qa-a">An atomic conditional UPDATE: claim the row only if it's still due and unclaimed (or its previous claim lease has expired). The database's row-level compare-and-swap guarantees exactly one worker's UPDATE affects a row; every other worker's identical UPDATE affects zero rows. A short claim lease protects against a worker crashing mid-processing.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you deduplicate 500 alerts from the same root cause into a single incident?</div>
+          <div class="qa-a">Compute a fingerprint per alert (a hash of the integration/source plus the normalized key fields the source treats as identity-defining, or a client-supplied dedup_key). Look up an open incident sharing that fingerprint within a correlation window; if found, append and suppress a new notification; if not, open a new incident and escalate.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A monitoring tool retries its webhook because our 200 OK was lost in transit &mdash; how do you avoid a duplicate incident or duplicate escalation?</div>
+          <div class="qa-a">Fingerprint/dedup_key matching already absorbs most of this, since a retried alert with the same key resolves to the same open incident. Layer a short-TTL idempotency cache keyed on an integration-supplied idempotency key (or a hash of the raw payload) in front of that so a byte-identical retry within a few minutes is answered from the original response without even re-running dedup logic.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you resolve who is on-call right now given rotations plus overrides, without an expensive query on every alert?</div>
+          <div class="qa-a">The base rotation resolves with O(1) arithmetic (elapsed time since rotation_start, integer-divided by rotation_length, modulo the user-list length). Overrides are a small, separately-indexed table queried by a cheap (schedule_id, start_at, end_at) range check and always take precedence when active. Cache the resolved on-call user per schedule with a short TTL, invalidated on schedule/override writes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What consistency model do you use for the incident record across regions, and why?</div>
+          <div class="qa-a">Strong/synchronous-enough consistency specifically for incident and escalation-timer state, since losing or forking it is a correctness catastrophe, even at the cost of extra cross-region write latency. Nearly everything else &mdash; analytics, notification logs, schedule display caches &mdash; can be eventually consistent.</div>
+        </div>
+
+        <h3>Product and API Design</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you design schedule overrides so a one-off vacation swap doesn't corrupt the underlying rotation definition?</div>
+          <div class="qa-a">Overrides live in a separate table from the rotation definition and are purely additive/time-boxed rather than mutating schedule_layers. Resolution always checks overrides first and falls back to the base rotation, so an expired override cleanly disappears with no reconciliation step.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you support maintenance windows so planned work doesn't page anyone, but a genuinely new, unrelated incident during that window isn't silently swallowed?</div>
+          <div class="qa-a">Scope the window to a specific team/service/integration and time range, and only suppress notification for alerts matching that scope &mdash; the incident is still created and logged for later review, just not escalated while the window is active. Anything outside the declared scope still pages normally, and the window has a hard expiry so it can't be forgotten.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A responder acknowledges by replying to the SMS instead of tapping the push notification &mdash; how do you make that consistently update incident state everywhere?</div>
+          <div class="qa-a">Every channel with a reply path (SMS reply, phone-call keypress, email reply) routes back through the same AcknowledgeIncident action, not a channel-specific side path. As soon as one channel's ack lands, the incident transitions to ACKNOWLEDGED and the escalation timer cancels; any other channel's not-yet-answered notification is marked stale so the responder doesn't get a redundant call minutes later.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Should the per-level escalation timeout be a fixed system default or configurable per team?</div>
+          <div class="qa-a">Configurable per policy (and often per level) &mdash; a payments-critical service may want a 2-minute level-1 timeout while a lower-severity internal tool might tolerate 15 minutes. Keep a platform-wide floor (so a misconfigured 5-second timeout can't page the whole org for noise) and a ceiling (so nothing sits un-escalated for hours by mistake).</div>
+        </div>
+
+        <h3>Security and Abuse</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you stop anyone on the internet from injecting fake incidents into a customer's account?</div>
+          <div class="qa-a">Every integration gets its own secret used to HMAC-sign the webhook payload; the ingestion API verifies the signature before accepting the request and rejects with 401 otherwise. Scoping the secret per-integration, not per-organization, means a single leaked credential only exposes that one integration.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you rate-limit a noisy or misconfigured integration without dropping genuine alerts from a real incident?</div>
+          <div class="qa-a">Rate-limit per integration_id, not globally, so one customer's misconfigured monitor can't consume capacity meant for everyone else. Prefer shedding/queuing over hard-dropping beyond a generous ceiling, so the integration owner sees 429s and delayed delivery rather than the system silently discarding data, and alert the integration owner when their own integration is being throttled.</div>
+        </div>
+
+        <h3>Reliability and Operations</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you design this system to survive an outage of its own primary cloud region?</div>
+          <div class="qa-a">Active-active across at least two regions for both the application tier and the incident store, with organizations pinned to a home region for normal writes but able to fail over to a secondary region via health-checked routing. Deliberately avoid perfectly correlating the platform's own infrastructure with the exact region/vendor a large share of the customer base runs on.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you avoid a single point of failure in actually reaching a human, given that SMS gateways and phone carriers can and do go down?</div>
+          <div class="qa-a">Contract with at least two independent providers per channel and fail over automatically on elevated error rate or timeout, not just outright failure. Diversify across channel types too, and maintain a dead man's switch: an independently-hosted watchdog that triggers a minimal break-glass page through a wholly separate vendor if the platform stops heartbeating.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you test the correctness of a distributed escalation engine &mdash; timers, state transitions, claim logic &mdash; given it isn't a simple single-process state machine?</div>
+          <div class="qa-a">Unit-test the pure state-transition table independently of timing. Integration-test the claim mechanism under induced concurrency (multiple worker instances against a shared test database, asserting exactly one claims a given due row). Use fault injection in staging (kill a worker mid-escalation, delay clocks, drop a provider call), and run a continuous synthetic canary alert end-to-end to a real test device as an always-on production correctness check.</div>
+        </div>
+
+        <h3>Extensions</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support auto-remediation &mdash; running a runbook automatically before paging a human?</div>
+          <div class="qa-a">Attach an optional pre-escalation action to a policy level: on TRIGGERED, invoke a runbook execution service with the incident context and hold the human escalation for a short grace period. If the runbook succeeds and the underlying alert clears, auto-resolve without ever paging anyone; if it fails or times out, fall through to the normal human escalation chain unchanged, with every auto-remediation attempt logged in the same audit timeline as human actions.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This is the rare system design question where the non-functional requirements outrank the functional ones: an on-call escalation platform must be more reliable than everything it monitors, because it IS the safety net. Every major decision flows from that one fact &mdash; durable, database-backed escalation timers instead of in-process ones; an atomic claim mechanism so a growing scheduler fleet can never double-escalate; multi-region active-active with synchronous-enough replication for incident state specifically; and, above all, no single point of failure in the notification path itself, backed by a dead man's switch for the day the whole platform is the thing that's down. Layer deduplication and correlation aggressively (fingerprint + time window) so responders trust the pages they get, and keep the ingestion path fast and asynchronous so a monitoring tool's webhook is never held hostage by downstream fan-out. State the CAP trade-off explicitly: strong consistency for escalation-timer state, availability everywhere else.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>PagerDuty, <a href="https://support.pagerduty.com/docs" target="_blank" rel="noopener">PagerDuty Documentation</a> &mdash; incident lifecycle, escalation policies, and on-call schedules</li>
+          <li>Atlassian Opsgenie, <a href="https://support.atlassian.com/opsgenie/" target="_blank" rel="noopener">Opsgenie Documentation</a> &mdash; alert deduplication, routing rules, and notification policies</li>
+          <li>Google SRE Book, <a href="https://sre.google/sre-book/table-of-contents/" target="_blank" rel="noopener">"Site Reliability Engineering"</a> &mdash; on-call, incident management, and postmortem culture chapters</li>
+          <li>Community write-ups on durable distributed scheduling patterns: database-polled "due work" indexes with atomic claim, delayed-delivery queues (SQS delay queues, Kafka delayed topics), and Redis sorted sets used as a timer wheel</li>
+          <li>General distributed-systems literature on idempotency keys, fingerprint-based deduplication, and multi-provider failover for third-party communications APIs (SMS/voice/push/email)</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="weather-application.html"><span class="dir">Previous</span>Weather Application</a>
+          <a class="next" href="live-view-counter.html"><span class="dir">Next</span>Live View Counter</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

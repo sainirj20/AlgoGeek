@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring Core | Spring | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Spring</a><span class="sep">/</span><span class="current">Spring Core</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Spring overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#inversion-of-control-the-applicationcontext">Inversion of Control &amp; the ApplicationContext</a></li>
+        <li><a href="#dependency-injection-constructor-vs-setter-vs-field">Dependency Injection: Constructor vs. Setter vs. Field</a></li>
+        <li><a href="#qualifying-and-resolving-beans">Qualifying and Resolving Beans</a></li>
+        <li><a href="#bean-scopes">Bean Scopes</a></li>
+        <li><a href="#the-spring-bean-lifecycle">The Spring Bean Lifecycle</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SPRING</span>
+          <h1>Spring Core</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Almost every Spring interview opens with some variant of &ldquo;explain IoC and DI in your own words.&rdquo; It sounds like a warm-up question, but it isn&rsquo;t &mdash; the interviewer is really checking whether you understand <em>why</em> Spring is designed the way it is, not just whether you can recite that &ldquo;the container manages object creation.&rdquo; A candidate who can only say &ldquo;Spring injects dependencies for you&rdquo; gets filtered out quickly; a candidate who can explain the trade-offs between injection styles, describe what actually happens during bean creation, and reason about scope and lifecycle bugs signals real production experience. This page covers IoC/DI mechanics, the bean lifecycle end to end, and the failure modes that come up in practice &mdash; circular dependencies, ambiguous autowiring, scope mismatches, and premature use of a bean before it&rsquo;s fully initialized.</p>
+
+        <h2 id="inversion-of-control-the-applicationcontext">Inversion of Control &amp; the ApplicationContext</h2>
+        <p>Inversion of Control is a design principle where the responsibility for creating objects and wiring their dependencies is taken away from the objects themselves and handed to an external container. In plain Java, a class that needs a collaborator typically instantiates it directly (<code>new OrderValidator()</code>), which hard-wires the class to a specific implementation and makes substitution (for testing, for a different environment) painful. Under IoC, the class simply declares what it needs, and the container decides what concrete instance to hand it. Dependency Injection is the specific mechanism Spring uses to achieve IoC: the container looks at a class&rsquo;s declared dependencies and supplies them, rather than the class reaching out and constructing or looking them up itself.</p>
+        <p>The container itself is represented by two related abstractions. <code>BeanFactory</code> is the root interface &mdash; a minimal container that supports lazy initialization and basic DI, and is rarely used directly in modern applications. <code>ApplicationContext</code> extends <code>BeanFactory</code> and adds the features real applications depend on: eager singleton instantiation at startup, event publication (<code>ApplicationEventPublisher</code>), internationalization support, environment/property abstraction, and integration with AOP. In interviews, the expected answer is: &ldquo;<code>ApplicationContext</code> is a superset of <code>BeanFactory</code> with enterprise features, and it&rsquo;s what you use in practice &mdash; <code>AnnotationConfigApplicationContext</code> or the auto-configured context Spring Boot builds for you.&rdquo;</p>
+        <p>Bean discovery today is almost always annotation-driven. <code>@ComponentScan</code> tells the container which packages to scan for classes annotated <code>@Component</code> (and its specializations <code>@Service</code>, <code>@Repository</code>, <code>@Controller</code>); the container instantiates one of each, registers it under a bean name, and makes it available for injection. For beans you don&rsquo;t own the source of &mdash; third-party classes, or objects that need custom construction logic &mdash; you use <code>@Configuration</code> classes with <code>@Bean</code>-annotated factory methods instead:</p>
+        <pre><code>@Configuration
+public class ClientConfig {
+
+    @Bean
+    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        return builder
+            .setConnectTimeout(Duration.ofSeconds(2))
+            .setReadTimeout(Duration.ofSeconds(5))
+            .build();
+    }
+}</code></pre>
+        <p>Both approaches result in the same thing: an entry in the container&rsquo;s bean definition registry that gets resolved, instantiated, and wired at context startup (for singletons) or on demand (for other scopes).</p>
+
+        <h2 id="dependency-injection-constructor-vs-setter-vs-field">Dependency Injection: Constructor vs. Setter vs. Field</h2>
+        <p>Spring supports three injection styles, and knowing when (and why not) to use each is one of the most common practical questions.</p>
+        <p><strong>Constructor injection</strong> passes dependencies as constructor arguments:</p>
+        <pre><code>@Service
+public class OrderService {
+
+    private final PaymentClient paymentClient;
+    private final InventoryClient inventoryClient;
+
+    public OrderService(PaymentClient paymentClient, InventoryClient inventoryClient) {
+        this.paymentClient = paymentClient;
+        this.inventoryClient = inventoryClient;
+    }
+}</code></pre>
+        <p><strong>Setter injection</strong> exposes a mutator method that the container calls after instantiation:</p>
+        <pre><code>@Service
+public class OrderService {
+
+    private PaymentClient paymentClient;
+
+    @Autowired
+    public void setPaymentClient(PaymentClient paymentClient) {
+        this.paymentClient = paymentClient;
+    }
+}</code></pre>
+        <p><strong>Field injection</strong> annotates the field directly and relies on reflection to set it:</p>
+        <pre><code>@Service
+public class OrderService {
+
+    @Autowired
+    private PaymentClient paymentClient;
+}</code></pre>
+        <p>Constructor injection is the modern best practice, and Spring&rsquo;s own team recommends it. The reasons matter more than the recommendation itself:</p>
+        <ul>
+          <li><strong>Immutability.</strong> Constructor injection lets dependencies be declared <code>final</code>, so once the object is built its collaborators can never be reassigned or left null. Field/setter injection can&rsquo;t offer this &mdash; the field has to be non-final so Spring can assign it after construction.</li>
+          <li><strong>Testability.</strong> A class built via constructor injection can be instantiated with plain <code>new</code> in a unit test, passing mocks directly &mdash; no Spring context, no reflection tricks, no <code>@InjectMocks</code> magic required (though Mockito&rsquo;s <code>@InjectMocks</code> happens to work well with it too).</li>
+          <li><strong>Fail-fast on missing dependencies.</strong> If a required collaborator isn&rsquo;t available, the object simply cannot be constructed &mdash; you get a clear <code>BeanCreationException</code> at startup instead of a <code>NullPointerException</code> deep in some code path at runtime.</li>
+          <li><strong>Circular dependency exposure.</strong> If bean A needs bean B in its constructor and B needs A in its constructor, Spring cannot resolve the cycle and throws <code>BeanCurrentlyInCreationException</code> at startup. That&rsquo;s a feature, not a bug &mdash; it surfaces a design smell immediately. Field/setter injection can silently mask the same cycle because Spring instantiates both objects first (with no-arg or partially-satisfied constructors) and wires fields in afterward, sometimes via a second pass and early-reference caching (the &ldquo;third-level cache&rdquo; in the singleton creation process) &mdash; the code &ldquo;works&rdquo; but the design problem is hidden rather than fixed.</li>
+          <li><strong>No reflection needed for injection.</strong> The container just calls a public constructor; it doesn&rsquo;t need to bypass access modifiers via reflection the way field injection does, which is marginally better for tooling, GraalVM native-image compatibility, and static analysis.</li>
+        </ul>
+        <p>Setter injection still has a legitimate niche: optional dependencies that can be reconfigured after construction. Field injection is convenient for quick prototypes and test classes but is generally discouraged in production code for the reasons above.</p>
+
+        <h2 id="qualifying-and-resolving-beans">Qualifying and Resolving Beans</h2>
+        <p><code>@Autowired</code> tells Spring to resolve a dependency by type. That works cleanly when exactly one bean of the required type exists. Problems start when multiple beans implement the same interface &mdash; for example, two implementations of a <code>NotificationSender</code> interface, one for email and one for SMS. Autowiring by type alone is ambiguous, and Spring throws <code>NoUniqueBeanDefinitionException</code> at startup.</p>
+        <p>There are two standard ways to disambiguate. <code>@Qualifier</code> lets the injection point specify which named bean it wants:</p>
+        <pre><code>public interface NotificationSender {
+    void send(String message);
+}
+
+@Service("emailSender")
+public class EmailNotificationSender implements NotificationSender { /* ... */ }
+
+@Service("smsSender")
+public class SmsNotificationSender implements NotificationSender { /* ... */ }
+
+@Service
+public class AlertService {
+
+    private final NotificationSender sender;
+
+    public AlertService(@Qualifier("smsSender") NotificationSender sender) {
+        this.sender = sender;
+    }
+}</code></pre>
+        <p><code>@Primary</code> instead marks one implementation as the default choice when no qualifier is given, which is useful when one implementation is clearly the common case and only a few call sites need the alternative:</p>
+        <pre><code>@Service
+@Primary
+public class EmailNotificationSender implements NotificationSender { /* ... */ }</code></pre>
+        <p>A related but distinct tool is injecting <em>all</em> implementations at once &mdash; declaring the dependency as <code>List&lt;NotificationSender&gt;</code> (or a <code>Map&lt;String, NotificationSender&gt;</code> keyed by bean name) causes Spring to collect every matching bean instead of requiring a single unique match, which is a common pattern for strategy-style dispatch.</p>
+
+        <h2 id="bean-scopes">Bean Scopes</h2>
+        <p>Scope determines how many instances of a bean the container creates and how long each instance lives. The five standard scopes:</p>
+        <ul>
+          <li><strong>singleton</strong> (default) &mdash; exactly one instance per Spring container, shared by every injection point. Appropriate for stateless services, clients, and repositories &mdash; the vast majority of beans.</li>
+          <li><strong>prototype</strong> &mdash; a new instance is created every time the bean is requested from the container. Use this for beans that carry mutable, request-specific or invocation-specific state that must not be shared, such as a stateful builder or a non-thread-safe helper object.</li>
+          <li><strong>request</strong> &mdash; one instance per HTTP request, valid only in a web-aware <code>ApplicationContext</code>. Useful for request-scoped data holders (e.g., a request context object accumulating data as it flows through filters and interceptors).</li>
+          <li><strong>session</strong> &mdash; one instance per HTTP session, again web-context only. Useful for per-user state like a shopping cart.</li>
+          <li><strong>application</strong> &mdash; one instance per <code>ServletContext</code>, effectively singleton scoped to the whole web application rather than the Spring container &mdash; relevant when multiple Spring contexts share one servlet context.</li>
+        </ul>
+        <p>Declaring prototype scope:</p>
+        <pre><code>@Component
+@Scope("prototype")
+public class ReportBuilder {
+    private final List&lt;String&gt; sections = new ArrayList&lt;&gt;();
+
+    public ReportBuilder addSection(String section) {
+        sections.add(section);
+        return this;
+    }
+}</code></pre>
+        <p>A classic gotcha: injecting a prototype bean into a singleton via a normal field/constructor injection only resolves the prototype <em>once</em>, at the time the singleton is created &mdash; every subsequent use gets that same first instance, defeating the purpose of prototype scope. The fix is to inject an <code>ObjectProvider&lt;ReportBuilder&gt;</code> (or use scoped proxies) and call <code>getObject()</code> each time a fresh instance is actually needed. This exact scenario is a favorite &ldquo;gotcha&rdquo; interview question because it tests whether the candidate actually understands scope resolution timing versus just memorizing the scope names.</p>
+
+        <h2 id="the-spring-bean-lifecycle">The Spring Bean Lifecycle</h2>
+        <p>Understanding the lifecycle in order is what separates candidates who&rsquo;ve memorized annotations from candidates who can debug a real startup issue (e.g., a field that&rsquo;s null inside <code>@PostConstruct</code> because it was expected to come from a setter that hasn&rsquo;t run yet). The sequence, for a singleton bean during container startup:</p>
+        <ul>
+          <li><strong>1. Instantiation.</strong> The container calls the bean&rsquo;s constructor (this is also where constructor-injected dependencies are supplied, since they must exist before the object can be built).</li>
+          <li><strong>2. Population of properties/dependencies.</strong> Setter- and field-injected dependencies are populated at this stage &mdash; strictly after the object already exists, which is exactly why those fields can&rsquo;t be <code>final</code> and why they&rsquo;re briefly in a &ldquo;not yet wired&rdquo; state.</li>
+          <li><strong>3. Aware interface callbacks.</strong> If the bean implements container-aware interfaces such as <code>BeanNameAware</code>, <code>BeanFactoryAware</code>, or <code>ApplicationContextAware</code>, the corresponding <code>setBeanName()</code>/<code>setBeanFactory()</code>/<code>setApplicationContext()</code> methods are invoked, giving the bean a handle back into the container itself.</li>
+          <li><strong>4. BeanPostProcessor#postProcessBeforeInitialization.</strong> Any registered <code>BeanPostProcessor</code> beans get a chance to inspect or wrap the bean instance before initialization callbacks run. This is the extension point that powers features like <code>@Autowired</code> resolution itself, AOP proxy creation, and annotation-driven validation.</li>
+          <li><strong>5. Initialization callbacks.</strong> In order of precedence: <code>@PostConstruct</code>-annotated methods run, then <code>InitializingBean#afterPropertiesSet()</code> if the bean implements that interface, then any custom <code>init-method</code> configured on the bean definition. This is the right place to run logic that depends on all dependencies already being injected &mdash; validating configuration, warming a cache, opening a connection pool.</li>
+          <li><strong>6. BeanPostProcessor#postProcessAfterInitialization.</strong> A second post-processor pass, after initialization &mdash; this is where JDK/CGLIB proxies typically get created (e.g., for <code>@Transactional</code> or <code>@Async</code>), which is why the bean reference other code ends up injecting may actually be a proxy wrapping the real instance.</li>
+          <li><strong>7. Bean is ready for use.</strong> The fully initialized bean sits in the singleton cache and is handed out to every injection point until the container shuts down.</li>
+          <li><strong>8. Destruction callbacks on shutdown.</strong> When the container closes, singleton beans (not prototypes &mdash; Spring does not manage the full lifecycle of prototype beans after handing them out) receive destruction callbacks in the analogous order: <code>@PreDestroy</code> methods, then <code>DisposableBean#destroy()</code>, then a custom <code>destroy-method</code>. This is where you release resources &mdash; close connections, flush buffers, shut down executors.</li>
+        </ul>
+        <pre><code>@Component
+public class ConnectionPoolManager implements InitializingBean, DisposableBean {
+
+    private HikariDataSource dataSource;
+
+    @PostConstruct
+    public void init() {
+        dataSource = new HikariDataSource(buildConfig());
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        // Runs after @PostConstruct; both exist mainly for legacy/interoperability reasons.
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        if (dataSource != null) {
+            dataSource.close();
+        }
+    }
+
+    @Override
+    public void destroy() {
+        // Runs after @PreDestroy methods.
+    }
+}</code></pre>
+        <p>In practice, most teams pick one mechanism &mdash; usually <code>@PostConstruct</code>/<code>@PreDestroy</code> &mdash; rather than mixing all three, precisely because the ordering between them is easy to get wrong and hard to spot in review.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">What is the difference between BeanFactory and ApplicationContext?</div>
+          <div class="qa-a"><code>BeanFactory</code> is the root container interface, providing lazy bean lookup and basic DI. <code>ApplicationContext</code> extends it and adds the features production applications actually need: eager singleton instantiation at startup (so misconfiguration fails fast), event publishing, environment/property abstraction, internationalization, and AOP integration. In practice you always use an <code>ApplicationContext</code> implementation (or the one Spring Boot auto-configures) &mdash; <code>BeanFactory</code> is mostly of historical/academic interest today.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why is constructor injection preferred over field injection?</div>
+          <div class="qa-a">Constructor injection allows dependencies to be declared <code>final</code>, guaranteeing immutability and that the object is never in a partially-wired state. It makes unit testing trivial &mdash; you can instantiate the class with <code>new</code> and pass mocks directly, without a Spring context. It fails fast: a missing dependency prevents the object from being constructed at all, producing a clear startup error instead of a runtime <code>NullPointerException</code>. It also surfaces circular dependencies immediately as a <code>BeanCurrentlyInCreationException</code>, rather than letting Spring silently resolve them via early-reference caching the way field/setter injection can.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What are the Spring bean scopes and when would you use prototype?</div>
+          <div class="qa-a">The standard scopes are:
+            <ul>
+              <li><code>singleton</code> &mdash; one shared instance (the default; used for stateless services)</li>
+              <li><code>prototype</code> &mdash; a new instance per request from the container</li>
+              <li><code>request</code> &mdash; one instance per HTTP request</li>
+              <li><code>session</code> &mdash; one instance per HTTP session</li>
+              <li><code>application</code> &mdash; one instance per <code>ServletContext</code></li>
+            </ul>
+            Prototype is the right choice when a bean carries mutable, non-thread-safe, or invocation-specific state that must not be shared across callers &mdash; for example a stateful builder object. A common pitfall is injecting a prototype bean directly into a singleton, which resolves it only once at startup; the fix is to inject an <code>ObjectProvider</code> and request a fresh instance each time it&rsquo;s needed.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Walk through the Spring bean lifecycle.</div>
+          <div class="qa-a">Instantiation (constructor call, including constructor-injected dependencies) &rarr; population of setter/field dependencies &rarr; <code>Aware</code> interface callbacks (<code>BeanNameAware</code>, <code>ApplicationContextAware</code>, etc.) &rarr; <code>BeanPostProcessor#postProcessBeforeInitialization</code> &rarr; initialization callbacks in order (<code>@PostConstruct</code>, then <code>InitializingBean#afterPropertiesSet()</code>, then a custom <code>init-method</code>) &rarr; <code>BeanPostProcessor#postProcessAfterInitialization</code> (where proxies for <code>@Transactional</code>/<code>@Async</code> get created) &rarr; bean is ready and cached &rarr; on container shutdown, destruction callbacks run for singletons (<code>@PreDestroy</code>, then <code>DisposableBean#destroy()</code>, then a custom <code>destroy-method</code>).</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What problem does @Qualifier solve?</div>
+          <div class="qa-a">When more than one bean satisfies the same type &mdash; for example two implementations of the same interface &mdash; autowiring by type alone is ambiguous and Spring throws <code>NoUniqueBeanDefinitionException</code>. <code>@Qualifier("beanName")</code> lets the injection point specify exactly which bean it wants by name, resolving the ambiguity explicitly. <code>@Primary</code> is the complementary tool: it marks one implementation as the default so unqualified injection points get it automatically, while specific call sites can still override with <code>@Qualifier</code>.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>IoC means the container &mdash; not your code &mdash; controls object creation and wiring; DI is the mechanism Spring uses to deliver on that principle.</li>
+          <li><code>ApplicationContext</code> is what you use in real applications; <code>BeanFactory</code> is the minimal root interface it builds on.</li>
+          <li>Prefer constructor injection: it enables immutability via <code>final</code> fields, makes classes trivially unit-testable without a container, fails fast on missing dependencies, and surfaces circular dependencies instead of silently masking them.</li>
+          <li>Use <code>@Qualifier</code> and <code>@Primary</code> to resolve ambiguity when multiple beans satisfy the same type; prefer explicit qualifiers when there&rsquo;s no obvious default.</li>
+          <li>Know the bean lifecycle order cold &mdash; instantiation, dependency population, <code>Aware</code> callbacks, post-processors, init callbacks, ready-for-use, destroy callbacks &mdash; because it explains real bugs like nulls in <code>@PostConstruct</code> or proxies not behaving as expected.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="index.html"><span class="dir">Previous</span>Topic Overview</a>
+          <a class="next" href="spring-boot.html"><span class="dir">Next</span>Spring Boot</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

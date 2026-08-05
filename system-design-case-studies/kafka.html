@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apache Kafka | System Design — Case Studies | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Case Studies</a><span class="sep">/</span><span class="current">Apache Kafka</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Case Studies overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#internal-architecture-deep-dive">Internal Architecture Deep Dive</a></li>
+        <li><a href="#system-design-view-end-to-end-walkthroughs">System Design View: End-to-End Walkthroughs</a></li>
+        <li><a href="#the-math-behind-kafka">The Math Behind Kafka</a></li>
+        <li><a href="#cap-theorem-placement-and-durabilityavailability-trade-offs">CAP Theorem Placement and Durability&ndash;Availability Trade-offs</a></li>
+        <li><a href="#real-world-usage-patterns">Real-World Usage Patterns</a></li>
+        <li><a href="#trade-offs-and-limitations">Trade-offs and Limitations</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Apache Kafka</h1>
+        </div>
+
+        <p><em>A system-design deep dive and interview study guide: internal architecture first, then math, diagrams, real-world usage, trade-offs, and follow-up interview questions.</em></p>
+
+        <h2 id="overview">Overview</h2>
+        <p>Apache Kafka is a <strong>distributed, append-only commit log</strong> that has been generalized into a full <strong>event streaming platform</strong>: something that lets you publish, durably store, and process streams of records ("events") at very large scale, with strong ordering guarantees per partition. It was built at LinkedIn around 2010&ndash;2011 because existing message queues and log-aggregation tools (ActiveMQ, RabbitMQ, Scribe, Flume) could not handle LinkedIn's need to move <strong>billions of activity events per day</strong> (page views, searches, ad impressions, operational metrics) into both real-time services and offline systems like Hadoop, without falling over.</p>
+        <p>Rather than staying at the surface, this guide goes straight into how Kafka actually works under the hood, then builds up to the math, diagrams, and trade-offs an interviewer will expect you to reason about.</p>
+
+        <h2 id="internal-architecture-deep-dive">Internal Architecture Deep Dive</h2>
+
+        <h3>1.1 Topics, Partitions, and the Append-Only Log</h3>
+        <p>A <strong>topic</strong> is a named stream of records — conceptually like a table or a folder. Every topic is split into one or more <strong>partitions</strong>, and each partition is an <strong>append-only log</strong>: an ordered, immutable sequence of records, each identified by a monotonically increasing <strong>offset</strong> (a 64-bit integer that is just "the byte position of this message in the stream of all messages ever sent to this partition," per the original design). New records are always appended to the end (the <strong>tail</strong>); nothing is ever inserted in the middle or edited in place.</p>
+        <p>Why partition a topic at all? Two reasons, and they pull in different directions:</p>
+        <ul>
+          <li><strong>Parallelism.</strong> A partition is the unit of parallelism in Kafka. Each partition can live on a different broker (server), can be written to by producers independently, and can be read by a different consumer concurrently. More partitions = more brokers can share the write/read load = higher aggregate throughput. This is also why partition count is the hard ceiling on consumer parallelism (see the math section).</li>
+          <li><strong>Ordering.</strong> Kafka guarantees ordering <strong>only within a single partition</strong> — records with the same key always land in the same partition (because the partitioner hashes the key to pick a partition), and a consumer reading that partition always sees them in the exact order they were written. There is <strong>no global ordering guarantee across partitions</strong> of a topic. This is a deliberate trade-off: giving up global order is what makes horizontal scaling of both writes and reads possible. If you need strict ordering across everything, you're forced back down to a single partition, which caps your throughput and parallelism to one broker/consumer.</li>
+        </ul>
+        <p><strong>Worked example.</strong> A topic <code>payments</code> with 6 partitions. Producers send records keyed by <code>customerId</code>. All records for <code>customer_42</code> always land in, say, partition 3, so a consumer reading partition 3 sees <code>customer_42</code>'s events in the order they happened. But <code>customer_42</code>'s events and <code>customer_99</code>'s events (which might land in partition 5) have no ordering relationship to each other — and that's fine, because most business logic only needs per-entity ordering, not global ordering.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/kafka-fig1.png" alt="Overall Kafka architecture diagram showing producers writing to partition leaders, followers replicating, consumer groups fetching, and the controller/KRaft quorum managing metadata">
+          <div class="diagram-caption">Figure 1. Overall Kafka architecture: producers write to partition leaders, followers replicate, consumer groups fetch, and the controller / KRaft quorum manages cluster metadata.</div>
+        </div>
+
+        <h3>1.2 Log Segments on Disk: Segment Files, Offset Index, Time Index</h3>
+        <p>A partition's log is not one giant file — it is physically broken into <strong>segments</strong>. Each segment is a set of files sharing the same base name, which is the offset of the <em>first</em> message in that segment, zero-padded to 20 digits:</p>
+        <p><code>00000000000000000000.log</code> &mdash; first segment, starts at offset 0<br>
+        <code>00000000000000000000.index</code> &mdash; offset index for this segment<br>
+        <code>00000000000000000000.timeindex</code> &mdash; time index for this segment<br>
+        <code>00000000000000001000.log</code> &mdash; next segment, starts at offset 1000<br>
+        <code>00000000000000001000.index</code>, <code>00000000000000001000.timeindex</code> &mdash; index files for the next segment</p>
+        <p>A new segment is rolled (a new <code>.log</code> file started) when the active segment reaches a configured size (<code>log.segment.bytes</code>, default 1 GB) or a configured age (<code>log.roll.ms</code> / <code>log.roll.hours</code>, default 7 days), whichever comes first. Only the newest segment — the <strong>active segment</strong> — is ever appended to; all older segments are immutable and closed.</p>
+        <p><strong>Why segments matter operationally:</strong> retention and compaction both operate at the <em>segment</em> granularity, not the message granularity. Kafka deletes or compacts whole segment files once every message in them qualifies, which is cheap (an OS-level file delete) compared to rewriting a giant single file.</p>
+        <p><strong>Finding a message by offset without scanning the whole log.</strong> This is the key mechanism to be able to explain clearly in an interview:</p>
+        <ol>
+          <li>Kafka keeps an in-memory, sorted list of segment base-offsets for the partition. A <strong>binary search</strong> over this list (an O(log n) operation over a handful of segments) picks the one segment whose base offset is &le; the target offset and whose next segment's base offset is greater — i.e., "which file is this offset in."</li>
+          <li>Within that segment, Kafka does <strong>not</strong> index every single message — the <code>.index</code> file is a <strong>sparse index</strong>: it only records an entry every <code>log.index.interval.bytes</code> of log data written (default 4 KB), mapping a <em>relative offset</em> to a <em>physical byte position</em> in the <code>.log</code> file. Each entry is small (8 bytes: 4-byte relative offset + 4-byte position).</li>
+          <li>Kafka does a second <strong>binary search</strong>, this time over the sparse index entries in memory (the index file is memory-mapped), to find the closest index entry at or before the target offset.</li>
+          <li>From that byte position, Kafka does a short <strong>linear scan forward</strong> through the <code>.log</code> file (at most ~4 KB worth of records, bounded by the sparseness interval) until it reaches the exact target offset.</li>
+        </ol>
+        <p>The net effect: locating any message takes two binary searches plus a bounded linear scan of a few kilobytes — never a scan of the whole (potentially terabyte-sized) log. The <code>.timeindex</code> file works the same way but maps <em>timestamp &rarr; offset</em> instead of <em>offset &rarr; position</em>, which is what powers "start consuming from this point in time" (<code>KIP-33</code>) instead of "start consuming from this raw offset."</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/kafka-fig3.png" alt="Diagram of a partition's log as a sequence of segment files with offset and time indexes enabling binary search">
+          <div class="diagram-caption">Figure 3. A partition's log is a sequence of segment files; offset and time indexes let Kafka binary-search to a given offset without scanning the whole log.</div>
+        </div>
+
+        <h3>1.3 Producers: Partitioning, Batching, Compression, Acks, Idempotence, Transactions</h3>
+        <p><strong>Partitioning strategy.</strong> When a producer sends a record: if a partition is explicitly specified, use it; else if a key is present, the default partitioner computes <code>murmur2_hash(key) % num_partitions</code> — so the same key deterministically always maps to the same partition (as long as partition count doesn't change); else (no key), modern Kafka (2.4+) uses the <strong>Sticky Partitioner</strong>: it sends a whole batch of keyless records to one partition, then switches to another, rather than round-robining every single record. This produces larger batches (better throughput/compression) at the cost of short-term unevenness that averages out.</p>
+        <p><strong>Batching and compression.</strong> Producers don't send one record per network call. Records destined for the same partition accumulate into a batch (bounded by <code>batch.size</code> and <code>linger.ms</code> — the producer will wait a small extra amount of time hoping more records arrive to fill the batch, trading a little latency for a lot of throughput). Batches can be compressed as a unit (<code>compression.type</code>: gzip, snappy, lz4, zstd) — compressing a batch of similar records together gets a much better ratio than compressing one record at a time, and the compressed batch is stored on the broker and even relayed to consumers <strong>still compressed</strong> (decompression happens client-side), saving CPU and disk/network bytes end-to-end.</p>
+        <p><strong>Acks — the durability dial.</strong> <code>acks</code> controls how many replicas must confirm a write before the producer treats it as "done":</p>
+        <table>
+          <tr><th>Setting</th><th>Behavior</th><th>Durability</th><th>Latency</th></tr>
+          <tr><td><code>acks=0</code></td><td>Producer fires and forgets; doesn't even wait for a response</td><td>Weakest — message can be silently lost if the leader never receives/persists it</td><td>Lowest</td></tr>
+          <tr><td><code>acks=1</code></td><td>Leader writes to its own local log (page cache) and immediately acks</td><td>Message survives leader-local crash-after-flush scenarios but is <strong>lost if the leader dies before followers replicate it</strong></td><td>Low</td></tr>
+          <tr><td><code>acks=all</code> (a.k.a. <code>acks=-1</code>)</td><td>Leader waits until <strong>every current in-sync replica</strong> has replicated the record before acking</td><td>Strongest — combined with <code>min.insync.replicas</code>, survives broker failure as long as one ISR member survives</td><td>Highest (bounded by slowest ISR member)</td></tr>
+        </table>
+        <p>Since Kafka 3.0, the default producer configuration favors durability: <code>acks=all</code> and <code>enable.idempotence=true</code> are the defaults.</p>
+        <p><strong>Idempotent producer.</strong> Network retries are necessary (a producer can't tell the difference between "broker never got my message" and "broker got it but the ack was lost"), but naive retries can create duplicate messages. Kafka solves this with a <strong>Producer ID (PID)</strong> assigned to each producer session and a <strong>per-partition sequence number</strong> that increments with every batch sent. Each batch carries <code>(PID, sequence number)</code>. The broker remembers the last several sequence numbers it has committed per <code>(PID, partition)</code>; if a retried batch arrives with a sequence number it has already seen, the broker silently discards it as a duplicate instead of appending it again. This gives exactly-once semantics <strong>per partition, within the lifetime of one producer instance</strong> — if the producer process restarts, it gets a new PID and the guarantee resets (duplicates across restarts are possible unless you use transactions with a stable <code>transactional.id</code>).</p>
+        <p><strong>Transactions / exactly-once semantics (EOS).</strong> Idempotence alone only protects a single partition. To atomically write to <strong>multiple partitions</strong> (e.g., "consume from topic A, transform, produce to topics B and C" all-or-nothing), Kafka added transactions (KIP-98). A producer configured with a stable <code>transactional.id</code> talks to a <strong>transaction coordinator</strong> (a broker role, chosen the same way a consumer-group coordinator is chosen — by hashing the transactional ID onto a partition of an internal topic). All transaction state (which partitions are involved, whether the transaction is Ongoing/PrepareCommit/PrepareAbort/Complete) is persisted in the internal, compacted <code>__transaction_state</code> topic. On commit, the coordinator writes special <strong>transaction marker (control) records</strong> into every partition the transaction touched. Consumers that set <code>isolation.level=read_committed</code> will only expose records up to the <strong>Last Stable Offset (LSO)</strong> — the offset before the earliest still-open transaction — so they never see the partial effects of an in-flight or aborted transaction. This is how Kafka Streams and other consume-transform-produce pipelines get true exactly-once processing across the whole pipeline, not just at the wire level.</p>
+
+        <h3>1.4 Replication: Leaders, Followers, ISR, min.insync.replicas, Leader Election, HW &amp; LEO</h3>
+        <p>Each partition is replicated across <strong>N</strong> brokers, where N is the topic's <strong>replication factor (RF)</strong>. At any moment, exactly one replica is the <strong>leader</strong> — all reads and writes for that partition go through the leader — and the rest are <strong>followers</strong>, which behave like consumers of the leader: they continuously fetch new records and append them to their own local log copy.</p>
+        <p><strong>In-Sync Replicas (ISR).</strong> The leader tracks which followers are "caught up enough" to be trusted — the <strong>ISR set</strong>. A follower is in the ISR if it has fetched up to (approximately) the leader's latest data within a bounded lag window (<code>replica.lag.time.max.ms</code>, commonly 30 seconds in current Kafka versions). If a follower stalls (GC pause, slow disk, network partition), the leader evicts it from the ISR; when it catches back up, it rejoins.</p>
+        <p><strong>min.insync.replicas.</strong> This topic-level setting is the floor: when a producer uses <code>acks=all</code>, the write is only acknowledged once <strong>at least</strong> <code>min.insync.replicas</code> <strong>members of the current ISR</strong> (including the leader) have the record. If the ISR shrinks below this number, produce requests fail with <code>NotEnoughReplicas</code> rather than silently accepting a less-durable write. A very common production setup is <strong>RF=3, min.insync.replicas=2</strong>: you can lose one broker and keep both writing and reading safely.</p>
+        <p><strong>High Watermark (HW) and Log End Offset (LEO).</strong> Every replica (leader or follower) has a <strong>LEO</strong> — the offset of the next record it would append, i.e., the tip of its own local log. The leader additionally computes the <strong>HW</strong> as the <em>minimum LEO across all current ISR members</em>. Consumers are only allowed to read up to the HW (not the leader's own LEO) — this is what prevents a consumer from reading a record that could still disappear if the leader crashes before followers replicate it. So during normal replication, <code>LEO(leader) &ge; HW</code>, and they converge once the ISR fully catches up.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/kafka-fig2.png" alt="Diagram of the In-Sync Replica set and the high-watermark showing which offsets are visible to consumers">
+          <div class="diagram-caption">Figure 2. The In-Sync Replica (ISR) set and the high-watermark: only offsets acknowledged by every ISR member are visible to consumers.</div>
+        </div>
+
+        <p><strong>Leader election.</strong> When a broker holding the leader replica for a partition fails, a <strong>controller</strong> (see 1.6) picks a new leader — normally by choosing the first live replica still in the last-known ISR. This keeps the guarantee: because a message is only "committed" (visible past the HW) once all ISR members had it, any replica that was in the ISR at the time of commit is safe to promote — it cannot be missing a committed message. If the ISR is empty (every replica died), Kafka's default (<code>unclean.leader.election.enable=false</code>) is to <strong>wait</strong> for an ISR member to come back rather than promote a stale, out-of-ISR replica — trading availability for consistency; flipping that flag trades the other way and risks silently losing committed data.</p>
+        <p><strong>Quorum framing (why ISR isn't the same as majority-vote):</strong> with a majority-vote replicated log, tolerating <em>f</em> failures needs <em>2f+1</em> replicas and <em>f+1</em> acknowledgements. Kafka's ISR approach needs only <em>f+1</em> replicas and <em>f</em> (well, all current ISR) acknowledgements to tolerate <em>f</em> failures — cheaper in replica count, at the cost that commit latency is bound by the <em>slowest</em> in-sync replica rather than the <em>median</em> one (majority vote can proceed without waiting for the slowest node).</p>
+
+        <h3>1.5 Consumers: Consumer Groups, Assignment, Offset Commits, Rebalancing</h3>
+        <p>Consumers read from partitions by joining a <strong>consumer group</strong> (identified by <code>group.id</code>). Kafka guarantees that within one group, <strong>each partition is assigned to exactly one consumer instance at a time</strong> — this is how a group achieves parallel, non-overlapping processing of a topic. Multiple independent consumer groups can each read the whole topic independently (Kafka doesn't delete data on read; each group just tracks its own position).</p>
+        <p><strong>Offset commits.</strong> A consumer's position ("I've processed up through offset X of partition P") is called its <strong>committed offset</strong>, and it's stored not in memory but in a special internal, compacted Kafka topic: <code>__consumer_offsets</code> (50 partitions and replication factor 3 by default). The record key is <code>(group.id, topic, partition)</code> and the value is the committed offset (plus metadata); because the topic is log-compacted, only the latest commit per key needs to survive compaction. This means offset storage is itself just&hellip; more Kafka, replicated and durable the same way any other topic is. The specific partition of <code>__consumer_offsets</code> that owns a given group is decided by hashing <code>group.id</code>, and the leader of that partition acts as the <strong>group coordinator</strong> for that group (handling heartbeats, join/sync, and offset commits).</p>
+        <p><strong>Rebalancing.</strong> Whenever group membership changes (a consumer joins, leaves, crashes, or the topic's partition count changes), partitions must be reassigned — this is a <strong>rebalance</strong>. The original ("eager") protocol was stop-the-world: <strong>every</strong> consumer in the group gave up <strong>all</strong> its partitions, a new assignment was computed, and everyone resumed — even consumers whose assignment didn't actually change experienced a pause. Kafka 2.4 introduced the <strong>Cooperative Sticky Assignor</strong> (KIP-429): rebalancing became incremental — only the specific partitions that are actually moving are revoked in a first phase, then reassigned in a second phase; consumers whose partitions aren't moving just keep consuming uninterrupted. Kafka 4.0 goes further with a brand-new server-driven protocol (<strong>KIP-848</strong>): assignment logic moves from the client to the broker's group coordinator, consumers simply report their subscriptions via a continuous heartbeat, and the coordinator pushes incremental revoke/assign instructions — benchmarks cited by Confluent show rebalances for large groups (e.g., 10 consumers, 900 partitions) dropping from ~103 seconds to ~5 seconds. There's also <strong>static group membership</strong> (<code>group.instance.id</code>, KIP-345), which lets a consumer that restarts quickly reclaim its old assignment without triggering a rebalance at all.</p>
+
+        <h3>1.6 The Controller: Legacy ZooKeeper vs New KRaft (Kafka Raft)</h3>
+        <p>Someone has to be the source of truth for cluster metadata: which brokers are alive, which broker leads which partition, the ISR for every partition, topic configs, ACLs, and so on. That role is the <strong>controller</strong>.</p>
+        <p><strong>Legacy (ZooKeeper) model.</strong> Historically, Kafka depended on <strong>Apache ZooKeeper (ZK)</strong>, an external coordination service, for two things: leader election among brokers to pick which single broker acts as the active controller, and storage of cluster metadata (broker registrations, ISR state, topic configs). Brokers and the controller would watch ZK znodes for changes and react. This worked but had real costs: running and operating a second distributed system alongside Kafka; ZK itself became a scalability bottleneck limiting how many partitions a cluster could practically hold (because every metadata change was a synchronous ZK write, and controller failover required reloading <em>all</em> metadata from ZK, which got slower as partition counts grew into the hundreds of thousands); and there were subtle split-brain and stale-metadata bugs at the ZK/Kafka boundary.</p>
+        <p><strong>New model: KRaft.</strong> <strong>KIP-500</strong> proposed replacing ZooKeeper with a <strong>self-managed metadata quorum</strong> built on the <strong>Raft consensus protocol</strong>, hence "<strong>KRaft</strong>" (Kafka Raft). In KRaft mode, a small set of broker nodes (typically 3 or 5, an odd number for clean majority votes) run as <strong>controllers</strong> that replicate a metadata log (the internal <code>__cluster_metadata</code> topic) among themselves using Raft: a majority of controllers must agree before a metadata change is committed, and leader election among controllers is just Raft leader election — no external system involved. Brokers pull metadata updates from the active controller the same way a consumer pulls data, as an event log, instead of via ZK watches.</p>
+        <p><strong>Why the move made sense:</strong></p>
+        <ul>
+          <li><strong>Simpler operations</strong> — one system to deploy, secure, and monitor instead of two.</li>
+          <li><strong>Scalability</strong> — KRaft is designed to support millions of partitions per cluster, versus practical ZK-era limits often cited around a couple hundred thousand.</li>
+          <li><strong>Faster failover</strong> — metadata is an event log that can be replayed incrementally; controller failover doesn't require a full bulk reload from an external store.</li>
+        </ul>
+        <p>KRaft was introduced as early-access in Kafka 2.8, reached production readiness around Kafka 3.3, ZooKeeper mode was marked deprecated in 3.5, and <strong>as of Kafka 4.0, ZooKeeper support has been removed entirely</strong> — KRaft is the only supported mode.</p>
+
+        <h3>1.7 Log Retention and Log Compaction</h3>
+        <p>Kafka has two independent, combinable cleanup policies per topic (<code>cleanup.policy</code>):</p>
+        <ul>
+          <li><code>delete</code> <strong>(time/size-based retention).</strong> The default. Old <strong>segments</strong> (not individual messages) are deleted once they age out (<code>log.retention.ms</code>/<code>log.retention.hours</code>, default 168 hours = 7 days, based on the largest timestamp in the segment) or once the partition exceeds a size cap (<code>log.retention.bytes</code>, disabled/unlimited by default). If both are set, whichever triggers first wins. A background cleanup thread checks periodically (roughly every 5 minutes), and there's a short grace delay (<code>log.segment.delete.delay.ms</code>, default ~1 minute) before a segment marked for deletion is actually unlinked from disk — so retention is a <em>minimum</em> guarantee, not an exact cutoff.</li>
+          <li><code>compact</code> <strong>(log compaction).</strong> Instead of deleting by age, compaction guarantees that <strong>for every key, at least the last known value is retained forever</strong> (or until a tombstone expires — see below), even as older values for that same key are thrown away. This is what makes a Kafka topic usable as a changelog / materialized-view source: "give me the latest state of every key," not "give me every event ever." A background <strong>log cleaner</strong> thread periodically scans segments below a "dirty ratio" threshold (<code>min.cleanable.dirty.ratio</code>) and rewrites them keeping only the most recent record per key.</li>
+          <li><strong>Tombstones.</strong> To <em>delete</em> a key entirely under a compacted topic, a producer sends a record with that key and a <strong>null value</strong> — this is a <strong>tombstone</strong>. The compactor keeps the tombstone around (so downstream consumers building a changelog know the key was deleted) for at least <code>delete.retention.ms</code>, then removes it too, at which point every trace of the key is gone.</li>
+          <li><strong>Combined</strong> <code>compact,delete</code><strong>.</strong> You can also enable both: compact to shrink storage and <em>then</em> apply age/size deletion on top — used, e.g., on the <code>__consumer_offsets</code> and <code>__transaction_state</code> internal topics.</li>
+        </ul>
+
+        <h3>1.8 Zero-Copy Transfer (the sendfile Syscall)</h3>
+        <p>A huge share of Kafka's read-path throughput comes from <strong>zero-copy</strong> data transfer. A "traditional" file &rarr; network send goes: disk &rarr; OS kernel read buffer (DMA copy) &rarr; application/user-space buffer (CPU copy) &rarr; kernel socket buffer (CPU copy) &rarr; NIC buffer (DMA copy) — four copies and four user/kernel context switches, most of that work spent moving bytes the application never actually needed to touch.</p>
+        <p>Kafka instead uses the Linux <code>sendfile()</code> system call, which tells the kernel "move bytes directly from this file descriptor to this socket descriptor," skipping the user-space hop entirely. With <code>sendfile()</code>, only two DMA copies happen (disk/page-cache &rarr; kernel buffer, kernel buffer &rarr; NIC), and modern NICs with scatter-gather DMA can even copy straight from the OS <strong>page cache</strong> to the NIC, since Kafka never caches messages in the JVM heap — it deliberately relies on the OS page cache (log segments are written and re-read almost entirely as sequential, cache-friendly I/O). What this optimizes: it removes CPU cycles and context-switch overhead from the broker's hot read path, meaning a broker can push data to consumers at close to the physical network's line rate rather than being CPU-bound on copying bytes it doesn't need to inspect.</p>
+
+        <h2 id="system-design-view-end-to-end-walkthroughs">System Design View: End-to-End Walkthroughs</h2>
+
+        <h3>Producer send with acks=all (RF=3, min.insync.replicas=2)</h3>
+        <ol>
+          <li>Application calls <code>producer.send(topic="orders", key="cust-42", value=payload)</code>.</li>
+          <li>Client-side <strong>partitioner</strong> hashes <code>"cust-42"</code> &rarr; partition 3 (deterministic, via murmur2 % partition count).</li>
+          <li>The record is added to an in-memory <strong>batch</strong> for (topic=orders, partition=3); the producer waits up to <code>linger.ms</code> for more records to accumulate, then <strong>compresses</strong> the batch.</li>
+          <li>The producer's networking layer sends the <strong>Produce request</strong> to whichever broker is currently the <strong>leader</strong> for partition 3 (looked up from cached cluster metadata).</li>
+          <li>The leader broker <strong>appends</strong> the batch to the active segment of its local log (an in-memory page-cache write, sequential I/O) and assigns it the next offsets; the leader's <strong>LEO</strong> advances.</li>
+          <li>Because <code>acks=all</code>, the leader does <strong>not</strong> respond yet. It waits for the record to be replicated.</li>
+          <li><strong>Follower brokers</strong> (replicas 2 and 3), which are continuously issuing <strong>Fetch requests</strong> to the leader for this partition, pull the new batch and append it to their own local logs; each follower's LEO advances as it does so.</li>
+          <li>Once the leader observes that <strong>enough ISR members</strong> (here, both followers, satisfying <code>min.insync.replicas=2</code> together with itself) have replicated up to this offset, it advances the <strong>High Watermark</strong> to include this record.</li>
+          <li>The leader sends the <strong>Produce response</strong> (ack) back to the producer, confirming the write is committed.</li>
+          <li>If, at step 6&ndash;9, the ISR had shrunk below <code>min.insync.replicas</code> (e.g., a follower had died), the leader would instead return a <code>NotEnoughReplicasException</code>, and the producer (per its <code>retries</code>/idempotence config) would retry.</li>
+          <li>Only <strong>after</strong> the HW advances past this offset can any consumer fetch it — consumers never see uncommitted (not-fully-replicated) records.</li>
+        </ol>
+
+        <h3>Consumer group reading with offset commits</h3>
+        <ol>
+          <li>Consumer instance starts, configured with <code>group.id="billing-service"</code> and subscribes to topic <code>orders</code>.</li>
+          <li>It sends a request that resolves to the <strong>group coordinator</strong> — the broker leading the <code>__consumer_offsets</code> partition that <code>hash("billing-service") % 50</code> maps to.</li>
+          <li>The consumer (and any siblings in the same group) go through <strong>group membership / partition assignment</strong> (JoinGroup/SyncGroup in the classic protocol, or the continuous heartbeat-based flow under KIP-848) — the coordinator (or, pre-848, the group leader consumer) decides which consumer gets which partitions, e.g., consumer-1 gets partitions 0&ndash;2, consumer-2 gets partitions 3&ndash;5.</li>
+          <li>Each consumer looks up its <strong>last committed offset</strong> per assigned partition (read from <code>__consumer_offsets</code>, or falls back to <code>auto.offset.reset</code> policy — earliest/latest — if none exists).</li>
+          <li>The consumer issues <strong>Fetch requests</strong> to the leader broker of each assigned partition, requesting records starting at its current offset, up to the partition's <strong>High Watermark</strong>.</li>
+          <li>The consumer processes the returned batch (deserializes, runs business logic, may write results elsewhere).</li>
+          <li>Periodically (or after each batch, depending on <code>enable.auto.commit</code> / manual commit strategy), the consumer sends an <strong>OffsetCommit</strong> request to the group coordinator, which appends a record <code>(group, topic, partition) -&gt; offset</code> to <code>__consumer_offsets</code> (replicated like any other write, with its own acks/ISR behavior).</li>
+          <li>If the consumer crashes before committing, on restart (or on another group member taking over that partition) processing resumes from the <strong>last committed offset</strong>, which may mean some records are reprocessed (this is Kafka's default <strong>at-least-once</strong> delivery semantic from the consumer's point of view unless the application does something extra like idempotent writes or transactional consume-then-produce).</li>
+          <li>If group membership changes (new consumer joins, one leaves/crashes, or <code>session.timeout.ms</code> heartbeat is missed), a <strong>rebalance</strong> is triggered and partitions are reassigned per section 1.5.</li>
+        </ol>
+
+        <h2 id="the-math-behind-kafka">The Math Behind Kafka</h2>
+        <p><em>All calculations below use decimal units — 1 MB = 10<sup>6</sup> bytes, 1 GB = 10<sup>3</sup> MB, 1 TB = 10<sup>3</sup> GB — which is the convention most throughput/capacity discussions use; swap in binary GiB/TiB if your infra team measures disks that way, the ratios still hold.</em></p>
+
+        <h3>3.1 Throughput &rarr; Storage (Retention Math)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Storage needed (single copy)</span>
+          Storage needed (single copy) = sustained throughput &times; retention time
+          <br>Worked example &mdash; 100 MB/s sustained for 7 days: 100 MB/s &times; 86,400 s/day = 8,640,000 MB/day = 8,640 GB/day; 8,640 GB/day &times; 7 days = 60,480 GB = 60.48 TB (one copy, pre-replication).
+          <br>With replication factor <strong>RF = 3</strong> (every byte stored on 3 brokers): 60.48 TB &times; 3 = <strong>181.44 TB</strong> total disk across the cluster.
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Segment-rolling interval</span>
+          T<sub>roll</sub> = 1000 MB &divide; (100/P MB/s) = 10 &times; P seconds
+          <br>Default <code>log.segment.bytes = 1 GB</code>. If that 100 MB/s is spread evenly across <strong>P</strong> partitions, each partition receives 100/P MB/s.
+          <br>With P = 10 partitions: each partition rolls a new segment every ~100 seconds (&asymp;864 segments/day/partition, &times;10 partitions &asymp; 8,640 segments/day cluster-wide) &mdash; which cross-checks against 60,480 GB/week &divide; 1 GB/segment &asymp; 60,480 segments/week &asymp; 8,640/day. More partitions &rArr; each partition rolls segments <em>less</em> often (smaller share of the firehose per partition) even though the cluster-wide segment creation rate stays the same.
+        </div>
+
+        <h3>3.2 Durability Probability with N Replicas and min.insync.replicas</h3>
+        <div class="formula-box">
+          <span class="formula-label">Durability probability (message loss)</span>
+          P(committed message is lost) &asymp; p<sup>r</sup>
+          <br>Model each broker as independently failing (losing unrecoverable data) with probability <strong>p</strong> during some exposure window (illustrative, not empirical). If a record is only guaranteed to be on <strong>r</strong> replicas when it's acknowledged (r is effectively bounded below by <code>min.insync.replicas</code> when using <code>acks=all</code>), durability follows this formula.
+          <br>Worked example with p = 1% = 0.01: RF=1 (any acks), or RF=3 with min.insync.replicas=1 and acks=1 &rarr; effective r=1 &rarr; P(loss) = 0.01 (1%). RF=3, min.insync.replicas=2, acks=all &rarr; r=2 &rarr; P(loss) = 0.0001 (0.01%). RF=3, min.insync.replicas=3, acks=all &rarr; r=3 &rarr; P(loss) = 0.000001 (0.0001%).
+          <br>Each extra required replica multiplies durability risk down by another factor of <strong>p</strong> — durability improves <em>geometrically</em> with <code>min.insync.replicas</code>, which is why <code>acks=all</code> + <code>min.insync.replicas=2</code> (on RF=3) is the standard "safe default," while <code>acks=1</code> gives you essentially no protection against losing the leader before it replicates.
+        </div>
+
+        <h3>3.3 Availability Trade-off from the Same Knob</h3>
+        <div class="formula-box">
+          <span class="formula-label">Availability vs. durability</span>
+          Brokers you can lose and still accept acks=all writes = RF &minus; min.insync.replicas
+          <br>RF=3, min.insync.replicas=2 &rarr; tolerate <strong>1</strong> broker down and keep writing (and that write is still durable against 1 more failure).
+          <br>RF=3, min.insync.replicas=3 &rarr; tolerate <strong>0</strong> broker down for writes (maximum durability, minimum write-availability).
+          <br>RF=3, min.insync.replicas=1 &rarr; tolerate <strong>2</strong> brokers down for writes, but durability degrades toward the RF=1 case if the ISR has shrunk to just the leader.
+        </div>
+
+        <h3>3.4 Latency Budget for acks=all</h3>
+        <div class="formula-box">
+          <span class="formula-label">Same-AZ latency budget (SSD-backed, already-batched)</span>
+          Producer &rarr; leader (network): 0.5&ndash;1 ms
+          <br>Leader appends to page cache (no fsync): 0.1&ndash;0.5 ms
+          <br>Leader &rarr; followers replication (parallel, bounded by slowest ISR member): 1&ndash;5 ms
+          <br>Follower appends to page cache: 0.1&ndash;0.5 ms
+          <br>Leader observes HW advance, acks producer (network): 0.5&ndash;1 ms
+          <br><strong>Total (same-AZ, p50) &asymp; 2&ndash;5 ms</strong> (p99 often 10&ndash;20+ ms due to GC/jitter)
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Cross-region latency</span>
+          If the farthest required ISR member is 80 ms network RTT away, <code>acks=all</code> latency is dominated by that hop &mdash; expect <strong>&asymp; 80&ndash;160+ ms</strong>, because the leader must wait for the slowest replica in the ISR before it can advance the HW and ack.
+          <br>This is the core reason people avoid stretching a single Kafka cluster's ISR across continents for latency-sensitive writes, using Kafka's geo-replication (MirrorMaker) between independent regional clusters instead.
+        </div>
+
+        <h3>3.5 Partition Count vs. Consumer Parallelism</h3>
+        <div class="formula-box">
+          <span class="formula-label">Max useful parallel consumers</span>
+          Max useful parallel consumers in one group = number of partitions
+          <br>Because a partition can be owned by only one consumer instance in a group at a time, extra consumers beyond the partition count sit idle. Worked example: topic with <strong>12 partitions</strong>, consumer group with <strong>20 instances</strong> &rarr; 12 are active, <strong>8 sit idle</strong>. To usefully run 50 consumer instances, you need &ge;50 partitions.
+          <br><strong>Corollary:</strong> increasing partition count is a one-way, disruptive operation — new messages hash into the new (larger) modulus, so <code>key &rarr; partition</code> mapping changes going forward even though old messages stay where they were, which can silently break "this key's events are always in the same partition" assumptions that downstream consumers may rely on.
+        </div>
+
+        <h2 id="cap-theorem-placement-and-durabilityavailability-trade-offs">CAP Theorem Placement and Durability&ndash;Availability Trade-offs</h2>
+        <p>Kafka is not a single request/response data store, so CAP (Consistency / Availability / Partition tolerance) doesn't map onto it as cleanly as it does onto, say, a key-value store — Kafka is better thought of as a pipeline of producers, durably-replicated partitions, and consumers, each of which can be tuned independently. That said, the <strong>replication and acknowledgment knobs are exactly where the CAP/PACELC trade-off shows up</strong>.</p>
+        <p><strong>Favoring Consistency/Durability (C) over Availability (A):</strong> <code>acks=all</code>, high <code>min.insync.replicas</code> (equal to or close to RF), <code>unclean.leader.election.enable=false</code>. Under a network partition or broker failure that shrinks the ISR below <code>min.insync.replicas</code>, the partition <strong>stops accepting writes</strong> (<code>NotEnoughReplicasException</code>) rather than risk acknowledging a write that could vanish. This is a <strong>CP-leaning</strong> configuration.</p>
+        <p><strong>Favoring Availability (A) over Consistency:</strong> <code>acks=1</code> or <code>acks=0</code>, low <code>min.insync.replicas</code>, <code>unclean.leader.election.enable=true</code>. Writes keep flowing even when the ISR has shrunk to just the leader (or even a stale, out-of-ISR replica is allowed to become leader) — but a subsequent leader failure can silently lose data that was already acknowledged to producers. This is an <strong>AP-leaning</strong> configuration.</p>
+        <p><strong>Read-side availability vs. consistency:</strong> consumers only ever see records up to the High Watermark — this is itself a consistency mechanism (never expose data that isn't safely replicated), and it means <strong>read availability of the very newest writes is deliberately delayed</strong> by however long replication takes, in exchange for never showing a consumer something that could later be rolled back by a leader failure.</p>
+        <p><strong>PACELC framing:</strong> even absent a partition, Kafka trades <strong>Latency vs. Consistency (the "ELSE" branch of PACELC)</strong> through <code>acks</code>: <code>acks=all</code> accepts higher latency (wait for the slowest ISR member) in exchange for durability; <code>acks=1</code>/<code>acks=0</code> accept weaker durability for lower latency. During an actual partition (the "P" branch), Kafka's ISR shrinking behavior is the availability lever: a topic configured to require a large ISR essentially chooses <strong>C over A</strong> when enough replicas are unreachable, while a topic configured with a low <code>min.insync.replicas</code> chooses <strong>A over C</strong>.</p>
+        <p>The practical interview takeaway: Kafka doesn't give you a single global CAP answer — it gives you <strong>per-topic dials</strong> (<code>acks</code>, <code>min.insync.replicas</code>, <code>unclean.leader.election.enable</code>) that let different topics in the same cluster sit at different points on the durability&ndash;availability spectrum (e.g., a <code>payments</code> topic tuned CP, a <code>page-views</code> analytics topic tuned AP).</p>
+
+        <h2 id="real-world-usage-patterns">Real-World Usage Patterns</h2>
+        <p><strong>Messaging / message-broker replacement.</strong> A higher-throughput, partitioned, replicated alternative to traditional brokers like ActiveMQ/RabbitMQ for decoupling producers from consumers.</p>
+        <p><strong>Website/activity tracking.</strong> Kafka's original use case at LinkedIn: publishing user activity (page views, searches, clicks) as real-time feeds consumed by both online services and offline batch systems (Hadoop).</p>
+        <p><strong>Metrics and operational monitoring.</strong> Aggregating distributed application/infrastructure metrics into centralized feeds.</p>
+        <p><strong>Log aggregation.</strong> Collecting log data from many servers as a stream abstraction, replacing tools like Scribe/Flume, with the benefit of replication-backed durability and much lower end-to-end latency.</p>
+        <p><strong>Stream processing.</strong> Multi-stage pipelines where raw topics are consumed, transformed/enriched/joined, and republished to new topics (Kafka Streams, ksqlDB, Apache Flink, Spark Structured Streaming all build on this).</p>
+        <p><strong>Event sourcing.</strong> Application state changes are captured as an ordered, immutable log of events rather than as in-place mutations to a database row — Kafka's support for very large, durable, ordered logs makes it a natural backend for this architectural style.</p>
+        <p><strong>Change Data Capture (CDC).</strong> Tools like <strong>Debezium</strong> tail a source database's transaction log and publish every row-level insert/update/delete as a Kafka event (rather than polling tables), giving downstream systems a real-time replica feed with minimal impact on the source database, preserved operation order, and support for cache invalidation, search-index updates, materialized views, and fan-out synchronization to multiple heterogeneous systems.</p>
+        <p><strong>Commit log for distributed systems.</strong> Kafka itself (via log compaction) can serve as an external commit log that other distributed systems use to replicate state between their own nodes and resync failed replicas — conceptually similar to what a system like Apache BookKeeper provides.</p>
+
+        <h2 id="trade-offs-and-limitations">Trade-offs and Limitations</h2>
+        <ul>
+          <li><strong>Partition count is not free.</strong> Every partition is a set of open file handles (for its segments' <code>.log</code>/<code>.index</code>/<code>.timeindex</code> files), consumes leader-election and replication overhead, and adds to controller/metadata load. Clusters with very high per-broker partition counts see slower controller failover, higher memory/GC pressure from index structures, and longer end-to-end latencies from more fsync/replication fan-out — so "just add more partitions" is not a free scaling lever.</li>
+          <li><strong>Rebalancing pauses.</strong> Even with cooperative/incremental protocols, a rebalance still briefly interrupts processing for the partitions actually being reassigned; the old eager protocol paused the <em>entire</em> group. Frequent consumer churn (autoscaling that scales consumers up/down often, or flaky consumers missing heartbeats) can make rebalancing a chronic tax rather than a rare event.</li>
+          <li><strong>No true random access / no secondary indexes.</strong> Kafka is fundamentally an ordered, append-only log addressed by offset (or by sparse time index) — there is no way to query "give me all records where <code>field = X</code>" without external indexing (e.g., a search engine or database fed via a consumer). It is optimized for sequential scan, not point lookup by arbitrary predicate.</li>
+          <li><strong>Ordering is per-partition only.</strong> As covered in 1.1, there is no cross-partition ordering guarantee — applications that need strict global order are forced onto a single partition, which caps throughput to what one broker (and one consumer) can handle.</li>
+          <li><strong>Partition count changes are effectively one-way and disruptive.</strong> Adding partitions changes the key&rarr;partition hash mapping for new messages going forward without moving old data, which can break assumptions about "this key always maps to the same partition" for any consumer logic (e.g., local state stores keyed by partition) that predates the resize. Reducing partition count isn't supported at all without recreating the topic.</li>
+          <li><strong>Storage is not designed for point-in-time random deletes</strong> (other than whole-segment retention or key-based tombstones via compaction) — you can't cheaply delete "record #12345 specifically" from the middle of a log.</li>
+          <li><strong>Operational complexity remains non-trivial</strong> even after removing ZooKeeper: correctly sizing partitions, replication factor, <code>min.insync.replicas</code>, retention, and rebalancing behavior per topic requires real expertise, and mis-sized clusters are a common source of production incidents (e.g., under-provisioned partition counts capping consumer throughput, or <code>min.insync.replicas</code> set too aggressively causing write outages during routine maintenance).</li>
+        </ul>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">Why does Kafka only guarantee ordering within a partition, not across a whole topic?</div>
+          <div class="qa-a">Because partitions are the unit of parallel writing/reading — a topic's partitions can be spread across many brokers and consumed by many consumers concurrently. Guaranteeing cross-partition order would require a single, globally serialized writer/coordinator, eliminating the parallelism that makes Kafka scale. Per-partition ordering is a deliberate trade of "less strict global consistency" for "far higher throughput."</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does Kafka find the message at a given offset without scanning the entire partition log?</div>
+          <div class="qa-a">Two binary searches plus a short linear scan: (1) binary search the in-memory list of segment base offsets to find the right segment file; (2) binary search that segment's sparse <code>.index</code> file (offset&rarr;byte-position, one entry roughly every 4 KB by default) to find the nearest indexed position at or before the target; (3) linearly scan forward a few KB in the <code>.log</code> file from there to the exact offset.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between acks=0, acks=1, and acks=all?</div>
+          <div class="qa-a"><code>acks=0</code> — producer doesn't wait for any response (fastest, weakest durability). <code>acks=1</code> — waits only for the partition leader to write to its local log (lost if leader dies before replicating). <code>acks=all</code> — waits for every current ISR member to replicate the record, giving the strongest durability at the cost of waiting for the slowest in-sync replica.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does the idempotent producer prevent duplicate messages on retry?</div>
+          <div class="qa-a">Each producer session gets a unique Producer ID (PID); every batch sent to a partition carries an incrementing sequence number. The broker remembers the last sequence numbers it has committed per (PID, partition); if a retried batch arrives with a sequence number already seen, the broker discards it as a duplicate instead of re-appending. This guarantee holds only within one producer session — restarting the producer resets the PID.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is the difference between idempotence and Kafka transactions (exactly-once semantics)?</div>
+          <div class="qa-a">Idempotence deduplicates retries <strong>within a single partition</strong>. Transactions extend this to atomic, all-or-nothing writes <strong>across multiple partitions/topics</strong> (e.g., a consume-transform-produce pipeline), using a transaction coordinator, the <code>__transaction_state</code> topic, and commit/abort marker records; consumers with <code>isolation.level=read_committed</code> only see records up to the Last Stable Offset, hiding uncommitted/aborted transactional writes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is the High Watermark, and why can't consumers read past it?</div>
+          <div class="qa-a">The HW is the minimum Log End Offset across all in-sync replicas for a partition — the highest offset guaranteed to be safely replicated. Consumers are capped at the HW so they never read a record that could later disappear if the leader crashes before that record was actually replicated to the ISR.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if the entire ISR for a partition dies simultaneously?</div>
+          <div class="qa-a">By default (<code>unclean.leader.election.enable=false</code>), Kafka waits for a former ISR member to come back online and re-elects it as leader, favoring consistency (no committed data is silently lost, but the partition is unavailable for writes/reads in the meantime). Flipping the flag to <code>true</code> instead promotes the first replica that comes back — even if it wasn't in the ISR — restoring availability sooner at the risk of losing some committed messages.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why did Kafka move from ZooKeeper to KRaft?</div>
+          <div class="qa-a">ZooKeeper (KIP-500) was an extra distributed system to operate, and it became a scalability bottleneck: every metadata change was a synchronous external write, and controller failover required a full metadata reload from ZK, which got slower as partition counts grew. KRaft replaces this with a Raft-based, self-managed metadata quorum built into a small set of controller nodes, replicating a metadata log the same way Kafka replicates any other partition — simpler ops, and designed to scale to millions of partitions. ZooKeeper support was fully removed in Kafka 4.0.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between log retention and log compaction?</div>
+          <div class="qa-a">Retention (<code>cleanup.policy=delete</code>) discards whole old segments once they exceed an age or size limit — good for "keep the last N days/GB of raw events." Compaction (<code>cleanup.policy=compact</code>) instead guarantees at least the latest value per key is retained indefinitely, discarding only superseded older values for the same key — good for "give me the current state of every key," e.g., a changelog topic. Both can be combined (<code>compact,delete</code>).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is a tombstone, and why doesn't it disappear immediately?</div>
+          <div class="qa-a">A tombstone is a record with a key and a null value, signaling "delete this key" in a compacted topic. It's kept for at least <code>delete.retention.ms</code> after being written (rather than removed instantly) so that any consumer that hasn't yet caught up gets a chance to see the delete marker and update its own downstream state accordingly, before the tombstone itself is finally purged.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does zero-copy transfer make Kafka faster, mechanically?</div>
+          <div class="qa-a">Kafka uses the <code>sendfile()</code> syscall so the OS kernel transfers bytes directly from the page cache to the network socket/NIC via DMA, without copying data into the broker application's user-space memory. A traditional read-then-send path needs up to four data copies and four context switches; zero-copy cuts that down substantially, freeing CPU cycles so the broker's throughput is limited by network bandwidth, not by copy overhead — this matters a lot because Kafka deliberately avoids caching messages in the JVM heap and relies on the OS page cache instead.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What determines the maximum number of consumers that can usefully process a topic in parallel?</div>
+          <div class="qa-a">The partition count. Since each partition can be owned by only one consumer instance within a group at a time, the number of partitions is a hard ceiling on effective parallelism — extra consumer instances beyond the partition count sit idle.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Calculation — You need 500 MB/s sustained throughput retained for 3 days with RF=3. How much total disk do you need across the cluster?</div>
+          <div class="qa-a">Raw (single-copy) data = 500 MB/s &times; 86,400 s/day &times; 3 days = 500 &times; 86,400 &times; 3 = 129,600,000 MB = 129.6 TB. With RF=3: 129.6 TB &times; 3 = <strong>388.8 TB</strong> of total cluster disk for that topic's raw data, before accounting for index-file overhead (small) and safety headroom (e.g., targeting &le;70% disk utilization would mean provisioning closer to 388.8 / 0.7 &asymp; <strong>555 TB</strong>).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Calculation — With acks=all, RF=3, min.insync.replicas=2, and an independent per-broker failure probability of 2% in the relevant window, what's the approximate probability a committed message is lost?</div>
+          <div class="qa-a">Worst case, a committed message only needs to have reached min.insync.replicas = 2 replicas. P(loss) &asymp; p&sup2; = 0.02&sup2; = 0.0004 = <strong>0.04%</strong>, versus p&sup1; = 2% if only relying on a single replica (e.g., <code>acks=1</code>) — a 50x improvement from requiring one additional acknowledging replica.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is acks=all latency dominated by network RTT rather than disk speed?</div>
+          <div class="qa-a">Kafka doesn't <code>fsync</code> every write to physical disk by default — the leader append is effectively a page-cache write (sub-millisecond). The dominant cost is waiting for the <strong>slowest required in-sync follower</strong> to fetch, append, and be observed by the leader — which is bounded by network round-trip time between the leader and that follower, not by disk I/O. This is why stretching a single cluster's ISR across regions dramatically increases <code>acks=all</code> latency, while same-AZ deployments keep it in the low single-digit milliseconds.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between the eager and cooperative-sticky consumer rebalance protocols?</div>
+          <div class="qa-a">Eager (the original protocol) revokes <strong>all</strong> partitions from <strong>every</strong> group member on any membership change, recomputes assignment, then reassigns — a global pause even for members whose assignment doesn't change. Cooperative sticky (KIP-429, Kafka 2.4+) only revokes the specific partitions that are actually moving, in two phases, so unaffected consumers keep processing without interruption; Kafka 4.0's KIP-848 protocol goes further by moving assignment logic to the broker and using continuous incremental heartbeats instead of the classic JoinGroup/SyncGroup barrier.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does Kafka use the message offset rather than a producer-generated GUID as the message identifier?</div>
+          <div class="qa-a">The original design considered a GUID-per-message approach but rejected it: it would require a heavyweight, persistent random-access index mapping GUID &rarr; offset, replicated and crash-safe on every broker, whereas a simple monotonically increasing per-partition counter (the offset) needs no such structure — it falls naturally out of "how many bytes/records have been appended so far." Since consumers already need to track some position per partition, the extra uniqueness a GUID would offer provides no additional value.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does min.insync.replicas interact with acks=all to affect both durability and availability at once?</div>
+          <div class="qa-a"><code>min.insync.replicas</code> sets the floor for how many ISR members (including the leader) must ack a write before it's considered committed when <code>acks=all</code> is used. Raising it improves durability geometrically (fewer replicas need to simultaneously fail to lose data) but reduces availability linearly, because RF &minus; min.insync.replicas is exactly the number of simultaneous broker failures the topic can tolerate while still accepting writes — set it too high (e.g., equal to RF) and a single broker blip halts writes entirely.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A topic has 8 partitions and RF=3. How many total partition replicas exist across the cluster, and what's the minimum broker count to place them with no two replicas of the same partition on the same broker?</div>
+          <div class="qa-a">Total replicas = partitions &times; RF = 8 &times; 3 = <strong>24 replica copies</strong>. Minimum broker count to avoid co-locating two replicas of the <em>same</em> partition is <strong>3</strong> (equal to RF) — though in practice you'd want more brokers than RF so that a single broker failure doesn't disproportionately concentrate leadership or block rack/AZ-aware placement.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is increasing a topic's partition count considered risky for keyed data?</div>
+          <div class="qa-a">The default partitioner maps a key to a partition via <code>hash(key) % partition_count</code>. Changing the partition count changes that modulus for every future message, so a key that used to land on partition 3 might now land on partition 5 — while all its <em>old</em> messages remain on partition 3. Any consumer or downstream system relying on "this key's entire history is in one partition" (e.g., local key-value state built by replaying a single partition, or compacted-topic reasoning) can silently break after a partition count increase, so it should be treated as a rare, carefully coordinated operation.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Kafka is a distributed, append-only commit log generalized into an event-streaming platform: topics are split into ordered, per-partition logs stored as segment files with sparse offset/time indexes for O(log n) lookups; producers control durability and throughput via partitioning, batching/compression, acks, idempotence (PID + sequence numbers), and cross-partition transactions; every partition is replicated across a leader and followers tracked in an ISR, with the High Watermark (the minimum ISR LEO) gating what consumers can read and min.insync.replicas + acks=all setting the durability floor; consumer groups divide partitions one-to-one across instances and track progress via committed offsets in __consumer_offsets, with KIP-429/KIP-848 making rebalances progressively less disruptive; cluster metadata itself moved from an external ZooKeeper dependency to a self-managed Raft-based KRaft quorum (Kafka 4.0); retention and compaction give two complementary cleanup strategies; and zero-copy sendfile() transfer keeps the broker's read path CPU-light. The durability/availability math is geometric in min.insync.replicas and linear in RF &minus; min.insync.replicas, acks=all latency is dominated by the slowest ISR member's network RTT rather than disk, and partition count is the hard ceiling on both consumer parallelism and (once increased) the stability of key&rarr;partition assignment — together these per-topic dials (acks, min.insync.replicas, unclean.leader.election.enable) let Kafka sit at different points on the CP/AP spectrum on a topic-by-topic basis rather than committing the whole cluster to one CAP answer.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Kreps, J., Narkhede, N., Rao, J. — <a href="https://docs.huihoo.com/apache/kafka/Kafka-A-Distributed-Messaging-System-for-Log-Processing.pdf" target="_blank" rel="noopener">"Kafka: A Distributed Messaging System for Log Processing"</a> (LinkedIn, NetDB '11)</li>
+          <li>Apache Kafka — <a href="https://kafka.apache.org/intro" target="_blank" rel="noopener">Introduction</a> (what event streaming is, core concepts)</li>
+          <li>Apache Kafka — <a href="https://kafka.apache.org/uses" target="_blank" rel="noopener">Use Cases</a></li>
+          <li>Apache Kafka 3.5 Docs — <a href="https://kafka.apache.org/35/implementation/log/" target="_blank" rel="noopener">Implementation: Log</a> (segments, indexing, binary search, retention/deletes, guarantees)</li>
+          <li>Apache Kafka Docs — <a href="https://kafka.apache.org/41/operations/consumer-rebalance-protocol/" target="_blank" rel="noopener">Consumer Rebalance Protocol (KIP-848)</a></li>
+          <li>Apache Kafka Javadoc — <a href="https://kafka.apache.org/26/javadoc/org/apache/kafka/clients/consumer/CooperativeStickyAssignor.html" target="_blank" rel="noopener">CooperativeStickyAssignor</a></li>
+          <li>Confluent Docs — <a href="https://docs.confluent.io/kafka/design/replication.html" target="_blank" rel="noopener">Kafka Replication and Committed Messages</a> (ISR, HW/LEO, quorum comparison, unclean leader election, controller)</li>
+          <li>Confluent Docs — <a href="https://docs.confluent.io/kafka/design/log_compaction.html" target="_blank" rel="noopener">Kafka Log Compaction</a></li>
+          <li>Confluent Blog — <a href="https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/" target="_blank" rel="noopener">"Exactly-once Semantics is Possible: Here's How Apache Kafka Does It"</a></li>
+          <li>Confluent Blog — <a href="https://www.confluent.io/blog/transactions-apache-kafka/" target="_blank" rel="noopener">"Transactions in Apache Kafka"</a></li>
+          <li>Apache Kafka KIP-98 — <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-98+-+Exactly+Once+Delivery+and+Transactional+Messaging" target="_blank" rel="noopener">Exactly Once Delivery and Transactional Messaging</a></li>
+          <li>Apache Kafka KIP-500 — <a href="https://cwiki.apache.org/confluence/spaces/KAFKA/pages/123898922/KIP-500+Replace+ZooKeeper+with+a+Self-Managed+Metadata+Quorum" target="_blank" rel="noopener">Replace ZooKeeper with a Self-Managed Metadata Quorum</a></li>
+          <li>Confluent Developer — <a href="https://developer.confluent.io/learn/kraft/" target="_blank" rel="noopener">"KRaft: Apache Kafka Without ZooKeeper"</a></li>
+          <li>Confluent Blog — <a href="https://www.confluent.io/blog/kip-848-consumer-rebalance-protocol/" target="_blank" rel="noopener">"KIP-848: A New Consumer Rebalance Protocol for Apache Kafka 4.0"</a></li>
+          <li>Conduktor — <a href="https://www.conduktor.io/kafka/idempotent-kafka-producer" target="_blank" rel="noopener">"Kafka Idempotent Producer (enable.idempotence)"</a></li>
+          <li>Conduktor — <a href="https://www.conduktor.io/kafka/producer-default-partitioner-and-sticky-partitioner" target="_blank" rel="noopener">"Kafka Default Partitioner &amp; Sticky Partitioner"</a></li>
+          <li>Baeldung — <a href="https://www.baeldung.com/ops/kafka-log-segment-bytes-vs-log-retention-hours" target="_blank" rel="noopener">"log.segment.bytes vs. log.retention.hours Parameters in Kafka"</a></li>
+          <li>Strimzi Blog — <a href="https://strimzi.io/blog/2021/12/17/kafka-segment-retention/" target="_blank" rel="noopener">"Deep dive into Apache Kafka storage internals: segments, rolling and retention"</a></li>
+          <li>Confluent Learn — <a href="https://www.confluent.io/learn/kafka-rebalancing/" target="_blank" rel="noopener">"Kafka Rebalancing Explained"</a></li>
+          <li>LinkedIn Engineering Blog — <a href="https://engineering.linkedin.com/distributed-systems/log-what-every-software-engineer-should-know-about-real-time-datas-unifying/" target="_blank" rel="noopener">"The Log: What every software engineer should know about real-time data's unifying abstraction"</a> (referenced by Kafka's own Uses page)</li>
+          <li>Debezium Blog — <a href="https://debezium.io/blog/2020/02/10/event-sourcing-vs-cdc/" target="_blank" rel="noopener">"Distributed Data for Microservices — Event Sourcing vs. Change Data Capture"</a></li>
+          <li>Designgurus.io — <a href="https://www.designgurus.io/blog/system-design-interview-basics-cap-vs-pacelc" target="_blank" rel="noopener">"CAP Theorem vs PACELC: Understanding Distributed System Trade-offs"</a></li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="cassandra.html"><span class="dir">Previous</span>Apache Cassandra</a>
+          <a class="next" href="bigtable.html"><span class="dir">Next</span>Google Bigtable</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

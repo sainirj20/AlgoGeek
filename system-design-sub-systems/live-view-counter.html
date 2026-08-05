@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Viewer Counter | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">Live Viewer Counter</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-hierarchical-fan-in-aggregation-for-a-hot-stream">Deep Dive &mdash; Hierarchical Fan-In Aggregation for a Hot Stream</a></li>
+        <li><a href="#deep-dive-presence-via-heartbeat-ttl-expiry">Deep Dive &mdash; Presence via Heartbeat + TTL Expiry</a></li>
+        <li><a href="#deep-dive-smoothing-and-display-damping">Deep Dive &mdash; Smoothing and Display Damping</a></li>
+        <li><a href="#deep-dive-reconnect-handling-and-double-counting-avoidance">Deep Dive &mdash; Reconnect Handling and Double-Counting Avoidance</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Real-Time Concurrent Viewer Counter</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for the "N people watching right now" feature seen on YouTube Live, Twitch, X/Periscope-style broadcasts, and Google Docs-style page presence: requirements, capacity estimation, the heartbeat/TTL presence model, hierarchical fan-in aggregation for a single viral stream with millions of viewers, display smoothing, reconnect/double-count handling, partitioning, abuse prevention, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the feature that powers the small, constantly-updating "1.2M watching now" badge on a live stream, or the "3 people viewing this document" presence indicator on a collaborative page. For a given <code>stream_id</code> (a live video, a live auction, a shared document, a product page), the system must answer, continuously and in near real time: <strong>how many distinct clients are actively connected right now</strong> &mdash; not how many have ever watched, and not how many will watch, just the current, live, transient population &mdash; and it must keep answering that correctly as the population swings from a handful of viewers to millions within minutes, as viewers join and leave (cleanly or abruptly), and as the underlying infrastructure itself scales, fails over, and recovers.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It looks deceptively small &mdash; "just count connections" &mdash; but it packs in several genuinely hard distributed-systems sub-problems: liveness/presence detection when you cannot rely on a clean disconnect signal, a distributed counting problem that must scale past what any single key, shard, or machine can hold, an explicit exactness-vs-scalability trade-off that the candidate has to argue for rather than assume, and a human-perception problem (a jittery, flickering number erodes trust even when it's technically "more accurate"). A strong candidate treats "approximate is fine, exact is prohibitively expensive" as the central thesis of the whole design, then shows how every subsequent decision &mdash; TTL-based presence, hierarchical aggregation, smoothing &mdash; flows from that thesis.</p>
+
+        <h3>Concurrent Viewers vs. Total View Count &mdash; Two Different Problems</h3>
+        <p>Before drawing a single box, separate this feature from a superficially similar one: the lifetime, monotonically increasing <strong>total view count</strong> (\"this video has 4.2M views\"). They share a name (\"view counter\") but almost nothing else architecturally.</p>
+        <table>
+          <tr><th></th><th>Concurrent viewer count (this page)</th><th>Total lifetime view count (a different system)</th></tr>
+          <tr><td>What it measures</td><td>How many clients are connected <em>right now</em></td><td>How many times this has ever been viewed, all-time</td></tr>
+          <tr><td>Direction over time</td><td>Goes up and down continuously</td><td>Monotonically non-decreasing</td></tr>
+          <tr><td>Underlying data structure</td><td>A short-lived presence/membership set with expiry</td><td>An append-only, idempotent, at-least-once-safe increment log or counter</td></tr>
+          <tr><td>Dedup rule</td><td>One entry per open connection/session; self-expires on disconnect</td><td>One count per (user, video, watch-session) subject to a minimum watch-time rule</td></tr>
+          <tr><td>Consistency needs</td><td>Approximate, eventually consistent is fine and expected</td><td>Must never silently double-count or lose a legitimate view long-term</td></tr>
+          <tr><td>Primary anti-fraud concern</td><td>Fake concurrent connections inflating "hotness" signal in the moment</td><td>Bot/replay view-count manipulation inflating the permanent, public number</td></tr>
+        </table>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          State this distinction in the first two minutes, unprompted: "I'm going to assume you mean the live, transient concurrent-viewer gauge, not the permanent lifetime view count &mdash; those are genuinely different systems with different consistency models, and I want to be explicit about which one I'm designing." Interviewers who ask this question ambiguously are often testing exactly whether you notice the difference.
+        </div>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope before drawing boxes &mdash; this problem changes shape a lot depending on the answers.</p>
+        <ol>
+          <li>Are we counting live concurrent presence, or the separate lifetime "total views" counter? (State the distinction above and confirm.)</li>
+          <li>Does the displayed number need to be exact, or is a close approximation &mdash; within a few percent, refreshed every few seconds &mdash; acceptable?</li>
+          <li>What's the traffic shape: mostly many small pages/streams with a handful of concurrent viewers each, or do we specifically need to survive a single viral stream with millions of concurrent viewers?</li>
+          <li>How fresh must the displayed number be &mdash; sub-second, every few seconds, every 30 seconds?</li>
+          <li>Is this scoped to live video/streams only, or also generic pages &mdash; a collaborative document, a product listing, a live auction &mdash; where "viewing" means something slightly different each time?</li>
+          <li>Do we need to show <em>who</em> is viewing (avatars, names, a small presence list), or only an aggregate number?</li>
+          <li>Do we need historical/analytics data &mdash; e.g. a creator dashboard plotting concurrent viewers over the life of the stream?</li>
+          <li>Should the same logged-in user watching from two tabs or two devices count once or twice?</li>
+          <li>Do we need to defend the number against fraud/bot inflation, or is this purely an internal, non-public metric?</li>
+          <li>Single region to start, or does the design need to anticipate a global audience and multi-region infrastructure from day one?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't stall waiting for every answer &mdash; state a reasonable assumption out loud ("I'll assume approximate counting, refreshed every 1&ndash;5 seconds, is acceptable &mdash; nobody has ever needed the literal, instantaneous, exact number of viewers, and chasing exactness here is the single most expensive and least valuable thing we could build") and keep moving. Naming and rejecting the expensive-but-unnecessary "exact" solution early is itself a strong signal.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Show an approximate count of current concurrent viewers/connections for any given <code>stream_id</code> or page id.</li>
+          <li>Update the displayed count on a short cadence &mdash; target a 1&ndash;5 second aggregation/publish interval system-wide.</li>
+          <li>Correctly handle a single stream scaling from a handful of viewers to millions of concurrent viewers without a redesign or a manual "hot stream" migration.</li>
+          <li>Detect and remove a departed viewer even when no explicit "leave" or clean-disconnect signal is ever received (crash, force-quit, network drop, laptop closed mid-stream).</li>
+          <li>Provide a lightweight read path for surfaces that can't hold an open WebSocket &mdash; embeds, widgets, server-rendered snapshots, internal dashboards.</li>
+          <li>(Extension) Support an authorized "who's currently viewing" presence list for smaller-scale collaborative surfaces, gated by the same permissions as the underlying page.</li>
+          <li>Persist a time-series snapshot of concurrent-viewer count per stream for creator- and platform-facing analytics, separate from the real-time presence structure.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Eventual consistency is acceptable, by design:</strong> a brief, small inaccuracy in the displayed count is a non-issue; strict linearizable exactness is not required and would be prohibitively expensive at this scale &mdash; treat this as a stated goal, not a compromise.</li>
+          <li><strong>Very high write throughput</strong> for join/heartbeat/leave presence events, dominated overwhelmingly by heartbeat volume rather than by joins or leaves.</li>
+          <li><strong>Low read latency</strong> for the published count &mdash; reads must be served from an already-computed, cached value, never recomputed from the raw presence structure per request.</li>
+          <li><strong>Horizontal scalability at every tier</strong> &mdash; gateway connection capacity, presence-store writes, and aggregation compute all need to scale independently, since their load profiles differ enormously (millions of connections vs. a handful of aggregation updates per second).</li>
+          <li><strong>Self-healing:</strong> the design must tolerate abrupt disconnects, node crashes, and transient network partitions and converge back to a correct count automatically, with no manual intervention or explicit "someone left" signal required.</li>
+          <li><strong>No visible flicker:</strong> the number shown to end users must feel stable and trustworthy, not visibly jump around second to second due to internal aggregation or sampling noise.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on the presence model, hierarchical fan-in for a single hot stream, heartbeat/TTL liveness, display smoothing, reconnect handling, partitioning, and abuse prevention. We call out but don't build the internals of a full "who's viewing" avatar-list UI, the ML internals of bot/fraud detection, the separate total-lifetime-view-count system (see the distinction above), or ad-viewability counting &mdash; a related but distinct discipline with its own definitions (e.g. a "viewable impression").</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly and let them drive every downstream decision &mdash; this is the section that justifies why a single Redis key cannot be the whole design.</p>
+
+        <h3>Peak Concurrent Viewers</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          A single viral live stream spikes to 5,000,000 concurrent viewers (the "hot stream" case this design must survive).
+          <br>Platform-wide at that same moment: assume ~200,000 other, smaller streams are concurrently live, averaging ~75 viewers each &asymp; 15,000,000 viewers.
+          <br>Platform-wide peak concurrent viewers &asymp; 5,000,000 + 15,000,000 = 20,000,000
+        </div>
+
+        <h3>Heartbeat Event Rate &mdash; the Dominant Load</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Heartbeat interval = 20 seconds (within the 15&ndash;30s guidance); miss threshold = 2 missed heartbeats before eviction &rarr; TTL window &asymp; 40&ndash;45s.
+          <br>Hot-stream heartbeats alone: 5,000,000 &divide; 20s = 250,000 events/sec
+          <br>Platform-wide heartbeats: 20,000,000 &divide; 20s = 1,000,000 events/sec
+          <br>Average viewer session length &asymp; 10 minutes (600s) &rarr; join rate &asymp; leave rate &asymp; 20,000,000 &divide; 600 &asymp; 33,300/sec each
+          <br>Total presence-event volume at peak &asymp; 1,000,000 + 33,300 + 33,300 &asymp; ~1.07 million events/sec &mdash; heartbeats dominate by more than an order of magnitude over joins/leaves combined.
+        </div>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Call out explicitly that heartbeats, not joins/leaves, are the real capacity driver &mdash; this is what justifies later, in the hierarchical fan-in deep dive, why we stop sending every heartbeat all the way to a central store for a hot stream and instead resolve liveness locally at the edge.
+        </div>
+
+        <h3>Kafka Ingestion Sizing (Default / Long-Tail Path)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Sizing</span>
+          Average presence-event size (stream_id, connection/session_id, event_type, timestamp) &asymp; 100 bytes
+          <br>At ~1.07M events/sec: ingest &asymp; 107 MB/sec into Kafka
+          <br>With replication factor 3: &asymp; 320 MB/sec aggregate broker write I/O &mdash; sizable but tractable with a dedicated, well-partitioned cluster; partition by stream_id so no single partition absorbs a hot stream's full 250,000 events/sec alone (see Data Partitioning below for the sub-sharding fix)
+        </div>
+
+        <h3>Presence-Store Memory Footprint</h3>
+        <div class="formula-box">
+          <span class="formula-label">Redis sorted-set entries</span>
+          Per-entry cost (member string + 8-byte score + skiplist/ziplist overhead) &asymp; 100 bytes
+          <br>Long-tail streams (excluding the fan-in-managed hot stream): 15,000,000 members &times; 100 bytes &asymp; 1.5 GB raw, &asymp; 3 GB with one replica &mdash; trivial
+          <br>If the 5,000,000-viewer hot stream were forced into the same single-key model: &asymp; 500 MB concentrated in <em>one</em> key on <em>one</em> shard, receiving 250,000 ZADD ops/sec &mdash; this is the hot-key problem the fan-in design exists to avoid, not primarily a total-memory problem
+        </div>
+
+        <h3>Hierarchical Fan-In Tree Sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Each edge gateway node comfortably holds ~50,000 concurrent WebSocket connections.
+          <br>Hot stream's 5,000,000 viewers &rarr; spread across &asymp; 100 edge-node-equivalents of connection capacity.
+          <br>Group into 10 regions &asymp; 10 edge nodes/region contributing to each regional aggregator (&asymp; 500,000 viewers/region).
+          <br>Fan-in publish cadence 1&ndash;5s: instead of 250,000 heartbeat events/sec reaching a central store, the tier above the edge sees only &asymp; 100 partial-count updates every 1&ndash;5s (one per edge node) &mdash; roughly a 1,000&times; reduction in upstream event rate for the hot stream.
+        </div>
+
+        <h3>Historical Snapshot Store (Cassandra)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Sizing</span>
+          &asymp;250,000 distinct streams go live at some point per day; snapshot cadence 10s while a stream has &ge;1 viewer; average live duration &asymp; 45 minutes (2,700s) &rarr; &asymp;270 snapshots/stream
+          <br>Rows/day &asymp; 250,000 &times; 270 &asymp; 67.5 million; row size &asymp; 70 bytes (stream_id, time bucket, raw_count, smoothed_count) &asymp; 4.7 GB/day raw, &asymp;14 GB/day at RF=3
+          <br>Retained 90 days for creator/analytics dashboards &asymp; 1.26 TB (RF=3) &mdash; a small, separate workload from the real-time presence structure
+          <br>Average write rate &asymp; 780/sec, peak (3&times;) &asymp; 2,340/sec &mdash; trivial for Cassandra
+        </div>
+
+        <h3>Read Path (Polling / Embeds / Dashboards)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Estimate</span>
+          Assume ~5% of the 20,000,000 concurrent viewers use a polling embed (no open WebSocket) polling every 5s: 1,000,000 pollers &divide; 5s = 200,000 reads/sec at peak
+          <br>Because reads hit the Publisher's already-computed, short-TTL cached value &mdash; never the raw presence structure &mdash; this read volume is fully decoupled from presence-store write throughput
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Peak concurrent viewers, single hot stream</td><td>5,000,000</td></tr>
+          <tr><td>Peak concurrent viewers, platform-wide</td><td>~20,000,000</td></tr>
+          <tr><td>Heartbeat interval / TTL window</td><td>20s / ~40&ndash;45s (2 missed beats)</td></tr>
+          <tr><td>Presence events/sec at peak (platform-wide)</td><td>~1.07 million</td></tr>
+          <tr><td>Kafka ingest at peak (RF=3)</td><td>~320 MB/sec aggregate</td></tr>
+          <tr><td>Redis footprint, long-tail streams</td><td>~3 GB (1 replica)</td></tr>
+          <tr><td>Edge nodes needed for one hot stream</td><td>~100, grouped into 10 regions</td></tr>
+          <tr><td>Fan-in upstream update rate (hot stream)</td><td>~100 partials / 1&ndash;5s (vs. 250K heartbeats/sec)</td></tr>
+          <tr><td>Cassandra snapshot footprint, 90-day retention (RF=3)</td><td>~1.26 TB</td></tr>
+          <tr><td>Polling read QPS at peak</td><td>~200,000/sec, served from cache</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Clients talk to the counting system through two surfaces: a persistent WebSocket/SSE channel for anyone already watching (the common case), and a lightweight REST endpoint for anything that can't hold a live connection (embeds, dashboards, server-side rendering).</p>
+
+        <h3>WebSocket Protocol &mdash; Subscribe, Heartbeat, Unsubscribe</h3>
+        <pre><code>&rarr; Client connects: wss://edge.example.com/v1/streams/{stream_id}/presence
+
+Client &rarr; Server, on connect:
+{
+  "type": "SUBSCRIBE",
+  "stream_id": "str_9f2a...",
+  "session_id": "sess_7c31...",   // stable across reconnects on the same device/tab
+  "client_ts": 1737200000
+}
+
+Server &rarr; Client, ack:
+{ "type": "SUBSCRIBED", "stream_id": "str_9f2a...", "heartbeat_interval_sec": 20 }
+
+Client &rarr; Server, every heartbeat_interval_sec:
+{ "type": "HEARTBEAT", "session_id": "sess_7c31...", "client_ts": 1737200020 }
+
+Server &rarr; Client, pushed on every aggregation cycle (no client request needed):
+{ "type": "COUNT_UPDATE", "stream_id": "str_9f2a...", "viewer_count": 1234502, "as_of": 1737200022 }
+
+Client &rarr; Server, on clean leave (best-effort, not relied upon):
+{ "type": "UNSUBSCRIBE", "session_id": "sess_7c31..." }</code></pre>
+
+        <h3>Get Viewer Count (Polling / Embeds)</h3>
+        <pre><code>GET /v1/streams/{stream_id}/viewer-count
+
+Response 200 (served from a short-TTL cache, never computed per request):
+{
+  "stream_id": "str_9f2a...",
+  "viewer_count": 1234502,
+  "display_count": "1.2M",
+  "as_of": 1737200022,
+  "staleness_ms": 1800
+}
+
+Errors: 404 unknown stream_id &middot; 403 stream is private / caller not authorized to view it</code></pre>
+
+        <h3>Presence List (Optional Extension &mdash; Small-Scale Surfaces)</h3>
+        <pre><code>GET /v1/pages/{page_id}/viewers
+
+Response 200 (only for authorized callers, size-capped, e.g. collaborative docs):
+{
+  "page_id": "doc_5b21...",
+  "viewers": [
+    { "user_id": "u_1", "display_name": "A. Kumar", "joined_at": 1737199800 },
+    { "user_id": "u_2", "display_name": "R. Osei",  "joined_at": 1737199920 }
+  ],
+  "total_viewer_count": 2
+}</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          <code>session_id</code>, not the ephemeral WebSocket connection object, is the identity that matters. Say this explicitly: "the client generates a stable session_id once and reuses it across reconnects on the same tab/device, so a reconnect updates the same presence-set member instead of creating a new one" &mdash; this single design choice is what makes the reconnect/double-counting deep dive below work.
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>The real-time presence structure is pure membership-with-expiry &mdash; no joins, no complex queries, just "who is currently present for stream X" with automatic eviction of stale entries.</li>
+          <li>It is extremely write-heavy (millions of heartbeats/sec system-wide) but each write is tiny (refresh one timestamp), and reads only ever need an aggregate count or cardinality, never the full member list, on the hot path.</li>
+          <li>The historical snapshot data is the opposite shape: append-only, time-ordered, read by range-scan per stream_id for analytics &mdash; the textbook case for a wide-column time-series store, entirely separate from the presence structure.</li>
+        </ul>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">Structure: presence sorted set (Redis, key per stream_id)</th></tr>
+          <tr><td>Key</td><td><code>stream:{stream_id}:presence</code> &mdash; a Redis sorted set (ZSET)</td></tr>
+          <tr><td>Member</td><td><code>session_id</code> (stable per device/tab across reconnects)</td></tr>
+          <tr><td>Score</td><td><code>last_heartbeat_ts</code> (unix epoch seconds)</td></tr>
+          <tr><td>Read</td><td><code>ZCARD</code> for the approximate count (O(1)); <code>ZRANGEBYSCORE</code> only for the presence-list extension</td></tr>
+          <tr><td>Eviction</td><td>Periodic <code>ZREMRANGEBYSCORE(-inf, now - heartbeat_interval &times; miss_threshold)</code></td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Structure: hot-stream partial counters (Redis, per edge / region, only for streams above the fan-in threshold)</th></tr>
+          <tr><td>Key</td><td><code>edge_partial:{stream_id}:{edge_node_id}</code> / <code>regional_partial:{stream_id}:{region_id}</code></td></tr>
+          <tr><td>Value</td><td>A plain integer: the local open-connection count for that stream on that edge node / region</td></tr>
+          <tr><td>Update</td><td>Republished every 1&ndash;5s; overwritten, not accumulated &mdash; each publisher always sends its current total, not a delta</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: viewer_count_snapshots (Cassandra, PK: stream_id, clustering: time_bucket)</th></tr>
+          <tr><td>stream_id (partition key)</td><td>text</td></tr>
+          <tr><td>time_bucket (clustering column)</td><td>timestamp, descending</td></tr>
+          <tr><td>raw_count</td><td>bigint &mdash; the unsmoothed aggregated count at this instant</td></tr>
+          <tr><td>smoothed_count</td><td>bigint &mdash; what was actually displayed to users</td></tr>
+          <tr><td>region_breakdown</td><td>map&lt;text, bigint&gt; (optional, per-region partials at snapshot time)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: stream_metadata (small relational/KV store, PK: stream_id)</th></tr>
+          <tr><td>stream_id (PK)</td><td>text</td></tr>
+          <tr><td>owner_id / visibility</td><td>text / enum(public, unlisted, private)</td></tr>
+          <tr><td>fan_in_mode</td><td>enum(DEFAULT, HIERARCHICAL) &mdash; set once a stream crosses the hot-stream threshold</td></tr>
+          <tr><td>started_at</td><td>timestamp</td></tr>
+        </table>
+
+        <h3>Why Redis for Presence, Cassandra Only for History</h3>
+        <p>Redis's in-memory, largely single-threaded-per-key execution model is exactly what a presence set needs: a <code>ZADD</code> refresh and a background <code>ZREMRANGEBYSCORE</code> sweep are both cheap, atomic, and don't require any read-modify-write coordination from the caller. Crucially, the presence set is <em>allowed</em> to be lost on a Redis failover &mdash; if a shard restarts, the worst case is a temporary undercount for one stream until clients' next heartbeat repopulates it within one TTL window, which is exactly the kind of self-healing behavior this design already assumes. That's a fundamentally different durability bar than the notification/preference data you'd see in other designs: here, losing the live presence state is a brief, self-correcting blip, not a data-loss incident, so there's no need for a durable backstop under the hot path itself. Cassandra only carries the historical snapshot log, which does need durability, and which is written to asynchronously, off the hot path entirely.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>A viewer's client opens a WebSocket/SSE connection to a regional Edge Gateway. The Gateway tracks that connection's presence locally and emits join/heartbeat/leave events (to Kafka, partitioned by <code>stream_id</code>). A Count Aggregator service consumes those events and maintains each stream's presence in a Redis TTL sorted set, with a periodic sweep evicting stale entries so abrupt disconnects self-heal without an explicit leave signal. A Publisher reads the current approximate count, applies exponential smoothing, and republishes the damped value every 1&ndash;5 seconds &mdash; back out over the same WebSocket connections, and into a cache backing the polling REST endpoint. In parallel, a lightweight snapshot writer periodically persists the count into Cassandra for historical/creator analytics.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Viewer clients (browser, mobile app, polling embed) connect to a regional Edge Gateway, which tracks local presence and emits join, heartbeat, and leave events to a Kafka presence-events topic partitioned by stream_id. A Count Aggregator consumes these events and maintains a Redis TTL sorted set per stream, while also writing periodic snapshots to Cassandra for analytics. A Publisher reads the approximate count, applies smoothing, and republishes it every one to five seconds, either pushed back through the Edge Gateway over the open WebSocket connections, or served through a cached GET viewer-count endpoint for polling clients.">
+            <style>
+              .lvc-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .lvc-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .lvc-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .lvc-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .lvc-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .lvc-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .lvc-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .lvc-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:#dbe6ff;}
+              .lvc-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .lvc-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;}
+              .lvc-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-lvc-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-lvc-1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="20" y="10" width="230" height="45" rx="6" class="lvc-box"></rect>
+            <text x="135" y="29" text-anchor="middle" class="lvc-title">Browser Viewer</text>
+            <text x="135" y="43" text-anchor="middle" class="lvc-sub">WebSocket / SSE connection</text>
+
+            <rect x="265" y="10" width="230" height="45" rx="6" class="lvc-box"></rect>
+            <text x="380" y="29" text-anchor="middle" class="lvc-title">Mobile App Viewer</text>
+            <text x="380" y="43" text-anchor="middle" class="lvc-sub">WebSocket connection</text>
+
+            <rect x="510" y="10" width="230" height="45" rx="6" class="lvc-box"></rect>
+            <text x="625" y="29" text-anchor="middle" class="lvc-title">Embed / Widget</text>
+            <text x="625" y="43" text-anchor="middle" class="lvc-sub">HTTP polling (fallback)</text>
+
+            <line x1="135" y1="55" x2="300" y2="94" class="lvc-arrow" marker-end="url(#arrow-lvc-1)"></line>
+            <line x1="380" y1="55" x2="380" y2="94" class="lvc-arrow" marker-end="url(#arrow-lvc-1)"></line>
+            <line x1="625" y1="55" x2="460" y2="94" class="lvc-arrow" marker-end="url(#arrow-lvc-1)"></line>
+
+            <rect x="20" y="95" width="720" height="55" rx="6" class="lvc-box-strong"></rect>
+            <text x="380" y="117" text-anchor="middle" class="lvc-title">Edge Gateway (regional WebSocket / SSE terminator)</text>
+            <text x="380" y="133" text-anchor="middle" class="lvc-sub">tracks local per-connection presence; emits join / heartbeat / leave events</text>
+
+            <line x1="380" y1="150" x2="380" y2="189" class="lvc-arrow" marker-end="url(#arrow-lvc-1)"></line>
+
+            <rect x="20" y="190" width="720" height="50" rx="6" class="lvc-box-bus"></rect>
+            <text x="380" y="211" text-anchor="middle" class="lvc-title-inv">Kafka: presence-events topic</text>
+            <text x="380" y="226" text-anchor="middle" class="lvc-sub-inv">partitioned by stream_id</text>
+
+            <line x1="380" y1="240" x2="380" y2="279" class="lvc-arrow" marker-end="url(#arrow-lvc-1)"></line>
+
+            <rect x="20" y="280" width="720" height="55" rx="6" class="lvc-box-strong"></rect>
+            <text x="380" y="302" text-anchor="middle" class="lvc-title">Count Aggregator</text>
+            <text x="380" y="318" text-anchor="middle" class="lvc-sub">consumes events; maintains per-stream presence; runs periodic TTL sweep</text>
+
+            <line x1="240" y1="335" x2="240" y2="374" class="lvc-arrow" marker-end="url(#arrow-lvc-1)"></line>
+            <line x1="600" y1="335" x2="600" y2="374" class="lvc-arrow-store" marker-end="url(#arrow-lvc-1s)"></line>
+            <text x="615" y="358" class="lvc-label">async snapshot</text>
+
+            <rect x="20" y="375" width="480" height="70" rx="6" class="lvc-box-store"></rect>
+            <text x="260" y="396" text-anchor="middle" class="lvc-title">Redis: TTL Sorted Set (presence store)</text>
+            <text x="260" y="410" text-anchor="middle" class="lvc-sub">ZADD stream:{id} member=session_id score=last_heartbeat_ts</text>
+            <text x="260" y="423" text-anchor="middle" class="lvc-sub">ZREMRANGEBYSCORE sweep evicts stale entries (self-healing)</text>
+            <text x="260" y="436" text-anchor="middle" class="lvc-sub">read: ZCARD &rarr; approximate current count</text>
+
+            <rect x="525" y="375" width="215" height="70" rx="6" class="lvc-box-store"></rect>
+            <text x="632" y="398" text-anchor="middle" class="lvc-title">Cassandra</text>
+            <text x="632" y="412" text-anchor="middle" class="lvc-sub">durable time-series snapshot</text>
+            <text x="632" y="425" text-anchor="middle" class="lvc-sub">per stream_id, for analytics</text>
+
+            <line x1="260" y1="445" x2="260" y2="484" class="lvc-arrow" marker-end="url(#arrow-lvc-1)"></line>
+
+            <rect x="20" y="485" width="480" height="55" rx="6" class="lvc-box-strong"></rect>
+            <text x="260" y="507" text-anchor="middle" class="lvc-title">Publisher / Smoother</text>
+            <text x="260" y="523" text-anchor="middle" class="lvc-sub">reads approx count; applies exponential smoothing; republishes every 1&ndash;5s</text>
+
+            <line x1="150" y1="540" x2="150" y2="579" class="lvc-arrow" marker-end="url(#arrow-lvc-1)"></line>
+            <line x1="450" y1="540" x2="450" y2="579" class="lvc-arrow" marker-end="url(#arrow-lvc-1)"></line>
+
+            <rect x="20" y="580" width="330" height="45" rx="6" class="lvc-box"></rect>
+            <text x="185" y="599" text-anchor="middle" class="lvc-title">Pushed via Edge Gateway</text>
+            <text x="185" y="613" text-anchor="middle" class="lvc-sub">over the open WS/SSE connections to clients</text>
+
+            <rect x="370" y="580" width="370" height="45" rx="6" class="lvc-box"></rect>
+            <text x="555" y="599" text-anchor="middle" class="lvc-title">GET /streams/{id}/viewer-count</text>
+            <text x="555" y="613" text-anchor="middle" class="lvc-sub">cached read for polling clients / embeds</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; Edge Gateways emit presence events to Kafka; a Count Aggregator maintains a Redis TTL sorted set per stream and snapshots history to Cassandra; a Publisher smooths and republishes the count every 1&ndash;5 seconds to both live WS clients and a cached polling endpoint.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Presence is a set with expiry, not a counter you increment/decrement:</strong> that single choice is what makes abrupt disconnects self-healing later, without any special-case cleanup logic.</li>
+          <li><strong>The Publisher is the only thing clients ever read from:</strong> nothing outside the Aggregator ever touches the raw Redis structure directly, which keeps read load completely decoupled from presence-write load.</li>
+          <li><strong>History is a side effect, not a dependency:</strong> the Cassandra snapshot writer can fall behind or fail without affecting the real-time count at all.</li>
+          <li><strong>This diagram is the "default path"</strong> that works for the long tail of small/medium streams; the next section replaces the presence-store step for a single hot stream that would otherwise overwhelm one Redis key.</li>
+        </ul>
+
+        <h2 id="deep-dive-hierarchical-fan-in-aggregation-for-a-hot-stream">Deep Dive &mdash; Hierarchical Fan-In Aggregation for a Hot Stream</h2>
+        <p>The default path works beautifully for the vast majority of streams, which have anywhere from one to a few thousand viewers. It falls over completely for a single viral stream at 5,000,000 concurrent viewers: that stream's presence set would live in one Redis key, on one shard, absorbing 250,000 heartbeat-driven <code>ZADD</code> operations per second &mdash; a hot key and a hot shard, and a single point of failure for the platform's single most important stream at the exact moment it matters most.</p>
+
+        <h3>The Fix: Local Counters, Aggregated Up a Tree</h3>
+        <p>Once a stream's viewer count crosses a threshold (e.g. 50,000&ndash;100,000 concurrent connections), the system switches that specific <code>stream_id</code> into <strong>hierarchical fan-in mode</strong>. Each Edge Gateway node that has viewers of this stream already knows, for free, exactly how many of its own open WebSocket connections belong to it &mdash; incrementing/decrementing a local in-memory counter on connect/disconnect requires no network hop and no heartbeat at all, because the node's own connection table <em>is</em> the liveness signal. Every 1&ndash;5 seconds, each edge node publishes its current local count (its full total, not a delta) to a regional aggregator for that stream. Each regional aggregator sums the partials from its edge nodes and forwards its own regional total to a single global aggregator for that stream, which sums the regional partials into the platform-wide approximate count and publishes it back down through the Publisher.</p>
+
+        <h3>Why This Is a Distributed Counter (G-Counter CRDT), Not Magic</h3>
+        <p>This is structurally the same idea as a <strong>Grow-only Counter (G-Counter) CRDT</strong>: every node owns its own slice of the total and only ever reports its own slice's current value; the global count is simply the sum of all slices. Summation is commutative and associative, so it doesn't matter what order partials arrive in, or whether one region's update is a few seconds stale &mdash; the merge is trivial and never needs locks, consensus, or coordination between nodes. If a region goes briefly unreachable, the global aggregator just keeps using that region's last-known partial (a temporary undercount) until connectivity resumes, which is exactly the same self-healing, eventually-consistent behavior the whole design already assumes elsewhere.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hierarchical fan-in tree for a hot stream: many edge gateway nodes each maintain a local in-memory connection counter and publish their partial count every one to five seconds to a regional aggregator; a small number of regional aggregators sum their edge partials and forward regional totals to a single global aggregator, which sums the regional partials into the platform-wide approximate count.">
+            <style>
+              .lvc-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .lvc-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .lvc-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .lvc-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .lvc-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .lvc-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .lvc-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:#dbe6ff;}
+              .lvc-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .lvc-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-lvc-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="12" y="16" class="lvc-title">Edge nodes (&asymp;100 total, local counters, no per-heartbeat network hop)</text>
+
+            <rect x="10" y="30" width="105" height="42" rx="5" class="lvc-box"></rect>
+            <text x="62" y="48" text-anchor="middle" class="lvc-title">edge-1..10</text>
+            <text x="62" y="61" text-anchor="middle" class="lvc-sub">local count</text>
+
+            <rect x="125" y="30" width="105" height="42" rx="5" class="lvc-box"></rect>
+            <text x="177" y="48" text-anchor="middle" class="lvc-title">edge-11..20</text>
+            <text x="177" y="61" text-anchor="middle" class="lvc-sub">local count</text>
+
+            <rect x="240" y="30" width="105" height="42" rx="5" class="lvc-box"></rect>
+            <text x="292" y="48" text-anchor="middle" class="lvc-title">edge-21..30</text>
+            <text x="292" y="61" text-anchor="middle" class="lvc-sub">local count</text>
+
+            <rect x="355" y="30" width="105" height="42" rx="5" class="lvc-box"></rect>
+            <text x="407" y="48" text-anchor="middle" class="lvc-title">&hellip;</text>
+            <text x="407" y="61" text-anchor="middle" class="lvc-sub">local count</text>
+
+            <rect x="470" y="30" width="105" height="42" rx="5" class="lvc-box"></rect>
+            <text x="522" y="48" text-anchor="middle" class="lvc-title">edge-91..100</text>
+            <text x="522" y="61" text-anchor="middle" class="lvc-sub">local count</text>
+
+            <text x="12" y="105" class="lvc-title">10 regional aggregators (sum their own edge nodes' partials)</text>
+
+            <rect x="10" y="120" width="230" height="50" rx="6" class="lvc-box-strong"></rect>
+            <text x="125" y="140" text-anchor="middle" class="lvc-title">Region A aggregator</text>
+            <text x="125" y="155" text-anchor="middle" class="lvc-sub">sum of edge-1..20 partials, republished every 1&ndash;5s</text>
+
+            <rect x="270" y="120" width="230" height="50" rx="6" class="lvc-box-strong"></rect>
+            <text x="385" y="140" text-anchor="middle" class="lvc-title">Region B aggregator</text>
+            <text x="385" y="155" text-anchor="middle" class="lvc-sub">sum of edge-21..30, &hellip; partials</text>
+
+            <rect x="530" y="120" width="220" height="50" rx="6" class="lvc-box-strong"></rect>
+            <text x="640" y="140" text-anchor="middle" class="lvc-title">Region J aggregator</text>
+            <text x="640" y="155" text-anchor="middle" class="lvc-sub">sum of edge-91..100 partials</text>
+
+            <line x1="62" y1="72" x2="100" y2="119" class="lvc-arrow" marker-end="url(#arrow-lvc-2)"></line>
+            <line x1="177" y1="72" x2="150" y2="119" class="lvc-arrow" marker-end="url(#arrow-lvc-2)"></line>
+            <line x1="292" y1="72" x2="350" y2="119" class="lvc-arrow" marker-end="url(#arrow-lvc-2)"></line>
+            <line x1="407" y1="72" x2="410" y2="119" class="lvc-arrow" marker-end="url(#arrow-lvc-2)"></line>
+            <line x1="522" y1="72" x2="620" y2="119" class="lvc-arrow" marker-end="url(#arrow-lvc-2)"></line>
+
+            <line x1="200" y1="170" x2="330" y2="229" class="lvc-arrow" marker-end="url(#arrow-lvc-2)"></line>
+            <line x1="400" y1="170" x2="380" y2="229" class="lvc-arrow" marker-end="url(#arrow-lvc-2)"></line>
+            <line x1="600" y1="170" x2="440" y2="229" class="lvc-arrow" marker-end="url(#arrow-lvc-2)"></line>
+            <text x="600" y="200" text-anchor="middle" class="lvc-label">regional partials, every 1&ndash;5s</text>
+
+            <rect x="270" y="230" width="230" height="55" rx="6" class="lvc-box-bus"></rect>
+            <text x="385" y="252" text-anchor="middle" class="lvc-title-inv">Global aggregator (this stream)</text>
+            <text x="385" y="267" text-anchor="middle" class="lvc-sub-inv">sums all regional partials &mdash; G-Counter merge</text>
+
+            <line x1="385" y1="285" x2="385" y2="324" class="lvc-arrow" marker-end="url(#arrow-lvc-2)"></line>
+
+            <rect x="245" y="325" width="280" height="55" rx="6" class="lvc-box-strong"></rect>
+            <text x="385" y="347" text-anchor="middle" class="lvc-title">Publisher / Smoother</text>
+            <text x="385" y="362" text-anchor="middle" class="lvc-sub">same downstream path as the default design (Figure 1)</text>
+
+            <text x="12" y="410" class="lvc-label">Result: ~1.07M/sec platform-wide heartbeats never all reach one store &mdash; only ~100 partial updates/1&ndash;5s climb the tree for this stream.</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Hierarchical fan-in for a hot stream: edge-local counters &rarr; regional aggregators &rarr; a single global aggregator, summing partials the way a G-Counter CRDT merges &mdash; no locks, no coordination, self-healing on a regional outage.</div>
+        </div>
+
+        <h3>When to Switch a Stream Into Fan-In Mode</h3>
+        <p>Promote a stream from the default Redis-sorted-set path to hierarchical fan-in mode when its aggregated count crosses a configured threshold (e.g. 50,000&ndash;100,000 concurrent viewers) &mdash; well before it would meaningfully stress a single Redis shard. The transition itself can be done without an accuracy glitch: run both paths briefly in parallel, cut the Publisher over to reading from the global aggregator once its value is populated and stable, then stop feeding new heartbeats into the old sorted set for that stream_id (letting it drain via its own TTL).</p>
+
+        <h2 id="deep-dive-presence-via-heartbeat-ttl-expiry">Deep Dive &mdash; Presence via Heartbeat + TTL Expiry</h2>
+        <p>The entire self-healing property of this design rests on one idea: presence is proven by a <em>recent</em> heartbeat, not asserted by a one-time "I joined" message. A client that stops heartbeating &mdash; for any reason, clean or not &mdash; simply ages out of the presence set on its own, with no special-case disconnect-handling code required anywhere in the system.</p>
+
+        <h3>Why Not Rely on WebSocket Close Events?</h3>
+        <p>A clean WebSocket close (tab closed normally, "stop watching" tapped) does fire a close event, and the Gateway can and should react to it immediately with an eager removal &mdash; there's no reason to wait out a TTL when you have a clean signal. But a large fraction of real departures are <em>not</em> clean: a crashed app, a dropped mobile connection switching from WiFi to cellular, a laptop lid closed, a killed background tab, a network partition between the client and the Gateway. In every one of those cases, no close frame is ever sent or received, and a design that only decremented on an explicit "leave" event would silently and permanently over-count &mdash; the count would only ever go up. Heartbeat + TTL expiry is what makes the count correct in the much more common, messier real world, not just in the tidy clean-disconnect case.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence diagram: a client connects and is added to the presence sorted set with the current timestamp as its score; every heartbeat interval it sends a heartbeat that refreshes its score; if heartbeats stop arriving, a periodic sweep job eventually removes the entry once its score falls outside the TTL window, without needing any explicit leave signal.">
+            <style>
+              .lvc-actor{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .lvc-line{stroke:var(--color-border);stroke-width:1.5;}
+              .lvc-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .lvc-arrow-dash{stroke:var(--color-accent);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+              .lvc-msg{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .lvc-box-warn{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .lvc-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .lvc-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-lvc-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-lvc-3d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <text x="90" y="20" text-anchor="middle" class="lvc-actor">Client</text>
+            <line x1="90" y1="28" x2="90" y2="380" class="lvc-line"></line>
+
+            <text x="400" y="20" text-anchor="middle" class="lvc-actor">Edge Gateway</text>
+            <line x1="400" y1="28" x2="400" y2="380" class="lvc-line"></line>
+
+            <text x="660" y="20" text-anchor="middle" class="lvc-actor">Redis presence ZSET</text>
+            <line x1="660" y1="28" x2="660" y2="380" class="lvc-line"></line>
+
+            <line x1="90" y1="55" x2="390" y2="55" class="lvc-arrow" marker-end="url(#arrow-lvc-3)"></line>
+            <text x="240" y="49" text-anchor="middle" class="lvc-msg">SUBSCRIBE (session_id)</text>
+
+            <line x1="400" y1="70" x2="650" y2="70" class="lvc-arrow" marker-end="url(#arrow-lvc-3)"></line>
+            <text x="525" y="64" text-anchor="middle" class="lvc-msg">ZADD stream:{id} session_id score=t0</text>
+
+            <line x1="90" y1="105" x2="390" y2="105" class="lvc-arrow" marker-end="url(#arrow-lvc-3)"></line>
+            <text x="240" y="99" text-anchor="middle" class="lvc-msg">HEARTBEAT @ t0+20s</text>
+            <line x1="400" y1="120" x2="650" y2="120" class="lvc-arrow" marker-end="url(#arrow-lvc-3)"></line>
+            <text x="525" y="114" text-anchor="middle" class="lvc-msg">ZADD refresh score=t0+20s</text>
+
+            <line x1="90" y1="155" x2="390" y2="155" class="lvc-arrow" marker-end="url(#arrow-lvc-3)"></line>
+            <text x="240" y="149" text-anchor="middle" class="lvc-msg">HEARTBEAT @ t0+40s</text>
+            <line x1="400" y1="170" x2="650" y2="170" class="lvc-arrow" marker-end="url(#arrow-lvc-3)"></line>
+            <text x="525" y="164" text-anchor="middle" class="lvc-msg">ZADD refresh score=t0+40s</text>
+
+            <rect x="20" y="200" width="140" height="45" rx="5" class="lvc-box-warn"></rect>
+            <text x="90" y="219" text-anchor="middle" class="lvc-title">App crashes</text>
+            <text x="90" y="232" text-anchor="middle" class="lvc-sub">no close frame sent</text>
+
+            <line x1="90" y1="245" x2="90" y2="380" stroke-dasharray="2 3" class="lvc-line"></line>
+            <text x="90" y="270" text-anchor="middle" class="lvc-msg" font-style="italic">(silence &mdash; no more heartbeats)</text>
+
+            <line x1="400" y1="300" x2="650" y2="300" class="lvc-arrow-dash" marker-end="url(#arrow-lvc-3d)"></line>
+            <text x="525" y="294" text-anchor="middle" class="lvc-msg">periodic sweep @ t0+85s</text>
+
+            <rect x="470" y="310" width="270" height="55" rx="6" class="lvc-box-warn"></rect>
+            <text x="605" y="330" text-anchor="middle" class="lvc-title">ZREMRANGEBYSCORE(-inf, t0+45s)</text>
+            <text x="605" y="344" text-anchor="middle" class="lvc-sub">session_id's score (t0+40s) is older than the</text>
+            <text x="605" y="356" text-anchor="middle" class="lvc-sub">45s TTL cutoff &rarr; entry evicted, no leave event needed</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Presence via heartbeat and TTL: each heartbeat refreshes the member's score in the presence sorted set; a periodic sweep evicts any entry whose score has aged past the TTL window, self-healing an abrupt disconnect without any explicit "leave" signal.</div>
+        </div>
+
+        <h3>Choosing the Heartbeat Interval and Miss Threshold</h3>
+        <table>
+          <tr><th>Parameter</th><th>Trade-off</th></tr>
+          <tr><td>Shorter heartbeat interval (e.g. 10s)</td><td>Faster detection of departure, but proportionally more heartbeat traffic system-wide &mdash; directly multiplies the dominant load from the capacity estimation above</td></tr>
+          <tr><td>Longer heartbeat interval (e.g. 30s)</td><td>Much less traffic, but a departed viewer lingers in the count longer &mdash; acceptable given the count is already approximate and smoothed</td></tr>
+          <tr><td>Miss threshold = 1 (evict after a single missed beat)</td><td>Fastest cleanup, but a single delayed heartbeat (GC pause, brief network jitter) causes a false eviction and a visible undercount blip</td></tr>
+          <tr><td>Miss threshold = 2&ndash;3 (recommended)</td><td>Tolerates ordinary jitter without false evictions, at the cost of a slightly longer worst-case staleness window (here, &asymp;40&ndash;45s) before a true departure is reflected</td></tr>
+        </table>
+
+        <h2 id="deep-dive-smoothing-and-display-damping">Deep Dive &mdash; Smoothing and Display Damping</h2>
+        <p>Even a mechanically correct aggregation pipeline produces a number that jitters second to second: heartbeat timing skew across millions of independent clients, sweep-cycle timing, and the multi-second lag inherent in a fan-in tree all introduce small oscillations even when the true underlying viewership is essentially flat. Publishing that raw number straight to the UI produces a distractingly flickery counter &mdash; "1,234,502 &rarr; 1,234,488 &rarr; 1,234,510 &rarr; 1,234,479&hellip;" &mdash; that looks buggy even though it's arguably "more accurate" at each instant.</p>
+
+        <h3>Exponential Smoothing on the Publisher</h3>
+        <div class="formula-box">
+          <span class="formula-label">Formula</span>
+          displayed_count(t) = &alpha; &times; raw_count(t) + (1 &minus; &alpha;) &times; displayed_count(t&minus;1)
+          <br>&alpha; close to 1 &rarr; displayed count tracks raw count almost immediately (little damping, more flicker)
+          <br>&alpha; close to 0 &rarr; displayed count changes very slowly (heavy damping, but real trend changes take longer to show)
+          <br>A practical middle ground (e.g. &alpha; &asymp; 0.3&ndash;0.4 on a 1&ndash;5s publish cadence) damps single-cycle noise while still reflecting a genuine, sustained surge or drop-off within a handful of seconds.
+        </div>
+        <p>An additional, complementary technique is <strong>threshold-gated display updates</strong>: only push a new displayed value to clients if it differs from the last displayed value by more than some relative amount (e.g. 0.5%), and always round the rendered label to a sensible precision ("1.2M" rather than "1,234,502"). The two techniques compose well &mdash; smoothing removes the noise from the underlying number, and rounding/threshold-gating removes any residual jitter from the last mile of formatting.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Line chart comparing a jittery raw aggregated viewer count against a smoothed, exponentially damped displayed count over the same time window; the smoothed line tracks the same overall trend but without the second-to-second noise of the raw line.">
+            <style>
+              .lvc-axis{stroke:var(--color-border);stroke-width:1.5;}
+              .lvc-raw{stroke:var(--color-text-muted);stroke-width:1.4;fill:none;}
+              .lvc-smooth{stroke:var(--color-accent-dark);stroke-width:2.4;fill:none;}
+              .lvc-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .lvc-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .lvc-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-lvc-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path></marker>
+            </defs>
+
+            <text x="20" y="20" class="lvc-title">Raw aggregated count vs. smoothed displayed count</text>
+
+            <line x1="60" y1="260" x2="740" y2="260" class="lvc-axis"></line>
+            <line x1="60" y1="40" x2="60" y2="260" class="lvc-axis"></line>
+            <text x="15" y="55" class="lvc-sub">high</text>
+            <text x="15" y="260" class="lvc-sub">0</text>
+            <text x="380" y="290" text-anchor="middle" class="lvc-sub">time (aggregation cycles, 1&ndash;5s each)</text>
+
+            <polyline points="60,180 100,160 140,190 180,150 220,175 260,140 300,165 340,120 380,150 420,110 460,135 500,100 540,120 580,90 620,105 660,80 700,95 740,75" class="lvc-raw"></polyline>
+            <text x="620" y="130" class="lvc-label">raw count &mdash; jitters each cycle</text>
+
+            <path d="M60,178 C160,172 260,155 360,135 C460,118 560,102 740,85" class="lvc-smooth" marker-end="url(#arrow-lvc-4)"></path>
+            <text x="500" y="70" class="lvc-label" fill="var(--color-accent-dark)">smoothed count &mdash; same trend, no flicker</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Display damping: exponential smoothing on the Publisher removes cycle-to-cycle jitter from the raw aggregated count while still tracking a genuine sustained increase (e.g. a surge right after a stream goes viral) within a few seconds.</div>
+        </div>
+
+        <h2 id="deep-dive-reconnect-handling-and-double-counting-avoidance">Deep Dive &mdash; Reconnect Handling and Double-Counting Avoidance</h2>
+        <p>A viewer's connection can drop and reconnect for entirely benign reasons &mdash; a brief WiFi blip, a mobile app backgrounded and foregrounded, a Gateway node restarting during a deploy &mdash; while the person never actually stopped watching. If the reconnect were treated as a brand-new viewer, the same physical person would be counted twice for up to one full TTL window (until the stale first entry expires), which is a real, visible source of over-counting at scale.</p>
+
+        <h3>The Fix: A Stable Session Identity, Reused Across Reconnects</h3>
+        <p>The client generates a <code>session_id</code> once per tab/device and persists it locally (not a fresh UUID per WebSocket connection). On reconnect, the client resubscribes with the <em>same</em> <code>session_id</code>. Because the presence sorted set's member key is the <code>session_id</code>, not the transient connection object, a reconnect's <code>ZADD</code> simply refreshes the score of the existing member &mdash; sorted sets have unique members by definition, so this can never create a second entry for the same session. The old, dropped connection's entry is upserted in place rather than orphaned to expire and double-count in the interim.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence diagram: a client connects with a stable session id and is added to the presence set; the connection drops due to a network blip; the client reconnects using the same session id, and the gateway issues a ZADD that upserts the existing member's score rather than creating a new entry, so the viewer is never double counted during the gap.">
+            <style>
+              .lvc-actor{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .lvc-line{stroke:var(--color-border);stroke-width:1.5;}
+              .lvc-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .lvc-msg{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .lvc-box-warn{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .lvc-box-ok{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+              .lvc-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .lvc-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-lvc-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="90" y="20" text-anchor="middle" class="lvc-actor">Client (session_id = S1)</text>
+            <line x1="90" y1="28" x2="90" y2="320" class="lvc-line"></line>
+
+            <text x="660" y="20" text-anchor="middle" class="lvc-actor">Redis presence ZSET</text>
+            <line x1="660" y1="28" x2="660" y2="320" class="lvc-line"></line>
+
+            <line x1="90" y1="55" x2="650" y2="55" class="lvc-arrow" marker-end="url(#arrow-lvc-5)"></line>
+            <text x="375" y="49" text-anchor="middle" class="lvc-msg">ZADD stream:{id} member=S1 score=t0 (new member)</text>
+
+            <rect x="20" y="80" width="180" height="45" rx="5" class="lvc-box-warn"></rect>
+            <text x="110" y="99" text-anchor="middle" class="lvc-title">WiFi drops</text>
+            <text x="110" y="112" text-anchor="middle" class="lvc-sub">WS connection closes</text>
+
+            <text x="375" y="150" text-anchor="middle" class="lvc-msg" font-style="italic">(gap &mdash; no heartbeats reach the server for ~8s, still within TTL)</text>
+
+            <rect x="20" y="175" width="180" height="45" rx="5" class="lvc-box-ok"></rect>
+            <text x="110" y="194" text-anchor="middle" class="lvc-title">Client reconnects</text>
+            <text x="110" y="207" text-anchor="middle" class="lvc-sub">reuses session_id = S1</text>
+
+            <line x1="200" y1="230" x2="650" y2="230" class="lvc-arrow" marker-end="url(#arrow-lvc-5)"></line>
+            <text x="425" y="224" text-anchor="middle" class="lvc-msg">SUBSCRIBE + ZADD member=S1 score=t0+8s (upsert, not insert)</text>
+
+            <rect x="440" y="250" width="280" height="60" rx="6" class="lvc-box-ok"></rect>
+            <text x="580" y="272" text-anchor="middle" class="lvc-title">Same member, score refreshed</text>
+            <text x="580" y="286" text-anchor="middle" class="lvc-sub">sorted-set uniqueness on S1 guarantees</text>
+            <text x="580" y="298" text-anchor="middle" class="lvc-sub">exactly one entry &mdash; ZCARD unaffected</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Reconnect handling: reusing a stable session_id turns a reconnect into an upsert of the same sorted-set member, so a benign drop-and-reconnect never produces a duplicate, double-counted presence entry.</div>
+        </div>
+
+        <h3>What About the Same User on Two Tabs or Two Devices?</h3>
+        <p>This is a deliberate product decision, not a bug to fix: by default, each open tab/device gets its own <code>session_id</code> and is counted as its own concurrent connection, which matches what "concurrent viewers" intuitively means (two open players are two units of server/bandwidth load and two units of "presence," regardless of the person behind them). If a product explicitly wants to dedupe by logged-in user instead, layer a secondary set keyed by <code>user_id</code> (also TTL-based) alongside the connection-level set, and expose both numbers &mdash; "connections" and "distinct signed-in viewers" &mdash; rather than silently picking one definition.</p>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+        <p>Partitioning follows one governing rule: keep everything for one stream together for the default/long-tail path, but make a single stream sub-shardable the moment it individually threatens to overwhelm a shard.</p>
+        <ul>
+          <li><strong>Presence sorted sets</strong> are sharded by <code>hash(stream_id)</code> across a Redis Cluster, so the long tail of small/medium streams spreads naturally &mdash; each shard ends up holding many streams' worth of (small) sorted sets.</li>
+          <li><strong>A hot stream is sub-sharded, not force-fit onto one key:</strong> once a stream enters hierarchical fan-in mode (see the deep dive above), it no longer lives as a single Redis key at all &mdash; its "shards" are effectively the edge nodes and regional aggregators in the fan-in tree, which is the same idea generalized into a partitioning strategy rather than a special case.</li>
+          <li><strong>Kafka's presence-events topic is partitioned by <code>stream_id</code></strong> for ordering per stream, but a hot stream is additionally given extra partitions (or salted into <code>stream_id:{n}</code> sub-keys hashed by <code>session_id</code>) so its 250,000 events/sec don't concentrate on one partition/broker.</li>
+          <li><strong>Cassandra snapshot rows are partitioned by <code>stream_id</code></strong> with <code>time_bucket</code> as the clustering column, which keeps a single stream's whole history contiguous and cheap to range-scan for a creator dashboard.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: the long tail of ordinary streams, each with its own small presence key, hashed across a Redis Cluster of shards. Right panel: a single hot stream is not forced onto one shard; instead it is sub-sharded across several presence-partition keys, each independently updated and summed by the aggregator, mirroring the hierarchical fan-in tree.">
+            <style>
+              .lvc-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+              .lvc-node{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1.5;}
+              .lvc-node-active{fill:var(--color-accent-dark);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .lvc-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .lvc-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .lvc-nodelabel{font-family:var(--font-sans);font-weight:700;font-size:8px;fill:var(--color-primary);}
+              .lvc-nodelabel-inv{font-family:var(--font-sans);font-weight:700;font-size:8px;fill:#ffffff;}
+            </style>
+            <text x="20" y="20" class="lvc-title">Long tail: hash(stream_id) across a Redis Cluster</text>
+
+            <circle cx="150" cy="150" r="95" fill="none" stroke="var(--color-border)" stroke-dasharray="3 3"></circle>
+            <circle cx="240" cy="150" r="13" class="lvc-node"></circle>
+            <text x="240" y="153" text-anchor="middle" class="lvc-nodelabel">S0</text>
+            <circle cx="213" cy="215" r="13" class="lvc-node"></circle>
+            <text x="213" y="218" text-anchor="middle" class="lvc-nodelabel">S1</text>
+            <circle cx="150" cy="240" r="13" class="lvc-node"></circle>
+            <text x="150" y="243" text-anchor="middle" class="lvc-nodelabel">S2</text>
+            <circle cx="87" cy="215" r="13" class="lvc-node"></circle>
+            <text x="87" y="218" text-anchor="middle" class="lvc-nodelabel">S3</text>
+            <circle cx="60" cy="150" r="13" class="lvc-node"></circle>
+            <text x="60" y="153" text-anchor="middle" class="lvc-nodelabel">S4</text>
+            <circle cx="87" cy="85" r="13" class="lvc-node"></circle>
+            <text x="87" y="88" text-anchor="middle" class="lvc-nodelabel">S5</text>
+            <circle cx="150" cy="60" r="13" class="lvc-node"></circle>
+            <text x="150" y="63" text-anchor="middle" class="lvc-nodelabel">S6</text>
+            <circle cx="213" cy="85" r="13" class="lvc-node"></circle>
+            <text x="213" y="88" text-anchor="middle" class="lvc-nodelabel">S7</text>
+            <text x="150" y="270" text-anchor="middle" class="lvc-sub">each shard holds many small streams' presence keys</text>
+
+            <line x1="310" y1="20" x2="310" y2="290" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <text x="335" y="20" class="lvc-title">Hot stream: sub-sharded, not single-keyed</text>
+
+            <rect x="335" y="45" width="400" height="38" rx="5" class="lvc-box-strong"></rect>
+            <text x="345" y="68" class="lvc-title">stream:{hot_id}:shard_0..9</text>
+
+            <circle cx="590" cy="53" r="9" class="lvc-node-active"></circle>
+            <circle cx="615" cy="53" r="9" class="lvc-node-active"></circle>
+            <circle cx="640" cy="53" r="9" class="lvc-node-active"></circle>
+            <circle cx="665" cy="53" r="9" class="lvc-node-active"></circle>
+            <circle cx="690" cy="53" r="9" class="lvc-node-active"></circle>
+            <circle cx="715" cy="53" r="9" class="lvc-node-active"></circle>
+
+            <text x="335" y="105" class="lvc-sub">10 independent presence keys, each &lt; 500K members, on different shards</text>
+            <text x="335" y="120" class="lvc-sub">(in fan-in mode, this generalizes further to the edge/regional tree in Figure 2)</text>
+
+            <line x1="500" y1="130" x2="500" y2="169" stroke="var(--color-accent)" stroke-width="1.6"></line>
+            <rect x="380" y="170" width="240" height="55" rx="6" class="lvc-box-strong"></rect>
+            <text x="500" y="192" text-anchor="middle" class="lvc-title">Aggregator sums 10 sub-shards</text>
+            <text x="500" y="207" text-anchor="middle" class="lvc-sub">ZCARD each shard, add the 10 results</text>
+
+            <text x="335" y="250" class="lvc-sub">No single key or shard ever holds the full 5M-member set;</text>
+            <text x="335" y="263" class="lvc-sub">a shard failure loses at most 1/10 of one stream's count temporarily.</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. Partitioning strategy: the long tail hashes normally across a Redis Cluster; a single hot stream is deliberately sub-sharded across several presence-partition keys (or, at full scale, the hierarchical fan-in tree) so it never depends on one key or one shard.</div>
+        </div>
+
+        <table>
+          <tr><th>Data</th><th>Sharded by</th><th>Replication</th></tr>
+          <tr><td>Presence sorted set (default path)</td><td>hash(stream_id)</td><td>Redis Cluster, 1&ndash;2 replicas; loss is self-healing within one TTL window</td></tr>
+          <tr><td>Presence sub-shards (hot stream)</td><td>hash(stream_id + shard_n) or edge/regional tree</td><td>Same as above, per sub-shard; no single shard holds the whole stream</td></tr>
+          <tr><td>presence-events Kafka topic</td><td>hash(stream_id), extra partitions for hot streams</td><td>Kafka RF=3</td></tr>
+          <tr><td>viewer_count_snapshots (Cassandra)</td><td>stream_id (partition key)</td><td>Cassandra RF=3</td></tr>
+        </table>
+
+        <h2 id="rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</h2>
+        <p>A public, visible "N watching now" number is itself a target: it functions as a social-proof signal, and inflating it (or, for a competitor, deflating a rival's) has real incentive behind it. This is a different concern from ordinary infrastructure rate limiting.</p>
+        <ul>
+          <li><strong>Connection-rate limiting at the edge:</strong> cap new-connection and reconnection rate per IP/device fingerprint at the Gateway/CDN layer, so a script can't cheaply open thousands of fake presence connections.</li>
+          <li><strong>Authenticated or fingerprinted sessions for counted connections:</strong> require a lightweight session token (even for anonymous viewers) before a connection is allowed to increment the presence set, making mass fake-connection attacks costlier to mount.</li>
+          <li><strong>Join-velocity anomaly detection:</strong> flag a stream whose join rate spikes far beyond organic patterns from a narrow IP range/ASN/device cluster for asynchronous fraud review, without blocking the real-time count in the interim.</li>
+          <li><strong>Separate "raw counted presence" from "publicly displayed count":</strong> the moment a stream is flagged as suspicious, the publicly shown number can be capped or held at a placeholder while a review pipeline verifies it &mdash; the same pattern YouTube uses for its total view counter (see the interview-questions section below), applied here to the live concurrent count instead.</li>
+          <li><strong>Rate-limiting is about infrastructure protection; fraud filtering is about number integrity</strong> &mdash; keep these as two explicitly separate controls rather than conflating them, since they have different triggers, different remediation (throttle vs. hide/hold), and different owners operationally.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>The aggregate count is rarely sensitive, but the presence list is:</strong> a bare number ("14,203 watching") carries little privacy risk, but the "who's viewing" extension exposes identity and must be gated by exactly the same authorization the underlying page/stream already enforces &mdash; never a looser check.</li>
+          <li><strong>Never leak resource existence via the count endpoint:</strong> <code>GET /streams/{id}/viewer-count</code> for a private or unlisted stream must return the same authorization error an unauthorized caller would get from the stream itself, not a bare "404 unknown" that would let someone probe for the existence of private content.</li>
+          <li><strong>Opt-out / invisible viewing:</strong> for the presence-list extension, respect a per-user "don't show me as viewing" preference &mdash; they can still be counted in the aggregate number while being excluded from any named list.</li>
+          <li><strong>No internal identifiers leak to the client:</strong> only the opaque aggregate count (and, where authorized, display names) ever reach the client &mdash; raw <code>session_id</code>/<code>connection_id</code> values and internal shard/edge-node topology are never exposed.</li>
+          <li><strong>Transport security:</strong> WSS/TLS for all client connections; internal service-to-service traffic (Gateway &rarr; Kafka &rarr; Aggregator &rarr; Publisher) authenticated and encrypted the same as any other internal data plane.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Load balancing shows up at several independent layers, each with a different constraint:</p>
+        <ol>
+          <li><strong>Client connections across Edge Gateway nodes:</strong> a WS/SSE-aware L4/L7 balancer distributes new connections, ideally consistent-hashed enough that a given client tends to stick to one Gateway for its session's lifetime (simplifies local counting) while still spreading a single hot stream's millions of viewers across the whole Gateway fleet rather than any one node.</li>
+          <li><strong>Kafka partitions/consumer groups</strong> for the Count Aggregator scale natively via Kafka's own consumer-group rebalancing as instances are added.</li>
+          <li><strong>The fan-in tree's regional and global aggregators</strong> need their own load-aware routing: a single stream's global aggregator role can itself be assigned via consistent hashing over a small pool of aggregator instances, so no one instance is statically pinned to every hot stream that happens to occur.</li>
+        </ol>
+        <p>Autoscale the Gateway fleet on open-connection count (the real resource constraint, more so than CPU), and ensure connection draining on deploys &mdash; a rolling Gateway restart should gracefully migrate connections rather than dropping them all at once and triggering a reconnect storm.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Route each viewer to their nearest regional Edge Gateway (GeoDNS/anycast), which minimizes heartbeat round-trip latency and keeps the vast majority of presence traffic local to a region.</li>
+          <li>The hierarchical fan-in tree <em>is</em> the multi-region design, not a separate concern layered on top: regional aggregators already exist to combine that region's edge partials, and the global aggregator already combines across regions &mdash; scaling a hot stream and scaling geographically are the same tree.</li>
+          <li>A region experiencing a network partition from the rest of the platform simply has its last-known partial count used by the global aggregator until connectivity resumes &mdash; an availability-favoring, self-healing degradation, not an outage of the whole feature.</li>
+          <li>Run Gateways and regional aggregators active-active in every region; only the (lightweight, low-QPS) global aggregation and snapshot-persistence tiers need any cross-region coordination at all.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <p>The central theme of this entire design is a deliberate trade: give up exactness to buy scalability and self-healing. An exact count (e.g. one atomic counter, incremented on join and decremented on a guaranteed leave) is conceptually simpler but cannot survive either the throughput of a viral stream or the reality of ungraceful disconnects without leaking count upward forever.</p>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>A single viral stream overwhelms one Redis key/shard</td><td>Hierarchical fan-in: edge-local counters &rarr; regional aggregators &rarr; global aggregator, a G-Counter-style merge with no single hot key</td></tr>
+          <tr><td>Ungraceful disconnects (crash, network drop) never decrement an exact counter</td><td>Presence-as-a-set-with-TTL: absence of a recent heartbeat is itself the leave signal, self-healing with no explicit event required</td></tr>
+          <tr><td>Raw aggregated count flickers visibly to users</td><td>Exponential smoothing + threshold-gated display updates on the Publisher</td></tr>
+          <tr><td>Reconnect during a network blip double-counts a viewer</td><td>Stable session_id reused across reconnects &rarr; sorted-set upsert, not insert</td></tr>
+          <tr><td>Bot/fraud inflation of a publicly displayed count</td><td>Connection-rate limiting, anomaly detection, and a separate hold/cap on the public number pending review</td></tr>
+          <tr><td>A regional network partition</td><td>Global aggregator falls back to that region's last-known partial &mdash; stale but available, not down</td></tr>
+          <tr><td>Kafka partition hot-spotting on one stream's events</td><td>Extra partitions / salted sub-keys for streams above the fan-in threshold</td></tr>
+          <tr><td>Cassandra snapshot pipeline falls behind or fails</td><td>Fully decoupled, async side effect &mdash; never blocks or affects the real-time count</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>This design favors availability over consistency almost everywhere, and says so explicitly: a stale or briefly imprecise viewer count is a non-event, while an unavailable counter (or one that blocks the viewing experience while it "figures out" the exact number) would be a real product failure. The one place a stronger guarantee matters is the historical snapshot log, where creators reasonably expect their analytics dashboard not to silently lose data &mdash; hence Cassandra with RF=3, kept off the real-time hot path entirely.</p>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Aggregation lag:</strong> time from a local edge-node connection change to that change being reflected in the globally published count &mdash; the single most important latency metric for this system, tracked end-to-end and per fan-in tier.</li>
+          <li><strong>Heartbeat miss-rate:</strong> the fraction of expected heartbeats that don't arrive on schedule, tracked per region &mdash; a rising miss-rate is an early proxy for client-side network health issues or Gateway overload, well before it shows up as a visible count error.</li>
+          <li><strong>Periodic full-count reconciliation:</strong> an offline/batch job that computes a slow, exact recount for a sample of streams (e.g. a true scan/sum with no TTL race or fan-in staleness) and diffs it against the fast approximate path's published value, alerting if drift exceeds a configured threshold &mdash; this is what actually validates the "approximate is close enough" assumption in production rather than just at design time.</li>
+          <li><strong>Gateway connection churn</strong> (connects + reconnects + disconnects per second) as a leading indicator of both organic traffic shifts and abuse patterns.</li>
+          <li><strong>Kafka consumer lag</strong> on the presence-events topic, and Redis memory/hot-key alerts per shard, so a stream approaching the fan-in threshold is caught proactively rather than after it's already degraded a shard.</li>
+          <li><strong>Cassandra snapshot write latency and backlog</strong>, monitored separately since it's decoupled from (and lower priority than) the real-time path.</li>
+        </ul>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Scope</td><td>Live concurrent presence &mdash; explicitly distinct from the lifetime total-view-count system</td></tr>
+          <tr><td>Ingestion</td><td>Edge Gateway tracks local presence; emits join/heartbeat/leave events to Kafka, partitioned by stream_id</td></tr>
+          <tr><td>Default presence store</td><td>Redis TTL sorted set per stream_id: member=session_id, score=last_heartbeat_ts</td></tr>
+          <tr><td>Liveness model</td><td>Heartbeat + TTL expiry; absence of a recent heartbeat is the leave signal &mdash; self-healing, no explicit leave required</td></tr>
+          <tr><td>Hot-stream scaling</td><td>Hierarchical fan-in: edge-local counters &rarr; regional aggregators &rarr; global aggregator, G-Counter-style merge</td></tr>
+          <tr><td>Display</td><td>Exponential smoothing + threshold-gated updates on the Publisher; republished every 1&ndash;5s</td></tr>
+          <tr><td>Reconnect handling</td><td>Stable session_id reused across reconnects &rarr; sorted-set upsert, avoiding double-counting</td></tr>
+          <tr><td>Historical data</td><td>Async Cassandra snapshot writer, decoupled from the real-time path</td></tr>
+          <tr><td>Abuse prevention</td><td>Connection-rate limiting, join-velocity anomaly detection, separate hold/cap on the public number pending fraud review</td></tr>
+          <tr><td>Consistency model</td><td>Eventual consistency, availability-favoring (AP); strong consistency only for the durable historical log</td></tr>
+          <tr><td>Multi-region</td><td>Regional Gateways + regional aggregators are the same tree that scales a single hot stream &mdash; not a separate design</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect a real interview to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Why Approximate Counting At All</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why not just an atomic counter &mdash; INCR on connect, DECR on disconnect &mdash; instead of a whole TTL-based presence set?</div>
+          <div class="qa-a">An INCR/DECR counter is only correct if every disconnect reliably fires a DECR, which real networks and real clients don't guarantee &mdash; a crash, a dropped connection, or a killed background app never sends one, so the counter only ever drifts upward and never self-corrects. A presence set with TTL-based expiry proves liveness by recency instead of by a promised-but-unreliable event, so an ungraceful disconnect heals itself within one TTL window with no special-case code.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's a G-Counter CRDT and how does it relate to this design?</div>
+          <div class="qa-a">A G-Counter (Grow-only Counter) is a conflict-free replicated data type where each node owns and only ever increments its own slice of a total, and the global value is simply the sum of every node's slice &mdash; a merge that's commutative and associative, so it needs no locks or coordination and tolerates nodes being temporarily unreachable. The hierarchical fan-in tree (edge &rarr; regional &rarr; global) is exactly this pattern: each tier reports its own current partial, and summing partials is always safe regardless of arrival order or staleness.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A product manager says "but the number should be exact" &mdash; how do you respond?</div>
+          <div class="qa-a">Ask what "exact" is actually protecting against: for a user-facing "N watching" badge, nobody has ever needed the literal, instantaneous, contended-consensus-verified count, and building one would require a globally coordinated write path that falls over precisely during the highest-traffic moment it needs to work. Offer the trade explicitly: a count that's accurate to within a few percent, refreshed every few seconds, in exchange for a system that never falls over on a viral spike &mdash; and note that "exact" total view counts (a different, monotonic problem) already solve the actual business need for a trustworthy permanent number.</div>
+        </div>
+
+        <h3>Hot Streams and Fan-In</h3>
+        <div class="qa-item">
+          <div class="qa-q">Walk through what actually breaks if 5,000,000 viewers' heartbeats hit one Redis key directly.</div>
+          <div class="qa-a">That key's shard receives on the order of 250,000 ZADD operations per second concentrated on a single hot key, well beyond what one node's single-threaded execution model can sustain alongside everything else on that shard; the key itself also becomes large enough to make any full scan or resize operation expensive, and the shard becomes a single point of failure for the platform's single highest-visibility stream at the exact moment failure is least acceptable.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you decide when a stream should "graduate" into hierarchical fan-in mode?</div>
+          <div class="qa-a">Set a threshold well below the point of real shard stress &mdash; e.g. 50,000&ndash;100,000 concurrent viewers &mdash; and monitor it via the same aggregation pipeline already running. Cut over by running both the default sorted-set path and the fan-in tree in parallel briefly, then switch the Publisher to read from the fan-in tree once it's populated and stable, letting the old key drain via its own TTL rather than doing an all-at-once migration.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you size the fan-in tree &mdash; how many edge nodes and regions?</div>
+          <div class="qa-a">Start from a realistic per-node connection capacity (e.g. ~50,000 WS connections per edge node) and divide the target peak (5,000,000) by it to get the node count (~100), then group those nodes by geography into a handful of regions (e.g. 10) so each regional aggregator only sums a manageable number of edge partials (~10) and the global aggregator only sums a handful of regional partials &mdash; keeping every summation step cheap regardless of how large the total gets.</div>
+        </div>
+
+        <h3>Presence, Heartbeats and Reconnects</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why heartbeat/TTL expiry instead of relying purely on WebSocket close events?</div>
+          <div class="qa-a">Clean closes are handled eagerly when they do arrive, but a large share of real departures &mdash; crashes, dropped mobile connections, killed background apps, network partitions &mdash; never fire a close event at all. A design that only decremented on an explicit leave would silently and permanently over-count in exactly those common cases; heartbeat/TTL makes correctness independent of whether a clean signal ever arrives.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you choose the heartbeat interval and miss threshold?</div>
+          <div class="qa-a">Balance detection speed against traffic volume: a shorter interval detects departures faster but multiplies system-wide heartbeat load directly; a miss threshold of 1 reacts fastest but false-evicts on ordinary jitter (a GC pause, a brief network blip), while a threshold of 2&ndash;3 tolerates that jitter at the cost of a slightly longer worst-case staleness window &mdash; acceptable given the count is already approximate and smoothed.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you avoid double-counting a client that reconnects?</div>
+          <div class="qa-a">The client persists a stable session_id across reconnects (not a fresh id per WebSocket) and resubscribes with the same id; because the presence sorted set's member key is that session_id, the reconnect's ZADD upserts the existing entry's score instead of creating a second member &mdash; sorted-set member uniqueness makes double-counting structurally impossible for the same session_id.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Should the same signed-in user watching from two tabs or two devices count once or twice?</div>
+          <div class="qa-a">By default, twice &mdash; each tab/device is its own connection and its own unit of server/bandwidth load, which matches the intuitive meaning of "concurrent viewers." If a product specifically wants a distinct-user count instead, add a secondary TTL-based set keyed by user_id and expose both numbers explicitly rather than silently conflating the two definitions.</div>
+        </div>
+
+        <h3>Smoothing, Fraud and the YouTube "301" Story</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why smooth or damp the displayed number at all &mdash; isn't the raw number "more honest"?</div>
+          <div class="qa-a">The raw number is more instantaneous, not more honest &mdash; its cycle-to-cycle jitter comes from aggregation and timing noise, not from real viewership change, and displaying it directly makes a healthy system look broken. Exponential smoothing plus threshold-gated display updates preserve the real trend (a genuine surge still shows up within a few seconds) while removing noise that was never meaningful in the first place.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Tell me about YouTube's famous "freeze the count at 301" behavior &mdash; why would a company deliberately show a wrong number?</div>
+          <div class="qa-a">YouTube is publicly known to temporarily freeze a video's (lifetime) view count at 301 while an asynchronous fraud-verification pass confirms the views aren't bot/fraud-inflated, only "unfreezing" to the true tally once that check clears. It's a clean illustration that <em>counting</em> and <em>verifying the count is trustworthy</em> are separate concerns that can run on different timelines &mdash; the same idea applies here: a suspected-fraudulent live stream's publicly shown concurrent count can be held/capped while an anomaly-review pipeline runs, without touching the underlying real-time aggregation at all.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you defend the concurrent count against bot/fraud inflation?</div>
+          <div class="qa-a">Layer connection-rate limiting per IP/device at the edge, require an authenticated or fingerprinted session before a connection counts toward presence at all, run join-velocity anomaly detection to flag suspicious spikes from a narrow source for review, and keep a separate "publicly displayed" value that can be held/capped independently of the raw counted presence &mdash; mirroring the YouTube 301 pattern, but for the live number instead of the lifetime one.</div>
+        </div>
+
+        <h3>Extensions and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this to show who is viewing, like Google Docs' presence avatars?</div>
+          <div class="qa-a">Add a presence-list read path that returns the actual members of the (much smaller, permission-gated) presence set with display names/avatars rather than just its cardinality, enforce the exact same authorization the underlying page already requires, respect a per-user "invisible viewing" opt-out, and cap the returned list size for very large pages &mdash; falling back to just the aggregate count once the viewer list itself would be too large to usefully render.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you detect and correct drift between the fast approximate count and reality?</div>
+          <div class="qa-a">Run a periodic, offline reconciliation job that computes a slow but exact recount for a sample of streams (a true scan/sum bypassing TTL races and fan-in staleness) and diffs it against the live published value; alert when drift exceeds a configured threshold, and use sustained drift as a signal to retune heartbeat interval, miss threshold, or smoothing parameters rather than as a one-off bug fix.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support a per-country or per-platform breakdown of the same live count?</div>
+          <div class="qa-a">The regional tier of the fan-in aggregation already segments viewers by geography, so a per-region breakdown is close to free &mdash; expose the regional partials (already computed) as a secondary, lower-priority read rather than the single summed number. A per-platform (web/iOS/Android) breakdown works the same way: tag each connection with its client platform at connect time and maintain that as an additional dimension on the same partial-count structure, summed the same way.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The whole design rests on one explicit trade: approximate, eventually-consistent counting in exchange for scalability and self-healing, and every subsequent decision defends that trade rather than quietly reintroducing exactness through the back door. Presence must be a set-with-expiry, not an increment/decrement counter, because ungraceful disconnects are the common case, not the exception. A single viral stream cannot live on one key or one shard &mdash; hierarchical fan-in (structurally a G-Counter CRDT) is what lets one stream and the whole platform share the same scaling story. The number shown to users is a deliberately smoothed, damped view of an intentionally noisy underlying signal, and that smoothing is a feature, not a lossy compromise. Reconnects are made safe by a stable session identity, not by clever server-side heuristics. And the concurrent-viewer count is not the total-view count &mdash; naming that distinction early is often the single highest-signal thing a candidate says in the whole interview.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Shapiro, Preguiça, Baquero, Zawirski &mdash; "Conflict-Free Replicated Data Types" (the G-Counter and related CRDT formalism)</li>
+          <li>Martin Kleppmann, <em>Designing Data-Intensive Applications</em> &mdash; chapters on replication, eventual consistency, and stream processing</li>
+          <li>Redis documentation &mdash; sorted sets (ZADD, ZCARD, ZREMRANGEBYSCORE), Redis Cluster hash-slot sharding, and key expiry patterns</li>
+          <li>Apache Kafka documentation &mdash; topic partitioning and consumer-group scaling for high-throughput event ingestion</li>
+          <li>Apache Cassandra documentation &mdash; wide-column time-series modeling, partition/clustering keys, replication factor</li>
+          <li>Public reporting and community write-ups on YouTube's view-count freeze/verification behavior (the "stuck at 301" phenomenon) as an anti-fraud pattern</li>
+          <li>Engineering blog posts from major live-streaming platforms on presence/concurrency counting at scale (heartbeat-based liveness, hierarchical aggregation for viral broadcasts)</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="oncall-escalation-system.html"><span class="dir">Previous</span>On-Call Escalation System</a>
+          <a class="next" href="photo-sharing-platform.html"><span class="dir">Next</span>Photo Sharing Platform</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

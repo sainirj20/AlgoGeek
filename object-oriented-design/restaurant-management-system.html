@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restaurant Management System | Object Oriented Design | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Object Oriented Design</a><span class="sep">/</span><span class="current">Restaurant Management System</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Object Oriented Design overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#actors-and-use-cases">Actors &amp; Use Cases</a></li>
+        <li><a href="#key-classes">Key Classes</a></li>
+        <li><a href="#class-diagram">Class Diagram</a></li>
+        <li><a href="#key-flow-activity-diagram">Key Flow: Taking an Order</a></li>
+        <li><a href="#key-flow-sequence-diagram">Key Flow: Reserving a Table</a></li>
+        <li><a href="#design-patterns-applied">Design Patterns Applied</a></li>
+        <li><a href="#code-skeleton">Code Skeleton</a></li>
+        <li><a href="#extensibility-and-edge-cases">Extensibility &amp; Edge Cases</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">OBJECT ORIENTED DESIGN</span>
+          <h1>Design a Restaurant Management System</h1>
+        </div>
+
+        <p><em>This problem packs three separate modeling ideas into one interview, and the strongest candidates name all three out loud instead of stumbling into them. First, a multi-branch chain is a straightforward composition tree &mdash; Restaurant owns Branches, a Branch owns Tables and a Menu &mdash; but Branch's relationship to its Employees is the one relationship on this page worth pausing on: staff can transfer between branches, so that link has to be aggregation, not composition, even though everything else in the Branch's neighborhood is composition. Second, a restaurant's Menu is a textbook <strong>Composite</strong> pattern: a Menu groups MenuSections, each MenuSection groups MenuItems, and nothing about that shape changes if a branch has three sections or ten. Third, reserving a Table without double-booking it is the exact same interval-overlap problem worked through on the Hotel Management page &mdash; just shrunk from a multi-night date range down to a same-day, 90-minute seating window, which means the fix is the same atomic check-then-insert discipline, not a different algorithm. Layer on a Person&nbsp;&rarr;&nbsp;Employee/Customer hierarchy (the same "one identity, many roles" shape as the Library Management page's Account&nbsp;&rarr;&nbsp;Member/Librarian split) and a two-stage State machine for order fulfillment, and you have a compact but genuinely representative LLD problem.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the internal operations system for a restaurant &mdash; possibly a multi-branch chain rather than a single location. The system has to manage each Branch's physical Tables (their capacity and current occupancy state), let a Receptionist or Customer reserve a Table ahead of time or seat a walk-in on the spot, let a Waiter take an Order against a Table from that Branch's Menu, route each item on that Order to the Chef in the Kitchen for preparation, track that item's progress from ordered to served, and finally generate a Bill covering everything the Table ordered during its current visit &mdash; including splitting that Bill across multiple parties and accepting payment. A Manager sits above all of this: editing the Menu, managing Branches and Employees, and pulling sales reports. As with any multi-location system, the design has to work whether the chain has one Branch or fifty, without the Branch-specific details (its own Tables, its own staff roster, its own Menu variant) leaking into how Restaurant, Order, or Bill are modeled.</p>
+
+        <h2 id="requirements">Requirements</h2>
+        <ol>
+          <li>A <strong>Restaurant</strong> has one or more <strong>Branches</strong>, and each Branch has its own <strong>Tables</strong>, <strong>Employees</strong>, and <strong>Menu</strong>.</li>
+          <li>Every <strong>Table</strong> has a <strong>capacity</strong> (how many guests it seats) and a <strong>status</strong>: Free, Reserved, Occupied, or Needs-Cleaning.</li>
+          <li>A <strong>Customer</strong> (or a <strong>Receptionist</strong> acting on their behalf) can <strong>reserve a Table</strong> for a given party size and time window, or <strong>seat a walk-in</strong> immediately if a Table of suitable capacity is currently Free.</li>
+          <li>A <strong>Waiter</strong> takes an <strong>Order</strong> for a Table, made up of one or more <strong>MenuItems</strong> &mdash; each carrying a price and a category such as Appetizer, Main, Dessert, or Beverage.</li>
+          <li>An Order is <strong>routed to the Kitchen</strong> for the <strong>Chef</strong> to prepare, and the system tracks a <strong>per-item</strong> status &mdash; Ordered, Preparing, Ready, or Served &mdash; rather than one status for the whole Order.</li>
+          <li>The system generates a <strong>Bill</strong> that combines every Order placed for a Table during its current visit, <strong>supports splitting</strong> that Bill across multiple parties at the table, and accepts <strong>payment</strong>.</li>
+          <li>A <strong>Manager</strong> can modify the Menu (add, remove, or re-price MenuItems) and view <strong>sales reports</strong>.</li>
+          <li>The system must <strong>never double-book or double-seat</strong> the same Table for overlapping reservation windows &mdash; the same interval-overlap discipline used for date ranges on the Hotel Management page, here applied to same-day time slots.</li>
+          <li>A Table's Menu availability can vary <strong>per Branch</strong> &mdash; the same chain-wide MenuItem might be offered at one location and not another.</li>
+        </ol>
+
+        <h2 id="actors-and-use-cases">Actors &amp; Use Cases</h2>
+        <p>Five actors touch the system, and (mirroring the Hotel Management page's pattern) several of them legitimately share use cases &mdash; a Receptionist can do anything a walk-in Customer's presence triggers, and a Waiter's actions straddle both the dining room and the kitchen pass:</p>
+        <ul>
+          <li><strong>Customer</strong> &mdash; reserves a Table ahead of time, views the Menu, has a Waiter take their order on their behalf, and pays.</li>
+          <li><strong>Receptionist</strong> &mdash; seats walk-ins at a suitable Free Table and manages the reservation book, including taking reservations by phone.</li>
+          <li><strong>Waiter</strong> &mdash; takes Orders at the table, marks items Served once the kitchen has them ready, and generates/settles the Bill.</li>
+          <li><strong>Chef / Kitchen Staff</strong> &mdash; watches incoming order tickets and updates each OrderItem's prep status as it moves through the kitchen.</li>
+          <li><strong>Manager</strong> &mdash; manages the Menu, Branches, and Employee roster, and reviews sales reports. Never touches a single table's Order or Bill directly.</li>
+        </ul>
+        <p>Primary use cases: <strong>Reserve Table</strong>, <strong>Seat Walk-In</strong>, <strong>Take Order</strong>, <strong>Update Order-Item Status</strong>, <strong>Generate Bill</strong>, <strong>Process Payment</strong>, and <strong>Manage Menu</strong> (manager).</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 860 700" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Use case diagram: Customer, Receptionist, Waiter, Chef/Kitchen Staff, and Manager actors connected to seven use cases inside the Restaurant Management System boundary">
+            <rect x="160" y="50" width="540" height="600" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+            <text x="430" y="74" text-anchor="middle" font-size="14" font-weight="700" fill="var(--color-primary-dark)">Restaurant Management System</text>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="72" y1="110" x2="285" y2="110"/>
+              <line x1="72" y1="110" x2="555" y2="190"/>
+              <line x1="72" y1="230" x2="285" y2="110"/>
+              <line x1="72" y1="230" x2="285" y2="190"/>
+              <line x1="72" y1="350" x2="285" y2="270"/>
+              <line x1="72" y1="350" x2="285" y2="350"/>
+              <line x1="72" y1="350" x2="555" y2="110"/>
+              <line x1="72" y1="350" x2="555" y2="190"/>
+              <line x1="72" y1="470" x2="285" y2="350"/>
+              <line x1="72" y1="590" x2="555" y2="270"/>
+            </g>
+
+            <g font-size="12" fill="var(--color-text)">
+              <circle cx="55" cy="110" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="120" x2="55" y2="154" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="134" x2="70" y2="134" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="42" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="68" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="196" text-anchor="middle">Customer</text>
+
+              <circle cx="55" cy="230" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="240" x2="55" y2="274" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="254" x2="70" y2="254" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="274" x2="42" y2="299" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="274" x2="68" y2="299" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="316" text-anchor="middle">Receptionist</text>
+
+              <circle cx="55" cy="350" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="360" x2="55" y2="394" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="374" x2="70" y2="374" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="394" x2="42" y2="419" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="394" x2="68" y2="419" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="436" text-anchor="middle">Waiter</text>
+
+              <circle cx="55" cy="470" r="10" fill="none" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="480" x2="55" y2="514" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="40" y1="494" x2="70" y2="494" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="514" x2="42" y2="539" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="514" x2="68" y2="539" stroke="var(--color-accent)" stroke-width="2"/>
+              <text x="55" y="556" text-anchor="middle" fill="var(--color-accent-dark)">Chef / Kitchen</text>
+              <text x="55" y="570" text-anchor="middle" fill="var(--color-accent-dark)">Staff</text>
+
+              <circle cx="55" cy="590" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="600" x2="55" y2="634" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="614" x2="70" y2="614" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="634" x2="42" y2="659" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="634" x2="68" y2="659" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="676" text-anchor="middle">Manager</text>
+            </g>
+
+            <g font-size="11" fill="var(--color-text)">
+              <ellipse cx="285" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="285" y="114" text-anchor="middle">Reserve Table</text>
+
+              <ellipse cx="285" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="285" y="186" text-anchor="middle">Seat Walk-In</text>
+
+              <ellipse cx="285" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="285" y="274" text-anchor="middle">Take Order</text>
+
+              <ellipse cx="285" cy="350" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="285" y="346" text-anchor="middle">Update Order-Item</text>
+              <text x="285" y="360" text-anchor="middle">Status</text>
+
+              <ellipse cx="555" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="555" y="114" text-anchor="middle">Generate Bill</text>
+
+              <ellipse cx="555" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="555" y="194" text-anchor="middle">Process Payment</text>
+
+              <ellipse cx="555" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="555" y="274" text-anchor="middle">Manage Menu</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 1. Use-case diagram: Customer and Receptionist share Reserve Table (either can initiate one); Waiter's four use cases span both the dining room (Take Order) and the kitchen pass (Update Order-Item Status) plus billing; Chef/Kitchen Staff and Manager each own a use case none of the others can initiate.</div>
+        </div>
+
+        <h2 id="key-classes">Key Classes</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td>Restaurant</td><td>Top-level aggregate for the whole chain; owns its Branches.</td></tr>
+            <tr><td>Branch</td><td>A single physical location; owns its own Tables (composition &mdash; a Table has no meaning outside its Branch), its Menu (composition), and its roster of Employees (aggregation &mdash; discussed below).</td></tr>
+            <tr><td>Table</td><td>The physical seating unit: a capacity and a TableStatus. Some designs split further into a per-seat TableSeat entity (useful if a restaurant needs to split a bill or an order by individual seat); this page models Table as the atomic unit with a capacity field, which covers the common case, and treats per-seat granularity as a natural extension.</td></tr>
+            <tr><td>Menu</td><td>A Branch's menu: a thin container of MenuSections. A textbook Composite root.</td></tr>
+            <tr><td>MenuSection</td><td>A named grouping &mdash; Appetizers, Mains, Desserts, Beverages &mdash; holding MenuItems. The Composite "composite" node.</td></tr>
+            <tr><td>MenuItem</td><td>A single orderable dish: name, price, category, availability. The Composite "leaf" node.</td></tr>
+            <tr><td>Order</td><td>What a Table ordered in one round: a list of OrderItems, tied to the Table and the Waiter who took it.</td></tr>
+            <tr><td>OrderItem</td><td>One MenuItem plus quantity on an Order, carrying its own OrderItemStatus (Ordered/Preparing/Ready/Served) &mdash; tracked per item, not per Order, since different dishes finish at different times.</td></tr>
+            <tr><td>Bill</td><td>Finalized charges for a Table's current visit; composed of the visit's Orders, supports splitting across parties and recording payment.</td></tr>
+            <tr><td>Person (abstract)</td><td>Common identity fields (name, contact info) shared by anyone the system tracks as a human, whether staff or guest.</td></tr>
+            <tr><td>Employee (abstract)</td><td>A Person who works at a Branch; specialized into Chef, Waiter, Receptionist, and Manager, each with role-specific behavior.</td></tr>
+            <tr><td>Chef</td><td>Kitchen staff; updates an OrderItem's status as it moves through preparation.</td></tr>
+            <tr><td>Waiter</td><td>Front-of-house staff; takes Orders, marks items Served, generates the Bill.</td></tr>
+            <tr><td>Receptionist</td><td>Front-of-house staff; seats walk-ins and manages the reservation book.</td></tr>
+            <tr><td>Manager</td><td>Edits the Menu, manages Branches/Employees, views sales reports.</td></tr>
+            <tr><td>Customer</td><td>A Person who is a guest &mdash; reserves Tables, has an order history.</td></tr>
+            <tr><td>Reservation</td><td>A promise to hold a specific Table for a party size over a same-day time window; must never overlap another Reservation for the same Table.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="class-diagram">Class Diagram</h2>
+        <p>One relationship here deserves special attention before the diagram: <strong>Branch&ndash;Table is composition</strong> (filled diamond) because a Table has no identity or lifecycle outside the Branch it's bolted into &mdash; close the Branch and its Tables are simply gone. <strong>Branch&ndash;Employee, by contrast, is aggregation</strong> (hollow diamond) &mdash; an Employee keeps existing, keeps a payroll record, and can be reassigned to a different Branch entirely (a transfer), so the Employee's lifecycle is independent of any one Branch's. Same "has-a" shape, opposite lifecycle rule, side by side on the same class &mdash; exactly the distinction interviewers use this page to probe.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1150 1000" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="UML class diagram for the Restaurant Management System">
+            <defs>
+              <marker id="rmsTriangle" viewBox="0 0 20 14" refX="18" refY="7" markerWidth="18" markerHeight="14" orient="auto">
+                <path d="M1,1 L18,7 L1,13 Z" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.2"/>
+              </marker>
+              <marker id="rmsDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-primary-dark)" stroke="var(--color-primary-dark)" stroke-width="1"/>
+              </marker>
+              <marker id="rmsHollowDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              </marker>
+              <marker id="rmsArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)"/>
+              </marker>
+            </defs>
+
+            <!-- relationship lines drawn first so boxes sit on top -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="575" y1="130" x2="575" y2="195" marker-start="url(#rmsDiamond)"/>
+              <line x1="520" y1="330" x2="115" y2="400" marker-start="url(#rmsDiamond)"/>
+              <line x1="630" y1="330" x2="1015" y2="400" marker-start="url(#rmsDiamond)"/>
+              <line x1="1015" y1="540" x2="1015" y2="600" marker-start="url(#rmsDiamond)"/>
+              <line x1="1015" y1="730" x2="1015" y2="795" marker-start="url(#rmsDiamond)"/>
+              <line x1="115" y1="745" x2="115" y2="795" marker-start="url(#rmsDiamond)"/>
+            </g>
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="575" y1="330" x2="340" y2="400" marker-start="url(#rmsHollowDiamond)"/>
+            </g>
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="435" y1="440" x2="470" y2="440" marker-end="url(#rmsTriangle)"/>
+              <line x1="695" y1="440" x2="660" y2="440" marker-end="url(#rmsTriangle)"/>
+              <line x1="315" y1="600" x2="290" y2="515" marker-end="url(#rmsTriangle)"/>
+              <line x1="475" y1="600" x2="320" y2="515" marker-end="url(#rmsTriangle)"/>
+              <line x1="635" y1="600" x2="350" y2="515" marker-end="url(#rmsTriangle)"/>
+              <line x1="795" y1="600" x2="380" y2="515" marker-end="url(#rmsTriangle)"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none">
+              <line x1="115" y1="540" x2="115" y2="600" marker-end="url(#rmsArrow)"/>
+              <line x1="405" y1="650" x2="210" y2="650" marker-end="url(#rmsArrow)"/>
+              <line x1="210" y1="730" x2="340" y2="795" marker-end="url(#rmsArrow)"/>
+              <polyline points="20,460 8,460 8,850 470,850" marker-end="url(#rmsArrow)"/>
+              <polyline points="115,930 115,965 1015,965 1015,945" marker-end="url(#rmsArrow)"/>
+            </g>
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="585" y="150">1</text>
+              <text x="585" y="182">1..*</text>
+              <text x="440" y="322">1</text>
+              <text x="200" y="392">1..*</text>
+              <text x="585" y="322">1</text>
+              <text x="330" y="392">0..*</text>
+              <text x="650" y="322">1</text>
+              <text x="960" y="392">1</text>
+              <text x="1025" y="558">1</text>
+              <text x="1025" y="590">1..*</text>
+              <text x="1025" y="748">1</text>
+              <text x="1025" y="780">1..*</text>
+              <text x="125" y="763">1</text>
+              <text x="125" y="795">1..*</text>
+              <text x="125" y="558">1</text>
+              <text x="125" y="592">0..*</text>
+            </g>
+
+            <!-- Restaurant -->
+            <g>
+              <rect x="470" y="20" width="210" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="470" y1="50" x2="680" y2="50" stroke="var(--color-primary)"/>
+              <line x1="470" y1="104" x2="680" y2="104" stroke="var(--color-primary)"/>
+              <text x="575" y="38" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Restaurant</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="480" y="66">- restaurantId: String</text>
+                <text x="480" y="80">- name: String</text>
+                <text x="480" y="94">- branches: List&lt;Branch&gt;</text>
+                <text x="480" y="120">+ getBranches(): List&lt;Branch&gt;</text>
+              </g>
+            </g>
+
+            <!-- Branch -->
+            <g>
+              <rect x="470" y="195" width="210" height="135" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="470" y1="225" x2="680" y2="225" stroke="var(--color-primary)"/>
+              <line x1="470" y1="293" x2="680" y2="293" stroke="var(--color-primary)"/>
+              <text x="575" y="213" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Branch</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="480" y="241">- branchId: String</text>
+                <text x="480" y="255">- address: String</text>
+                <text x="480" y="269">- tables: List&lt;Table&gt;</text>
+                <text x="480" y="283">- employees: List&lt;Employee&gt;</text>
+                <text x="480" y="309">+ findAvailableTable(size, slot)</text>
+                <text x="480" y="323">+ getMenu(): Menu</text>
+              </g>
+            </g>
+
+            <!-- Table -->
+            <g>
+              <rect x="20" y="400" width="190" height="140" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="20" y1="430" x2="210" y2="430" stroke="var(--color-primary)"/>
+              <line x1="20" y1="498" x2="210" y2="498" stroke="var(--color-primary)"/>
+              <text x="115" y="418" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Table</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="28" y="446">- tableId: String</text>
+                <text x="28" y="460">- number: String</text>
+                <text x="28" y="474">- capacity: int</text>
+                <text x="28" y="488">- status: TableStatus</text>
+                <text x="28" y="514">+ isAvailableFor(slot): boolean</text>
+                <text x="28" y="528">+ fits(partySize): boolean</text>
+              </g>
+            </g>
+
+            <!-- Employee (abstract) -->
+            <g>
+              <rect x="245" y="400" width="190" height="115" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="245" y1="435" x2="435" y2="435" stroke="var(--color-accent-dark)"/>
+              <line x1="245" y1="489" x2="435" y2="489" stroke="var(--color-accent-dark)"/>
+              <text x="340" y="416" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Employee</text>
+              <text x="340" y="428" text-anchor="middle" font-size="8.5" font-style="italic" fill="var(--color-text-muted)">&laquo;abstract&raquo;</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="253" y="451">- employeeId: String</text>
+                <text x="253" y="465">- name: String</text>
+                <text x="253" y="479">- branchId: String</text>
+                <text x="253" y="505">+ performDuties(): void {abstract}</text>
+              </g>
+            </g>
+
+            <!-- Person (abstract) -->
+            <g>
+              <rect x="470" y="400" width="190" height="105" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="470" y1="435" x2="660" y2="435" stroke="var(--color-accent-dark)"/>
+              <line x1="470" y1="479" x2="660" y2="479" stroke="var(--color-accent-dark)"/>
+              <text x="565" y="416" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Person</text>
+              <text x="565" y="428" text-anchor="middle" font-size="8.5" font-style="italic" fill="var(--color-text-muted)">&laquo;abstract&raquo;</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="478" y="451">- personId: String</text>
+                <text x="478" y="465">- name, phone, email: String</text>
+                <text x="478" y="495">+ getContactInfo(): String</text>
+              </g>
+            </g>
+
+            <!-- Customer -->
+            <g>
+              <rect x="695" y="400" width="190" height="125" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="695" y1="430" x2="885" y2="430" stroke="var(--color-accent-dark)"/>
+              <line x1="695" y1="484" x2="885" y2="484" stroke="var(--color-accent-dark)"/>
+              <text x="790" y="418" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Customer</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="703" y="446">- customerId: String</text>
+                <text x="703" y="460">- loyaltyTier: String</text>
+                <text x="703" y="474">- reservationHistory: List&lt;Reservation&gt;</text>
+                <text x="703" y="500">+ reserveTable(branch, slot, size)</text>
+                <text x="703" y="514">+ viewMenu(branch): Menu</text>
+              </g>
+            </g>
+
+            <!-- Menu -->
+            <g>
+              <rect x="920" y="400" width="190" height="140" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="920" y1="430" x2="1110" y2="430" stroke="var(--color-primary)"/>
+              <line x1="920" y1="484" x2="1110" y2="484" stroke="var(--color-primary)"/>
+              <text x="1015" y="418" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Menu</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="928" y="446">- menuId: String</text>
+                <text x="928" y="460">- branchId: String</text>
+                <text x="928" y="474">- sections: List&lt;MenuSection&gt;</text>
+                <text x="928" y="500">+ getSections(): List&lt;MenuSection&gt;</text>
+                <text x="928" y="514">+ findItem(itemId): MenuItem</text>
+              </g>
+            </g>
+
+            <!-- Order -->
+            <g>
+              <rect x="20" y="600" width="190" height="145" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="20" y1="630" x2="210" y2="630" stroke="var(--color-primary)"/>
+              <line x1="20" y1="698" x2="210" y2="698" stroke="var(--color-primary)"/>
+              <text x="115" y="618" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Order</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="28" y="646">- orderId: String</text>
+                <text x="28" y="660">- tableId, waiterId: String</text>
+                <text x="28" y="674">- items: List&lt;OrderItem&gt;</text>
+                <text x="28" y="688">- createdAt: LocalDateTime</text>
+                <text x="28" y="714">+ addItem(menuItem, qty): void</text>
+                <text x="28" y="728">+ submitToKitchen(): void</text>
+              </g>
+            </g>
+
+            <!-- Chef -->
+            <g>
+              <rect x="245" y="600" width="140" height="115" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="245" y1="630" x2="385" y2="630" stroke="var(--color-accent-dark)"/>
+              <line x1="245" y1="656" x2="385" y2="656" stroke="var(--color-accent-dark)"/>
+              <text x="315" y="618" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">Chef</text>
+              <g font-size="8.7" fill="var(--color-text)">
+                <text x="253" y="646">- station: String</text>
+                <text x="253" y="672">+ markPreparing(item)</text>
+                <text x="253" y="686">+ markReady(item)</text>
+              </g>
+            </g>
+
+            <!-- Waiter -->
+            <g>
+              <rect x="405" y="600" width="140" height="115" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="405" y1="630" x2="545" y2="630" stroke="var(--color-accent-dark)"/>
+              <line x1="405" y1="656" x2="545" y2="656" stroke="var(--color-accent-dark)"/>
+              <text x="475" y="618" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">Waiter</text>
+              <g font-size="8.7" fill="var(--color-text)">
+                <text x="413" y="646">- assignedTables</text>
+                <text x="413" y="672">+ takeOrder(table, items)</text>
+                <text x="413" y="686">+ markServed(item)</text>
+              </g>
+            </g>
+
+            <!-- Receptionist -->
+            <g>
+              <rect x="565" y="600" width="140" height="115" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="565" y1="630" x2="705" y2="630" stroke="var(--color-accent-dark)"/>
+              <line x1="565" y1="656" x2="705" y2="656" stroke="var(--color-accent-dark)"/>
+              <text x="635" y="618" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">Receptionist</text>
+              <g font-size="8.7" fill="var(--color-text)">
+                <text x="573" y="646">- deskId: String</text>
+                <text x="573" y="672">+ seatWalkIn(size)</text>
+                <text x="573" y="686">+ createReservation(req)</text>
+              </g>
+            </g>
+
+            <!-- Manager -->
+            <g>
+              <rect x="725" y="600" width="140" height="115" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="725" y1="630" x2="865" y2="630" stroke="var(--color-accent-dark)"/>
+              <line x1="725" y1="656" x2="865" y2="656" stroke="var(--color-accent-dark)"/>
+              <text x="795" y="618" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">Manager</text>
+              <g font-size="8.7" fill="var(--color-text)">
+                <text x="733" y="646">- permissions</text>
+                <text x="733" y="672">+ addMenuItem(item)</text>
+                <text x="733" y="686">+ viewSalesReport(range)</text>
+              </g>
+            </g>
+
+            <!-- MenuSection -->
+            <g>
+              <rect x="920" y="600" width="190" height="130" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="920" y1="630" x2="1110" y2="630" stroke="var(--color-primary)"/>
+              <line x1="920" y1="670" x2="1110" y2="670" stroke="var(--color-primary)"/>
+              <text x="1015" y="618" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">MenuSection</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="928" y="646">- name: String</text>
+                <text x="928" y="660">- items: List&lt;MenuItem&gt;</text>
+                <text x="928" y="686">+ addItem(item): void</text>
+                <text x="928" y="700">+ removeItem(itemId): void</text>
+              </g>
+            </g>
+
+            <!-- OrderItem -->
+            <g>
+              <rect x="20" y="795" width="190" height="135" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="20" y1="825" x2="210" y2="825" stroke="var(--color-primary)"/>
+              <line x1="20" y1="893" x2="210" y2="893" stroke="var(--color-primary)"/>
+              <text x="115" y="813" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">OrderItem</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="28" y="841">- orderItemId: String</text>
+                <text x="28" y="855">- menuItem: MenuItem</text>
+                <text x="28" y="869">- quantity: int</text>
+                <text x="28" y="883">- status: OrderItemStatus</text>
+                <text x="28" y="909">+ markPreparing()/markReady()/markServed()</text>
+                <text x="28" y="923">+ getSubtotal(): Money</text>
+              </g>
+            </g>
+
+            <!-- Bill -->
+            <g>
+              <rect x="245" y="795" width="190" height="135" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="245" y1="825" x2="435" y2="825" stroke="var(--color-primary)"/>
+              <line x1="245" y1="879" x2="435" y2="879" stroke="var(--color-primary)"/>
+              <text x="340" y="813" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Bill</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="253" y="841">- billId: String</text>
+                <text x="253" y="855">- tableId: String</text>
+                <text x="253" y="869">- orders: List&lt;Order&gt;</text>
+                <text x="253" y="895">+ getTotal(): Money</text>
+                <text x="253" y="909">+ splitEvenly(n): List&lt;Money&gt;</text>
+                <text x="253" y="923">+ processPayment(payment)</text>
+              </g>
+            </g>
+
+            <!-- Reservation -->
+            <g>
+              <rect x="470" y="795" width="210" height="155" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="470" y1="825" x2="680" y2="825" stroke="var(--color-primary)"/>
+              <line x1="470" y1="915" x2="680" y2="915" stroke="var(--color-primary)"/>
+              <text x="575" y="813" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Reservation</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="478" y="841">- reservationId: String</text>
+                <text x="478" y="855">- tableId: String</text>
+                <text x="478" y="869">- customerId: String</text>
+                <text x="478" y="883">- partySize: int</text>
+                <text x="478" y="897">- timeSlot: TimeSlot</text>
+                <text x="478" y="911">- status: ReservationStatus</text>
+                <text x="478" y="931">+ overlaps(other): boolean</text>
+              </g>
+            </g>
+
+            <!-- MenuItem -->
+            <g>
+              <rect x="920" y="795" width="190" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="920" y1="825" x2="1110" y2="825" stroke="var(--color-primary)"/>
+              <line x1="920" y1="903" x2="1110" y2="903" stroke="var(--color-primary)"/>
+              <text x="1015" y="813" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">MenuItem</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="928" y="841">- itemId: String</text>
+                <text x="928" y="855">- name: String</text>
+                <text x="928" y="869">- price: Money</text>
+                <text x="928" y="883">- category: ItemCategory</text>
+                <text x="928" y="897">- available: boolean</text>
+                <text x="928" y="919">+ getPrice(): Money</text>
+                <text x="928" y="933">+ isAvailable(): boolean</text>
+              </g>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 2. Restaurant &mdash;filled diamond&rarr; Branch, Branch &mdash;filled diamond&rarr; Table, Menu &mdash;filled diamond&rarr; MenuSection &mdash;filled diamond&rarr; MenuItem, and Order &mdash;filled diamond&rarr; OrderItem are all composition. Branch &mdash;hollow diamond&rarr; Employee is aggregation (a transferred Employee outlives any one Branch). Person is the abstract base for Employee and Customer (hollow-triangle inheritance); Employee is itself abstract, further specialized into Chef, Waiter, Receptionist, and Manager. Plain arrows show association: Table&ndash;Order, Waiter&ndash;Order, Order&ndash;Bill, Table&ndash;Reservation, and OrderItem&ndash;MenuItem.</div>
+        </div>
+        <p>The <strong>Composite</strong> shape of Menu&rarr;MenuSection&rarr;MenuItem is worth calling out explicitly: a Manager adding a new section, or a MenuItem moving from one section to another, never requires touching the Menu class itself &mdash; the composite/leaf structure absorbs that change entirely inside MenuSection. See the Design Patterns section below for why this is treated as a first-class GoF pattern application rather than "just a list of lists."</p>
+
+        <h2 id="key-flow-activity-diagram">Key Flow: Taking and Fulfilling an Order (Activity Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 760" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Activity diagram for a waiter taking an order, the kitchen preparing each item, and the table becoming eligible for a bill once every item is served">
+            <defs>
+              <marker id="rmsActArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#rmsActArrow)" fill="none">
+              <line x1="340" y1="30" x2="340" y2="54"/>
+              <line x1="340" y1="110" x2="340" y2="135"/>
+              <line x1="340" y1="190" x2="340" y2="215"/>
+              <line x1="340" y1="265" x2="340" y2="290"/>
+              <line x1="340" y1="345" x2="340" y2="370"/>
+              <line x1="340" y1="420" x2="340" y2="445"/>
+              <line x1="340" y1="495" x2="340" y2="515"/>
+              <line x1="340" y1="605" x2="340" y2="625"/>
+              <line x1="340" y1="680" x2="340" y2="706"/>
+            </g>
+            <polyline points="200,560 100,560 100,317 210,317" fill="none" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#rmsActArrow)"/>
+            <circle cx="340" cy="20" r="10" fill="var(--color-primary)"/>
+
+            <rect x="210" y="54" width="260" height="56" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="340" y="77" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Waiter opens a new Order for</text>
+            <text x="340" y="91" text-anchor="middle" font-size="10.5" fill="var(--color-text)">an occupied Table</text>
+
+            <rect x="210" y="135" width="260" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="340" y="157" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Add MenuItems as OrderItems</text>
+            <text x="340" y="171" text-anchor="middle" font-size="10.5" fill="var(--color-text)">(status = ORDERED)</text>
+
+            <rect x="210" y="215" width="260" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="340" y="245" text-anchor="middle" font-size="11" fill="var(--color-text)">Submit Order to the Kitchen</text>
+
+            <rect x="210" y="290" width="260" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="340" y="313" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Chef marks the next OrderItem</text>
+            <text x="340" y="327" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Preparing</text>
+
+            <rect x="210" y="370" width="260" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="340" y="399" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Chef marks that OrderItem Ready</text>
+
+            <rect x="210" y="445" width="260" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="340" y="474" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Waiter marks that OrderItem Served</text>
+
+            <polygon points="340,515 480,560 340,605 200,560" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="340" y="554" text-anchor="middle" font-size="10" fill="var(--color-text)">All OrderItems</text>
+            <text x="340" y="568" text-anchor="middle" font-size="10" fill="var(--color-text)">on this Order Served?</text>
+            <text x="130" y="550" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="352" y="640" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="210" y="625" width="260" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="340" y="648" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Table may now request the Bill</text>
+            <text x="340" y="662" text-anchor="middle" font-size="10.5" fill="var(--color-text)">(combines all Orders for this visit)</text>
+
+            <circle cx="340" cy="720" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="340" cy="720" r="6" fill="var(--color-primary)"/>
+          </svg>
+          <div class="diagram-caption">Figure 3. Each OrderItem runs its own Ordered &rarr; Preparing &rarr; Ready &rarr; Served cycle independently &mdash; the loop back to "Chef marks the next OrderItem Preparing" fires once per still-pending item, not once per Order, since a Main and a Dessert on the same ticket finish at very different times. Only once every OrderItem on the Table's current visit is Served does the flow allow a Bill request.</div>
+        </div>
+
+        <h2 id="key-flow-sequence-diagram">Key Flow: Reserving a Table Without Double-Booking (Sequence Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Sequence diagram showing a receptionist reserving a table, with the overlap check and reservation insert happening as one atomic operation">
+            <defs>
+              <marker id="rmsSeqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-border)" stroke-width="1.3" stroke-dasharray="4,4">
+              <line x1="90" y1="60" x2="90" y2="450"/>
+              <line x1="320" y1="60" x2="320" y2="450"/>
+              <line x1="560" y1="60" x2="560" y2="450"/>
+              <line x1="790" y1="60" x2="790" y2="450"/>
+            </g>
+            <g fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5">
+              <rect x="25" y="20" width="130" height="40"/>
+              <rect x="230" y="20" width="180" height="40"/>
+              <rect x="495" y="20" width="130" height="40"/>
+              <rect x="715" y="20" width="150" height="40"/>
+            </g>
+            <g font-size="10" font-weight="700" fill="var(--color-text)" text-anchor="middle">
+              <text x="90" y="44">Receptionist</text>
+              <text x="320" y="38">Branch /</text>
+              <text x="320" y="50">TableService</text>
+              <text x="560" y="44">Table</text>
+              <text x="790" y="44">Reservation</text>
+            </g>
+
+            <rect x="250" y="125" width="610" height="300" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M250,125 L305,125 L305,139 L250,139 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="256" y="136" font-size="9" fill="var(--color-text)">critical</text>
+            <text x="311" y="136" font-size="9" fill="var(--color-text)">atomic: overlap-check + insert as one transaction (row lock on Table)</text>
+
+            <rect x="270" y="185" width="570" height="60" fill="none" stroke="var(--color-text-muted)" stroke-width="1.1"/>
+            <path d="M270,185 L310,185 L310,197 L270,197 Z" fill="var(--color-surface)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="275" y="194" font-size="8.5" fill="var(--color-text)">loop</text>
+            <text x="316" y="194" font-size="8.5" fill="var(--color-text)">[for each existing reservation on this Table &amp; date]</text>
+
+            <rect x="270" y="260" width="570" height="140" fill="none" stroke="var(--color-text-muted)" stroke-width="1.1"/>
+            <path d="M270,260 L300,260 L300,272 L270,272 Z" fill="var(--color-surface)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="275" y="269" font-size="8.5" fill="var(--color-text)">alt</text>
+            <text x="306" y="269" font-size="8.5" fill="var(--color-text)">[no overlapping reservation found]</text>
+            <line x1="270" y1="350" x2="840" y2="350" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="275" y="363" font-size="8.5" fill="var(--color-text)">[else: overlapping reservation exists]</text>
+
+            <g stroke="var(--color-primary)" stroke-width="1.3" fill="none" marker-end="url(#rmsSeqArrow)">
+              <line x1="90" y1="100" x2="320" y2="100"/>
+              <line x1="320" y1="145" x2="560" y2="145"/>
+              <line x1="320" y1="205" x2="790" y2="205"/>
+              <line x1="320" y1="280" x2="790" y2="280"/>
+              <line x1="320" y1="320" x2="560" y2="320"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#rmsSeqArrow)">
+              <line x1="560" y1="170" x2="320" y2="170"/>
+              <line x1="790" y1="225" x2="320" y2="225"/>
+              <line x1="790" y1="300" x2="320" y2="300"/>
+              <line x1="320" y1="340" x2="90" y2="340"/>
+              <line x1="320" y1="383" x2="90" y2="383"/>
+            </g>
+
+            <g font-size="9.5" fill="var(--color-text)">
+              <text x="100" y="95">reserveTable(tableId, date, slot, partySize)</text>
+              <text x="330" y="140">getReservationsFor(date)</text>
+              <text x="330" y="165">existingReservations</text>
+              <text x="330" y="200">overlaps(requestedSlot)</text>
+              <text x="330" y="220">true / false</text>
+              <text x="330" y="275">&laquo;create&raquo; new Reservation(table, date, slot, size)</text>
+              <text x="330" y="295">reservationId</text>
+              <text x="330" y="315">setStatus(RESERVED)</text>
+              <text x="100" y="335">confirmation(reservationId)</text>
+              <text x="100" y="378">reject(&quot;table not available for that slot&quot;)</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 4. The <code>critical</code> region is the load-bearing part of this diagram: fetching existing reservations, checking overlap against every one of them, and inserting the new Reservation (or deciding not to) must run as a single atomic unit &mdash; typically a row lock on the Table or a database constraint that rejects a second overlapping insert &mdash; so two Receptionists racing to book the same slot can't both win. The final confirm/reject reply to the Receptionist is shown for completeness but isn't itself part of the atomic transaction.</div>
+        </div>
+
+        <h2 id="design-patterns-applied">Design Patterns Applied</h2>
+        <p>Name the pattern and the forcing function together, not just the label:</p>
+        <ul>
+          <li><strong>State</strong> &mdash; two independent state machines. <em>Table status</em>: Free &rarr; Reserved/Occupied &rarr; Needs-Cleaning &rarr; back to Free, with guarded transitions (a Table can't go straight from Occupied to Free without passing through Needs-Cleaning). <em>OrderItem status</em>: Ordered &rarr; Preparing &rarr; Ready &rarr; Served, tracked per item rather than per Order, since a Main course and a slow-cooked dessert on the same ticket legitimately finish at different times.</li>
+          <li><strong>Observer</strong> &mdash; the Kitchen display and the Waiter's own notification both react to state changes instead of polling for them. When an Order is submitted, every new OrderItem publishes a "ticket created" event that the kitchen-display subscriber picks up &mdash; the Order class doesn't need to know how the kitchen's screen is implemented. Symmetrically, when a Chef calls <code>markReady()</code> on an OrderItem, that publishes an "item ready" event that the assigned Waiter's device subscribes to, so the Waiter is pushed a notification the moment food is up rather than having to keep walking to the pass and asking. This is a genuinely useful application, not a decorative one: without it, a busy Waiter either polls constantly (wasted round-trips) or serves food late because nobody told them it was ready.</li>
+          <li><strong>Composite</strong> &mdash; Menu, MenuSection, and MenuItem form a textbook Composite: MenuSection is a "container" of MenuItem "leaves," and Menu is a container of MenuSections. Any operation that needs to walk the whole menu (rendering it, searching for an item by name, computing which items are unavailable) recurses uniformly through the hierarchy without needing to special-case "is this a section or an item." Adding a new section, or moving an item between sections, touches only MenuSection &mdash; Menu itself never changes.</li>
+          <li><strong>Aggregation vs. composition</strong> (not a GoF pattern, but the modeling decision this page is built to test) &mdash; Branch&ndash;Table is composition because a Table is meaningless and undestroyable-separately outside its Branch; Branch&ndash;Employee is aggregation because an Employee has an independent lifecycle (payroll record, tenure, benefits) that survives a transfer to a different Branch entirely. Getting this backwards &mdash; treating staff as if they die with the Branch, or Tables as if they can be reassigned between Branches &mdash; is exactly the kind of mistake this page is designed to catch.</li>
+        </ul>
+
+        <div class="formula-box">
+          <span class="formula-label">Time-slot overlap</span>
+          Same idea as the Hotel Management page's date-range overlap check, just scoped to a single day's time-of-day window instead of a multi-night date range. Model a reservation window as half-open, <strong>[start, end)</strong>, on a given date, and two windows overlap exactly when <strong>startA &lt; endB &amp;&amp; startB &lt; endA</strong> (and both windows are on the same date). Worked example: an existing 90-minute hold for [7:00pm, 8:30pm) and a new request for [8:00pm, 9:30pm) &mdash; 7:00&nbsp;&lt;&nbsp;9:30 is true and 8:00&nbsp;&lt;&nbsp;8:30 is true, so they <strong>overlap</strong>. A request for [8:30pm, 10:00pm) against that same existing hold does <strong>not</strong> overlap: 7:00&nbsp;&lt;&nbsp;10:00 is true, but 8:30&nbsp;&lt;&nbsp;8:30 is false &mdash; the outgoing party's slot ends exactly when the next one begins, which is why the window is modeled half-open.
+        </div>
+
+        <h2 id="code-skeleton">Code Skeleton</h2>
+        <p>Fields and method signatures only &mdash; not a runnable program. <code>TimeSlot.overlaps</code> is worked out in full, since it's the same load-bearing check as <code>DateRange.overlaps</code> on the Hotel Management page, just narrowed to a single day.</p>
+
+        <pre><code>public enum TableStatus {
+    FREE, RESERVED, OCCUPIED, NEEDS_CLEANING
+}
+
+public final class TimeSlot {
+    private final LocalDate date;
+    private final LocalTime start;   // inclusive
+    private final LocalTime end;     // exclusive
+
+    public TimeSlot(LocalDate date, LocalTime start, LocalTime end) {
+        if (!start.isBefore(end)) {
+            throw new IllegalArgumentException("start must be before end");
+        }
+        this.date = date;
+        this.start = start;
+        this.end = end;
+    }
+
+    // Half-open interval overlap, same idea as DateRange.overlaps() on the Hotel
+    // Management page, just scoped to a single day's time-of-day window.
+    public boolean overlaps(TimeSlot other) {
+        return this.date.equals(other.date)
+                &amp;&amp; this.start.isBefore(other.end)
+                &amp;&amp; other.start.isBefore(this.end);
+    }
+
+    public LocalDate getDate() { return date; }
+}
+
+public class Table {
+    private final String tableId;
+    private final String number;
+    private final int capacity;
+    private volatile TableStatus status;
+
+    public Table(String tableId, String number, int capacity) { /* ... */ }
+
+    // Guarded transition: only a Free or Reserved table can be seated.
+    public synchronized void markOccupied() {
+        if (status != TableStatus.FREE &amp;&amp; status != TableStatus.RESERVED) {
+            throw new IllegalStateException("Table " + tableId + " is not seatable from " + status);
+        }
+        this.status = TableStatus.OCCUPIED;
+    }
+
+    public synchronized void markNeedsCleaning() {
+        if (status != TableStatus.OCCUPIED) {
+            throw new IllegalStateException("Only an occupied table can be cleared");
+        }
+        this.status = TableStatus.NEEDS_CLEANING;
+    }
+
+    public synchronized void markFree() {
+        if (status != TableStatus.NEEDS_CLEANING) {
+            throw new IllegalStateException("Table must be cleaned before it can be marked free");
+        }
+        this.status = TableStatus.FREE;
+    }
+
+    public boolean fits(int partySize) { return capacity &gt;= partySize; }
+    public TableStatus getStatus() { return status; }
+}</code></pre>
+
+        <pre><code>public enum OrderItemStatus {
+    ORDERED, PREPARING, READY, SERVED
+}
+
+public class OrderItem {
+    private final String orderItemId;
+    private final MenuItem menuItem;
+    private final int quantity;
+    private volatile OrderItemStatus status = OrderItemStatus.ORDERED;
+
+    public OrderItem(String orderItemId, MenuItem menuItem, int quantity) { /* ... */ }
+
+    // Guarded, one-way state machine: ORDERED -&gt; PREPARING -&gt; READY -&gt; SERVED
+    public synchronized void markPreparing() { require(OrderItemStatus.ORDERED); status = OrderItemStatus.PREPARING; }
+    public synchronized void markReady()     { require(OrderItemStatus.PREPARING); status = OrderItemStatus.READY; }
+    public synchronized void markServed()    { require(OrderItemStatus.READY); status = OrderItemStatus.SERVED; }
+
+    private void require(OrderItemStatus expected) {
+        if (status != expected) {
+            throw new IllegalStateException("Expected " + expected + " but was " + status);
+        }
+    }
+
+    public OrderItemStatus getStatus() { return status; }
+    public Money getSubtotal() { return menuItem.getPrice().multiply(quantity); }
+}
+
+public class Order {
+    private final String orderId;
+    private final String tableId;
+    private final String waiterId;
+    private final List&lt;OrderItem&gt; items = new ArrayList&lt;&gt;();
+    private final LocalDateTime createdAt;
+    private volatile boolean submittedToKitchen = false;
+
+    public Order(String orderId, String tableId, String waiterId, LocalDateTime createdAt) { /* ... */ }
+
+    public void addItem(MenuItem item, int quantity) {
+        if (submittedToKitchen) {
+            // Once the kitchen has the ticket a plain add is no longer safe --
+            // see Extensibility &amp; Edge Cases for the amend-order cutoff.
+            throw new IllegalStateException("Order already submitted; use amendOrder() instead");
+        }
+        items.add(new OrderItem(UUID.randomUUID().toString(), item, quantity));
+    }
+
+    public void submitToKitchen() { this.submittedToKitchen = true; }
+    public List&lt;OrderItem&gt; getItems() { return List.copyOf(items); }
+
+    public boolean isFullyServed() {
+        return items.stream().allMatch(i -&gt; i.getStatus() == OrderItemStatus.SERVED);
+    }
+}</code></pre>
+
+        <pre><code>public enum ItemCategory { APPETIZER, MAIN, DESSERT, BEVERAGE }
+
+public class MenuItem {
+    private final String itemId;
+    private final String name;
+    private final Money price;
+    private final ItemCategory category;
+    private volatile boolean available = true;
+
+    public MenuItem(String itemId, String name, Money price, ItemCategory category) { /* ... */ }
+    public Money getPrice() { return price; }
+    public boolean isAvailable() { return available; }
+}
+
+public class MenuSection {
+    private final String name;   // e.g. "Appetizers", "Mains", "Desserts", "Beverages"
+    private final List&lt;MenuItem&gt; items = new ArrayList&lt;&gt;();
+
+    public void addItem(MenuItem item) { items.add(item); }
+    public void removeItem(String itemId) { items.removeIf(i -&gt; i.getItemId().equals(itemId)); }
+    public List&lt;MenuItem&gt; getItems() { return List.copyOf(items); }
+}
+
+public class Menu {
+    private final String menuId;
+    private final List&lt;MenuSection&gt; sections = new ArrayList&lt;&gt;();
+
+    public void addSection(MenuSection section) { sections.add(section); }
+    public List&lt;MenuSection&gt; getSections() { return List.copyOf(sections); }
+}</code></pre>
+
+        <pre><code>public enum ReservationStatus { CONFIRMED, SEATED, CANCELLED, NO_SHOW }
+
+public class Reservation {
+    private final String reservationId;
+    private final String tableId;
+    private final String customerId;
+    private final int partySize;
+    private final TimeSlot timeSlot;   // e.g. a 90-minute seating window
+    private volatile ReservationStatus status = ReservationStatus.CONFIRMED;
+
+    public Reservation(String reservationId, String tableId, String customerId,
+                        int partySize, TimeSlot timeSlot) { /* ... */ }
+
+    public boolean overlaps(TimeSlot other) {
+        return timeSlot.overlaps(other);
+    }
+
+    public TimeSlot getTimeSlot() { return timeSlot; }
+    public ReservationStatus getStatus() { return status; }
+    public void cancel() { status = ReservationStatus.CANCELLED; }
+}</code></pre>
+
+        <h2 id="extensibility-and-edge-cases">Extensibility &amp; Edge Cases</h2>
+        <ul>
+          <li><strong>Splitting a bill across multiple customers.</strong> A single Table's visit produces one Bill, but the party at that table often wants to pay separately. <code>Bill.splitEvenly(n)</code> covers the simple case; a more precise split assigns specific OrderItems to each paying party (<code>splitByItems(assignment)</code>) so someone who only had a coffee isn't charged for a share of the steak.</li>
+          <li><strong>Merging two tables for a large party.</strong> When a party is bigger than any single Table's capacity, two or more Tables need to be combined into one logical seating unit for the duration of that visit. Model this as a lightweight <code>TableGroup</code> (a set of Table references with a combined capacity) rather than mutating any one Table's own capacity field &mdash; the individual Tables revert to their normal, independent capacities the moment the merged party leaves.</li>
+          <li><strong>Modifying an order after it's been sent to the kitchen.</strong> A guest asking to add or change an item after <code>submitToKitchen()</code> has already fired needs a guarded <code>amendOrder()</code> path, not a silent mutation of the existing Order &mdash; the kitchen may already be cooking the original ticket. A reasonable cutoff: items still in ORDERED status can be freely amended; items already PREPARING or beyond require an explicit kitchen acknowledgment (or get appended as a new, separate ticket) rather than being edited in place.</li>
+          <li><strong>Multi-branch menu variations.</strong> Not every MenuItem is available at every Branch. Rather than each Branch owning a wholly separate copy of every MenuItem, a shared catalog of MenuItems can be referenced by each Branch's Menu, with a per-branch <code>available</code> override (or a per-branch price override, for regional pricing) layered on top &mdash; the same "shared reference data, per-location override" shape that shows up in most multi-location retail systems.</li>
+          <li><strong>Online / delivery orders with no physical Table.</strong> A delivery or pickup order shouldn't force a fake Table into existence just to satisfy Order's schema. Model it as a <code>DeliveryOrder</code> subtype (or a sibling class implementing a common <code>Orderable</code>/base Order abstraction) that carries a delivery address instead of a tableId and skips table-assignment and dine-in billing entirely, while still reusing the same OrderItem/kitchen-routing/State-machine machinery as a dine-in Order.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">Two Receptionists try to reserve the same Table for overlapping time slots at nearly the same instant. How do you stop both from succeeding?</div>
+          <div class="qa-a">The overlap check can't be a read-then-write race in application code &mdash; fetching existing reservations, checking overlap, and inserting the new Reservation have to run as a single atomic unit against a consistent, locked view of that Table's bookings. In practice that's either a database uniqueness/exclusion constraint on (tableId, date, time-range) that rejects a second overlapping insert outright, or an explicit row lock on the Table held across the check-and-insert. Whichever request commits first wins; the second either fails the constraint and is told the slot is gone, or is retried against the now-current state. This is exactly the same race the Hotel Management page solves for multi-night date ranges &mdash; the fix doesn't change shape just because the window shrank to 90 minutes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is Menu/MenuSection/MenuItem a good fit for the Composite pattern specifically, rather than just "a list of lists"?</div>
+          <div class="qa-a">Composite is the right call whenever client code wants to treat a single leaf and a whole subtree uniformly, and whenever the tree's depth or shape can change without client code caring. Here, any operation that walks the menu &mdash; rendering it for a guest, searching for an item by name, computing "everything under $15" &mdash; recurses the same way whether it's looking at a MenuSection or a MenuItem, and a Manager adding a new section or moving an item between sections never requires touching the Menu class itself. A flat "list of lists" happens to look similar for a two-level menu, but it breaks down the moment a section needs sub-sections (e.g. "Wine" split into "By the Glass" / "By the Bottle") since a plain list has no uniform way to represent "this child is itself a container." Composite is designed exactly for that recursive case.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Walk through how the Kitchen should notify a Waiter that an OrderItem is ready, and why that's better than the Waiter's device just polling.</div>
+          <div class="qa-a">When a Chef calls <code>markReady()</code> on an OrderItem, that state transition publishes an event (an "item ready" notification) that the assigned Waiter's device subscribes to &mdash; classic Observer. The OrderItem/kitchen-display code never needs to know which Waiter, or how many devices, care about that specific item; it just publishes the event and any current subscriber reacts. Polling &mdash; the Waiter's device asking "is anything ready yet?" every few seconds &mdash; wastes round-trips during quiet periods and, worse, introduces latency exactly when it matters most (food sits under the heat lamp between when it's actually ready and when the next poll happens to fire). Observer collapses that latency to roughly zero and scales down gracefully to zero cost when nothing is happening, which a fixed-interval poll can't do.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support delivery or online orders that have no physical Table at all?</div>
+          <div class="qa-a">Introduce a sibling to the dine-in Order &mdash; a DeliveryOrder (or a common base abstraction both extend) &mdash; that replaces the tableId with a delivery/pickup address and customer contact info, and simply omits every table-related step: no seating, no table-status transitions, no dine-in Bill. It still reuses the same OrderItem list, the same kitchen-routing and per-item State machine (Ordered/Preparing/Ready), and the same MenuItem references, since none of that logic actually depends on a physical Table existing. What changes is only the "last mile": instead of a Waiter marking the item Served at the table, a Ready delivery order transitions to a fulfillment/courier-handoff step, and instead of a dine-in Bill split across a table's party, it produces a single-party invoice settled at order time (common for delivery) rather than at the end of a visit.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is Branch&ndash;Employee modeled as aggregation while Branch&ndash;Table is composition, given both are "a Branch has many X" relationships?</div>
+          <div class="qa-a">The shape (has-a, one-to-many) is identical; the lifecycle rule is opposite. A Table is inert, physical, and location-bound &mdash; it has no identity or purpose outside the four walls of its Branch, so destroying the Branch destroys its Tables (composition, filled diamond). An Employee, by contrast, has an existence independent of any one Branch: a payroll record, a hire date, a tenure that can span a transfer from one location to another. Modeling Employee as composition under Branch would force an awkward "delete and recreate" whenever staff move between locations, which doesn't reflect what actually happens to a real employee's record. Aggregation (hollow diamond) captures that the Employee can be reparented, or can simply outlive the Branch it currently works at.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why track OrderItemStatus per item instead of one status field on the whole Order?</div>
+          <div class="qa-a">A single Order-level status would have to somehow represent "the appetizer is served, the main is still preparing, and the dessert hasn't even been started" as one enum value, which either forces an awkward composite status (PARTIALLY_READY) or just loses information about which specific items are lagging. Tracking status on OrderItem means each dish's lifecycle is independent and accurate, and the Order-level question "can this table get its bill yet?" becomes a simple derived check &mdash; <code>isFullyServed()</code> &mdash; over all of its OrderItems, rather than a stored field that has to be kept in sync by hand every time any one item changes state.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A guest wants to add a dessert to an Order that's already been submitted to the kitchen. How do you handle that without corrupting the ticket the kitchen is already working from?</div>
+          <div class="qa-a">Don't silently mutate the existing Order object once <code>submitToKitchen()</code> has fired &mdash; the kitchen may already be actively preparing items from it. Instead, route the change through a guarded <code>amendOrder()</code> path: an item still in ORDERED status (not yet picked up by a Chef) can usually be added or removed cleanly, but once an item has moved to PREPARING or beyond, the addition is either appended as a distinct, clearly-marked new ticket (so the kitchen sees it as a fresh item rather than an edit to something they're mid-preparation on) or requires an explicit kitchen acknowledgment before it's accepted. The key invariant: the kitchen should never see an Order's contents change out from under a ticket it's already committed to preparing.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why give Person its own abstract base for both Employee and Customer, instead of letting Employee and Customer be unrelated classes?</div>
+          <div class="qa-a">Employee and Customer genuinely share a slice of behavior and data that has nothing to do with their roles &mdash; a name, contact info, and (in most real systems) an identity that could plausibly need updating in one place. Modeling that shared slice once, on an abstract Person, avoids duplicating "name/phone/email plus getContactInfo()" across every subclass and gives the system one place to add cross-cutting Person-level behavior later (e.g. GDPR-style contact-info updates or communication preferences) without touching Employee's or Customer's role-specific logic at all. It's the same "one identity, many roles" shape as Account &rarr; Member/Librarian on the Library Management page or Account &rarr; Customer/Seller/Admin on the Amazon page &mdash; a recurring, well-tested modeling idiom, not something invented specifically for this problem.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you generate a Manager's sales report without hammering the live Order and OrderItem tables that the front-of-house and kitchen are actively using?</div>
+          <div class="qa-a">Sales reporting is a read-heavy, aggregate, "eventually consistent is fine" workload sitting right next to a write-heavy, low-latency, "must be correct right now" workload (taking orders, updating item status) &mdash; running both against the same live tables risks report queries locking rows the kitchen needs to update instantly. The standard fix is to keep Order/OrderItem/Bill as the transactional system of record, and periodically (or via change-data-capture / an event stream, reusing the same Observer publish points already wired up for kitchen/waiter notifications) roll finalized Bills into a separate reporting store shaped for aggregation &mdash; by day, by MenuItem, by Branch. Manager's <code>viewSalesReport(range)</code> then reads from that reporting store, never from the live operational tables.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Key Takeaways</div>
+          <ul>
+            <li>Branch&ndash;Table is composition (a Table dies with its Branch) while Branch&ndash;Employee is aggregation (a transferred Employee outlives any one Branch) &mdash; the same "has-a" shape, opposite lifecycle rule, and exactly the nuance this page is built to test.</li>
+            <li>Menu &rarr; MenuSection &rarr; MenuItem is a genuine Composite: any menu-wide operation recurses uniformly through the hierarchy, and adding/moving items never touches the Menu class itself.</li>
+            <li>The Table-reservation overlap check is the same half-open, <code>startA &lt; endB &amp;&amp; startB &lt; endA</code> interval-overlap logic used for date ranges on the Hotel Management page, just scoped to a same-day time slot &mdash; and it needs the same atomic check-then-insert discipline to avoid a double-booking race.</li>
+            <li>OrderItemStatus is tracked per item, not per Order, because different dishes on the same ticket finish preparing at genuinely different times &mdash; "is this table's bill ready?" is a derived check over all of its OrderItems, not a hand-maintained Order-level flag.</li>
+            <li>Observer keeps the Kitchen display and the Waiter's "order ready" notification decoupled from Order/OrderItem internals, and beats polling on both latency and idle cost.</li>
+          </ul>
+        </div>
+
+        <h2 id="references">References</h2>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Composite_pattern" target="_blank" rel="noopener">"Composite pattern"</a> &mdash; general reference for the Menu/MenuSection/MenuItem structure discussed in the Design Patterns section.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/State_pattern" target="_blank" rel="noopener">"State pattern"</a> &mdash; general reference for the Table and OrderItem status lifecycles discussed above.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Interval_scheduling" target="_blank" rel="noopener">"Interval scheduling"</a> &mdash; general background on the interval/time-slot overlap reasoning behind the reservation check; this page applies the identical idea used for multi-night date ranges on the Hotel Management page to a same-day 90-minute window instead.</p>
+
+        <div class="page-nav">
+          <a class="prev" href="hotel-management-system.html"><span class="dir">Previous</span>Hotel Management System</a>
+          <a class="next" href="chess.html"><span class="dir">Next</span>Chess</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surge Pricing System | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">Surge Pricing System</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-slidingtumbling-window-aggregation-per-geographic-cell">Deep Dive — Sliding/Tumbling Window Aggregation per Geographic Cell</a></li>
+        <li><a href="#deep-dive-supplydemand-ratio-to-multiplier-curve-and-anti-flapping-smoothing">Deep Dive — Supply/Demand Ratio to Multiplier Curve, and Anti-Flapping Smoothing</a></li>
+        <li><a href="#deep-dive-handling-a-hot-cell-viral-demand-spike">Deep Dive — Handling a Hot Cell (Viral Demand Spike)</a></li>
+        <li><a href="#deep-dive-predictive-demand-modeling-as-a-refinement-layer">Deep Dive — Predictive Demand Modeling as a Refinement Layer</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#feature-specific-logic-market-specific-tuning-via-a-config-platform">Feature-Specific Logic: Market-Specific Tuning via a Config Platform</a></li>
+        <li><a href="#rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Surge Pricing System (Real-Time Stream Processing)</h1>
+        </div>
+
+        <p><em>A focused, interview-ready design walkthrough for the real-time demand/supply stream-processing pipeline that computes Uber-style dynamic price multipliers per geographic zone. Covers windowed stream aggregation over Kafka, per-cell independence, the supply/demand ratio-to-multiplier curve, anti-flapping smoothing, hot-cell handling, a predictive refinement layer, and a market-specific tuning config platform — deliberately excluding ride matching and dispatch, which live on a separate page.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the pipeline that continuously computes a <strong>surge multiplier</strong> — a number like 1.0x, 1.4x, or 2.3x — for every small geographic zone in a ride-hailing marketplace, in near real time, from two live event streams: riders opening ride requests, and drivers pinging their availability. When open requests in a zone significantly outnumber idle drivers, the multiplier should rise, both to ration scarce supply toward the riders who value the trip most and to pull more drivers into that zone; when the imbalance clears, the multiplier should fall back down. The multiplier itself is a pure function of recent supply/demand data plus a tunable curve — it does not decide <em>which</em> driver serves <em>which</em> rider, and it does not touch trip state, ETAs, or the offer/dispatch cascade.</p>
+        <p><strong>Scope boundary — read this before you start drawing boxes:</strong> this page is exclusively about the stream-processing pipeline that produces the per-zone multiplier. It assumes, and does not re-derive, the rider-driver matching and dispatch engine (geospatial indexing, bipartite assignment, offer cascades) — that is a separate, already-covered problem on <code>rider-matching-system.html</code>. It also assumes, and does not redesign, the downstream fare-calculation/pricing engine that actually multiplies a base fare by this number to produce a rider-facing price. Conflating "compute the multiplier" with "match a driver" or "calculate the fare" is the single most common way candidates blur two independently hard problems into one confused diagram; keep them separate.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>On the surface it looks like "compute an average and compare it to a threshold" — a weak answer stops there and reaches for a cron job that queries a database every minute. A strong answer recognizes three things a naive database-query approach cannot deliver at scale: (1) at 100,000+ ride-request events per second system-wide, plus an even larger volume of continuous driver-location pings, a query-per-request pattern against a transactional store falls over immediately — this is a genuine stream-processing problem, not a database-querying one; (2) the computation must be strictly <strong>local</strong> to a small geographic cell, or a concert letting out in one neighborhood would incorrectly move prices across an entire city; and (3) a multiplier that is technically "correct" from moment to moment but changes every few seconds is a product failure — riders who see the price jump between opening the app and tapping "confirm" lose trust in the platform. The interesting engineering is in windowed streaming aggregation, per-key (per-cell) isolation, and deliberately engineering damped, sticky output from a noisy, fast-moving input signal.</p>
+
+        <h3>Why a Dedicated Stream-Processing Pipeline Instead of a Scheduled Batch Job?</h3>
+        <ul>
+          <li>A batch job that wakes up, queries a database for "requests in the last 5 minutes," and writes a multiplier is fundamentally a polling architecture bolted onto data that is arriving continuously — it either polls too often (re-scanning mostly-unchanged data, wasting the database) or too rarely (staying stale during a real spike).</li>
+          <li>A stream processor maintains the windowed aggregate <em>incrementally</em>: each incoming event updates an in-memory running count in O(1) amortized work, so the "requests in the last 5 minutes" figure for a given cell is always current without ever re-scanning history.</li>
+          <li>Decoupling ingestion (Kafka) from computation (the stream processor's internal state) from publication (a 60-second recompute cadence) is what lets the system absorb bursty, unpredictable traffic — a stadium emptying out — without the read side or the write side ever blocking each other.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope — this problem in particular has a lot of adjacent territory (matching, fare calculation, driver incentives) that isn't actually part of it.</p>
+        <ol>
+          <li>How is the multiplier consumed downstream — does the pricing/fare-calculation service pull it at charge time, does the rider app fetch it at quote time, or both, and do those two reads need to agree?</li>
+          <li>How often can the multiplier legitimately change for a rider mid-session? If a rider sees 1.4x on the quote screen and takes 90 seconds to confirm, is a jump to 1.8x acceptable, and is there a locked-quote guarantee we need to honor?</li>
+          <li>Are there fairness or regulatory constraints on surge caps — e.g. a jurisdiction-mandated maximum multiplier, or a requirement to disclose/cap pricing during declared emergencies?</li>
+          <li>What defines a "geographic zone" — a fixed hexagonal grid (H3-style), a per-city custom polygon, or something else, and can that change without a full redeploy?</li>
+          <li>Do we need the multiplier itself, or also an explanation/audit trail of why it's what it is (for rider-facing "why is this priced higher" messaging and for fare-dispute support tooling)?</li>
+          <li>Is a driver-facing surge signal (to encourage repositioning into a surging zone) in scope, or purely rider-facing pricing?</li>
+          <li>What's the acceptable staleness for the multiplier — is 60 seconds of lag acceptable, or does a rider expect it to reflect something closer to "right now"?</li>
+          <li>Do different markets/cities need independently tunable sensitivity (a small college town's surge curve vs. a dense metro's), and who owns changing those parameters?</li>
+          <li>Is predictive/anticipatory pricing (smoothing ahead of a known event like a scheduled concert) in scope for v1, or purely reactive to live signal?</li>
+          <li>Single region to start, or does the design need to anticipate multi-region, data-residency-aware deployment from day one?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't let the interviewer's silence on regulatory questions stall you — state the assumption out loud ("I'll assume there's a per-market hard cap enforced below whatever the ratio-based curve would otherwise output, since real jurisdictions do mandate this") and keep moving. Naming the constraint even without a definitive answer signals the kind of product judgment interviewers are screening for.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Continuously compute a per-zone surge multiplier from real-time ride-request and driver-availability event streams.</li>
+          <li>Expose the current multiplier for a given zone to the downstream pricing/fare-calculation engine, and to the rider app before a rider confirms a ride.</li>
+          <li>Support market-specific tuning of the ratio-to-multiplier curve (thresholds, steps, caps, sensitivity) without a code deployment.</li>
+          <li>Recompute and publish an updated multiplier on a bounded, predictable cadence (not on every single event) so downstream consumers see a stable, cacheable value.</li>
+          <li>Isolate the computation per geographic zone — a demand spike in one zone must never influence the multiplier in a neighboring or distant zone.</li>
+          <li>Retain a history of multiplier snapshots per zone for analytics, backtesting, and rider-facing fare-dispute lookups ("why was my ride 1.8x at 6:14pm?").</li>
+          <li>Provide a refinement layer that anticipates demand shifts (day-of-week, time-of-day, weather, scheduled events) ahead of the purely reactive ratio signal.</li>
+          <li>Enforce hard, market-configurable ceilings (and, where required, jurisdiction-mandated caps) on the multiplier regardless of what the raw ratio would otherwise produce.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Sub-minute freshness:</strong> the published multiplier must reflect supply/demand conditions from, at most, the last recompute cycle (target: 60 seconds) — stale-by-hours is a functional failure, not a minor inconvenience.</li>
+          <li><strong>Resilience to bursty spikes:</strong> a stadium or concert letting out can generate a request-rate spike of an order of magnitude or more within a single zone in a few minutes; the pipeline must absorb this without falling behind or crashing out other zones' processing.</li>
+          <li><strong>Anti-flapping stability:</strong> the multiplier must not oscillate rapidly on noisy input — a design that is "instantaneously accurate" but changes every few seconds is a worse product experience than one with a few seconds of deliberate lag and hysteresis.</li>
+          <li><strong>Horizontal scale to 100,000+ events/sec system-wide</strong> (and considerably more once driver-availability pings are counted alongside ride requests), growing linearly by adding stream-processing and Kafka capacity, not by re-architecting.</li>
+          <li><strong>Per-zone independence:</strong> no cross-zone coupling in the computation path — this is both a correctness requirement (a concert in one neighborhood shouldn't move prices city-wide) and a scalability property (a hot zone's load never bleeds into a healthy zone's processing).</li>
+          <li><strong>Auditability:</strong> every published multiplier must be reproducible from the underlying event window and the curve-configuration version that produced it, for fare disputes, regulatory inquiries, and backtesting.</li>
+          <li><strong>Config changes take effect without redeploying the stream-processing pipeline</strong> — a market-ops or pricing team tuning sensitivity for one city is a configuration change, not an engineering release.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We go deep on ingestion, windowed aggregation, the ratio-to-multiplier curve and its stability mechanisms, hot-cell handling, predictive refinement, partitioning, and the config platform. We call out but don't build: the fare-calculation engine that consumes the multiplier (owns tax, promotions, currency, and the actual charge), the rider-driver matching/dispatch engine (a separate deep dive on <code>rider-matching-system.html</code>), and driver-incentive/repositioning programs that might also read this signal.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly — this is exactly the kind of problem where "just query a database" looks plausible until you write down the actual numbers.</p>
+
+        <h3>Event Volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Ride-request events</span>
+          System-wide peak &asymp; 100,000 ride-request events/sec (an open request enters the funnel; this is the number that makes per-request database queries infeasible)
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Driver-availability pings</span>
+          Assume &asymp;4 million actively-online drivers globally at peak, each emitting a location/status ping every &asymp;4 seconds
+          <br>4,000,000 &divide; 4 &asymp; 1,000,000 driver-availability events/sec
+          <br>Driver pings alone outnumber ride requests roughly 10:1 &mdash; the streaming layer has to be sized for the availability signal, not just the demand signal
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Combined ingest</span>
+          Peak combined event rate into Kafka &asymp; 100,000 + 1,000,000 &asymp; 1.1 million events/sec system-wide
+          <br>Average (non-peak) day &asymp; one-fifth of peak &asymp; &asymp;220,000 events/sec &mdash; still far beyond a sensible per-event database query pattern
+        </div>
+
+        <h3>Kafka Throughput</h3>
+        <div class="formula-box">
+          <span class="formula-label">Sizing</span>
+          Ride-request event &asymp; 180 bytes (ride_id, cell_id, market_id, requested_at, hashed rider_id)
+          <br>Driver-ping event &asymp; 120 bytes (hashed driver_id, cell_id, status, ping_at)
+          <br>Peak raw bytes/sec &asymp; (100,000 &times; 180) + (1,000,000 &times; 120) = 18,000,000 + 120,000,000 &asymp; 138 MB/sec
+          <br>With replication factor 3: &asymp; 414 MB/sec aggregate broker write I/O &mdash; a substantial but entirely standard Kafka cluster footprint (tens of brokers, thousands of partitions spread across the two topics), comparable to large-scale clickstream/IoT ingestion pipelines
+        </div>
+
+        <h3>Geographic Cells and Per-Cell Distribution — the Long Tail That Matters</h3>
+        <div class="formula-box">
+          <span class="formula-label">Cell count</span>
+          Assume all currently-served markets cover &asymp;120,000 km&sup2; of urban area, tiled at an H3-style resolution averaging &asymp;0.74 km&sup2;/cell
+          <br>Total addressable cells &asymp; 120,000 &divide; 0.74 &asymp; 162,000 &mdash; but only a subset has any live activity at a given moment
+          <br>Assume &asymp;35,000 "active" cells during a global peak hour (the rest are sparse/rural/off-peak and can safely default to a 1.0x baseline with no computation)
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Long-tail skew</span>
+          Average events/active-cell &asymp; 1,100,000 &divide; 35,000 &asymp; 31/sec &mdash; a deceptively calm-looking number
+          <br>The top &asymp;1% of cells (&asymp;350 cells: downtown cores, airports, stadium districts) can carry &asymp;20% of total volume &asymp; 220,000 events/sec &asymp; &asymp;630/sec/cell during a hot window
+          <br>The bottom half of cells (&asymp;17,500, sparse suburbs) might jointly carry under 2% of volume &mdash; sub-1 event/sec/cell
+          <br>Design point: per-cell isolation must hold even though load per cell varies by nearly three orders of magnitude
+        </div>
+
+        <h3>Recompute Cadence — the Freshness/Stability Trade-off, Quantified</h3>
+        <div class="formula-box">
+          <span class="formula-label">Cadence choice</span>
+          Chosen: recompute and re-evaluate the ratio-to-multiplier curve every 60 seconds per cell, while the underlying windowed counts update continuously/incrementally as events arrive
+          <br>Shorter cadence (e.g. 10s): &asymp;6&times; more recompute + publish + cache-invalidation traffic system-wide, and materially higher flapping risk from short-horizon noise
+          <br>Longer cadence (e.g. 5 min): far calmer output, but a genuine stadium-emptying spike can go under-priced for several minutes &mdash; a real product harm (no supply signal reaches drivers, riders can't get a ride)
+          <br>60 seconds is the pragmatic middle: fast enough that a real spike is priced within one or two cycles, slow enough to average out single-digit-second noise
+        </div>
+
+        <h3>Stream-Processor State Size</h3>
+        <div class="formula-box">
+          <span class="formula-label">In-memory windowed state</span>
+          &asymp;35,000 active cells &times; &asymp;4 KB/cell (5-min sliding request-count sub-buckets + 1-hr tumbling driver-availability buckets + metadata) &asymp; 140 MB total
+          <br>Trivially small &mdash; fits entirely in memory across a modest stream-processing cluster, checkpointed periodically (e.g. every 30s) to durable storage so a task restart replays only a short tail of the Kafka log rather than recomputing from scratch
+        </div>
+
+        <h3>Config and Snapshot Storage</h3>
+        <div class="formula-box">
+          <span class="formula-label">Config/threshold store</span>
+          &asymp;10,000 active markets &times; &asymp;500 bytes/record (thresholds array, caps, dwell time, hysteresis margin, version, audit fields) &asymp; 5 MB total &mdash; small enough to be fully cached in memory by every stream-processing worker
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Multiplier snapshot / history</span>
+          35,000 cells &times; 1 snapshot/60s &times; 86,400 sec/day = 35,000 &times; 1,440 &asymp; 50.4 million rows/day
+          <br>&times; &asymp;120 bytes/row (cell_id, market_id, computed_at, ratio, request_count, driver_count, multiplier, curve_version) &asymp; 6.05 GB/day raw
+          <br>&times;3 replication &asymp; 18.1 GB/day; retained 180 days (fare disputes + backtesting) &asymp; 3.3 TB &mdash; a wide-column/time-series-friendly store, not a relational one, given the write volume and simple (cell_id, time) access pattern
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Peak ride-request events/sec (system-wide)</td><td>&asymp;100,000</td></tr>
+          <tr><td>Peak driver-availability events/sec</td><td>&asymp;1,000,000</td></tr>
+          <tr><td>Combined peak ingest</td><td>&asymp;1.1 million events/sec</td></tr>
+          <tr><td>Kafka peak raw ingest (RF=3)</td><td>&asymp;414 MB/sec aggregate</td></tr>
+          <tr><td>Active geographic cells at peak</td><td>&asymp;35,000 (of &asymp;162,000 addressable)</td></tr>
+          <tr><td>Hottest 1% of cells' share of volume</td><td>&asymp;20% (&asymp;630 events/sec/cell)</td></tr>
+          <tr><td>Recompute cadence</td><td>60 seconds (fixed)</td></tr>
+          <tr><td>Stream-processor in-memory state</td><td>&asymp;140 MB total</td></tr>
+          <tr><td>Multiplier snapshot footprint, 180-day retention (RF=3)</td><td>&asymp;3.3 TB</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Two very different client populations touch this system: a small number of high-QPS internal reads (the pricing engine, at essentially every ride quote and every charge) and a small number of very low-QPS administrative writes (a market-ops or pricing team tuning curve parameters). The API surface reflects that asymmetry.</p>
+
+        <h3>get-current-multiplier(zone) — the Core Read Path</h3>
+        <pre><code>GET /v1/surge/multiplier?cell_id={h3_cell_id}
+
+Response 200:
+{
+  "cell_id": "8a2830828***",
+  "market_id": "us-sf",
+  "multiplier": 1.6,
+  "ratio": 1.8,
+  "computed_at": "2026-07-18T22:15:00Z",
+  "valid_until": "2026-07-18T22:16:00Z",
+  "curve_version": "v14"
+}
+
+Errors: 400 malformed cell_id &middot; 404 no recent data for cell_id (caller should treat as 1.0x baseline)
+        429 client exceeded read-rate quota (see Rate Limiting below)</code></pre>
+
+        <h3>Batch Read — for a Route or Search Radius Spanning Multiple Cells</h3>
+        <pre><code>POST /v1/surge/multiplier/batch
+{ "cell_ids": ["8a2830828***", "8a2830829***", "8a283082a***"] }
+
+Response 200:
+{
+  "results": {
+    "8a2830828***": { "multiplier": 1.6, "ratio": 1.8, "computed_at": "...", "valid_until": "..." },
+    "8a2830829***": { "multiplier": 1.0, "ratio": 0.4, "computed_at": "...", "valid_until": "..." },
+    "8a283082a***": { "multiplier": 2.1, "ratio": 2.6, "computed_at": "...", "valid_until": "..." }
+  }
+}</code></pre>
+
+        <h3>Internal Event-Ingestion Contract (Kafka Topics)</h3>
+        <pre><code>Topic: ride-requests.v1  (producer: rider app / ride-request service)
+{
+  "ride_id": string,
+  "cell_id": string,        // H3 cell resolved by the producer at request time
+  "market_id": string,
+  "requested_at": timestamp,
+  "rider_id_hash": string   // hashed, never raw PII on this topic
+}
+
+Topic: driver-availability.v1  (producer: driver app)
+{
+  "driver_id_hash": string,
+  "cell_id": string,
+  "status": "idle" | "en_route" | "on_trip" | "offline",
+  "ping_at": timestamp
+}</code></pre>
+
+        <h3>Config/Threshold Admin API</h3>
+        <pre><code>GET /v1/surge/config/{market_id}
+PUT /v1/surge/config/{market_id}
+{
+  "curve_version": "v15",
+  "thresholds": [
+    { "ratio_min": 1.0, "multiplier": 1.2 },
+    { "ratio_min": 1.5, "multiplier": 1.5 },
+    { "ratio_min": 2.0, "multiplier": 2.0 },
+    { "ratio_min": 3.0, "multiplier": 2.5 }
+  ],
+  "multiplier_cap": 2.5,
+  "min_dwell_seconds": 60,
+  "hysteresis_margin": 0.15
+}
+
+Errors: 401 unauthenticated/unauthorized caller &middot; 403 change exceeds a jurisdiction-mandated cap
+        409 a canary rollout for this market is already in progress</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Call out explicitly that <code>valid_until</code> is not decorative: the pricing engine and rider app should treat a multiplier as good until that timestamp and are expected to re-fetch after it expires rather than caching indefinitely — this is what keeps the 60-second recompute cadence from silently becoming "whatever the client happened to cache an hour ago."
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>The hot computational state — "how many open requests and how much driver availability has cell X seen recently" — is read and updated on essentially every incoming event, at combined system-wide rates in the low millions/sec. This is the textbook case for an in-memory, incrementally-updated streaming aggregate, not a queryable database table.</li>
+          <li>The config/threshold data is the opposite: tiny (megabytes), read constantly (every worker needs it cached) but written extremely rarely (a market-ops tuning change, maybe a few times a week per market) — a small, strongly-consistent store is the right fit, and durability/audit trail matter far more than throughput.</li>
+          <li>The multiplier snapshot/history data is high-volume, append-only, and queried almost exclusively by (cell_id, time range) — a wide-column or time-series-oriented store, not a relational one.</li>
+        </ul>
+
+        <h3>Why Not Just Query a Database Per Request?</h3>
+        <p>A naive design keeps a <code>ride_requests</code> table and a <code>driver_pings</code> table, and computes "count where cell_id = X and requested_at &gt; now() - 5 minutes" on demand. At 100,000+ request events/sec and roughly 10&times; that in driver pings, this becomes either an enormous continuous write load with an equally enormous continuous read-aggregation load on the same store, or a maintained materialized view that is itself just a hand-rolled, worse version of a stream processor's windowed state — without the incremental-update guarantee, without natural per-key (per-cell) parallelism, and without built-in exactly-once/checkpointed recovery semantics. The stream processor <em>is</em> the database for this workload: its in-memory (or RocksDB-backed) keyed state, keyed by <code>cell_id</code>, holds exactly the sliding/tumbling window aggregates needed, updated in O(1) amortized time per event, with no query fan-out at all.</p>
+
+        <h3>Core Schema (Durable Stores, Downstream of the Stream Processor)</h3>
+        <table>
+          <tr><th colspan="2">Table: surge_config (small, strongly-consistent store; PK: market_id + curve_version)</th></tr>
+          <tr><td>market_id + curve_version (composite PK)</td><td>text + text</td></tr>
+          <tr><td>thresholds</td><td>json array of {ratio_min, multiplier} steps</td></tr>
+          <tr><td>multiplier_cap / multiplier_floor</td><td>decimal</td></tr>
+          <tr><td>min_dwell_seconds / hysteresis_margin</td><td>int / decimal &mdash; anti-flapping parameters, see Deep Dive below</td></tr>
+          <tr><td>status</td><td>enum(active, canary, rolled_back)</td></tr>
+          <tr><td>updated_at / updated_by</td><td>timestamp / text &mdash; audit trail</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: multiplier_snapshot (wide-column/time-series store; PK: cell_id + computed_at)</th></tr>
+          <tr><td>cell_id + computed_at (composite PK)</td><td>text + timestamp</td></tr>
+          <tr><td>market_id</td><td>text</td></tr>
+          <tr><td>request_count_5min / avg_driver_availability_1hr</td><td>int / decimal</td></tr>
+          <tr><td>ratio</td><td>decimal</td></tr>
+          <tr><td>multiplier</td><td>decimal</td></tr>
+          <tr><td>curve_version</td><td>text &mdash; which config produced this value, for reproducibility</td></tr>
+          <tr><td>valid_until</td><td>timestamp</td></tr>
+        </table>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If pushed on "why is the config store not also just a topic/stream": config changes are low-volume, need strong read-your-writes consistency for the admin who just made the change, and need an auditable, versioned history for compliance — properties a small strongly-consistent store gives you directly, versus reconstructing them on top of a log.
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Ride-request events (from the rider app) and driver-availability pings (from the driver app) both flow continuously into Kafka, partitioned by geographic cell. A Stream Processor (conceptually Flink-style) maintains windowed aggregates per cell — incrementally updated as events arrive — and, on a fixed 60-second cadence, evaluates the current supply/demand ratio against a market-specific curve (read from the Config/Threshold Store, itself tuned by a market-ops/pricing team without any redeploy) to produce a smoothed multiplier. The result is written to a Published Multiplier Store, which the Pricing Engine and rider app both read.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 555" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rider app ride-request events and driver app availability pings flow into Kafka, partitioned by H3 cell. A Stream Processor maintains windowed aggregates per cell and feeds a Multiplier Computation stage, which reads curve thresholds from a Config and Threshold Store that a Market Ops and Pricing team tunes without redeploying. The resulting multiplier is written to a Published Multiplier Store, which the Pricing Engine and the rider app's pre-ride quote screen both read.">
+            <style>
+              .sp-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .sp-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .sp-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .sp-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .sp-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .sp-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .sp-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .sp-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .sp-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:#dbe6ff;}
+              .sp-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .sp-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;}
+              .sp-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-sp-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-sp-1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="60" y="10" width="290" height="50" rx="6" class="sp-box"></rect>
+            <text x="205" y="30" text-anchor="middle" class="sp-title">Rider App</text>
+            <text x="205" y="45" text-anchor="middle" class="sp-sub">emits a ride-request event per open request</text>
+
+            <rect x="400" y="10" width="290" height="50" rx="6" class="sp-box"></rect>
+            <text x="545" y="30" text-anchor="middle" class="sp-title">Driver App</text>
+            <text x="545" y="45" text-anchor="middle" class="sp-sub">emits periodic availability pings (location + status)</text>
+
+            <line x1="205" y1="60" x2="300" y2="94" class="sp-arrow" marker-end="url(#arrow-sp-1)"></line>
+            <line x1="545" y1="60" x2="400" y2="94" class="sp-arrow" marker-end="url(#arrow-sp-1)"></line>
+
+            <rect x="40" y="95" width="620" height="55" rx="6" class="sp-box-bus"></rect>
+            <text x="350" y="118" text-anchor="middle" class="sp-title-inv">Kafka</text>
+            <text x="350" y="134" text-anchor="middle" class="sp-sub-inv">ride-requests.v1 + driver-availability.v1, partitioned by H3 cell_id</text>
+
+            <line x1="350" y1="150" x2="350" y2="184" class="sp-arrow" marker-end="url(#arrow-sp-1)"></line>
+
+            <rect x="60" y="185" width="580" height="78" rx="6" class="sp-box-strong"></rect>
+            <text x="350" y="207" text-anchor="middle" class="sp-title">Stream Processor (Flink-style)</text>
+            <text x="350" y="221" text-anchor="middle" class="sp-sub">windowed aggregation per H3 cell, incrementally updated per event</text>
+            <text x="350" y="235" text-anchor="middle" class="sp-sub">sliding 5-min request-rate window</text>
+            <text x="350" y="249" text-anchor="middle" class="sp-sub">tumbling 1-hr driver-availability window</text>
+
+            <rect x="650" y="185" width="120" height="90" rx="6" class="sp-box-muted"></rect>
+            <text x="710" y="205" text-anchor="middle" class="sp-title">Market Ops /</text>
+            <text x="710" y="218" text-anchor="middle" class="sp-title">Pricing Team</text>
+            <text x="710" y="234" text-anchor="middle" class="sp-sub">tunes curve thresholds</text>
+            <text x="710" y="247" text-anchor="middle" class="sp-sub">via config platform</text>
+            <text x="710" y="260" text-anchor="middle" class="sp-label">no redeploy</text>
+
+            <line x1="350" y1="263" x2="260" y2="294" class="sp-arrow" marker-end="url(#arrow-sp-1)"></line>
+
+            <rect x="60" y="295" width="400" height="70" rx="6" class="sp-box-strong"></rect>
+            <text x="260" y="317" text-anchor="middle" class="sp-title">Multiplier Computation</text>
+            <text x="260" y="332" text-anchor="middle" class="sp-sub">supply/demand ratio &rarr; threshold curve</text>
+            <text x="260" y="346" text-anchor="middle" class="sp-sub">anti-flapping smoothing / hysteresis</text>
+
+            <rect x="490" y="295" width="170" height="70" rx="6" class="sp-box-store"></rect>
+            <text x="575" y="317" text-anchor="middle" class="sp-title">Config / Threshold</text>
+            <text x="575" y="330" text-anchor="middle" class="sp-title">Store</text>
+            <text x="575" y="345" text-anchor="middle" class="sp-sub">curve params per market</text>
+            <text x="575" y="357" text-anchor="middle" class="sp-label">(UCDP-style platform)</text>
+
+            <line x1="460" y1="330" x2="490" y2="330" class="sp-arrow-store" marker-start="url(#arrow-sp-1s)" marker-end="url(#arrow-sp-1s)"></line>
+
+            <line x1="710" y1="275" x2="580" y2="294" class="sp-arrow" marker-end="url(#arrow-sp-1)"></line>
+
+            <line x1="260" y1="365" x2="260" y2="394" class="sp-arrow" marker-end="url(#arrow-sp-1)"></line>
+
+            <rect x="60" y="395" width="400" height="55" rx="6" class="sp-box"></rect>
+            <text x="260" y="417" text-anchor="middle" class="sp-title">Published Multiplier Store</text>
+            <text x="260" y="432" text-anchor="middle" class="sp-sub">current multiplier per cell_id (cache), 60s recompute cadence</text>
+
+            <line x1="185" y1="450" x2="185" y2="479" class="sp-arrow" marker-end="url(#arrow-sp-1)"></line>
+            <line x1="335" y1="450" x2="525" y2="479" class="sp-arrow" marker-end="url(#arrow-sp-1)"></line>
+
+            <rect x="40" y="480" width="290" height="55" rx="6" class="sp-box"></rect>
+            <text x="185" y="502" text-anchor="middle" class="sp-title">Pricing Engine</text>
+            <text x="185" y="517" text-anchor="middle" class="sp-sub">consumes multiplier at fare-calculation time</text>
+
+            <rect x="380" y="480" width="290" height="55" rx="6" class="sp-box"></rect>
+            <text x="525" y="502" text-anchor="middle" class="sp-title">Rider App (Pre-Ride Quote)</text>
+            <text x="525" y="517" text-anchor="middle" class="sp-sub">shown to rider before confirming a ride</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; ride-request and driver-availability events flow through Kafka into a Stream Processor that maintains per-cell windowed aggregates; the Multiplier Computation stage combines the current ratio with market-tunable thresholds from the Config/Threshold Store to publish a stable multiplier that the Pricing Engine and rider app both read.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Ingestion, computation, and publication are three separate concerns:</strong> Kafka absorbs bursty arrival without blocking producers; the Stream Processor updates state continuously without waiting for a recompute tick; the 60-second cadence governs only when a new value is evaluated and published, not when the underlying counts are updated.</li>
+          <li><strong>The config store is read-heavy, write-rare, and out-of-band from the hot path</strong> — a market-ops change lands in the config store and is picked up by workers without touching Kafka, the event schema, or a deploy pipeline.</li>
+          <li><strong>Everything downstream of "Published Multiplier Store" is a pure read</strong> — the Pricing Engine and the rider app never compute anything themselves; they consume the same published value, which is what keeps a rider's quote-time and charge-time multiplier consistent (module the freshness window).</li>
+          <li><strong>This diagram intentionally stops at the multiplier.</strong> What the Pricing Engine does with it (tax, promotions, currency conversion, the final charge) and how a driver is actually matched to the rider are both out of scope here by design.</li>
+        </ul>
+
+        <h2 id="deep-dive-slidingtumbling-window-aggregation-per-geographic-cell">Deep Dive — Sliding/Tumbling Window Aggregation per Geographic Cell</h2>
+        <p>The Stream Processor's entire job, per cell, is to answer two running questions cheaply at any moment: "how many ride requests opened in the last 5 minutes?" and "what has average driver availability looked like over the last hour?" These deliberately use two different window types, because the two signals have different noise characteristics.</p>
+
+        <h3>Sliding Window for Request Rate</h3>
+        <p>Ride requests are bursty and the ratio needs to react to a fast-moving spike, so request count uses a <strong>sliding window</strong>: at any instant, the count reflects exactly the last 5 minutes, continuously — implemented internally as fine-grained sub-buckets (e.g. 10-second slices) that are summed on read and aged out as they fall outside the trailing 5-minute range, so a new event is O(1) to add and stale sub-buckets are O(1) to drop, without ever re-scanning the whole window.</p>
+
+        <h3>Tumbling Window for Driver Availability</h3>
+        <p>Driver availability is a slower-moving, noisier-per-instant signal (a driver's status flips idle/en-route/offline far more often than it reflects a real supply change), so it's averaged over a <strong>tumbling</strong> (non-overlapping) 1-hour window: a clean boundary reset every hour trades a small amount of edge-of-window insensitivity for a materially simpler, cheaper aggregate — appropriate because we deliberately want driver availability to be a slow-moving denominator, not something that itself flaps.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Top: a sliding 5-minute window over ride-request events for one geographic cell, shown at two points in time, T1 and T2, with the window boundary moving forward continuously as new events arrive and old ones age out. Bottom: a tumbling 1-hour window over driver-availability pings for the same cell, shown as four adjacent non-overlapping hour buckets, each with its own average.">
+            <style>
+              .sp-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;opacity:0.55;}
+              .sp-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .sp-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .sp-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .sp-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .sp-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .sp-arrow-dash{stroke:var(--color-accent);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+              .sp-event{fill:var(--color-accent-dark);}
+              .sp-axis{stroke:var(--color-border);stroke-width:1.5;}
+            </style>
+            <defs>
+              <marker id="arrow-sp-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="20" y="20" class="sp-title">Sliding 5-minute window over ride-request events (one H3 cell)</text>
+            <line x1="60" y1="110" x2="740" y2="110" class="sp-axis"></line>
+
+            <circle cx="90" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="112" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="140" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="160" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="185" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="215" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="240" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="260" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="285" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="310" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="380" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="410" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="440" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="465" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="490" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="515" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="540" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="565" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="590" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="615" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="640" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="665" cy="110" r="3.5" class="sp-event"></circle>
+            <circle cx="700" cy="110" r="3.5" class="sp-event"></circle>
+
+            <rect x="150" y="80" width="180" height="60" rx="4" class="sp-box"></rect>
+            <text x="240" y="72" text-anchor="middle" class="sp-label">window @ T1 = [T1-5min, T1]</text>
+
+            <rect x="430" y="80" width="180" height="60" rx="4" class="sp-box"></rect>
+            <text x="520" y="72" text-anchor="middle" class="sp-label">window @ T2 (slid forward)</text>
+
+            <path d="M330,108 C370,95 390,95 428,108" class="sp-arrow-dash" marker-end="url(#arrow-sp-2)"></path>
+            <text x="380" y="165" text-anchor="middle" class="sp-label">slides forward continuously as events arrive; oldest events age out</text>
+
+            <text x="240" y="140" text-anchor="middle" class="sp-sub">count @ T1 = 7 requests</text>
+            <text x="520" y="140" text-anchor="middle" class="sp-sub">count @ T2 = 11 requests (rising)</text>
+
+            <text x="20" y="200" class="sp-title">Tumbling 1-hour windows over driver-availability pings (same cell)</text>
+
+            <rect x="60" y="230" width="170" height="60" rx="4" class="sp-box-muted"></rect>
+            <text x="145" y="255" text-anchor="middle" class="sp-title">Hour 1</text>
+            <text x="145" y="270" text-anchor="middle" class="sp-sub">avg 42 idle drivers</text>
+
+            <rect x="230" y="230" width="170" height="60" rx="4" class="sp-box"></rect>
+            <text x="315" y="255" text-anchor="middle" class="sp-title">Hour 2</text>
+            <text x="315" y="270" text-anchor="middle" class="sp-sub">avg 38 idle drivers</text>
+
+            <rect x="400" y="230" width="170" height="60" rx="4" class="sp-box-muted"></rect>
+            <text x="485" y="255" text-anchor="middle" class="sp-title">Hour 3</text>
+            <text x="485" y="270" text-anchor="middle" class="sp-sub">avg 51 idle drivers</text>
+
+            <rect x="570" y="230" width="170" height="60" rx="4" class="sp-box"></rect>
+            <text x="655" y="255" text-anchor="middle" class="sp-title">Hour 4</text>
+            <text x="655" y="270" text-anchor="middle" class="sp-sub">avg 45 idle drivers</text>
+
+            <text x="390" y="320" text-anchor="middle" class="sp-label">non-overlapping buckets reset at each boundary &mdash; acceptable since driver availability is a slower-moving signal than request rate</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Top: a sliding 5-minute window for ride-request count keeps the fast-moving demand signal continuously current. Bottom: a tumbling 1-hour window for driver availability trades boundary smoothness for a simpler, cheaper aggregate on a slower-moving signal.</div>
+        </div>
+
+        <table>
+          <tr><th></th><th>Sliding window (requests)</th><th>Tumbling window (driver availability)</th></tr>
+          <tr><td>Update cost per event</td><td>O(1) amortized &mdash; add to current sub-bucket, age out the oldest</td><td>O(1) &mdash; add to the current bucket</td></tr>
+          <tr><td>Boundary behavior</td><td>Smooth &mdash; no reset cliff, always reflects the trailing 5 minutes exactly</td><td>Resets at each hour boundary &mdash; acceptable here since the signal itself is deliberately slow-moving</td></tr>
+          <tr><td>Why this window type here</td><td>Demand needs to react to a real spike within seconds, not wait for a bucket boundary</td><td>Simpler and cheaper; averaging out noise matters more than boundary precision for a denominator we want sticky</td></tr>
+        </table>
+
+        <h2 id="deep-dive-supplydemand-ratio-to-multiplier-curve-and-anti-flapping-smoothing">Deep Dive — Supply/Demand Ratio to Multiplier Curve, and Anti-Flapping Smoothing</h2>
+        <p>Every recompute cycle, for every active cell, the Multiplier Computation stage divides the sliding-window request count by the tumbling-window average driver availability to get a <strong>ratio</strong>, then maps that ratio through a market-configured step curve to get a candidate multiplier — and only then applies stability logic before publishing.</p>
+
+        <h3>The Ratio-to-Multiplier Curve</h3>
+        <p>The curve is a monotonic step function stored per market in the Config/Threshold Store: below a ratio of 1.0 (more idle drivers than open requests), the multiplier stays at the 1.0x floor; as the ratio crosses configured breakpoints (e.g. 1.0, 1.5, 2.0, 3.0), the multiplier steps up (e.g. to 1.2x, 1.5x, 2.0x, 2.5x), capped at a market-configured (and, where required, jurisdiction-mandated) ceiling. This is deliberately a simple, explainable, tunable lookup rather than a continuous formula or a black-box model — both because "why is it 1.6x and not 1.5x" needs a defensible answer for support and regulators, and because the parameters are exactly what a market-ops team needs to be able to tune per city without touching code.</p>
+
+        <h3>Anti-Flapping: Hysteresis and Minimum Dwell Time</h3>
+        <p>A raw ratio is noisy from cycle to cycle even with 5-minute smoothing — a handful of requests arriving or completing near a threshold boundary can push the ratio back and forth across a breakpoint every cycle, which would cause the published multiplier to flap (1.4x &rarr; 1.5x &rarr; 1.4x &rarr; 1.5x) even though nothing meaningful changed. Two mechanisms prevent this:</p>
+        <ul>
+          <li><strong>Hysteresis margin:</strong> once the multiplier has moved to a given band, the ratio must cross back past the threshold by a configured margin (e.g. 0.15) — not just barely re-cross it — before the multiplier is allowed to step back down. This is the classic Schmitt-trigger pattern applied to pricing: the "up" threshold and the "down" threshold for a given band are deliberately not the same value.</li>
+          <li><strong>Minimum dwell time:</strong> once published, a multiplier value must hold for at least a configured minimum duration (e.g. 60 seconds, aligned with the recompute cadence) before it's eligible to change again, regardless of what the ratio does in between — a hard floor under how often a rider or the pricing engine can observe a different number.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: a step curve mapping supply/demand ratio on the x-axis to multiplier on the y-axis, with bands at 1.0x, 1.2x, 1.5x, 2.0x, and a 2.5x cap. Right panel: a time series comparing the noisy raw ratio, which fluctuates continuously, against the published multiplier, which only steps up after the ratio sustains a crossing past a hysteresis margin and a minimum dwell time, and ignores a brief dip that would otherwise cause it to flap back down.">
+            <style>
+              .sp-axis{stroke:var(--color-border);stroke-width:1.5;}
+              .sp-grid{stroke:var(--color-border);stroke-width:1;stroke-dasharray:3 3;}
+              .sp-curve{stroke:var(--color-accent-dark);stroke-width:2.2;fill:none;}
+              .sp-raw{stroke:var(--color-text-muted);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+              .sp-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .sp-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .sp-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+
+            <text x="20" y="20" class="sp-title">Ratio &rarr; multiplier step curve (per market)</text>
+            <line x1="60" y1="40" x2="60" y2="300" class="sp-axis"></line>
+            <line x1="60" y1="300" x2="360" y2="300" class="sp-axis"></line>
+
+            <line x1="60" y1="260" x2="360" y2="260" class="sp-grid"></line>
+            <line x1="60" y1="220" x2="360" y2="220" class="sp-grid"></line>
+            <line x1="60" y1="160" x2="360" y2="160" class="sp-grid"></line>
+            <line x1="60" y1="110" x2="360" y2="110" class="sp-grid"></line>
+            <text x="52" y="303" text-anchor="end" class="sp-label">1.0x</text>
+            <text x="52" y="263" text-anchor="end" class="sp-label">1.2x</text>
+            <text x="52" y="223" text-anchor="end" class="sp-label">1.5x</text>
+            <text x="52" y="163" text-anchor="end" class="sp-label">2.0x</text>
+            <text x="52" y="113" text-anchor="end" class="sp-label">2.5x cap</text>
+
+            <line x1="150" y1="300" x2="150" y2="310" class="sp-grid"></line>
+            <line x1="210" y1="300" x2="210" y2="310" class="sp-grid"></line>
+            <line x1="270" y1="300" x2="270" y2="310" class="sp-grid"></line>
+            <line x1="330" y1="300" x2="330" y2="310" class="sp-grid"></line>
+            <text x="150" y="322" text-anchor="middle" class="sp-label">1.0</text>
+            <text x="210" y="322" text-anchor="middle" class="sp-label">1.5</text>
+            <text x="270" y="322" text-anchor="middle" class="sp-label">2.0</text>
+            <text x="330" y="322" text-anchor="middle" class="sp-label">3.0</text>
+            <text x="210" y="345" text-anchor="middle" class="sp-sub">supply/demand ratio (open requests &divide; idle drivers)</text>
+
+            <polyline points="60,300 150,300 150,260 210,260 210,220 270,220 270,160 330,160 330,110 360,110" class="sp-curve"></polyline>
+
+            <line x1="400" y1="20" x2="400" y2="350" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <text x="420" y="20" class="sp-title">Anti-flapping: raw ratio vs. published multiplier</text>
+            <line x1="440" y1="40" x2="440" y2="300" class="sp-axis"></line>
+            <line x1="440" y1="300" x2="740" y2="300" class="sp-axis"></line>
+
+            <polyline points="440,280 460,270 480,275 500,255 520,262 540,232 560,238 580,200 600,208 620,180 640,188 660,160 680,168 700,150 720,158 740,140" class="sp-raw"></polyline>
+            <polyline points="440,280 560,280 560,232 640,232 640,190 740,190" class="sp-curve"></polyline>
+
+            <text x="470" y="345" text-anchor="middle" class="sp-label">raw ratio (computed continuously, jagged)</text>
+            <text x="660" y="325" text-anchor="middle" class="sp-label">published multiplier (steps only after margin + 60s min dwell)</text>
+            <text x="600" y="215" text-anchor="middle" class="sp-label">brief dip ignored &mdash; avoids flapping back down</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Left: a market-tunable step curve maps supply/demand ratio to multiplier. Right: the published multiplier (solid) moves in fewer, larger, deliberate steps than the noisy raw ratio (dashed), thanks to a hysteresis margin and a minimum dwell time between changes.</div>
+        </div>
+
+        <table class="sortable">
+          <tr><th>Mechanism</th><th>What it prevents</th><th>Cost</th></tr>
+          <tr><td>No smoothing (raw ratio published directly)</td><td>Nothing &mdash; multiplier flaps every cycle on noise</td><td>None, but unacceptable product experience</td></tr>
+          <tr><td>Hysteresis margin only</td><td>Flapping right at a single threshold boundary</td><td>Slightly slower to fall back down after a real spike clears</td></tr>
+          <tr><td>Minimum dwell time only</td><td>Rapid successive changes regardless of direction</td><td>Can delay a legitimate further increase during a fast-escalating spike</td></tr>
+          <tr><td>Hysteresis + minimum dwell (recommended default)</td><td>Both boundary flapping and rapid oscillation</td><td>Small, deliberate lag &mdash; an acceptable, explicit trade-off</td></tr>
+        </table>
+
+        <h2 id="deep-dive-handling-a-hot-cell-viral-demand-spike">Deep Dive — Handling a Hot Cell (Viral Demand Spike)</h2>
+        <p>A stadium or concert letting out is the canonical stress test: thousands of ride requests can open within a single geographic cell over just a few minutes, while the neighboring cells see nothing unusual at all. The design goal is that this hot cell's spike is priced correctly and quickly, without ever touching the multiplier — or the processing capacity — of any other cell.</p>
+
+        <h3>Why Per-Cell Independence Is the Whole Answer Here</h3>
+        <p>Because the Stream Processor's state is keyed by <code>cell_id</code> and every downstream step (windowed count, ratio, curve lookup, hysteresis check) operates on exactly one cell's state at a time, a hot cell simply produces a larger number faster within its own key — it never reads or writes any other cell's state. The only engineering risk a hot cell introduces is <em>local</em>: enough volume landing on one partition/task to create processing skew for that specific key (addressed in Data Partitioning and Replication and in Bottlenecks below) — it is never a correctness risk to other zones.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A 3 by 3 grid of geographic cells. The center cell, labeled as a stadium district, shows a sharp rise in its request count and multiplier over three recompute cycles as an event lets out. The eight surrounding cells each show a steady, unaffected request count and a multiplier that stays at baseline, illustrating that each cell's windowed aggregate and multiplier are computed completely independently.">
+            <style>
+              .sp-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .sp-box-hot{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2.5;}
+              .sp-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .sp-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .sp-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+
+            <rect x="160" y="60" width="140" height="100" rx="6" class="sp-box"></rect>
+            <text x="230" y="82" text-anchor="middle" class="sp-title">Cell H0A</text>
+            <text x="230" y="98" text-anchor="middle" class="sp-sub">requests/5min: &asymp;20</text>
+            <text x="230" y="112" text-anchor="middle" class="sp-sub">(steady)</text>
+            <text x="230" y="130" text-anchor="middle" class="sp-label">multiplier: 1.0x</text>
+            <text x="230" y="144" text-anchor="middle" class="sp-label">unaffected</text>
+
+            <rect x="320" y="60" width="140" height="100" rx="6" class="sp-box"></rect>
+            <text x="390" y="82" text-anchor="middle" class="sp-title">Cell H0B</text>
+            <text x="390" y="98" text-anchor="middle" class="sp-sub">requests/5min: &asymp;24</text>
+            <text x="390" y="112" text-anchor="middle" class="sp-sub">(steady)</text>
+            <text x="390" y="130" text-anchor="middle" class="sp-label">multiplier: 1.0x</text>
+            <text x="390" y="144" text-anchor="middle" class="sp-label">unaffected</text>
+
+            <rect x="480" y="60" width="140" height="100" rx="6" class="sp-box"></rect>
+            <text x="550" y="82" text-anchor="middle" class="sp-title">Cell H0C</text>
+            <text x="550" y="98" text-anchor="middle" class="sp-sub">requests/5min: &asymp;19</text>
+            <text x="550" y="112" text-anchor="middle" class="sp-sub">(steady)</text>
+            <text x="550" y="130" text-anchor="middle" class="sp-label">multiplier: 1.0x</text>
+            <text x="550" y="144" text-anchor="middle" class="sp-label">unaffected</text>
+
+            <rect x="160" y="180" width="140" height="100" rx="6" class="sp-box"></rect>
+            <text x="230" y="202" text-anchor="middle" class="sp-title">Cell H0D</text>
+            <text x="230" y="218" text-anchor="middle" class="sp-sub">requests/5min: &asymp;22</text>
+            <text x="230" y="232" text-anchor="middle" class="sp-sub">(steady)</text>
+            <text x="230" y="250" text-anchor="middle" class="sp-label">multiplier: 1.0x</text>
+            <text x="230" y="264" text-anchor="middle" class="sp-label">unaffected</text>
+
+            <rect x="320" y="180" width="140" height="100" rx="6" class="sp-box-hot"></rect>
+            <text x="390" y="200" text-anchor="middle" class="sp-title">Cell H07 &mdash; Stadium District</text>
+            <text x="390" y="216" text-anchor="middle" class="sp-sub">requests/5min: 40 &rarr; 120 &rarr; 340</text>
+            <text x="390" y="230" text-anchor="middle" class="sp-sub">event lets out at 10:15pm</text>
+            <text x="390" y="248" text-anchor="middle" class="sp-label">multiplier: 1.0x &rarr; 1.6x &rarr; 2.4x</text>
+            <text x="390" y="262" text-anchor="middle" class="sp-label">over 2 recompute cycles</text>
+
+            <rect x="480" y="180" width="140" height="100" rx="6" class="sp-box"></rect>
+            <text x="550" y="202" text-anchor="middle" class="sp-title">Cell H0E</text>
+            <text x="550" y="218" text-anchor="middle" class="sp-sub">requests/5min: &asymp;21</text>
+            <text x="550" y="232" text-anchor="middle" class="sp-sub">(steady)</text>
+            <text x="550" y="250" text-anchor="middle" class="sp-label">multiplier: 1.0x</text>
+            <text x="550" y="264" text-anchor="middle" class="sp-label">unaffected</text>
+
+            <rect x="160" y="300" width="140" height="100" rx="6" class="sp-box"></rect>
+            <text x="230" y="322" text-anchor="middle" class="sp-title">Cell H0F</text>
+            <text x="230" y="338" text-anchor="middle" class="sp-sub">requests/5min: &asymp;18</text>
+            <text x="230" y="352" text-anchor="middle" class="sp-sub">(steady)</text>
+            <text x="230" y="370" text-anchor="middle" class="sp-label">multiplier: 1.0x</text>
+            <text x="230" y="384" text-anchor="middle" class="sp-label">unaffected</text>
+
+            <rect x="320" y="300" width="140" height="100" rx="6" class="sp-box"></rect>
+            <text x="390" y="322" text-anchor="middle" class="sp-title">Cell H0G</text>
+            <text x="390" y="338" text-anchor="middle" class="sp-sub">requests/5min: &asymp;23</text>
+            <text x="390" y="352" text-anchor="middle" class="sp-sub">(steady)</text>
+            <text x="390" y="370" text-anchor="middle" class="sp-label">multiplier: 1.0x</text>
+            <text x="390" y="384" text-anchor="middle" class="sp-label">unaffected</text>
+
+            <rect x="480" y="300" width="140" height="100" rx="6" class="sp-box"></rect>
+            <text x="550" y="322" text-anchor="middle" class="sp-title">Cell H0H</text>
+            <text x="550" y="338" text-anchor="middle" class="sp-sub">requests/5min: &asymp;20</text>
+            <text x="550" y="352" text-anchor="middle" class="sp-sub">(steady)</text>
+            <text x="550" y="370" text-anchor="middle" class="sp-label">multiplier: 1.0x</text>
+            <text x="550" y="384" text-anchor="middle" class="sp-label">unaffected</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. A stadium-district cell's request count and multiplier spike sharply as an event lets out, while all eight neighboring cells' independently-computed windows and multipliers stay flat &mdash; per-cell isolation is what keeps a local event from moving prices city-wide.</div>
+        </div>
+
+        <h3>What the Hot Cell Does <em>Not</em> Do</h3>
+        <p>The multiplier pipeline does not reassign requests to neighboring cells, widen a search radius, or reposition drivers — those are matching/dispatch and driver-incentive concerns, out of scope here. What it does is produce a fast, correctly-isolated price signal for that one cell; anything that happens as a result (a driver deciding to head toward the surging area, a rider deciding to wait a few minutes) is a downstream behavioral response to the number this pipeline publishes, not something this pipeline orchestrates.</p>
+
+        <h2 id="deep-dive-predictive-demand-modeling-as-a-refinement-layer">Deep Dive — Predictive Demand Modeling as a Refinement Layer</h2>
+        <p>Everything so far is purely <strong>reactive</strong>: it prices what has already happened in the last 5 minutes. A refinement layer adds a <strong>predictive</strong> signal on top — using historical patterns (day-of-week, time-of-day, weather, known calendar events) to anticipate a demand shift slightly before it fully shows up in the live ratio, and blending that anticipation into the published multiplier so the reactive spike is smaller (and the ramp-down after it, gentler) than it would otherwise be.</p>
+
+        <h3>Why This Is a Refinement, Not a Replacement</h3>
+        <p>Predictive modeling is deliberately additive, not a replacement for the reactive ratio. A model trained on historical patterns can anticipate a <em>typical</em> Friday-evening downtown surge or a known stadium event's scheduled end time, but it cannot anticipate an unscheduled event (a subway outage pushing riders to request rides, a sudden storm) — the reactive path remains the ground truth and the safety net; the predictive layer only ever nudges it earlier/smoother, and is capped in how much influence it can exert versus the live signal.</p>
+
+        <h3>Inputs to the Predictive Model</h3>
+        <ul>
+          <li><strong>Day-of-week and time-of-day seasonality:</strong> the same cell reliably surges at 5-6pm on weekdays and differently on weekend nights — a historical baseline curve per cell, per hour-of-week.</li>
+          <li><strong>Weather:</strong> rain or snow reliably shifts demand up and driver availability down in most markets; a real-time weather feed adjusts the anticipated ratio ahead of the live signal fully reflecting it.</li>
+          <li><strong>Known calendar events:</strong> a scheduled concert, sports game, or holiday with a known end time lets the model pre-position an anticipated demand curve rather than waiting for the live spike to fully materialize before reacting.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Historical demand patterns, covering day of week, time of day, weather, and calendar events, feed a Predictive Demand Model. In parallel, the Stream Processor produces a Reactive Ratio-Based Multiplier from live data. Both feed a Blending and Smoothing Function, which produces the final Published Multiplier, smoothed and anticipatory, that feeds the same Published Multiplier Store used elsewhere in the design.">
+            <style>
+              .sp-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .sp-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .sp-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .sp-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .sp-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .sp-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-sp-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="40" y="30" width="300" height="70" rx="6" class="sp-box"></rect>
+            <text x="190" y="55" text-anchor="middle" class="sp-title">Historical Demand Patterns</text>
+            <text x="190" y="70" text-anchor="middle" class="sp-sub">day-of-week, time-of-day,</text>
+            <text x="190" y="84" text-anchor="middle" class="sp-sub">weather, calendar/events</text>
+
+            <rect x="460" y="30" width="300" height="70" rx="6" class="sp-box"></rect>
+            <text x="610" y="55" text-anchor="middle" class="sp-title">Reactive Ratio-Based Multiplier</text>
+            <text x="610" y="70" text-anchor="middle" class="sp-sub">from the live supply/demand ratio</text>
+            <text x="610" y="84" text-anchor="middle" class="sp-sub">(this page's core pipeline)</text>
+
+            <line x1="190" y1="100" x2="190" y2="129" class="sp-arrow" marker-end="url(#arrow-sp-3)"></line>
+
+            <rect x="40" y="130" width="300" height="60" rx="6" class="sp-box-strong"></rect>
+            <text x="190" y="153" text-anchor="middle" class="sp-title">Predictive Demand Model</text>
+            <text x="190" y="168" text-anchor="middle" class="sp-sub">anticipates a shift slightly before it fully materializes</text>
+
+            <line x1="220" y1="190" x2="340" y2="229" class="sp-arrow" marker-end="url(#arrow-sp-3)"></line>
+            <line x1="580" y1="100" x2="460" y2="229" class="sp-arrow" marker-end="url(#arrow-sp-3)"></line>
+
+            <rect x="250" y="230" width="280" height="55" rx="6" class="sp-box-strong"></rect>
+            <text x="390" y="252" text-anchor="middle" class="sp-title">Blending / Smoothing Function</text>
+            <text x="390" y="267" text-anchor="middle" class="sp-sub">combines predictive nudge with reactive signal (capped influence)</text>
+
+            <line x1="390" y1="285" x2="390" y2="309" class="sp-arrow" marker-end="url(#arrow-sp-3)"></line>
+
+            <rect x="250" y="310" width="280" height="55" rx="6" class="sp-box"></rect>
+            <text x="390" y="333" text-anchor="middle" class="sp-title">Published Multiplier</text>
+            <text x="390" y="348" text-anchor="middle" class="sp-sub">smoothed + anticipatory &mdash; feeds the same Published Multiplier Store</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. The predictive layer runs in parallel with, not instead of, the reactive ratio-based multiplier; a Blending Function combines both with a capped predictive influence before publication.</div>
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If asked "what happens when the predictive model is wrong" — the correct answer is "very little, by design": the reactive path is always live and always the dominant signal once real events start arriving, and the predictive nudge's influence is capped (e.g. it can shift the effective ratio by at most a small configured delta), so a bad prediction produces a slightly smoother-than-ideal ramp, never a materially wrong price.
+        </div>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+        <p>Partitioning follows a single rule throughout: everything for one cell stays together, and cells are otherwise fully independent of each other — the same principle that makes per-cell isolation (Deep Dive above) actually true in the implementation, not just on the whiteboard.</p>
+        <ul>
+          <li><strong>Both Kafka topics</strong> (<code>ride-requests.v1</code>, <code>driver-availability.v1</code>) are partitioned by <code>hash(cell_id)</code>, so every event for a given cell always lands on the same partition, and therefore is always consumed by the same downstream stream-processing task — a prerequisite for maintaining per-cell state correctly.</li>
+          <li><strong>Stream-processing state is partitioned by the same key</strong> (<code>keyBy(cell_id)</code>): each parallel task instance owns a disjoint subset of the cell-id key space, holds only those cells' windowed aggregates in memory, and never needs to communicate with any other task instance to compute a multiplier.</li>
+          <li><strong>State is checkpointed periodically to durable storage</strong> (e.g. every 30 seconds), so a task crash recovers by restoring the last checkpoint and replaying only the short tail of Kafka events since that checkpoint's offset — not by recomputing history from scratch (see Bottlenecks below).</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: two Kafka topics, ride-requests and driver-availability, each partitioned by hash of cell id into several partitions. Right panel: four parallel stream-processing task slots, each owning roughly one quarter of the cell id key space, feeding a durable checkpoint store used to recover state after a crash by replaying from the last committed Kafka offset.">
+            <style>
+              .sp-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+              .sp-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .sp-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .sp-part{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1;}
+              .sp-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .sp-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .sp-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .sp-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-sp-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="20" y="20" class="sp-title">Kafka: topics partitioned by hash(H3 cell_id)</text>
+
+            <rect x="20" y="50" width="340" height="40" rx="5" class="sp-box-strong"></rect>
+            <text x="30" y="74" class="sp-title">topic: ride-requests.v1</text>
+            <rect x="245" y="58" width="16" height="22" rx="2" class="sp-part"></rect>
+            <rect x="265" y="58" width="16" height="22" rx="2" class="sp-part"></rect>
+            <rect x="285" y="58" width="16" height="22" rx="2" class="sp-part"></rect>
+
+            <rect x="20" y="110" width="340" height="40" rx="5" class="sp-box-strong"></rect>
+            <text x="30" y="134" class="sp-title">topic: driver-availability.v1</text>
+            <rect x="245" y="118" width="16" height="22" rx="2" class="sp-part"></rect>
+            <rect x="265" y="118" width="16" height="22" rx="2" class="sp-part"></rect>
+            <rect x="285" y="118" width="16" height="22" rx="2" class="sp-part"></rect>
+
+            <text x="20" y="200" class="sp-sub">A hot cell's events always land on the same partition (consistent</text>
+            <text x="20" y="213" class="sp-sub">hashing), which keeps its state on one task &mdash; but a single very</text>
+            <text x="20" y="226" class="sp-sub">hot cell can still create partition/task skew (see Bottlenecks).</text>
+
+            <line x1="400" y1="20" x2="400" y2="270" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <text x="420" y="20" class="sp-title">Stream-processing task parallelism (keyBy cell_id)</text>
+
+            <rect x="420" y="50" width="340" height="35" rx="5" class="sp-box"></rect>
+            <text x="590" y="72" text-anchor="middle" class="sp-sub">Task Slot 0 &mdash; owns &asymp;25% of cell_id key space</text>
+
+            <rect x="420" y="95" width="340" height="35" rx="5" class="sp-box"></rect>
+            <text x="590" y="117" text-anchor="middle" class="sp-sub">Task Slot 1 &mdash; owns &asymp;25% of cell_id key space</text>
+
+            <rect x="420" y="140" width="340" height="35" rx="5" class="sp-box"></rect>
+            <text x="590" y="162" text-anchor="middle" class="sp-sub">Task Slot 2 &mdash; owns &asymp;25% of cell_id key space</text>
+
+            <rect x="420" y="185" width="340" height="35" rx="5" class="sp-box"></rect>
+            <text x="590" y="207" text-anchor="middle" class="sp-sub">Task Slot 3 &mdash; owns &asymp;25% of cell_id key space</text>
+
+            <line x1="590" y1="220" x2="590" y2="239" class="sp-arrow" marker-end="url(#arrow-sp-4)"></line>
+
+            <rect x="420" y="240" width="340" height="50" rx="6" class="sp-box-store"></rect>
+            <text x="590" y="260" text-anchor="middle" class="sp-title">Durable Checkpoint Store</text>
+            <text x="590" y="275" text-anchor="middle" class="sp-sub">periodic snapshots; replay from last Kafka offset on recovery</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. Left: both Kafka topics are partitioned by hash(cell_id) so a cell's events always reach the same task. Right: stream-processing tasks each own a disjoint slice of the cell_id key space and checkpoint to durable storage for fast, replay-based recovery.</div>
+        </div>
+
+        <table>
+          <tr><th>Data</th><th>Partitioned / sharded by</th><th>Replication / durability</th></tr>
+          <tr><td>ride-requests.v1 / driver-availability.v1 (Kafka)</td><td>hash(cell_id)</td><td>Kafka RF=3 per topic</td></tr>
+          <tr><td>Stream-processor windowed state</td><td>keyBy(cell_id), one task owns a disjoint key range</td><td>Periodic checkpoint to durable storage; replay from last committed offset on recovery</td></tr>
+          <tr><td>surge_config</td><td>market_id</td><td>Small strongly-consistent store, standard multi-node replication</td></tr>
+          <tr><td>multiplier_snapshot</td><td>hash(cell_id), clustered by computed_at</td><td>Wide-column store, RF=3</td></tr>
+          <tr><td>Published Multiplier Store (read cache)</td><td>cell_id</td><td>Read replicas fronting the hot get-current-multiplier path</td></tr>
+        </table>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>These are the two durable, queryable tables downstream of the Stream Processor's own in-memory windowed state (which is not a queryable table at all — see Data Model and Database Choice above).</p>
+        <table>
+          <tr><th colspan="2">Table: surge_config &mdash; market curve thresholds (PK: market_id + curve_version)</th></tr>
+          <tr><td>market_id (partition key)</td><td>text &mdash; e.g. "us-sf", "in-blr"</td></tr>
+          <tr><td>curve_version (clustering key)</td><td>text &mdash; e.g. "v15"; monotonically increasing per market</td></tr>
+          <tr><td>thresholds</td><td>json array of {ratio_min, multiplier} step definitions</td></tr>
+          <tr><td>multiplier_cap / multiplier_floor</td><td>decimal &mdash; hard ceiling/floor, enforced regardless of curve output</td></tr>
+          <tr><td>min_dwell_seconds</td><td>int &mdash; minimum time a published value must hold before it can change again</td></tr>
+          <tr><td>hysteresis_margin</td><td>decimal &mdash; extra ratio distance required to cross back down a band</td></tr>
+          <tr><td>status</td><td>enum(active, canary, rolled_back)</td></tr>
+          <tr><td>updated_at / updated_by</td><td>timestamp / text &mdash; who changed this and when</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: multiplier_snapshot &mdash; analytics + rider-receipt history (PK: cell_id + computed_at)</th></tr>
+          <tr><td>cell_id (partition key)</td><td>text &mdash; H3 cell identifier</td></tr>
+          <tr><td>computed_at (clustering key)</td><td>timestamp</td></tr>
+          <tr><td>market_id</td><td>text</td></tr>
+          <tr><td>request_count_5min</td><td>int &mdash; the sliding-window count that produced this snapshot</td></tr>
+          <tr><td>avg_driver_availability_1hr</td><td>decimal &mdash; the tumbling-window average that produced this snapshot</td></tr>
+          <tr><td>ratio</td><td>decimal</td></tr>
+          <tr><td>multiplier</td><td>decimal &mdash; the value actually published for this cycle</td></tr>
+          <tr><td>curve_version</td><td>text &mdash; foreign reference to surge_config, for reproducibility</td></tr>
+          <tr><td>valid_until</td><td>timestamp</td></tr>
+        </table>
+
+        <h2 id="feature-specific-logic-market-specific-tuning-via-a-config-platform">Feature-Specific Logic: Market-Specific Tuning via a Config Platform</h2>
+        <p>A curve that works for a dense downtown core is wrong for a small college town, and a curve that's right for one city in one country may run into a different regulatory cap in another. The entire point of the Config/Threshold Store (conceptually similar to Uber's internal UCDP-style configuration platform) is that this is a <strong>data change, never a code change</strong>.</p>
+
+        <h3>Hierarchical Configuration</h3>
+        <p>Thresholds resolve through a fallback hierarchy — a global default, overridden by a country-level default, overridden by a specific market/city config, optionally overridden further by a cell-density-class override (e.g. "airport-class cells" behave differently from "residential-class cells" even within the same city) — so a new market launches with sensible defaults on day one, and a market-ops team only needs to write the narrowest override actually required.</p>
+
+        <h3>Hot-Reload Without Redeploy</h3>
+        <p>A config change is written to the store and propagated to every stream-processing worker's in-memory cache via a lightweight invalidation signal (a low-volume pub/sub notification, or a short poll interval) — workers pick up the new curve within seconds, with no restart, no redeploy, and no interruption to the windowed aggregates already in flight. If a worker can't reach the config store at refresh time, it keeps serving its last-known-good cached config rather than failing open to no curve at all.</p>
+
+        <h3>Canary Rollout and Audit Trail</h3>
+        <p>Because a bad threshold change has immediate, visible pricing consequences at scale, changes default to a <strong>canary rollout</strong>: the new curve version applies to a small percentage of a market's cells first, its resulting multiplier distribution is compared against the control group's, and only then is it promoted to the whole market — or automatically rolled back if the comparison trips a guardrail (e.g. average multiplier moving far outside historical norms for that time/day). Every change, canary or full, is versioned and attributed (<code>updated_by</code>, <code>updated_at</code>), because pricing changes are exactly the kind of decision that needs to be reconstructible after the fact for a regulator, a finance audit, or a rider dispute.</p>
+
+        <h2 id="rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</h2>
+        <p>Because the multiplier is derived directly from request and availability <em>counts</em>, the pipeline is a tempting target for anyone who can manipulate those counts to move the price.</p>
+        <ul>
+          <li><strong>Synthetic/bot ride-request volume:</strong> a script generating rapid, non-intent ride-search or request events in a cell to inflate the numerator and trigger surge (to profit from a compromised or colluding driver, or simply to grief). Mitigation: only count requests tied to an authenticated, rate-limited rider session; require the request to reach a real funnel step, not just a page load; apply per-account and per-device request-rate limits upstream of this pipeline so a single actor's volume never reaches the event stream at meaningful scale.</li>
+          <li><strong>Coordinated driver availability toggling:</strong> a group of drivers going offline together in a cell to shrink the denominator and trigger surge, then coming back online to accept the higher-priced rides. Mitigation: anomaly detection on availability-ping patterns for correlated, simultaneous mass status flips in a small time/geo window with no external cause, plus the 1-hour tumbling average itself dampens the effect of any short-horizon coordinated flip.</li>
+          <li><strong>Location spoofing:</strong> a request or ping claiming an incorrect cell_id (e.g. to appear inside a known-surging cell, or to move a driver's presence out of a cell they don't want to serve). Mitigation: server-side plausibility checks (implausible position jumps between consecutive pings), device attestation, and treating a single implausible ping as a candidate for exclusion rather than blindly trusting client-reported location.</li>
+          <li><strong>Read-path scraping:</strong> third-party fare-tracking tools or competitors hammering <code>get-current-multiplier</code> at very high QPS. Mitigation: standard per-client API rate limiting plus a short-TTL cache in front of the Published Multiplier Store (aligned to the 60-second cadence), so read amplification never reaches the stream-processing tier at all.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Minimal retained identity:</strong> raw rider/driver location and identity are inputs the pipeline needs only transiently, to bucket into a <code>cell_id</code> and to de-duplicate/detect abuse; <code>rider_id</code> and <code>driver_id</code> travel on the ingestion topics only in hashed form, and precise lat/lng is not required beyond the point of cell-resolution.</li>
+          <li><strong>The published API surface exposes only the multiplier and ratio</strong> — never raw request counts or raw driver counts — since those numbers could reveal competitively sensitive or privacy-adjacent information (e.g. approximately how many drivers are active in a small area right now).</li>
+          <li><strong>Config/Threshold Store access control:</strong> writes are restricted to an authorized Market Ops / Pricing role, changes to consequential fields (the cap, the floor) require an approval step given direct financial and regulatory exposure, and every write is versioned and audited.</li>
+          <li><strong>Jurisdiction-mandated caps are hard-enforced, never advisory:</strong> a legal cap on the maximum multiplier is stored as a floor beneath whatever the ratio-based curve would otherwise output, and every instance where the cap was the binding constraint (not the curve) is logged for compliance reporting.</li>
+          <li><strong>Transport security:</strong> TLS everywhere; mTLS between the rider/driver apps' backing services and the ingestion tier; config-store credentials in a secrets manager, rotated regularly.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <ol>
+          <li><strong>Kafka partition distribution:</strong> consistent hashing on <code>cell_id</code> spreads partitions across brokers, but a single very hot cell can still create partition skew — mitigated by sub-partitioning a known-hot cell's key space (salting) at the cost of an extra merge step when aggregating that cell's state.</li>
+          <li><strong>Stream-processing task load:</strong> naive hashing on <code>cell_id</code> alone can still overload one task if that task happens to own a handful of very hot cells; local pre-aggregation (a map-side combine of counts within a short micro-batch before the keyed shuffle) reduces the volume that needs to cross the network to the owning task in the first place.</li>
+          <li><strong>Read-path load:</strong> the <code>get-current-multiplier</code> and rider pre-quote reads run at far higher QPS than the write/ingest side (every ride search reads a multiplier; only a fraction of searches become ride requests) — front the Published Multiplier Store with a read-through cache with a TTL matched to the 60-second recompute cadence, so hot-cell reads never hit the primary store directly.</li>
+        </ol>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Run each broad geography (e.g. Americas / EMEA / APAC) as an independent, active-active regional deployment — Kafka cluster, Stream Processor cluster, and Published Multiplier Store all local to the region — since a cell's multiplier never legitimately depends on data from a cell on another continent. This is an even cleaner "shard by region" story than most systems, for the same underlying reason per-cell isolation works within a region.</li>
+          <li>The Config/Threshold Store is replicated per region for low-latency local reads, synced from a single global control-plane source of truth so governance and audit stay centralized even though serving is regional.</li>
+          <li>Cross-region aggregation is analytics-only — a global dashboard/warehouse pulls multiplier snapshots from every region for reporting and backtesting — and is never on the pricing-critical path.</li>
+          <li>Data residency: keep raw ride-request and driver-availability event streams within their region of origin where local law requires it, since these events are close to (if more aggregated than) precise location and usage data.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Stream-processor task crashes mid-window</td><td>Periodic checkpointing to durable storage; recovery restores the last checkpoint and replays only the short tail of Kafka events since that offset &mdash; never a full recompute from scratch</td></tr>
+          <tr><td>Freshness vs. stability trade-off in recompute cadence</td><td>Fixed 60-second cadence chosen deliberately: fast enough to price a real spike within one or two cycles, slow enough to average out sub-minute noise (see Capacity Estimation)</td></tr>
+          <tr><td>A single very hot cell overwhelms one stream-processing task (key skew)</td><td>Local pre-aggregation before the keyed shuffle; sub-partitioning a known-hot cell's key space with a merge step at aggregation time</td></tr>
+          <tr><td>A stadium/concert spike flooding one cell's ingestion</td><td>Per-cell isolation means the spike is contained to that cell's partition/task &mdash; it never delays or degrades any other cell's computation</td></tr>
+          <tr><td>Config/Threshold Store unreachable at refresh time</td><td>Workers keep serving their last-known-good cached config rather than failing to a "no curve" state</td></tr>
+          <tr><td>A bad config change causes a runaway multiplier</td><td>Canary rollout with automatic guardrail-triggered rollback; hard multiplier_cap enforced independent of the curve; anomaly detection on published multiplier distributions (see Monitoring)</td></tr>
+          <tr><td>Kafka consumer lag under a sustained system-wide surge in overall ride volume</td><td>Scale stream-processing parallelism (more task slots) and Kafka partitions independently of any single cell's load</td></tr>
+          <tr><td>Region-wide outage</td><td>Active-active independent regional deployments; a regional failure degrades only that region's pricing freshness, never another region's</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor availability for the read path — the Published Multiplier Store and the <code>get-current-multiplier</code> API should always answer, even with a slightly stale value, rather than block a rider's quote or the pricing engine's fare calculation. Favor reproducibility, not strict linearizable consistency, for the multiplier computation itself: the correctness property that actually matters is that a published multiplier can always be reconstructed from its recorded (<code>request_count_5min</code>, <code>avg_driver_availability_1hr</code>, <code>curve_version</code>) inputs — critical for fare disputes and regulatory review — rather than every reader observing the exact same in-progress computation at the exact same instant.</p>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Per-cell multiplier distribution dashboards:</strong> track the distribution of published multipliers across all active cells in a market, both live and historically, to spot systemic drift (e.g. a market's average multiplier creeping up over weeks with no corresponding demand story).</li>
+          <li><strong>Event-processing lag:</strong> Kafka consumer lag and stream-processing watermark lag per task, alerted on directly — rising lag is the earliest signal that the pipeline is falling behind real time, before it shows up as a stale multiplier anywhere else.</li>
+          <li><strong>Anomaly detection for runaway multipliers:</strong> a hard, independent guardrail that flags (and can auto-circuit-break to a fallback of 1.0x or the last known-good value for a cell) any published multiplier that moves implausibly far or fast relative to that cell's own historical pattern — a safety net against both a data bug and an undetected gaming attempt.</li>
+          <li><strong>Backtesting against historical demand:</strong> replay historical event streams through a candidate curve-configuration change before it ever reaches canary rollout, comparing the resulting multiplier distribution against what was actually published historically — this is how a market-ops team validates a sensitivity tweak without experimenting on live riders first.</li>
+          <li><strong>End-to-end freshness metric:</strong> time from "event ingested" to "reflected in a published multiplier," tracked at p50/p99 per region, since this is the single number that most directly represents whether the sub-minute-freshness NFR is actually being met in production.</li>
+        </ul>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Ingestion</td><td>Kafka, two topics (ride-requests, driver-availability), both partitioned by hash(cell_id)</td></tr>
+          <tr><td>Aggregation</td><td>Flink-style Stream Processor; sliding 5-min window for requests, tumbling 1-hr window for driver availability</td></tr>
+          <tr><td>Multiplier logic</td><td>Supply/demand ratio &rarr; market-configured step curve, capped, hysteresis + minimum dwell time for stability</td></tr>
+          <tr><td>Recompute cadence</td><td>Fixed 60 seconds; state updates incrementally and continuously in between</td></tr>
+          <tr><td>Per-cell isolation</td><td>keyBy(cell_id) throughout &mdash; no cross-cell reads or coupling anywhere in the pipeline</td></tr>
+          <tr><td>Predictive layer</td><td>Historical/weather/event-based model blended additively with capped influence over the reactive signal</td></tr>
+          <tr><td>Config platform</td><td>UCDP-style store, hierarchical overrides, hot-reload, canary rollout, full audit trail</td></tr>
+          <tr><td>Durable stores</td><td>surge_config (small, strongly consistent) + multiplier_snapshot (wide-column, high write volume)</td></tr>
+          <tr><td>Read path</td><td>get-current-multiplier + batch variant, fronted by a short-TTL cache aligned to the recompute cadence</td></tr>
+          <tr><td>Recovery</td><td>Periodic checkpointing; crash recovery replays only the Kafka tail since the last checkpoint</td></tr>
+          <tr><td>Multi-region</td><td>Independent active-active regional deployments; config replicated regionally, governed centrally</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect an interview to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Streaming vs. Database Queries</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why is this a stream-processing problem instead of a scheduled job querying a database?</div>
+          <div class="qa-a">At 100,000+ ride-request events/sec plus roughly 10&times; that in driver-availability pings, a query-per-request pattern against a transactional store either re-scans mostly-unchanged data too often or goes stale too rarely. A stream processor maintains the windowed count incrementally, in O(1) amortized work per event, so the aggregate is always current without ever re-scanning history &mdash; the stream processor's in-memory state <em>is</em> the database for this workload.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why a sliding window for request rate but a tumbling window for driver availability?</div>
+          <div class="qa-a">Request rate needs to react to a fast-moving spike, so it uses a sliding window that reflects exactly the trailing 5 minutes at all times with no reset cliff. Driver availability is a deliberately slower-moving denominator where boundary smoothness matters less than simplicity and cost, so a tumbling 1-hour window is an acceptable, cheaper trade-off.</div>
+        </div>
+
+        <h3>Multiplier Stability</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why does the system need an anti-flapping/hysteresis mechanism at all?</div>
+          <div class="qa-a">A raw ratio is noisy cycle to cycle even after 5-minute smoothing; without hysteresis and a minimum dwell time, a handful of requests near a threshold boundary would flap the published multiplier back and forth every cycle. A hysteresis margin requires the ratio to cross back past a threshold by more than it took to cross forward, and a minimum dwell time caps how often the value can change at all &mdash; together they trade a small amount of deliberate lag for a materially more trustworthy, less erratic rider-facing number.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why recompute every 60 seconds instead of continuously reacting to every event?</div>
+          <div class="qa-a">A shorter cadence (e.g. 10s) reacts faster but multiplies recompute/publish/cache-invalidation load roughly proportionally and increases flapping risk from short-horizon noise; a much longer cadence (e.g. 5 minutes) is calmer but leaves a genuine spike under-priced for several minutes, a real product harm. 60 seconds is the deliberate middle point, chosen and stated explicitly rather than left implicit.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Is it a problem if two adjacent cells have very different multipliers?</div>
+          <div class="qa-a">No &mdash; it's expected and correct. Supply and demand are genuinely local (one side of a street can be a stadium exit and the other a quiet residential block), and per-cell independence means the multiplier reflects each cell's own recent conditions rather than being smoothed across a neighborhood. A visible seam at a cell boundary is a feature of local accuracy, not a bug, though very large seams are exactly what the hysteresis and cell-density-class config overrides help keep from feeling arbitrary.</div>
+        </div>
+
+        <h3>Hot Cells and Scale</h3>
+        <div class="qa-item">
+          <div class="qa-q">How does the system handle a stadium or concert letting out (a hot-cell spike)?</div>
+          <div class="qa-a">Because the Stream Processor's state and every downstream computation step are keyed by cell_id, the spike is entirely contained within that cell's own state &mdash; it never reads or writes any other cell's data. The multiplier for that one cell rises quickly across one or two recompute cycles while every neighboring cell's independently-computed multiplier stays flat.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What if a single hot cell overwhelms the one stream-processing task instance that owns it?</div>
+          <div class="qa-a">This is a partition/task skew problem, not a correctness problem &mdash; mitigated with local pre-aggregation (combining counts before the keyed shuffle so less data crosses the network to the owning task) and, for a persistently hot cell, sub-partitioning its key space across multiple tasks with an extra merge step when computing its final aggregate.</div>
+        </div>
+
+        <h3>Predictive vs. Reactive Pricing</h3>
+        <div class="qa-item">
+          <div class="qa-q">How does predictive demand modeling differ from, and combine with, the reactive ratio-based multiplier?</div>
+          <div class="qa-a">The reactive path prices what has already happened in the live window; the predictive layer uses historical day-of-week/time-of-day/weather/event patterns to anticipate a shift slightly before it fully shows up in the live ratio, smoothing the ramp. They combine through a blending function with a capped predictive influence &mdash; the reactive signal remains the ground truth and safety net, since only it can react to genuinely unscheduled events.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens when the predictive model's forecast turns out to be wrong?</div>
+          <div class="qa-a">Very little, by design &mdash; its influence on the final multiplier is capped at a small configured delta, so a bad prediction produces at worst a slightly smoother-than-ideal ramp rather than a materially wrong price; the live reactive ratio dominates once real events start arriving regardless of what was predicted.</div>
+        </div>
+
+        <h3>Config Platform and Governance</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you support market-specific tuning without redeploying the pipeline?</div>
+          <div class="qa-a">Curve thresholds, caps, dwell time, and hysteresis margin all live in a small, strongly-consistent Config/Threshold Store, resolved through a global &rarr; country &rarr; market &rarr; cell-density-class fallback hierarchy. Workers cache the config in memory and refresh via a lightweight invalidation signal within seconds of a change &mdash; a market-ops tuning adjustment is a data write, never a code deploy.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Who can change the surge curve parameters, and how do you prevent a bad change from causing an incident?</div>
+          <div class="qa-a">Writes are restricted to an authorized Market Ops/Pricing role, changes to consequential fields require an approval step, and every write is versioned and audited. Operationally, changes default to a canary rollout on a small percentage of a market's cells with automatic guardrail-triggered rollback if the resulting multiplier distribution moves outside historical norms, and a hard multiplier_cap is enforced independently of whatever the curve computes.</div>
+        </div>
+
+        <h3>Fairness, Regulation, and Abuse</h3>
+        <div class="qa-item">
+          <div class="qa-q">What fairness or regulatory constraints exist on surge caps?</div>
+          <div class="qa-a">Some jurisdictions mandate a maximum multiplier, particularly during declared emergencies, and some require disclosure of how a price was derived. Both are modeled as hard floors/ceilings in the Config/Threshold Store beneath whatever the ratio-based curve would otherwise output, never left as an aspiration in the curve design itself &mdash; and every instance where a cap (not the curve) was the binding constraint is logged for compliance reporting.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you keep the pricing signal from being gamed by synthetic demand or coordinated driver behavior?</div>
+          <div class="qa-a">Requests are only counted from authenticated, rate-limited sessions that reach a real funnel step; per-account/per-device limits sit upstream of the event stream itself. Coordinated availability toggling is dampened by the 1-hour tumbling average and flagged by anomaly detection on correlated mass status-flip patterns. Location is checked for plausibility (no implausible jumps between consecutive pings) rather than trusted blindly.</div>
+        </div>
+
+        <h3>Reliability and Product Integration</h3>
+        <div class="qa-item">
+          <div class="qa-q">How does the stream processor recover its state after a crash?</div>
+          <div class="qa-a">State is checkpointed to durable storage on a fixed interval (e.g. every 30 seconds); on recovery, the task restores the last checkpoint and replays only the Kafka events committed since that checkpoint's offset, rather than recomputing the window from scratch &mdash; recovery time is bounded by the checkpoint interval, not by total history.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does this pipeline get consumed downstream, and how often can a rider legitimately see the multiplier change mid-session?</div>
+          <div class="qa-a">The Pricing Engine reads the multiplier at fare-calculation time and the rider app reads it at pre-ride-quote time, both via the same get-current-multiplier read path with an explicit valid_until timestamp. A value can change at most once per minimum-dwell-time window (aligned to the 60-second cadence), and callers are expected to re-fetch after valid_until rather than cache indefinitely &mdash; that combination is what keeps a rider's quote-time and charge-time price consistent within a bounded freshness window.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does data partitioning matter so much for this specific design?</div>
+          <div class="qa-a">Per-cell isolation is the design's core correctness property (a local event must never move prices elsewhere), and it's only actually true if the Kafka topics and the stream-processing state are partitioned by the exact same key (cell_id) end to end &mdash; any mismatch would force cross-partition coordination and break the isolation guarantee the whole design depends on.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would this pipeline scale if system-wide ride volume grew 10&times;?</div>
+          <div class="qa-a">Scale Kafka partitions and stream-processing task parallelism proportionally &mdash; both are already partitioned by hash(cell_id), so adding capacity redistributes cleanly without touching the per-cell isolation guarantee. The one thing that doesn't scale linearly with overall volume is a single hot cell's own load, since a 10&times; city-wide increase in ride volume doesn't mean every individual cell got 10&times; hotter; that's handled separately via local pre-aggregation and hot-key sub-partitioning, not by adding blanket capacity.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This is a stream-processing problem, not a database-querying one, purely because of scale and freshness: the windowed aggregate must update incrementally as events arrive, not get recomputed by re-scanning history on a schedule. Per-cell independence (keyBy cell_id, all the way through Kafka partitioning and stream-processing state) is the single property that makes both correctness (a concert doesn't move prices city-wide) and scalability (a hot cell's load never bleeds into a healthy cell) true simultaneously &mdash; state that causal chain explicitly. A "technically accurate" multiplier that changes every few seconds is a worse product than a deliberately damped one; hysteresis and minimum dwell time are load-bearing product decisions, not incidental engineering detail. The predictive layer only ever refines the reactive signal, never replaces it, because only the reactive path can respond to something genuinely unscheduled. And because pricing decisions carry direct financial, fairness, and regulatory weight, the config platform's versioning, canary rollout, and audit trail are first-class requirements from day one, not something bolted on after an incident.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Uber Engineering Blog &mdash; posts on surge pricing, marketplace dynamic pricing, and the UCDP configuration platform</li>
+          <li>Uber Engineering Blog &mdash; "H3: Uber's Hexagonal Hierarchical Spatial Index" (geospatial cell partitioning background; matching/dispatch use of H3 covered on <code>rider-matching-system.html</code>)</li>
+          <li>Apache Flink documentation &mdash; windowing (sliding, tumbling, session), keyed state, and checkpointing/recovery semantics</li>
+          <li>Apache Kafka documentation &mdash; topic partitioning and consumer-group scaling for high-throughput event ingestion</li>
+          <li>Martin Kleppmann, <em>Designing Data-Intensive Applications</em> &mdash; chapters on stream processing and derived data</li>
+          <li>Control-theory literature on hysteresis / Schmitt-trigger patterns, applied here to anti-flapping price-signal smoothing</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="job-scheduler.html"><span class="dir">Previous</span>Job Scheduler</a>
+          <a class="next" href="netflix-screen-limit.html"><span class="dir">Next</span>Netflix Concurrent Screen Limit</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

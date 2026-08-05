@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retry Pattern | Software Architecture Patterns | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Software Architecture Patterns</a><span class="sep">/</span><span class="current">Retry Pattern</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Software Architecture Patterns overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#the-retry-pattern-as-a-solution-to-unreliable-external-resources">The Retry Pattern as a Solution to Unreliable External Resources</a></li>
+        <li><a href="#the-architecture-of-the-retry-pattern">The Architecture of the Retry Pattern</a></li>
+        <li><a href="#an-example">An Example</a></li>
+        <li><a href="#performance-implications">Performance Implications</a></li>
+        <li><a href="#use-cases-and-system-design-examples">Use Cases and System Design Examples</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SOFTWARE ARCHITECTURE PATTERNS</span>
+          <h1>Retry Pattern</h1>
+        </div>
+
+                <div class="toc-box">
+          <h2>Table of Contents</h2>
+          <ul class="toc-list">
+            <li><a href="#overview">Overview</a>
+            </li>
+            <li><a href="#the-retry-pattern-as-a-solution-to-unreliable-external-resources">The Retry Pattern as a Solution to Unreliable External Resources</a>
+            </li>
+            <li><a href="#the-architecture-of-the-retry-pattern">The Architecture of the Retry Pattern</a>
+            </li>
+            <li><a href="#an-example">An Example</a>
+            </li>
+            <li><a href="#performance-implications">Performance Implications</a>
+            </li>
+            <li><a href="#use-cases-and-system-design-examples">Use Cases and System Design Examples</a>
+            </li>
+            <li><a href="#common-interview-questions">Common Interview Questions</a>
+            </li>
+            <li><a href="#key-takeaways">Key Takeaways</a>
+            </li>
+          </ul>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>If you've ever had a phone call drop and simply redialed the same number a moment later, you already understand the core idea behind the Retry pattern. Many failures in distributed systems aren't permanent — they're brief hiccups caused by things like a momentary network blip, a service that's busy for a second, or a server restarting during a routine deployment. These are called <strong>transient faults</strong>, and the useful thing about them is that if you simply try the same operation again a short time later, there's a good chance it will succeed.</p>
+        <p>The Retry pattern is the practice of automatically re-attempting a failed operation instead of immediately giving up and showing the user an error. Done well, it can turn a lot of "failures" that users would otherwise notice into invisible non-events, because the retry succeeds so quickly that nobody ever knows the first attempt failed. Done poorly, however, retries can make things worse rather than better — which is why the pattern isn't just "try it again," but involves real design decisions about how many times to retry, how long to wait between attempts, and which failures are even worth retrying in the first place.</p>
+
+        <h2 id="the-retry-pattern-as-a-solution-to-unreliable-external-resources">The Retry Pattern as a Solution to Unreliable External Resources</h2>
+        <p>Distributed applications constantly depend on things outside their own process: other microservices, third-party APIs, databases, message queues. Every one of those dependencies can fail briefly and then recover on its own, often within milliseconds to a few seconds. The Retry pattern exists specifically to handle that category of "self-correcting" failure automatically, rather than forcing every caller to fail immediately or forcing a human to manually try again.</p>
+        <p>Not every failure deserves a retry, though. A useful distinction is between <strong>transient errors</strong> (a network timeout, a "503 Service Unavailable", a connection reset — things likely caused by temporary conditions) and <strong>permanent errors</strong> (a "400 Bad Request" because the input was invalid, or a "401 Unauthorized" because the credentials are wrong). Retrying a permanent error is pointless — the tenth attempt will fail for exactly the same reason as the first — so a well-built retry mechanism checks what kind of error occurred before deciding to try again.</p>
+        <p>Retries must also be safe to repeat. An operation is called <strong>idempotent</strong> if performing it more than once has the same effect as performing it exactly once. Reading data is naturally idempotent; charging a customer's credit card is not, unless extra care is taken. This is why systems doing sensitive operations, like payments, typically attach a unique "idempotency key" to each request, so if a request is retried after the first attempt actually succeeded (but the success response was lost in transit), the receiving service recognizes the key and simply returns the original result instead of charging the customer twice.</p>
+
+        <h2 id="the-architecture-of-the-retry-pattern">The Architecture of the Retry Pattern</h2>
+        <p>There are a few common strategies for spacing out retry attempts, each with different trade-offs:</p>
+        <ul>
+          <li><strong>Immediate retry</strong> — try again right away, with no delay. This only makes sense for extremely quick, rare glitches, because retrying instantly against a service that's genuinely overloaded just adds to the overload.</li>
+          <li><strong>Fixed interval</strong> — wait the same amount of time (say, one second) between every retry attempt. Simple, but not very forgiving if the dependency needs more time to recover.</li>
+          <li><strong>Exponential backoff</strong> — double the wait time after each failed attempt (for example, 1 second, then 2, then 4, then 8). This gives a struggling service progressively more room to recover instead of being hit at a constant rate.</li>
+          <li><strong>Exponential backoff with jitter</strong> — the same growing delay as above, but with a small random amount of extra time added or subtracted at each step. This is the approach recommended by AWS and widely used in production systems, because it prevents many separate clients from all retrying at exactly the same moment.</li>
+        </ul>
+        <p>Regardless of the strategy, a retry mechanism always needs a hard cap — a maximum number of attempts (or a maximum total time budget) — after which it stops retrying and reports failure back to the caller. Retrying "forever" simply delays an inevitable failure while wasting resources. Many production systems also pair the Retry pattern with the Circuit Breaker pattern, so that once a dependency looks consistently unhealthy rather than just briefly hiccuping, the system stops retrying altogether and fails fast until the circuit breaker allows a test request through again.</p>
+
+        <h2 id="an-example">An Example</h2>
+        <p>Consider a checkout service that needs to reserve stock by calling an inventory service, which occasionally returns a timeout under heavy load. Using exponential backoff with jitter, the flow looks like this:</p>
+        <ol>
+          <li>The checkout service calls the inventory service to reserve stock for an order.</li>
+          <li>The call times out (a transient error). The checkout service checks: is this error type retryable, and have we exceeded the maximum retry count? Both checks pass, so it proceeds.</li>
+          <li>It waits roughly 1 second (plus a small random jitter, e.g. between 0.8 and 1.2 seconds) and retries the call.</li>
+          <li>The call fails again. It waits roughly 2 seconds (plus jitter) and retries.</li>
+          <li>The call fails a third time. It waits roughly 4 seconds (plus jitter) and retries.</li>
+          <li>This time the inventory service responds successfully, and the checkout process continues normally. If all attempts up to the configured maximum (say, 5 tries) had failed, the checkout service would stop retrying and return a clear error to the user instead of hanging indefinitely.</li>
+        </ol>
+
+        <div class="diagram-box">
+          <img src="../images/software-architecture/retry-exponential-backoff.png" alt="Retry pattern with exponential backoff diagram">
+          <div class="diagram-caption">Retry pattern with exponential backoff — failed attempts followed by a successful retry</div>
+        </div>
+
+        <p>In simplified pseudo-code, the same flow looks like this:</p>
+        <pre><code>function reserveStockWithRetry(order):
+    maxAttempts = 5
+    delay = 1 second
+
+    for attempt in 1..maxAttempts:
+        try:
+            return inventoryService.reserve(order)
+        catch (error):
+            if not isTransient(error) or attempt == maxAttempts:
+                throw error
+            wait(delay + randomJitter())
+            delay = delay * 2  // exponential backoff</code></pre>
+        <p>Each failed attempt is checked against two conditions before retrying: whether the error is actually transient (there's no point retrying a permanent error like invalid input), and whether the attempt count has already hit its maximum. Only if both checks pass does the function wait — for the current delay plus a small random jitter — and double the delay for next time. If either check fails, the error is thrown immediately instead of retried further.</p>
+
+        <h2 id="performance-implications">Performance Implications</h2>
+        <p>Retries trade a small amount of extra latency (waiting and trying again) for a much lower overall failure rate, which is usually a very good trade for the end user. But retries need to be designed carefully, because a poorly built retry mechanism can actively cause outages rather than prevent them.</p>
+        <p>The most well-known danger is the "retry storm" (also called a thundering herd): if a service goes down and thousands of clients are all configured to retry after the exact same fixed delay, they all hammer the service with a synchronized burst of traffic the moment it comes back up, potentially knocking it back over. Adding random jitter to the backoff delay directly addresses this by spreading retries out over time instead of bunching them together.</p>
+        <p>Another subtle risk is retry amplification through a chain of services. If Service A retries a failing call to Service B up to 3 times, and Service B itself retries its own call to Service C up to 3 times, a single failure at Service C can multiply into as many as 9 (or more, through longer chains) actual attempts hitting the lower levels of the system — far more load than anyone intended. This is why some organizations use a "retry budget," a system-wide cap on how much total retry traffic is allowed, coordinated across the different layers (client, gateway, service) rather than letting each layer retry independently without limits.</p>
+        <div class="callout">
+          <div class="callout-title">Retries need guardrails, not just logic</div>
+          Because of these risks, retries should always be paired with a maximum attempt count or time budget, ideally combined with a circuit breaker, and monitored closely — a sudden spike in retry attempts is often the earliest warning sign that a dependency is in trouble, even before failures become visible to end users. See this section's own <a href="circuit-breaker-pattern.html">Circuit Breaker Pattern</a> page for how retries, circuit breakers, and bulkheads combine into a layered resilience strategy.
+        </div>
+
+        <h2 id="use-cases-and-system-design-examples">Use Cases and System Design Examples</h2>
+        <p>Cloud provider SDKs build retry logic in by default: AWS SDKs, for example, use a "standard" or "adaptive" retry mode that automatically applies exponential backoff with jitter for things like throttling errors when calling AWS services, so most applications get sensible retry behavior without writing any custom code.</p>
+        <p>Calling third-party APIs is another classic use case — a mobile app calling a payment processor, a shipping-rate API, or an email delivery service will often retry a failed call a few times with backoff before falling back to a manual "try again later" prompt for the user, since brief outages on the other end are common and usually short-lived.</p>
+        <p>Database and message queue clients also rely heavily on this pattern: a transient connection error while talking to a database, or a temporary failure to publish a message onto a queue, is typically retried automatically a small number of times before the application escalates the error further up the stack.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">What is a transient fault, and why does it justify automatic retries?</div>
+          <div class="qa-a">A transient fault is a brief, self-correcting failure caused by things like a momentary network blip, a service that's busy for a second, or a server restarting during a deployment. Because these failures often resolve on their own within milliseconds to seconds, simply retrying the same operation a short time later has a good chance of succeeding — letting the system turn what would otherwise be a visible failure into an invisible non-event for the user.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why shouldn't every failed call be retried?</div>
+          <div class="qa-a">Only transient errors (timeouts, 503s, connection resets) are worth retrying, since they're likely caused by temporary conditions. Permanent errors, like a 400 Bad Request from invalid input or a 401 Unauthorized from bad credentials, will fail identically on every attempt, so retrying them wastes time and resources without any chance of success. A well-built retry mechanism checks the error type before deciding whether to retry.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why does idempotency matter for retries, especially for operations like payments?</div>
+          <div class="qa-a">An operation is idempotent if repeating it has the same effect as performing it once; reading data is naturally idempotent, but charging a credit card is not unless extra care is taken. If a request actually succeeded but its success response was lost before reaching the caller, a naive retry could cause the operation to happen twice — so sensitive operations attach a unique idempotency key to each request, letting the receiving service recognize a retried request and return the original result instead of re-executing it.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What is a retry storm, and how does jitter prevent it?</div>
+          <div class="qa-a">A retry storm (or thundering herd) happens when a dependency goes down and many clients configured with the same fixed retry delay all retry at exactly the same moment once it recovers, hammering it with a synchronized burst of traffic that can knock it back over. Adding a small amount of random jitter to each computed backoff delay spreads those retries out over time instead of letting them bunch together, which is why AWS and most production systems recommend exponential backoff with jitter rather than a plain fixed or exponential delay.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What is retry amplification, and how do teams guard against it?</div>
+          <div class="qa-a">Retry amplification happens when retries compound across a chain of services — if Service A retries a call to Service B up to 3 times, and B itself retries its call to C up to 3 times, a single failure at C can multiply into as many as 9 or more actual attempts hitting the lower layers of the system. Teams guard against this with a system-wide "retry budget" that caps total retry traffic across all layers (client, gateway, service), combined with a hard maximum attempt count or time budget at each layer and a circuit breaker to stop retrying altogether once a dependency looks consistently unhealthy.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The Retry pattern lets a distributed system shrug off the many small, self-correcting failures that are simply a normal part of operating over unreliable networks. By automatically retrying only transient, idempotent-safe operations, spacing attempts out with exponential backoff and jitter, and always enforcing a hard limit on attempts, applications can turn brief hiccups into invisible non-events for the user. The pattern's biggest risks — retry storms and amplification through service chains — are well understood and are managed by combining retries with jitter, retry budgets, and the Circuit Breaker pattern, making Retry one of the simplest yet most impactful resilience patterns in a microservices architecture.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="bulkhead-pattern.html"><span class="dir">Previous</span>Bulkhead Pattern</a>
+          <a class="next" href="sidecar-pattern.html"><span class="dir">Next</span>Sidecar Pattern</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

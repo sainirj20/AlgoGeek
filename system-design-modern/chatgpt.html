@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design ChatGPT | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Design ChatGPT</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-scope">Problem Statement &amp; Scope</a></li>
+        <li><a href="#functional-requirements">Functional Requirements</a></li>
+        <li><a href="#non-functional-requirements">Non-Functional Requirements</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#api-design">API Design</a></li>
+        <li><a href="#low-level-design-deep-dive">Low-Level Design (Deep Dive)</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-sharding-and-partitioning">Data Sharding and Partitioning</a></li>
+        <li><a href="#feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#caching-strategy">Caching Strategy</a></li>
+        <li><a href="#monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</a></li>
+        <li><a href="#security-considerations">Security Considerations</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing ChatGPT</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a large-scale conversational AI chat product (ChatGPT-style): users send messages and receive token-streamed AI responses, conversations persist and can be resumed across devices, users juggle multiple threads, and the model can optionally call tools (web browsing, code execution) or read uploaded files/images mid-conversation. We cover requirements and capacity estimation, high-level architecture, API and low-level design, database schema, sharding, a feature-specific deep dive (conversation branching), replication and fault tolerance, caching, monitoring, security, and a bank of follow-up interview questions. The thread running through every section is that this system has <strong>two very differently-shaped scaling problems living under one roof</strong> &mdash; a fairly ordinary, read-heavy web/data tier (conversations, messages, quotas) that scales the way any large CRUD system does, sharded by <code>user_id</code>/<code>conversation_id</code> and read-replicated &mdash; and a GPU-bound, autoregressive token-generation tier where the scarce resource isn't request throughput but <strong>GPU memory and GPU-seconds</strong>, and where the central efficiency idea, <strong>continuous batching</strong>, has no real analogue in ordinary web-tier scaling.</em></p>
+
+        <h2 id="problem-statement-and-scope">Problem Statement &amp; Scope</h2>
+        <p>Design a large-scale conversational AI chat product, similar to ChatGPT, that lets users:</p>
+        <ul>
+          <li><strong>Send a message and receive an AI-generated response</strong>, streamed back token-by-token rather than delivered all at once.</li>
+          <li><strong>Create, list, rename, and delete conversations</strong>, with history that <strong>persists</strong> and can be resumed later, from any device.</li>
+          <li>Maintain <strong>multiple conversation threads</strong> per user, each an independent context.</li>
+          <li><strong>Regenerate</strong> a response, or <strong>edit an earlier message</strong> and continue from there &mdash; both of which fork the conversation rather than simply appending to it.</li>
+          <li>Carry on <strong>very long conversations</strong> that exceed the model's fixed context window, without the product breaking or silently forgetting everything.</li>
+          <li>Optionally let the model use <strong>tools</strong> &mdash; web search/browsing, a code interpreter, retrieval over an uploaded file &mdash; deciding for itself, mid-generation, when a tool call is useful.</li>
+          <li>Accept <strong>multi-modal input</strong>: text plus images or file uploads as part of a single message.</li>
+        </ul>
+
+        <h3>In scope</h3>
+        <p>The request/response chat path end-to-end: session and conversation management, the streaming protocol, the inference-serving layer's efficiency techniques (continuous batching, KV-cache management), conversation branching/forking, context-window management, tool-calling/RAG at a conceptual level, moderation, caching, sharding, replication, and monitoring.</p>
+
+        <h3>Out of scope (acknowledged, not designed in depth)</h3>
+        <p>The internals of model training/fine-tuning, the exact transformer architecture or weights of any specific model, proprietary details of any real company's fleet size or scheduler, and the UI/client rendering layer. We treat "the model" as a black-box autoregressive token generator with well-known public serving characteristics (KV cache grows with sequence length, decoding is sequential per request, batching many requests together is what makes a GPU efficient) &mdash; these are the constraints the design must satisfy, not internals we re-derive from first principles.</p>
+
+        <div class="callout">
+          <div class="callout-title">Key design tension</div>
+          Autoregressive decoding is <strong>inherently sequential per request</strong>: token N cannot be computed until token N&minus;1 exists, so a single user's generation cannot be parallelized away by throwing more machines at it. The only lever that makes a GPU efficient is <strong>packing many different users' in-flight generations onto the same batched matrix-multiply step</strong> &mdash; continuous (iteration-level) batching. That single fact reframes almost every later decision in this design: capacity planning is a GPU-memory-and-throughput problem before it is a request-count problem, replication of "state mid-generation" is fundamentally harder than replicating a database row (KV cache lives in GPU HBM, not on durable storage), and the true bottleneck resource is GPU capacity, not application-server count.
+        </div>
+
+        <h2 id="functional-requirements">Functional Requirements</h2>
+        <table>
+          <tr><th>#</th><th>Requirement</th><th>Notes</th></tr>
+          <tr><td>FR1</td><td>Send a message and receive a streamed response</td><td>Tokens arrive incrementally over a persistent connection (SSE/WebSocket) rather than as one blocking HTTP response, so the user sees output as it's generated (low time-to-first-token matters more than total latency).</td></tr>
+          <tr><td>FR2</td><td>Create / list / rename / delete conversations</td><td>Standard CRUD over conversation metadata; deletion should be soft (tombstone + async purge) to support undo and audit/retention requirements.</td></tr>
+          <tr><td>FR3</td><td>Conversation history persists and is retrievable</td><td>Every user and assistant turn is durably stored and can be paginated/fetched on resume, from any device, in order.</td></tr>
+          <tr><td>FR4</td><td>Regenerate a response, or edit a prior message</td><td>Both are a <strong>fork</strong> of the conversation, not a destructive overwrite: the original branch must remain reachable (see Feature-Specific Logic Deep Dive).</td></tr>
+          <tr><td>FR5</td><td>Support very long conversations</td><td>Once the running conversation exceeds the model's context-window limit, the system must manage it via truncation/summarization rather than simply erroring out or silently dropping the oldest turns without any compensating summary.</td></tr>
+          <tr><td>FR6</td><td>Optional tool-calling</td><td>Web browse, code interpreter, file-retrieval &mdash; the <strong>model itself decides</strong>, mid-generation, whether a tool call is needed; the system must be able to pause generation, execute the tool call, feed the result back in, and resume.</td></tr>
+          <tr><td>FR7</td><td>File / image upload as part of a message</td><td>Multi-modal input: an uploaded image or document is referenced from the message and made available to the model (and, for documents, to a retrieval/RAG step) without bloating the primary message-store row.</td></tr>
+          <tr><td>FR8</td><td>Usage quotas / rate limits per user and plan tier</td><td>Free vs. paid tiers get different message-rate and token-rate ceilings; quota state must be checked and decremented reliably even under bursty, retried traffic.</td></tr>
+        </table>
+        <p>Non-goals for this doc: model training/fine-tuning pipelines, a specific tokenizer/vocabulary design, and the exact UI rendering of markdown/code blocks on the client.</p>
+
+        <h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+        <p>These are the constraints that actually shape the architecture.</p>
+        <ul>
+          <li><strong>Low time-to-first-token (TTFT).</strong> The single most user-visible latency metric is how quickly the <em>first</em> token appears after the user hits send &mdash; not total response time. TTFT is dominated by queueing for a free GPU batch slot and the "prefill" pass over the prompt, and is tracked and budgeted separately from steady-state decode speed.</li>
+          <li><strong>Sustained token-streaming throughput.</strong> Once generation starts, tokens must keep arriving at a steady, human-readable cadence (roughly reading speed or faster) for the duration of a potentially long response, without stalling mid-stream.</li>
+          <li><strong>Very high read/write volume on conversation history at global scale.</strong> Listing conversations, fetching history, and appending new turns is an enormous, read-heavy OLTP workload &mdash; the kind of workload OpenAI's own engineering blog has described running through a single logical PostgreSQL primary with nearly 50 globally distributed read replicas at hundreds-of-millions-of-users scale, precisely because it's read-heavy and horizontally cacheable, not because it's small.</li>
+          <li><strong>Strict safety/content-moderation guarantees.</strong> Both the user's input and the model's output must be checked against a moderation policy, including the ability to abort a response <em>mid-stream</em> if it starts drifting into disallowed content &mdash; a purely "check once at the end" model is not acceptable for a streaming product.</li>
+          <li><strong>GPU capacity is the primary scaling bottleneck &mdash; not just a typical web-tier scaling problem.</strong> Unlike stateless web servers, GPU inference nodes are expensive, power/cooling-constrained, and have long procurement lead times; "add more instances" is not a free, instantaneous lever the way it is for the API/chat-session tier.</li>
+          <li><strong>Multi-region availability.</strong> The stateless web/session tier should run active-active across regions; GPU inference capacity, being the scarce and costly resource, may not be symmetrically available in every region (see Replication and Fault Tolerance).</li>
+          <li><strong>Cost-per-token efficiency.</strong> Because inference cost scales directly with tokens generated, GPU utilization (via batching, caching, and right-sized routing) is a first-class design goal, not an afterthought optimization.</li>
+        </ul>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p><strong>Given assumptions (illustrative, for this exercise &mdash; not a claim about any specific product's actual current traffic):</strong> we anchor the order of magnitude on the real, publicly cited figure of <strong>800 million ChatGPT users</strong> from OpenAI's own engineering blog, and assume &asymp;150M of those are daily active (a plausible DAU/registered ratio for a widely used consumer product), each sending &asymp;6 messages/day.</p>
+
+        <h3>Message &amp; token volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          DAU = 150M; messages/user/day &asymp; 6 &rarr; user messages/day &asymp; 150M &times; 6 = 900M/day
+          <br>Each user message produces exactly one streamed assistant response &rarr; &asymp;900M responses/day
+          <br>Assume &asymp;600 output tokens/response on average (mix of short answers and longer reasoning/code) &rarr; total output tokens/day &asymp; 900M &times; 600 = 540B tokens/day
+        </div>
+
+        <h3>Throughput (tokens/sec) &mdash; the number that actually sizes the GPU fleet</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Average tokens/sec = 540B &divide; 86,400s &asymp; 6.25M tokens/sec sustained average
+          <br>Peak concentration (assumption): &asymp;3&times; average during peak daytime hours (a broad, continuous, globally-overlapping peak, not a single scheduled instant like a market open) &rarr; &asymp;18.75M tokens/sec &asymp; 19M tokens/sec at peak
+        </div>
+
+        <h3>GPU replicas needed at peak</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption, informed by public benchmarks</span>
+          Independent vLLM benchmarks report &asymp;5,700 tokens/sec aggregate decode throughput on a single H100 GPU under continuous batching for a mid-size open model &mdash; we round down to &asymp;5,000 tokens/sec/GPU as a conservative, illustrative "GPU-equivalent" unit (a production frontier model is larger and spans many GPUs per replica via tensor/pipeline parallelism, so this is a unit of accounting, not a literal single chip).
+          <br>Assume one serving replica = 8 GPUs (a tensor-parallel shard of one model copy) &rarr; replica aggregate throughput &asymp; 8 &times; 5,000 = 40,000 tokens/sec/replica
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Result</span>
+          Replicas needed at peak = 19,000,000 &divide; 40,000 &asymp; 475 replicas &rarr; &asymp;475 &times; 8 &asymp; 3,800 GPUs
+          <br>+ &asymp;25% headroom (failover, uneven request-length variance) &asymp; 4,750&ndash;5,000 GPUs for decode capacity alone, at this illustrative scale
+          <br><em>(This excludes separate prefill-optimized capacity, multiple model sizes/tiers, fine-tuning, and evaluation traffic &mdash; a real fleet serving hundreds of millions of users across several model tiers is a materially larger, multi-tier number. This is an order-of-magnitude illustration of the reasoning, not a claim about any company's actual fleet size.)</em>
+        </div>
+
+        <h3>Concurrent open streaming connections (Little's Law)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Peak responses/sec = peak tokens/sec &divide; avg tokens/response = 19,000,000 &divide; 600 &asymp; 31,700 responses/sec
+          <br>Assume a response takes &asymp;12s to fully stream end-to-end (queueing + prefill + decode)
+          <br>Concurrent in-flight generations &asymp; 31,700 &times; 12 &asymp; 380,000 concurrent streaming connections at absolute peak
+        </div>
+        <p>That &asymp;380k figure matters beyond GPU sizing: it also sizes a <strong>stateful streaming-gateway tier</strong> that has to hold hundreds of thousands of long-lived SSE/WebSocket connections open simultaneously &mdash; a fundamentally different capacity problem than a typical request/response API tier that closes each connection in milliseconds.</p>
+
+        <h3>Storage growth (conversation history)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Message row &asymp;1.5 KB (role, text, token counts, metadata; images/files stored separately in blob storage, referenced by pointer, never inline)
+          <br>Rows/day (user + assistant turns) = 900M &times; 2 = 1.8B rows/day
+          <br>Raw storage/day = 1.8B &times; 1.5 KB &asymp; 2.7 TB/day &rarr; + secondary indexes (&asymp;40%) &asymp; 3.8 TB/day
+          <br>&times; 365 days/year &asymp; 1.4 PB/year raw+idx &rarr; &times; 3 replicas (durability/read-scale) &asymp; 4.1 PB/year provisioned
+        </div>
+        <p>This lands in the same shape OpenAI's own "Scaling PostgreSQL to power 800 million ChatGPT users" engineering post describes: a read-heavy conversation/account metadata workload served off a single logical primary with dozens of read replicas, low double-digit-millisecond p99 latency, and the shardable, write-heavy pieces migrated off to a separately-sharded store &mdash; exactly the split this design's Data Sharding section reasons through independently below.</p>
+
+        <div class="callout">
+          <div class="callout-title">Takeaway</div>
+          The conversation/data tier (&asymp;900M messages/day, &asymp;4 PB/year) is a <strong>large but conventional, read-heavy OLTP scaling problem</strong>: the playbook is replicas, caching, and sharding, and it is well understood. The inference tier (&asymp;19M tokens/sec peak, &asymp;5,000 GPUs, &asymp;380k concurrent streams) is <strong>GPU-capacity-bound</strong>: the engineering effort goes into continuous batching, KV-cache memory management, and prefix caching, and the scarce resource (GPUs) cannot be conjured on-demand the way a stateless web server can. These are two different problems on two different cost curves &mdash; see Data Sharding and Partitioning.
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+
+        <h3>Services</h3>
+        <table>
+          <tr><th>Service</th><th>Responsibility</th></tr>
+          <tr><td>API Gateway / Load Balancer</td><td>TLS termination, authN/Z, per-user/per-plan rate limiting (FR8), and routing. Terminates the client's HTTP/SSE connection.</td></tr>
+          <tr><td>Chat / Session Service</td><td>Owns the conversation's lifecycle for a request: loads the active branch's history from the Conversation Store, assembles the prompt, and is the service the client's streaming connection is actually attached to.</td></tr>
+          <tr><td>Moderation / Safety Filter</td><td>Sits in <strong>both</strong> the request path (classifies user input before it reaches the model) and the response path (classifies output as it streams, able to abort generation mid-stream on a policy violation).</td></tr>
+          <tr><td>Inference Orchestrator / Router</td><td>Picks a GPU replica for a request based on model requested, current queue depth, and available KV-cache headroom; owns the tool-call pause/resume protocol with the GPU cluster.</td></tr>
+          <tr><td>GPU Inference Cluster (model-serving layer)</td><td>Runs the actual autoregressive decoding, using <strong>continuous batching</strong> to pack many concurrent users' generations onto shared GPU batches, and <strong>KV-cache management</strong> (e.g., paged, non-contiguous allocation) to maximize how many sequences fit in GPU memory at once (see Low-Level Design).</td></tr>
+          <tr><td>Tool-Use / RAG Subsystem</td><td>Executes web-search/browse, code-interpreter, and file-retrieval tool calls that the model invokes mid-generation; returns results as untrusted <em>data</em>, never as trusted instructions (see Security Considerations).</td></tr>
+          <tr><td>Conversation Store</td><td>Durable, sharded store of users, conversations, messages (as a tree, not a flat list &mdash; see Feature-Specific Logic), tool calls/results, and usage quotas.</td></tr>
+          <tr><td>Streaming Gateway</td><td>Holds the long-lived SSE/WebSocket connection to the client and relays each decoded token as it arrives, decoupled from the GPU node's own internal batching loop.</td></tr>
+          <tr><td>Usage / Quota Service</td><td>Tracks and enforces per-user/per-plan message and token quotas (FR8) with fast, authoritative counters, independent of any read cache.</td></tr>
+          <tr><td>Supporting infra</td><td>Redis (prefix/response caching, rate-limit counters), Kafka/event bus (async persistence, analytics, notifications), object storage (uploaded images/files), sharded OLTP store + read replicas (conversation metadata).</td></tr>
+        </table>
+
+        <h3>Architecture overview</h3>
+        <p>The diagram below turns the service list into a wiring diagram. A message enters through the API Gateway, is loaded into context by the Chat/Session Service (pulling prior turns from the Conversation Store), passes through the input-side Moderation filter, and is handed to the Inference Orchestrator, which routes it onto a GPU replica running continuous batching. The Tool-Use/RAG subsystem can be invoked <em>mid-generation</em> by the model itself. Output passes back through a second Moderation check before being streamed to the client over SSE/WebSocket.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 650" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-cg-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-cg-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-cg-1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="10" width="200" height="42" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="35" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client (Web / Mobile / API)</text>
+
+            <rect x="270" y="72" width="200" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="94" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">API Gateway / LB</text>
+            <text x="370" y="110" text-anchor="middle" fill="#cbd8ef" font-size="9">TLS &#183; authN/Z &#183; rate limit</text>
+
+            <rect x="15" y="142" width="710" height="460" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="25" y="162" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.04em">GENERATION PIPELINE</text>
+
+            <rect x="30" y="182" width="180" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="120" y="203" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Conversation Store</text>
+            <text x="120" y="218" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">sharded, tree of messages</text>
+
+            <rect x="270" y="182" width="200" height="50" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="203" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Chat / Session Service</text>
+            <text x="370" y="218" text-anchor="middle" fill="#cbd8ef" font-size="8">loads active branch, assembles prompt</text>
+
+            <rect x="270" y="250" width="200" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="271" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Moderation / Safety Filter</text>
+            <text x="370" y="286" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">pre-generation input check</text>
+
+            <rect x="270" y="318" width="200" height="50" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="339" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Inference Orchestrator / Router</text>
+            <text x="370" y="354" text-anchor="middle" fill="#cbd8ef" font-size="8">picks a GPU replica by queue depth / KV headroom</text>
+
+            <rect x="520" y="318" width="175" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="607" y="340" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Tool-Use / RAG</text>
+            <text x="607" y="354" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">web search &#183; code exec</text>
+            <text x="607" y="366" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">file retrieval</text>
+
+            <rect x="150" y="393" width="440" height="65" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="370" y="416" text-anchor="middle" fill="#6b4a10" font-size="11" font-weight="700">GPU Inference Cluster &mdash; model-serving layer</text>
+            <text x="370" y="432" text-anchor="middle" fill="#6b4a10" font-size="9">continuous batching &#183; KV-cache mgmt &#183; tensor/pipeline parallel</text>
+            <text x="370" y="446" text-anchor="middle" fill="#6b4a10" font-size="9">autoregressive decode, one token per step, per sequence</text>
+
+            <rect x="270" y="475" width="200" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="496" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Moderation / Safety Filter</text>
+            <text x="370" y="511" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">streaming output check, can abort mid-stream</text>
+
+            <rect x="270" y="542" width="200" height="50" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="563" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Streaming Gateway</text>
+            <text x="370" y="578" text-anchor="middle" fill="#cbd8ef" font-size="8">SSE / WebSocket, one open connection per request</text>
+
+            <line x1="370" y1="52" x2="370" y2="70" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-1)"></line>
+            <line x1="370" y1="122" x2="370" y2="180" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-1)"></line>
+            <line x1="210" y1="207" x2="268" y2="207" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-cg-1b)" marker-start="url(#arrow-cg-1b)"></line>
+            <line x1="370" y1="232" x2="370" y2="248" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-1)"></line>
+            <line x1="370" y1="300" x2="370" y2="316" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-1)"></line>
+            <line x1="470" y1="343" x2="518" y2="343" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-cg-1b)" marker-start="url(#arrow-cg-1b)"></line>
+            <text x="494" y="335" text-anchor="middle" font-size="7" fill="var(--color-text-muted)" font-style="italic">mid-gen</text>
+            <line x1="370" y1="368" x2="370" y2="391" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-1)"></line>
+            <line x1="370" y1="458" x2="370" y2="473" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-1)"></line>
+            <line x1="370" y1="525" x2="370" y2="540" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-1)"></line>
+
+            <path d="M470,567 L700,567 L700,31 L472,31" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-cg-1m)"></path>
+            <text x="705" y="300" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic" transform="rotate(90 705,300)">tokens streamed back (SSE / WebSocket)</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. Service topology: a request flows straight down through session assembly, input moderation, and the orchestrator into the GPU cluster's continuous-batching model-serving layer, with the Tool-Use/RAG subsystem invocable mid-generation and output moderation gating the stream before it reaches the Streaming Gateway and, ultimately, the client.</div>
+        </div>
+
+        <h3>Data flow: sending a message and streaming the response</h3>
+        <ol>
+          <li>Client &rarr; Gateway &rarr; Chat/Session Service: new user message, conversation_id (or none, for a new conversation).</li>
+          <li>Chat/Session Service loads the <strong>active branch</strong> of prior turns from the Conversation Store (walking parent pointers &mdash; see Feature-Specific Logic) and assembles the prompt, applying context-window management if needed (see Low-Level Design).</li>
+          <li>Input Moderation classifies the assembled prompt; a violation short-circuits here, before any GPU is touched.</li>
+          <li>Orchestrator selects a GPU replica (by model, queue depth, KV-cache headroom) and admits the request into that replica's continuously-batched decode loop.</li>
+          <li>The GPU cluster streams decoded tokens back as they're produced; if the model emits a tool-call, the Orchestrator pauses that sequence, the Tool-Use/RAG subsystem executes the call, and the result is appended back into context before decoding resumes (see Low-Level Design and Security Considerations).</li>
+          <li>Output Moderation classifies the growing response incrementally; on a violation, generation is aborted mid-stream and a policy message is substituted.</li>
+          <li>Streaming Gateway relays each token to the client over SSE/WebSocket as it clears moderation.</li>
+          <li>On completion, the full assistant message is persisted to the Conversation Store (async, off the token-delivery critical path), and usage quota is decremented.</li>
+        </ol>
+
+        <h2 id="api-design">API Design</h2>
+        <p>Conventions: JSON over HTTPS (REST) for control-plane operations; the message-send endpoint streams its response via Server-Sent Events. Every request carries a bearer access token; conversation/message identifiers are opaque, sortable IDs.</p>
+
+        <h3>Create / list / rename / delete a conversation</h3>
+        <pre><code>POST /v1/conversations
+{ "title": "New chat" }
+&#8594; 201 { "conversation_id": "conv_01H...", "created_at": "..." }
+
+GET /v1/conversations?limit=20&amp;cursor=&lt;opaque&gt;
+&#8594; 200 { "conversations": [ { "conversation_id","title","updated_at" } ], "next_cursor": "..." }
+
+PATCH /v1/conversations/{conversation_id}
+{ "title": "Renamed chat" }
+&#8594; 200 { "conversation_id","title" }
+
+DELETE /v1/conversations/{conversation_id}
+&#8594; 204 No Content   // soft delete; async purge</code></pre>
+
+        <h3>Send a message (streaming response)</h3>
+        <pre><code>POST /v1/conversations/{conversation_id}/messages
+Authorization: Bearer &lt;access_token&gt;
+Content-Type: application/json
+
+{ "parent_message_id": "msg_ab12", "content": "Explain continuous batching", "attachments": [] }
+
+&#8594; 200 OK, Content-Type: text/event-stream
+
+event: message_start
+data: {"message_id":"msg_cd34","role":"assistant","parent_message_id":"msg_ab12"}
+
+event: token
+data: {"text":"Continuous"}
+
+event: token
+data: {"text":" batching"}
+
+event: message_done
+data: {"message_id":"msg_cd34","finish_reason":"stop","tokens":612}</code></pre>
+        <p>The client-supplied <code>parent_message_id</code> is what makes editing/forking possible: it always names the exact node the new message is attached to, rather than assuming "the last message in the conversation" (see Feature-Specific Logic Deep Dive).</p>
+
+        <h3>Fetch conversation history</h3>
+        <pre><code>GET /v1/conversations/{conversation_id}/messages?branch=active
+&#8594; 200 { "messages": [ { "message_id","parent_message_id","role","content","created_at" } ] }
+   // returns the linear path from root to the conversation's current active leaf
+
+GET /v1/conversations/{conversation_id}/messages/{message_id}/siblings
+&#8594; 200 { "siblings": [ { "message_id","created_at","is_active" } ] }
+   // lets the client render a "1 of 3 responses &lt; &gt;" regenerate switcher</code></pre>
+
+        <h3>Regenerate a response / switch active branch</h3>
+        <pre><code>POST /v1/conversations/{conversation_id}/messages/{message_id}/regenerate
+&#8594; 200 OK, text/event-stream   // same streaming contract as above; creates a new
+                                  // sibling under message_id's parent and marks it active
+
+POST /v1/conversations/{conversation_id}/active-branch
+{ "leaf_message_id": "msg_ef56" }
+&#8594; 200 { "conversation_id","active_leaf_message_id":"msg_ef56" }
+   // lets the user switch back to a previously-generated branch without deleting anything</code></pre>
+        <p>Idempotent, cacheable reads (conversation list, history) are served from read replicas/cache, never from a path that also holds a GPU slot (see Caching Strategy).</p>
+
+        <h2 id="low-level-design-deep-dive">Low-Level Design (Deep Dive)</h2>
+
+        <h3>7.1 Autoregressive decoding and the KV cache</h3>
+        <p>A transformer generates one token at a time: each new token's prediction depends on attending over every previous token in the sequence. Recomputing attention over the whole prefix at every single step would be quadratically wasteful, so inference engines cache the Key and Value projections for every previous token &mdash; the <strong>KV cache</strong> &mdash; and each decode step only computes attention for the one new token against that cache. This is why decoding is <strong>inherently sequential per request</strong> (token N needs token N&minus;1's KV entries to exist) and why the KV cache, not raw FLOPs, is very often the resource that actually limits how many concurrent conversations one GPU can serve.</p>
+        <div class="formula-box">
+          <span class="formula-label">Illustrative KV-cache footprint (not any specific proprietary model)</span>
+          For a model with 32 layers, hidden size 4096, running in fp16: bytes/token = 2 (K and V) &times; 32 layers &times; 4096 &times; 2 bytes &asymp; 524,288 bytes &asymp; 0.5&nbsp;MB/token
+          <br>An 8K-token conversation &rarr; &asymp;8,000 &times; 0.5&nbsp;MB &asymp; 4&nbsp;GB of KV cache for that one sequence alone
+          <br>An 80&nbsp;GB GPU minus &asymp;14&nbsp;GB of fp16 model weights leaves &asymp;60&nbsp;GB &mdash; naively reserving the full 8K-token worst case per sequence caps concurrency at &asymp;60&divide;4 &asymp; 15 sequences, regardless of how short most conversations actually are.
+        </div>
+        <p>That naive bound is exactly the problem <strong>PagedAttention</strong> (the technique behind vLLM) targets: instead of reserving one contiguous, worst-case-sized block of GPU memory per sequence up front, it allocates KV cache in small fixed-size, non-contiguous pages &mdash; the same idea operating systems use for virtual memory &mdash; and grows a sequence's allocation only as it actually generates tokens. Early naive/contiguous allocators were measured wasting 60&ndash;80% of KV-cache memory to fragmentation and over-reservation; near-zero-waste paging is what lets far more real (mostly-short) conversations share the same GPU concurrently than the worst-case arithmetic above would suggest.</p>
+
+        <h3>7.2 Continuous batching &mdash; the central serving-efficiency idea</h3>
+        <p>Naive ("static" or request-level) batching groups a fixed set of requests together and doesn't return control until <em>every</em> request in that batch has finished &mdash; so a batch of 4 requests where 3 are short and 1 is long leaves the GPU computing on 3 already-finished, padded-out slots for however long the 4th keeps going. <strong>Continuous (iteration-level) batching</strong> re-evaluates batch membership at every single decode step: the moment a sequence finishes, its slot is immediately backfilled with the next queued request, rather than waiting for the whole batch to drain.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <text x="370" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="var(--color-text)">Static (request-level) batching &mdash; the batch waits for the longest sequence</text>
+
+            <rect x="130" y="35" width="200" height="26" fill="var(--color-primary)"></rect>
+            <text x="230" y="53" text-anchor="middle" font-size="9" fill="#ffffff">Req A</text>
+            <rect x="330" y="35" width="360" height="26" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="3,3"></rect>
+            <text x="510" y="53" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">slot idle, waiting</text>
+
+            <rect x="130" y="70" width="320" height="26" fill="var(--color-primary)"></rect>
+            <text x="290" y="88" text-anchor="middle" font-size="9" fill="#ffffff">Req B</text>
+            <rect x="450" y="70" width="240" height="26" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="3,3"></rect>
+            <text x="570" y="88" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">slot idle, waiting</text>
+
+            <rect x="130" y="105" width="260" height="26" fill="var(--color-primary)"></rect>
+            <text x="260" y="123" text-anchor="middle" font-size="9" fill="#ffffff">Req C</text>
+            <rect x="390" y="105" width="300" height="26" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="3,3"></rect>
+            <text x="540" y="123" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">slot idle, waiting</text>
+
+            <rect x="130" y="140" width="560" height="26" fill="var(--color-accent-dark)"></rect>
+            <text x="410" y="158" text-anchor="middle" font-size="9" fill="#ffffff">Req D (longest) &mdash; the whole batch is held hostage to this one sequence</text>
+
+            <line x1="690" y1="30" x2="690" y2="172" stroke="var(--color-accent-dark)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+            <text x="690" y="185" text-anchor="middle" font-size="8" fill="var(--color-accent-dark)" font-weight="600">new requests can only join once ALL 4 finish</text>
+
+            <text x="370" y="225" text-anchor="middle" font-size="11" font-weight="700" fill="var(--color-text)">Continuous (iteration-level) batching &mdash; a finished slot is backfilled immediately</text>
+
+            <rect x="130" y="240" width="200" height="26" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="230" y="258" text-anchor="middle" font-size="9" fill="var(--color-primary)">Req A</text>
+            <rect x="330" y="240" width="200" height="26" fill="var(--color-primary)"></rect>
+            <text x="430" y="258" text-anchor="middle" font-size="9" fill="#ffffff">Req E (new)</text>
+            <rect x="530" y="240" width="160" height="26" fill="var(--color-primary)"></rect>
+            <text x="610" y="258" text-anchor="middle" font-size="9" fill="#ffffff">Req F</text>
+
+            <rect x="130" y="275" width="320" height="26" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="290" y="293" text-anchor="middle" font-size="9" fill="var(--color-primary)">Req B</text>
+            <rect x="450" y="275" width="240" height="26" fill="var(--color-primary)"></rect>
+            <text x="570" y="293" text-anchor="middle" font-size="9" fill="#ffffff">Req G (new)</text>
+
+            <rect x="130" y="310" width="260" height="26" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="260" y="328" text-anchor="middle" font-size="9" fill="var(--color-primary)">Req C</text>
+            <rect x="390" y="310" width="140" height="26" fill="var(--color-primary)"></rect>
+            <text x="460" y="328" text-anchor="middle" font-size="9" fill="#ffffff">Req H</text>
+            <rect x="530" y="310" width="160" height="26" fill="var(--color-primary-dark)"></rect>
+            <text x="610" y="328" text-anchor="middle" font-size="9" fill="#ffffff">Req I</text>
+
+            <rect x="130" y="345" width="560" height="26" fill="var(--color-accent-dark)"></rect>
+            <text x="410" y="363" text-anchor="middle" font-size="9" fill="#ffffff">Req D (same longest sequence) &mdash; unaffected, other slots keep working around it</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Continuous batching: in static batching (top), three short requests finish early but their GPU slots sit idle until the longest request in the group also finishes. In continuous batching (bottom), each finished slot is backfilled with the next queued request at the very next decode step &mdash; the GPU is never left waiting on the slowest sequence in an arbitrary group.</div>
+        </div>
+        <p>Independent benchmarks of continuous batching (e.g., Anyscale's evaluation of the technique) report throughput improvements on the order of <strong>10&ndash;20&times;</strong> over naive static batching at the same latency budget, and pushing GPU utilization from the 30&ndash;40% range up past 80% &mdash; which is precisely why this, not simply "add more GPUs," is the first lever engineers reach for when GPU capacity is the constrained resource (see Capacity Estimation).</p>
+
+        <h3>7.3 Context-window management: what happens when a conversation outgrows the model</h3>
+        <p>Every model has a fixed maximum context window (measured in tokens). A long-running conversation will eventually exceed it. Two complementary techniques:</p>
+        <ul>
+          <li><strong>Sliding-window truncation.</strong> Drop the oldest turns once the assembled prompt would exceed the limit, always keeping the system prompt and the most recent N turns. Simple and cheap, but loses anything earlier verbatim &mdash; acceptable for short-lived task conversations, poor for long-running ones with important early context.</li>
+          <li><strong>Rolling summarization.</strong> Periodically (e.g., every time the window would overflow), an auxiliary summarization pass compresses the oldest chunk of turns into a short synthetic "memory" system message, which replaces the raw turns in the assembled prompt while the raw turns remain in the Conversation Store for display/history. This trades a small amount of fidelity (summarization is lossy and can under-weight details that later turn out to matter) for effectively unbounded conversation length.</li>
+        </ul>
+        <p>In practice, production systems combine both: keep the most recent turns verbatim (sliding window) and fold everything older into a periodically-refreshed summary, cached so it isn't recomputed on every single new turn (see Caching Strategy).</p>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>Postgres-style DDL. IDs are opaque, time-sortable strings (e.g., ULID/Snowflake-style). Message content for very large attachments is not stored inline &mdash; only a pointer to object storage is.</p>
+
+        <h3>users</h3>
+        <pre><code>CREATE TABLE users (
+  user_id BIGINT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  plan_tier VARCHAR(16) NOT NULL DEFAULT 'FREE', -- FREE|PLUS|PRO|ENTERPRISE
+  status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);</code></pre>
+
+        <h3>conversations</h3>
+        <pre><code>CREATE TABLE conversations (
+  conversation_id BIGINT PRIMARY KEY, -- shard key for messages below
+  user_id BIGINT NOT NULL REFERENCES users(user_id),
+  title VARCHAR(256),
+  active_leaf_message_id BIGINT, -- pointer to the current branch tip (see Feature-Specific Logic)
+  status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE|DELETED
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_conversations_user_time ON conversations(user_id, updated_at DESC);</code></pre>
+
+        <h3>messages (a tree, not a flat list)</h3>
+        <pre><code>CREATE TABLE messages (
+  message_id BIGINT PRIMARY KEY,
+  conversation_id BIGINT NOT NULL REFERENCES conversations(conversation_id),
+  parent_message_id BIGINT REFERENCES messages(message_id), -- NULL only for the root
+  role VARCHAR(12) NOT NULL, -- system|user|assistant|tool
+  content TEXT NOT NULL,
+  token_count INT NOT NULL DEFAULT 0,
+  model VARCHAR(64), -- which model generated this node (assistant/tool rows)
+  status VARCHAR(16) NOT NULL DEFAULT 'COMPLETE', -- STREAMING|COMPLETE|ABORTED_MODERATION
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_messages_conversation ON messages(conversation_id, created_at);
+CREATE INDEX idx_messages_parent ON messages(parent_message_id); -- fetch siblings for regenerate switcher</code></pre>
+
+        <h3>tool_calls / tool_results</h3>
+        <pre><code>CREATE TABLE tool_calls (
+  tool_call_id BIGINT PRIMARY KEY,
+  message_id BIGINT NOT NULL REFERENCES messages(message_id), -- the assistant turn that invoked it
+  tool_name VARCHAR(64) NOT NULL, -- web_search|code_interpreter|file_retrieval
+  arguments JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE tool_results (
+  tool_result_id BIGINT PRIMARY KEY,
+  tool_call_id BIGINT NOT NULL REFERENCES tool_calls(tool_call_id),
+  result_content TEXT NOT NULL, -- treated as untrusted DATA when re-injected into the prompt
+  status VARCHAR(16) NOT NULL, -- SUCCESS|ERROR|TIMEOUT
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);</code></pre>
+
+        <h3>usage_quota</h3>
+        <pre><code>CREATE TABLE usage_quota (
+  user_id BIGINT NOT NULL REFERENCES users(user_id),
+  period_start DATE NOT NULL,
+  messages_used INT NOT NULL DEFAULT 0,
+  tokens_used BIGINT NOT NULL DEFAULT 0,
+  messages_limit INT NOT NULL,
+  tokens_limit BIGINT NOT NULL,
+  PRIMARY KEY (user_id, period_start)
+);</code></pre>
+        <p><strong>Why <code>parent_message_id</code> is the single most important column in this schema:</strong> it is what turns "conversation history" from a flat append-only log into a <strong>tree</strong>, which is the data structure regenerate/edit-and-fork actually requires (see Feature-Specific Logic Deep Dive).</p>
+
+        <h2 id="data-sharding-and-partitioning">Data Sharding and Partitioning</h2>
+        <p>Like the capacity numbers above already hinted, this system has <strong>two independent scaling axes that must not be conflated.</strong></p>
+
+        <h3>Axis 1 &mdash; conversation data, sharded by user_id (or conversation_id)</h3>
+        <p><strong>Shard key: <code>user_id</code>.</strong> A user's conversations and messages are co-located on one shard, so listing a user's conversations or loading one conversation's full branch history never fans out across shards. For products where multiple users collaborate inside one shared conversation (e.g., an enterprise workspace thread), <code>conversation_id</code> is the better key &mdash; the trade-off is that a single user's "list my conversations" query then has to fan out across whichever shards hold their various conversations, so the right choice depends on which access pattern (per-user history vs. per-conversation collaboration) dominates.</p>
+        <p><strong>Hot-conversation considerations.</strong> Two conversation shapes stress this axis specifically: a single conversation that runs to an enormous number of turns (an extremely long-lived chat), and a conversation shared publicly and read by a large, bursty audience (a "viral" shared link). Both are handled the same way as any other hot-key problem &mdash; read replicas and a caching layer absorb the read fan-out (see Caching Strategy) &mdash; but an unusually long conversation additionally interacts with context-window management (Section 7.3): past some length, the summarization pass isn't just a token-budget optimization, it's what keeps loading that conversation's context from becoming its own latency problem.</p>
+
+        <h3>Axis 2 &mdash; GPU inference capacity: a pooled resource, not shardable data</h3>
+        <p>The GPU fleet has <strong>no natural shard key at all.</strong> There is no per-user or per-conversation partition of "compute" the way there is a partition of rows &mdash; any user's request can, in principle, land on any GPU replica that has a free continuous-batching slot and enough KV-cache memory headroom for that request's context length. The Inference Orchestrator's routing decision is a <strong>bin-packing / load-balancing problem</strong> (which replica has queue depth and memory to spare right now), not a hashing problem (which shard owns this key).</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-cg-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="15" width="330" height="30" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="185" y="35" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">AXIS 1: Conversation data &mdash; sharded by user_id</text>
+
+            <rect x="390" y="15" width="330" height="30" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="555" y="35" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">AXIS 2: GPU capacity &mdash; pooled, routed not sharded</text>
+
+            <rect x="20" y="65" width="150" height="105" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="95" y="87" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Shard A</text>
+            <text x="95" y="105" text-anchor="middle" fill="var(--color-primary)" font-size="8">conversations + messages</text>
+            <text x="95" y="118" text-anchor="middle" fill="var(--color-primary)" font-size="8">for users hash(user_id)=A</text>
+            <text x="95" y="140" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">read replicas absorb</text>
+            <text x="95" y="153" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">history/listing reads</text>
+
+            <rect x="190" y="65" width="150" height="105" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="265" y="87" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Shard B</text>
+            <text x="265" y="105" text-anchor="middle" fill="var(--color-primary)" font-size="8">conversations + messages</text>
+            <text x="265" y="118" text-anchor="middle" fill="var(--color-primary)" font-size="8">for users hash(user_id)=B</text>
+            <text x="265" y="140" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">read replicas absorb</text>
+            <text x="265" y="153" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">history/listing reads</text>
+
+            <rect x="20" y="190" width="320" height="55" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3"></rect>
+            <text x="180" y="212" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">a well-understood, elastic storage-cost</text>
+            <text x="180" y="227" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">problem: scale by adding shards/replicas</text>
+
+            <rect x="405" y="65" width="90" height="70" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.6"></rect>
+            <text x="450" y="92" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">Replica 1</text>
+            <text x="450" y="108" text-anchor="middle" fill="#6b4a10" font-size="8">8&#215; GPU</text>
+            <text x="450" y="121" text-anchor="middle" fill="#6b4a10" font-size="8">cont. batch</text>
+
+            <rect x="510" y="65" width="90" height="70" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.6"></rect>
+            <text x="555" y="92" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">Replica 2</text>
+            <text x="555" y="108" text-anchor="middle" fill="#6b4a10" font-size="8">8&#215; GPU</text>
+            <text x="555" y="121" text-anchor="middle" fill="#6b4a10" font-size="8">cont. batch</text>
+
+            <rect x="615" y="65" width="90" height="70" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.6"></rect>
+            <text x="660" y="92" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">Replica N</text>
+            <text x="660" y="108" text-anchor="middle" fill="#6b4a10" font-size="8">8&#215; GPU</text>
+            <text x="660" y="121" text-anchor="middle" fill="#6b4a10" font-size="8">cont. batch</text>
+
+            <line x1="450" y1="135" x2="450" y2="150" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-cg-2)"></line>
+            <line x1="555" y1="135" x2="555" y2="150" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-cg-2)"></line>
+            <line x1="660" y1="135" x2="660" y2="150" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-cg-2)"></line>
+
+            <rect x="405" y="152" width="300" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="555" y="171" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">Orchestrator: route by queue depth /</text>
+            <text x="555" y="186" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">KV-cache headroom &mdash; ANY replica can serve ANY user</text>
+
+            <rect x="420" y="205" width="270" height="45" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3"></rect>
+            <text x="555" y="225" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">a capacity-constrained, lead-time-and-</text>
+            <text x="555" y="240" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">cost-bound problem: scale by adding GPUs</text>
+
+            <text x="370" y="300" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">You cannot "add a shard" to get more GPU throughput &mdash; you can only add GPUs,</text>
+            <text x="370" y="318" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">and GPUs are the scarce, expensive, hard-to-provision-on-demand resource.</text>
+
+            <rect x="90" y="350" width="560" height="60" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="370" y="373" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">Retention/tiering: partition messages by month; hot months on fast storage,</text>
+            <text x="370" y="390" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">older partitions moved to cheaper storage but still queryable for history/export.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. The dual scaling axis: conversation data shards by user_id (or conversation_id) and scales with more shards/replicas &mdash; a storage-cost problem. GPU inference capacity is a pooled resource routed by queue depth and memory headroom, with no shard key at all &mdash; a capacity-constrained compute problem with its own, much slower-moving cost curve.</div>
+        </div>
+
+        <h2 id="feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</h2>
+        <p>We work through <strong>regenerate / edit-and-fork</strong> end-to-end, because it's the one feature that forces a real data-modeling decision: conversation history cannot be a flat, append-only list.</p>
+
+        <h3>10.1 Why a flat list breaks</h3>
+        <p>If messages were simply appended in order, "edit an earlier message" and "regenerate this response" would have no honest representation: either you destructively overwrite history (losing the original, which users very visibly rely on being able to go back to), or you bolt on ad-hoc "edited_from" pointers that don't compose when a user edits, then edits again, then also regenerates a sibling response. The clean fix is to make <code>messages</code> a <strong>tree</strong>: every message (except the root) has exactly one <code>parent_message_id</code>, and both "regenerate" and "edit" are the same primitive operation &mdash; <strong>insert a new sibling under an existing parent</strong> &mdash; just applied at a different node.</p>
+
+        <h3>10.2 The tree, the active branch, and the pointer that ties them together</h3>
+        <ul>
+          <li><strong>Regenerate a response</strong> = insert a new assistant message as a sibling of the existing assistant message, both children of the same user-message parent.</li>
+          <li><strong>Edit a prior user message</strong> = insert a new user message as a sibling of the original, both children of the same preceding-assistant-message parent; whatever the model generates next hangs off the <em>new</em> user message, starting a fresh sub-tree.</li>
+          <li>Neither operation ever deletes anything. The original branch stays fully reachable &mdash; that's what lets the UI offer a "&lt; 1 of 2 &gt;" switcher between sibling responses.</li>
+          <li><code>conversations.active_leaf_message_id</code> is the single pointer that says "this is the tip of the branch currently being displayed and continued." Every new message anywhere in the tree updates this pointer to itself. Switching branches (the <code>POST /v1/conversations/{id}/active-branch</code> endpoint) is just a pointer update &mdash; no data is copied or moved.</li>
+          <li>To reconstruct the linear prompt sent to the model for the <em>next</em> turn, walk <code>parent_message_id</code> from <code>active_leaf_message_id</code> back to the root, then reverse it. This is exactly the sequence that feeds into context-window management (Section 7.3).</li>
+        </ul>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 420" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-cg-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-cg-3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-cg-3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="290" y="12" width="160" height="34" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="370" y="33" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">root (system prompt)</text>
+
+            <rect x="290" y="72" width="160" height="38" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="370" y="95" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="700">msg1 &mdash; user</text>
+
+            <rect x="290" y="136" width="160" height="38" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="370" y="159" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="700">msg2 &mdash; assistant</text>
+
+            <rect x="130" y="200" width="180" height="42" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="220" y="220" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="700">msg3 &mdash; user (edited)</text>
+            <text x="220" y="234" text-anchor="middle" fill="#cbd8ef" font-size="7">active branch</text>
+
+            <rect x="420" y="200" width="185" height="42" rx="8" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.5"></rect>
+            <text x="512" y="220" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-weight="700">msg3&#8242; &mdash; user (original)</text>
+            <text x="512" y="234" text-anchor="middle" fill="var(--color-text-muted)" font-size="7" font-style="italic">inactive, still reachable</text>
+
+            <rect x="40" y="278" width="175" height="42" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="127" y="298" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="700">msg4 &mdash; assistant</text>
+            <text x="127" y="312" text-anchor="middle" fill="#cbd8ef" font-size="7">active leaf</text>
+
+            <rect x="235" y="278" width="185" height="42" rx="8" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.5"></rect>
+            <text x="327" y="298" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-weight="700">msg4&#8242; &mdash; assistant (regen)</text>
+            <text x="327" y="312" text-anchor="middle" fill="var(--color-text-muted)" font-size="7" font-style="italic">inactive sibling</text>
+
+            <rect x="470" y="278" width="90" height="38" rx="18" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="3,3"></rect>
+            <text x="515" y="301" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">&#8230;</text>
+
+            <line x1="370" y1="46" x2="370" y2="70" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-3)"></line>
+            <line x1="370" y1="110" x2="370" y2="134" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-3)"></line>
+            <line x1="340" y1="174" x2="235" y2="198" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-3)"></line>
+            <line x1="400" y1="174" x2="500" y2="198" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-cg-3m)"></line>
+            <line x1="190" y1="242" x2="140" y2="276" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-cg-3)"></line>
+            <line x1="250" y1="242" x2="315" y2="276" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-cg-3m)"></line>
+            <line x1="505" y1="242" x2="515" y2="276" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-cg-3m)"></line>
+
+            <rect x="400" y="350" width="300" height="45" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="550" y="368" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">conversations.active_leaf_message_id</text>
+            <text x="550" y="382" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">&rarr; msg4</text>
+            <line x1="400" y1="365" x2="150" y2="322" stroke="var(--color-accent-dark)" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#arrow-cg-3b)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 4. The message tree: editing msg3 creates sibling msg3&#8242; without deleting the original; regenerating creates sibling msg4&#8242; the same way. The conversation's single <code>active_leaf_message_id</code> pointer names the tip of the branch currently in view &mdash; switching branches is a pointer update, and walking parent pointers from that leaf back to the root reconstructs the linear prompt for the next turn.</div>
+        </div>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li><strong>A GPU node fails mid-generation.</strong> The KV cache for an in-flight sequence lives only in that GPU's HBM &mdash; it is not durable and is far too large and too fast-changing to synchronously replicate across nodes the way a database row is. The realistic recovery path is not "failover the live GPU state," it's: the orchestrator detects the broken stream (heartbeat/lease timeout), the client/gateway has already received and can keep the tokens streamed so far, and the request is retried by re-running the prefill on a healthy replica using the partial output plus original prompt as the new input &mdash; i.e., resume from the last flushed chunk, not from raw in-memory GPU state. This is why request handling upstream of the GPU cluster must be idempotent (a retried generation must not double-append to the conversation).</li>
+          <li><strong>Conversation-store replication.</strong> Once a message is fully generated, persisting it follows an ordinary durable-write pattern: synchronous/quorum replication for the write path, with read traffic (history, listing) served from read replicas &mdash; the same pattern OpenAI's own engineering blog describes running at hundreds-of-millions-of-users scale off a single logical primary plus dozens of geo-distributed read replicas. Individual in-flight streamed tokens are <em>not</em> fsynced one at a time; only the completed message is durably committed, trading a small durability window (a crash mid-stream loses at most one incomplete message, which the client can simply re-request) for not paying a disk round-trip per token.</li>
+          <li><strong>Multi-region: the stateless tiers can be active-active; GPU capacity is the sticky constraint.</strong> The API gateway, chat/session service, and moderation tier are ordinary stateless services and can run active-active across regions behind a global load balancer. GPU inference capacity cannot be treated the same way: GPUs are expensive, power/cooling-constrained, and typically provisioned per region well ahead of time, so failing an entire region's inference traffic over to another region requires either pre-provisioned spare GPU headroom there (costly, and not always fully available) or graceful degradation &mdash; e.g., routing to a smaller/faster fallback model, queuing with a visible wait, or admission-controlled throttling &mdash; rather than the instant, symmetric failover a stateless web tier enjoys.</li>
+          <li><strong>Retry-with-backoff, made safe by idempotency.</strong> A client retry after a dropped stream carries the same client-generated request key; the server can distinguish "this generation already completed, replay the stored result" from "this generation is still in flight, don't start a second one" from "this genuinely never started, begin it now" &mdash; the same idempotency discipline used to keep any retried write safe.</li>
+        </ul>
+
+        <h2 id="caching-strategy">Caching Strategy</h2>
+        <p>Guiding rule: <strong>cache anything expensive-and-safe-to-reuse; never cache the moderation decision or quota counters as if they were static facts.</strong></p>
+        <table>
+          <tr><th>Data</th><th>Cache?</th><th>Rationale / invalidation</th></tr>
+          <tr><td>KV cache for a shared prefix (system prompt, few-shot preamble, a popular custom assistant's instructions)</td><td><strong>Yes</strong> &mdash; prefix/prompt caching</td><td>Reuses previously-computed Key/Value tensors for an exact-match prefix instead of recomputing them for every request that shares it. Reported real-world impact from major providers' prompt-caching features is substantial &mdash; up to roughly 50&ndash;90% latency and cost reduction on cache hits for long, repeated prefixes &mdash; which is exactly why a widely-shared system prompt is worth caching aggressively.</td></tr>
+          <tr><td>Frequent tool results (repeated web-search queries, common code-execution snippets)</td><td><strong>Yes, short TTL</strong></td><td>Avoids redundant external calls, but the web changes: a short TTL (minutes, not hours) bounds staleness risk for anything time-sensitive.</td></tr>
+          <tr><td>Conversation summaries (from context-window management)</td><td><strong>Yes</strong>, invalidated on new turns past the summarized boundary</td><td>Recomputing a summary of the same 200 older turns on every new message would be pure waste; cache it and only re-summarize when the window boundary moves.</td></tr>
+          <tr><td>Conversation list / history reads</td><td><strong>Yes</strong>, populated async, served from replicas/cache</td><td>The overwhelming majority of traffic (listing, scrollback) is read-only and tolerant of being a few hundred ms stale.</td></tr>
+          <tr><td><strong>Moderation decision on mutable/evolving content</strong></td><td><strong>No, or very short TTL only</strong></td><td>Policy and classifiers get updated; caching a stale "allowed" verdict indefinitely can let content that would now be blocked keep slipping through.</td></tr>
+          <tr><td><strong>Usage-quota counters (FR8)</strong></td><td><strong>No &mdash; authoritative fast counter, not a cache</strong></td><td>The same double-spend-shaped race as any balance check: two concurrent requests both reading a stale "under quota" value can both proceed and blow past the limit. Quota decrements need an atomic conditional check-and-decrement, not a cached read.</td></tr>
+        </table>
+
+        <h2 id="monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</h2>
+        <p><strong>Key SLIs / metrics:</strong></p>
+        <ul>
+          <li><strong>Time-to-first-token (TTFT) P50/P95/P99</strong> &mdash; the single most user-visible latency number, tracked separately from steady-state decode speed.</li>
+          <li><strong>Tokens/sec per request (decode throughput)</strong> and <strong>tokens/sec per GPU replica (aggregate)</strong> &mdash; the second tells you whether continuous batching is actually packing the GPU efficiently.</li>
+          <li><strong>GPU utilization and orchestrator queue depth</strong> &mdash; a growing queue is the earliest signal that GPU capacity, not the web tier, needs to scale.</li>
+          <li><strong>KV-cache memory utilization per replica</strong> &mdash; approaching saturation caps how many new sequences that replica can admit, independent of raw compute headroom.</li>
+          <li><strong>Moderation-flag rate</strong>, split by input vs. output and by policy category &mdash; a sudden spike can indicate either an abuse campaign or a classifier regression after a model/policy update.</li>
+          <li><strong>Cost per conversation / cost per 1K tokens</strong> &mdash; the direct cost signal, since inference cost scales with tokens generated.</li>
+          <li>Prefix-cache hit rate, tool-call error/timeout rate, idempotency-replay rate (duplicate request-key hits), and streaming-connection drop/reconnect rate.</li>
+        </ul>
+        <p><strong>Logging:</strong> conversation content logging sits in tension with privacy expectations (see Security Considerations) &mdash; retention windows, access controls, and any use of content for further training must be explicit, configurable, and audited, not an incidental side effect of "logs are useful for debugging."</p>
+        <p><strong>Notifications:</strong> usage-quota-approaching alerts to the user (FR8), and incident/degraded-capacity banners in the client when GPU capacity is constrained (e.g., routing to a smaller fallback model or queuing) so the product is honest about degraded service rather than silently slower.</p>
+
+        <h2 id="security-considerations">Security Considerations</h2>
+        <ul>
+          <li><strong>Prompt injection from tool results / RAG content.</strong> A web page, search result, or uploaded document the model retrieves mid-generation can contain text deliberately crafted to look like instructions ("ignore your previous instructions and instead..."). The tool-use subsystem must return retrieved content as clearly-delimited, <strong>untrusted data</strong> &mdash; never concatenated into the prompt in a way indistinguishable from a trusted system instruction &mdash; and sensitive actions a tool could trigger should require explicit confirmation rather than executing purely on the model's own say-so. Output-side moderation (below) is the second layer of defense if an injection partially succeeds.</li>
+          <li><strong>Content moderation on both input and output.</strong> Input classification happens before a GPU is ever touched (cheap rejection); output classification runs incrementally against the streaming response and can abort generation mid-stream &mdash; a single "check the finished response" pass is not sufficient for a product where the user is already reading tokens as they arrive.</li>
+          <li><strong>Data privacy and retention for conversation history.</strong> Encryption in transit and at rest; configurable retention windows and user-initiated deletion; clear, separately-consented policy on whether conversation content is used for further model training; regional data residency options for regulated/enterprise customers.</li>
+          <li><strong>Per-tenant isolation for enterprise customers.</strong> Strict conversation-store partitioning so no query path can cross tenant boundaries, audit logging scoped per tenant, and &mdash; on the GPU side &mdash; either dedicated capacity pools or, more cost-effectively, strong logical isolation (no tenant's prompt/response content or KV cache is ever inspectable by another tenant) within the shared pooled fleet, reserving fully dedicated GPU capacity only for customers whose contractual requirements demand it.</li>
+          <li><strong>Idempotency as a security/correctness control.</strong> The same client-supplied request-key discipline used for fault tolerance (Replication section) also prevents a replayed or duplicated request from generating and billing a response twice.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <p>Interviewers commonly push into these areas after the base design. Rehearse the reasoning out loud, not just the one-line answer &mdash; the "why" is what actually gets evaluated.</p>
+
+        <h3>Serving Efficiency &amp; GPU Economics</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q1. Why does continuous batching matter so much for GPU efficiency compared to naive per-request (static) batching?</div>
+          <div class="qa-a">Static batching holds an entire batch's GPU slots hostage to whichever request in the group finishes last &mdash; three short requests finish and then sit idle, padded, waiting for a fourth, long one. Continuous (iteration-level) batching re-checks batch membership at every decode step and immediately backfills a finished slot with the next queued request, so the GPU is never idle waiting on an arbitrary group's slowest member. Reported real-world gains are on the order of 10&ndash;20&times; throughput at the same latency budget, which is the difference between needing thousands of GPUs and needing tens of thousands for the same traffic.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q2. Why is GPU capacity described as the true bottleneck resource here, rather than the usual "just add more app servers" web-scale story?</div>
+          <div class="qa-a">A stateless web server is cheap, fungible, and can be spun up in seconds by an autoscaler; a GPU is expensive, power/cooling-constrained, often has a multi-month procurement lead time, and its useful capacity per unit depends on model size, batch efficiency, and KV-cache memory headroom rather than a simple CPU/RAM ratio. You cannot "autoscale" your way out of a GPU shortage the way you can for a web tier &mdash; capacity planning has to happen far ahead of demand, and every efficiency technique (batching, caching, quantization) directly multiplies how much traffic your existing GPU fleet can serve, which matters far more here than in a typical horizontally-scaled service.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q3. Why not just cache the KV cache across requests the way you'd cache a database read?</div>
+          <div class="qa-a">You can, but only for the part of the sequence that's an exact, shared prefix across requests (a common system prompt, a repeated few-shot preamble) &mdash; that's exactly what prefix/prompt caching does, and it's a large win because that shared prefix's Key/Value tensors are identical for every request that includes it. What you cannot do is cache the KV cache for the user-specific, ever-growing suffix of a conversation the way you'd cache a stable read: it's enormous (hundreds of KB to several MB per thousand tokens), changes every single turn, and lives in GPU HBM rather than a cache tier built for that access pattern.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q4. A single very popular system prompt (e.g., a shared custom assistant configuration) is reused by millions of conversations &mdash; how do you exploit that?</div>
+          <div class="qa-a">Route requests that share that exact prefix so they're likely to land on GPU replicas that already have its KV cache resident (affinity routing), and rely on the serving engine's prefix-caching layer to recognize the exact-match prefix and skip recomputing its Key/Value tensors entirely, paying only for the unique, per-conversation suffix. This turns what would be millions of redundant prefill passes over the identical prompt into effectively one, at the cost of some routing complexity to keep "hot prefix" traffic concentrated rather than spread evenly (which would minimize cache hit rate).</div>
+        </div>
+
+        <h3>Data Model, Branching &amp; Fault Tolerance</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q5. How would you design conversation branching so a user can edit an earlier message or regenerate a response without losing the original?</div>
+          <div class="qa-a">Model messages as a tree via <code>parent_message_id</code> rather than a flat list. Both "regenerate" and "edit" become the same operation &mdash; insert a new sibling under an existing parent &mdash; applied at different nodes, and neither ever deletes the original. A single <code>active_leaf_message_id</code> pointer on the conversation names which branch is currently in view; switching branches is just a pointer update, and reconstructing the linear prompt for the model is a walk from that leaf back to the root via parent pointers.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q6. A conversation grows past the model's context window in the middle of a long chat &mdash; what actually happens?</div>
+          <div class="qa-a">Two complementary mechanisms: a sliding window keeps the most recent turns verbatim and drops the oldest ones from the assembled prompt (cheap but lossy), and a rolling summarization pass periodically compresses everything older than the window boundary into a short synthetic system message that stands in for the raw turns in the prompt, while the raw turns remain in storage for history/display. Production systems combine both, and cache the summary so it isn't recomputed on every subsequent turn.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q7. A GPU node crashes 40% of the way through streaming a response to a user &mdash; what does the client see, and how do you recover?</div>
+          <div class="qa-a">The client keeps whatever tokens it already received; the orchestrator detects the broken stream via a heartbeat/lease timeout and retries the request on a healthy replica, re-running prefill with the original prompt plus (if the design chooses to preserve it) the partial output as additional context, rather than attempting to resurrect the crashed GPU's in-memory KV cache &mdash; that state simply isn't durable or cheaply replicable. The retry must carry the same idempotency key as the original request so the conversation store never ends up with a duplicated or double-appended assistant message.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q8. Why shard conversation/message data by user_id or conversation_id, and what happens with one abnormally large/hot conversation?</div>
+          <div class="qa-a">user_id co-locates a user's own conversations so their most common operation &mdash; "list my chats," "load my history" &mdash; never fans out across shards; conversation_id is the better key when multiple users collaborate inside one shared thread, at the cost of a per-user listing query needing to fan out. An abnormally large conversation (extremely long-running, or a viral public share) is handled like any hot key &mdash; read replicas and caching absorb the read fan-out &mdash; but its length also forces context-window summarization sooner, which is as much a latency safeguard for loading that conversation as it is a token-budget one.</div>
+        </div>
+
+        <h3>Safety, Cost &amp; Extensions</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q9. A web-browsing tool call returns a page that contains hidden instructions telling the model to ignore its system prompt &mdash; how do you defend against that?</div>
+          <div class="qa-a">Treat every tool result as untrusted data, clearly delimited from trusted instructions in the assembled prompt, never concatenated in a way that lets retrieved text masquerade as a system directive. Sensitive actions a tool call could trigger (sending data somewhere, making a purchase, executing risky code) should require an explicit confirmation step rather than firing purely on the model's own decision, and output moderation remains a second, independent check that can still catch a response that was steered off course despite the input-side safeguards.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q10. How do you moderate a response that's already streaming to the user when the model starts producing disallowed content halfway through?</div>
+          <div class="qa-a">Output moderation runs incrementally against the growing response, not just once at the end, so it can catch a policy violation mid-stream. When it does, generation is aborted on the GPU side, the streaming gateway stops relaying further tokens (and can retract/replace what's already been shown, depending on product policy), and the incomplete message is stored with a status like ABORTED_MODERATION rather than silently marked complete.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q11. An enterprise customer wants a guarantee that their conversations never share GPU capacity or storage with any other tenant &mdash; how do you accommodate that without giving every enterprise customer their own idle GPU fleet?</div>
+          <div class="qa-a">For storage, strict per-tenant partitioning with no shared query path already gives that guarantee cheaply. For GPU capacity, the pragmatic middle ground is strong logical isolation within the shared pooled fleet by default (no tenant's content or KV cache is ever inspectable cross-tenant), reserving genuinely dedicated GPU capacity only for the subset of customers whose contracts specifically require physical isolation &mdash; because dedicating idle GPU capacity per tenant at scale is exactly the kind of cost that made pooling the whole point of the fleet in the first place.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q12. How would you extend this design to support multi-modal input (e.g., an uploaded image) without changing the core message/conversation data model?</div>
+          <div class="qa-a">The message row stays a thin pointer: an <code>attachments</code> reference to an object-storage location, not the binary content inline, keeping the messages table's row size and replication cost unaffected by upload size. The image is fetched by the inference path when assembling that turn's input for a multi-modal-capable model, and treated like any other attachment for retention/deletion policy; the tree/branching model in Section 10 is entirely orthogonal to what a message's content contains, so it needs no change.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This design has two genuinely different systems sharing one product surface, and conflating them is the most common mistake. The <strong>conversation/data tier</strong> (conversations, messages, quotas) is a large but conventional, read-heavy OLTP problem: shard by <code>user_id</code>/<code>conversation_id</code>, lean on read replicas and caching, and model messages as a <strong>tree</strong> (via <code>parent_message_id</code> and a single <code>active_leaf_message_id</code> pointer) so regenerate and edit-and-fork are the same primitive operation instead of a destructive overwrite. The <strong>inference tier</strong> is GPU-capacity-bound: autoregressive decoding is inherently sequential per request, so <strong>continuous batching</strong> &mdash; packing many users' in-flight generations onto shared GPU steps and immediately backfilling any slot that finishes &mdash; is the load-bearing efficiency idea, backed by KV-cache memory management (paged, non-contiguous allocation) that decides how many real conversations actually fit on one GPU. Because GPU nodes are expensive, capacity-constrained, and not durably replicable mid-generation the way a database row is, fault tolerance here means idempotent retry-from-last-flushed-chunk rather than live failover, and multi-region design means the stateless tiers go active-active while GPU capacity, the truly scarce resource, gets graceful degradation instead of instant symmetric failover.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Kwon et al., <a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">"Efficient Memory Management for Large Language Model Serving with PagedAttention"</a> (the vLLM paper, SOSP '23) &mdash; the source for PagedAttention and the KV-cache-fragmentation reasoning used throughout the Low-Level Design section</li>
+          <li>OpenAI Engineering, <a href="https://openai.com/index/scaling-postgresql/" target="_blank" rel="noopener">"Scaling PostgreSQL to power 800 million ChatGPT users"</a> (Jan 2026) &mdash; the source for this design's DAU/user-count anchor, and for the single-primary-plus-read-replicas, caching, and workload-isolation reasoning used in Capacity Estimation and Replication and Fault Tolerance</li>
+          <li>Anyscale, <a href="https://www.anyscale.com/blog/continuous-batching-llm-inference" target="_blank" rel="noopener">"Achieve 23x LLM Inference Throughput &amp; Reduce p50 Latency"</a> &mdash; the continuous-batching vs. static-batching throughput comparison this design's Section 7.2 and Figure 2 are grounded in</li>
+          <li>NVIDIA Technical Blog, <a href="https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/" target="_blank" rel="noopener">"Mastering LLM Techniques: Inference Optimization"</a> &mdash; background on in-flight (continuous) batching, KV-cache management, and tensor/pipeline parallelism referenced throughout the Low-Level Design and Capacity Estimation sections</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="index.html"><span class="dir">Previous</span>Topic Overview</a>
+          <a class="next" href="discord.html"><span class="dir">Next</span>Design Discord</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

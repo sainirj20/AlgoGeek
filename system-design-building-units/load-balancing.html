@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Networking &amp; Traffic Management | System Design — Building Units | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Building Units</a><span class="sep">/</span><span class="current">Networking &amp; Traffic Management</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Building Units overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#load-balancers">Load Balancers</a></li>
+        <li><a href="#reverse-proxy">Reverse Proxy</a></li>
+        <li><a href="#api-gateway">API Gateway</a></li>
+        <li><a href="#cdn-edge-routing">CDN (Content Delivery Network) — Edge Routing</a></li>
+        <li><a href="#dns-traffic-management">DNS in System Architecture</a></li>
+        <li><a href="#service-mesh">Service Mesh</a></li>
+        <li><a href="#forward-vs-reverse-proxy">Forward Proxy vs. Reverse Proxy</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN — BUILDING UNITS</span>
+          <h1>Networking &amp; Traffic Management</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Once a system runs on more than one server, something has to decide how a request gets from a client anywhere in the world to the right instance — and that decision happens in stages, long before the request ever reaches application code. This page covers the components that live in that network path: load balancers spreading traffic across a fleet, reverse proxies and API gateways acting as a unified front door, CDNs and DNS steering traffic before it even reaches a data center, a service mesh managing traffic between internal services, and the forward-proxy/reverse-proxy distinction that underlies all of it. Note that the CDN section here is deliberately focused on the networking/routing mechanics — anycast IP routing, edge PoPs, DNS-based geo-routing — rather than the caching angle; see the <a href="caching-strategies.html">Caching</a> page for CDN's role as a cache tier.</p>
+
+        <h3 id="load-balancers">Load Balancers</h3>
+        <p>A load balancer distributes incoming traffic across multiple backend servers so that no single instance is overwhelmed, directly improving a system's availability, throughput, and fault tolerance. The fundamental design choice is which network layer it operates at. A Layer 4 (transport-level) load balancer makes its routing decision using only IP address, port, and protocol — it never looks inside the payload. That narrow scope makes it extremely fast, with very low CPU overhead and the ability to handle enormous packet rates, but it can't route based on URL, headers, or cookies. A Layer 7 (application-level) load balancer instead terminates the connection and inspects the full HTTP request — headers, cookies, URL path, hostname, method, even the body — which enables content-based routing, TLS termination, sticky sessions, and A/B testing, at the cost of higher CPU usage and latency.</p>
+        <p>Which backend actually receives a given request is governed by an algorithm: Round Robin cycles through servers blindly; Weighted Round Robin and Least Connections account for differing server capacity or live load (the latter especially useful for long-lived connections); IP Hash/Source Hashing pins a client to the same backend for session affinity; Consistent Hashing arranges backends on a hash ring so that adding or removing a node only remaps roughly 1/N of the keys — the standard approach for caching layers and CDN routing; and Power of Two Choices (P2C), used by Envoy, scales better than strict least-connections on very large pools. On top of the algorithm, production load balancers layer active and passive health checks, SSL/TLS termination (typically at L7), sticky sessions, auto-scaling integration, and ship as hardware appliances, software, or managed cloud services.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 680 270" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="24" font-size="13" font-weight="700" fill="#0f2545">Layer 4 vs. Layer 7 Load Balancing</text>
+
+            <rect x="20" y="40" width="300" height="215" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="170" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">Layer 4 — Transport</text>
+
+            <rect x="130" y="72" width="80" height="28" rx="4" fill="#0f2545"/>
+            <text x="170" y="90" text-anchor="middle" font-size="10" fill="#fff">Client</text>
+
+            <line x1="170" y1="100" x2="170" y2="120" stroke="#334155" marker-end="url(#lbArrow)"/>
+
+            <rect x="100" y="120" width="140" height="30" rx="4" fill="#fff" stroke="#2563eb"/>
+            <text x="170" y="139" text-anchor="middle" font-size="9.5">LB (IP + Port only)</text>
+
+            <line x1="140" y1="150" x2="65" y2="178" stroke="#334155" marker-end="url(#lbArrow)"/>
+            <line x1="170" y1="150" x2="170" y2="178" stroke="#334155" marker-end="url(#lbArrow)"/>
+            <line x1="200" y1="150" x2="275" y2="178" stroke="#334155" marker-end="url(#lbArrow)"/>
+
+            <rect x="30" y="178" width="70" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="65" y="196" text-anchor="middle" font-size="9.5">Server A</text>
+            <rect x="135" y="178" width="70" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="170" y="196" text-anchor="middle" font-size="9.5">Server B</text>
+            <rect x="240" y="178" width="70" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="275" y="196" text-anchor="middle" font-size="9.5">Server C</text>
+
+            <text x="170" y="228" text-anchor="middle" font-size="9.5" fill="#5a6472">routes by IP/port only —</text>
+            <text x="170" y="242" text-anchor="middle" font-size="9.5" fill="#5a6472">never inspects payload</text>
+
+            <rect x="360" y="40" width="300" height="215" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="510" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#6b4a10">Layer 7 — Application</text>
+
+            <rect x="470" y="72" width="80" height="28" rx="4" fill="#0f2545"/>
+            <text x="510" y="90" text-anchor="middle" font-size="10" fill="#fff">Client</text>
+
+            <line x1="510" y1="100" x2="510" y2="120" stroke="#334155" marker-end="url(#lbArrow)"/>
+
+            <rect x="420" y="120" width="180" height="30" rx="4" fill="#fff" stroke="#d9a441"/>
+            <text x="510" y="139" text-anchor="middle" font-size="9">LB (inspects Host/Path/Header)</text>
+
+            <line x1="460" y1="150" x2="405" y2="178" stroke="#334155" marker-end="url(#lbArrow)"/>
+            <line x1="510" y1="150" x2="510" y2="178" stroke="#334155" marker-end="url(#lbArrow)"/>
+            <line x1="560" y1="150" x2="615" y2="178" stroke="#334155" marker-end="url(#lbArrow)"/>
+
+            <rect x="370" y="178" width="70" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="405" y="196" text-anchor="middle" font-size="8.5">/api &rarr; A</text>
+            <rect x="475" y="178" width="70" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="510" y="196" text-anchor="middle" font-size="8.5">/images &rarr; B</text>
+            <rect x="580" y="178" width="70" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="615" y="196" text-anchor="middle" font-size="8.5">/checkout &rarr; C</text>
+
+            <text x="510" y="228" text-anchor="middle" font-size="9.5" fill="#5a6472">routes by URL/header/cookie —</text>
+            <text x="510" y="242" text-anchor="middle" font-size="9.5" fill="#5a6472">content-aware, higher CPU cost</text>
+
+            <defs><marker id="lbArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Layer 4 balances purely on IP/port and can't see inside the request; Layer 7 terminates the connection and routes on URL, host, or header — at higher CPU cost.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> NGINX, HAProxy (benchmark for raw throughput and low memory), Envoy (cloud-native, xDS dynamic discovery, strong observability); the AWS ELB family — CLB (legacy), ALB (L7, content-based routing), NLB (L4, millions of requests/sec, static IP, preserves client IP), and GWLB (L3/4, transparently inserts virtual appliances); Google Cloud Load Balancing, Azure Load Balancer/App Gateway, F5 BIG-IP, Traefik, Citrix ADC.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Any service with more than one instance needs a load balancer. Reach for L4/NLB for non-HTTP workloads (gaming, VoIP, MQTT), extreme throughput, static IPs, or app-layer TLS termination. Reach for L7/ALB when microservices need path/host-based routing, centralized TLS plus WAF, cookie-based affinity, or canary/blue-green traffic shaping. Use weighted routing for canary deployments, consistent hashing for cache clusters/CDN routing, least connections for long-lived or variable-cost connections, and round robin for short, uniform requests on a homogeneous fleet.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Very high performance and protocol-agnostic at L4</li><li>Intelligent, content-aware routing and TLS termination at L7</li><li>Rich observability and traffic-shaping options at L7</li><li>Wide range of algorithms tuned to traffic shape</li></ul></td>
+            <td><ul><li>L4 cannot route on content or offload TLS</li><li>L7 costs more CPU/latency and is mostly HTTP/gRPC-oriented</li><li>Software LBs require full operational ownership</li><li>Managed LBs trade flexibility for convenience</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="reverse-proxy">Reverse Proxy</h3>
+        <p>A reverse proxy sits in front of one or more backend servers and intercepts client requests on their behalf — clients only ever talk to the proxy, never directly to an origin server. It receives the request, decides which backend should serve it, forwards it, and relays the response back, effectively hiding the backend topology from the outside world. In practice, a reverse proxy commonly bundles load balancing, TLS termination, response caching, compression, and centralized logging into one layer, which is why the same software (NGINX, HAProxy, Envoy) is often described as doing both jobs.</p>
+        <p>The distinction from a load balancer is one of primary intent rather than a hard technical line: a load balancer's job is distributing traffic across many servers for scale, while a reverse proxy's job is intermediation and protection for one or more servers — hiding origins, centralizing auth/TLS, and providing a single point of policy enforcement. It's also the mirror image of a forward proxy: a forward proxy works on behalf of clients, a reverse proxy works on behalf of servers (see the dedicated comparison later on this page).</p>
+        <p><strong>Popular tools:</strong> NGINX, HAProxy, Envoy, Apache (mod_proxy), Traefik, Caddy; cloud-managed variants such as ALB, Google HTTP(S) Load Balancing, and Azure Application Gateway also function as managed reverse proxies.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Put a reverse proxy in front of any backend that needs hidden internal architecture, centralized TLS certificates, a caching layer, a WAF choke point, or unified routing across internal services — typically before those needs justify standing up a full API gateway.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Hides internal topology and centralizes auth/WAF</li><li>TLS offload and response caching improve performance</li><li>One place to apply cross-cutting policy</li></ul></td>
+            <td><ul><li>Becomes a potential single point of failure</li><li>Adds an extra network hop</li><li>Overlaps heavily with load balancer functionality, which can blur ownership</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="api-gateway">API Gateway</h3>
+        <p>An API gateway is a specialized reverse proxy purpose-built for managing APIs: it centralizes routing, authentication, rate limiting, transformation, and aggregation at the front door of a system, most commonly in front of a microservices architecture. External calls hit the gateway first, which matches the request to a route and runs it through a policy pipeline — authenticate, rate-limit, transform, log, then proxy — before forwarding to the correct downstream service or services, potentially fanning a single request out to several services and merging the results. Many implementations split this into a control plane that holds central configuration and a data plane that actually processes live traffic.</p>
+        <p>Beyond routing (path, host, header, or version-based, with support for canary/blue-green traffic), the gateway enforces authentication and authorization once at the edge — API keys, OAuth2/OIDC, JWT, mTLS — rather than duplicating that logic in every service. It applies per-key or per-consumer rate limiting and quotas, handles request/response transformation (including protocol translation), performs response aggregation and API composition, and gives centralized observability and response caching across every API exposed by the system.</p>
+        <p><strong>Popular tools:</strong> Kong Gateway/Konnect (NGINX/OpenResty-based, plugin architecture); Amazon API Gateway (managed, REST/HTTP/WebSocket APIs, Lambda integration); Apigee (enterprise, monetization/analytics); KrakenD (strong built-in aggregation); Tyk, Azure API Management, Envoy Gateway/Ambassador.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Reach for an API gateway once there are multiple client types and multiple backend microservices that all need consistent auth, throttling, and versioning. Amazon API Gateway fits well when already deep in AWS/serverless; Kong suits flexible, plugin-extensible, hybrid or multi-cloud deployments; Apigee targets large-enterprise API programs needing monetization and developer portals. For small systems with only one or two services, a plain reverse proxy is usually enough — skip the gateway.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Single place to enforce security/quotas across all APIs</li><li>Decouples clients from internal service topology</li><li>Removes duplicated cross-cutting logic from every service</li></ul></td>
+            <td><ul><li>Another network hop adds latency</li><li>Potential single point of failure/bottleneck</li><li>Risk of becoming an overloaded "God object"</li><li>Added configuration complexity and vendor lock-in</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="cdn-edge-routing">CDN (Content Delivery Network) — Edge Routing</h3>
+        <p>Looked at through a networking lens rather than a caching lens, a CDN is a globally distributed network of Points of Presence (PoPs) — edge servers positioned close to end users — whose job is to get a client's request answered from the nearest possible location instead of routing it all the way back to a single origin. Getting a user's request to the right PoP is itself a routing problem: Cloudflare and Fastly use anycast plus BGP, which lets many PoPs worldwide advertise the same IP address so normal internet routing naturally sends each user to the nearest one; Akamai instead favors a more tiered, unicast-plus-DNS approach, resolving a hostname to a nearby PoP's IP based on DNS geo-resolution.</p>
+        <p>Content reaches the edge in one of two ways: origin pull lazily caches an object at a PoP the first time it's requested there, which suits dynamic or unpredictable content but pays a "cold cache" penalty on that first request; origin push proactively uploads content to PoPs ahead of demand, which suits large, predictable static assets that need to be instantly available everywhere. Beyond static delivery, many CDNs now run edge compute at the same PoPs (Cloudflare Workers, Fastly Compute@Edge, Lambda@Edge), letting request-routing logic itself execute at the edge rather than only at an origin data center.</p>
+        <p><strong>Popular tools:</strong> Cloudflare (anycast, 300+ PoPs, strong edge compute/security); Akamai (largest footprint, 4,300+ edge locations, enterprise/media); Fastly (real-time purge, strong edge compute for dynamic workloads); Amazon CloudFront (tight AWS integration); Google Cloud CDN, Azure CDN, KeyCDN, Bunny CDN.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Nearly a default for any service serving static assets to a geographically distributed audience. Favor origin pull for typical, unpredictable content and origin push for known, large, must-be-everywhere-instantly payloads. Choose Cloudflare for security-first edge compute, Akamai for the largest enterprise footprint, Fastly for instant purge and dynamic edge compute, and CloudFront when already standardized on AWS.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Dramatically lower latency by serving from the nearest PoP</li><li>Reduced origin load/cost</li><li>Built-in DDoS absorption and resilience</li><li>TLS termination and WAF often bundled at the edge</li></ul></td>
+            <td><ul><li>Cache invalidation across many PoPs adds complexity</li><li>Additional cost layer</li><li>Harder to debug — request path spans many edge nodes</li><li>Origin-pull's first request pays a cold-cache penalty</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="dns-traffic-management">DNS in System Architecture</h3>
+        <p>DNS's obvious job is translating hostnames into IP addresses, but in a distributed system it doubles as the outermost, coarsest-grained traffic-management layer — it decides which IP a client even attempts to connect to before a single packet reaches your infrastructure. DNS load balancing returns multiple or different records across successive queries so different clients (or the same client at different times) resolve to different targets. GeoDNS resolves a query based on the requester's geographic location, and latency-based routing (Route 53) instead returns whichever region measured the lowest round-trip latency for that resolver. Health checks let a DNS provider stop returning IPs for unhealthy targets entirely, enabling DNS-based failover without any change at the load-balancer layer.</p>
+        <p>The key operational lever is TTL (time-to-live): shorter TTLs let failover propagate faster but increase query volume against the DNS provider, while longer TTLs reduce query load but slow down how quickly resolvers notice a change. Because no proxy sits in the data path, DNS scales essentially infinitely and adds zero data-plane latency — but it also can't inspect payload, and a client that already cached an answer may keep hammering a now-unhealthy IP until that TTL expires.</p>
+        <p><strong>Popular tools:</strong> Amazon Route 53, Cloudflare DNS, NS1, Google Cloud DNS, Azure Traffic Manager, PowerDNS.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Use DNS for global, multi-region traffic steering that happens before a regional load balancer takes over — the common two-tier "global DNS + regional LB" pattern. Reach for GeoDNS or latency-based routing for region-affinity needs, weighted DNS for gradually shifting traffic between regions, and failover routing with health checks for active-passive disaster recovery. Don't rely on DNS alone for fine-grained load balancing or fast intra-region failover — that's the job of L4/L7 load balancers.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Extremely simple and essentially free at the data-plane level</li><li>Works uniformly across regions and even across clouds</li><li>Zero added latency since no proxy sits in the request path</li></ul></td>
+            <td><ul><li>Coarse-grained — operates at session establishment, not per-request</li><li>Failover speed is bounded by TTL and resolver caching</li><li>Cannot inspect payload or make content-aware decisions</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="service-mesh">Service Mesh</h3>
+        <p>A service mesh is a dedicated infrastructure layer that manages service-to-service ("east-west") communication inside a microservices or Kubernetes deployment — traffic management, security, and observability — transparently, without touching application code. A sidecar proxy (Envoy for Istio, a Rust-based proxy for Linkerd) is deployed alongside every service instance and intercepts all of its traffic, together forming the mesh's data plane; a control plane (Istiod for Istio) configures every sidecar centrally — service discovery, certificate issuance and rotation, and policy distribution. Because every request already transits a proxy, the mesh can transparently apply mutual TLS, retries/timeouts/circuit-breaking, traffic splitting, and uniform telemetry, regardless of what language a given service is written in.</p>
+        <p>The classic sidecar-per-pod model has real resource cost at scale, which is why Istio's newer ambient mesh architecture removes the per-pod sidecar entirely: a per-node ztunnel provides baseline L4 mTLS and telemetry for every workload on that node, and optional waypoint proxies are added only for services that actually need L7 traffic-shaping features — cutting resource overhead substantially compared to a sidecar on every single pod.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="24" font-size="13" font-weight="700" fill="#0f2545">Request Path Through the Networking Stack</text>
+
+            <rect x="330" y="40" width="160" height="34" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="410" y="61" text-anchor="middle" font-size="9.5">Control Plane (Istiod)</text>
+
+            <rect x="20" y="110" width="90" height="40" rx="6" fill="#0f2545"/>
+            <text x="65" y="134" text-anchor="middle" font-size="10" fill="#fff">Client</text>
+
+            <rect x="150" y="105" width="160" height="50" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="230" y="126" text-anchor="middle" font-size="9.5" fill="#1d4ed8">Reverse Proxy /</text>
+            <text x="230" y="140" text-anchor="middle" font-size="9.5" fill="#1d4ed8">API Gateway</text>
+
+            <rect x="350" y="105" width="140" height="50" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="420" y="126" text-anchor="middle" font-size="9.5" fill="#6b4a10">Sidecar Proxy</text>
+            <text x="420" y="140" text-anchor="middle" font-size="9.5" fill="#6b4a10">(mesh data plane)</text>
+
+            <rect x="530" y="110" width="130" height="40" rx="6" fill="#f0fdf4" stroke="#166534"/>
+            <text x="595" y="134" text-anchor="middle" font-size="10" fill="#166534">Backend Service</text>
+
+            <line x1="110" y1="130" x2="147" y2="130" stroke="#334155" marker-end="url(#flowArrow)"/>
+            <line x1="310" y1="130" x2="347" y2="130" stroke="#334155" marker-end="url(#flowArrow)"/>
+            <line x1="490" y1="130" x2="527" y2="130" stroke="#334155" marker-end="url(#flowArrow)"/>
+            <line x1="410" y1="74" x2="410" y2="103" stroke="#94a3b8" stroke-dasharray="4,3" marker-end="url(#flowArrowGray)"/>
+
+            <text x="340" y="190" text-anchor="middle" font-size="9.5" fill="#5a6472">Every hop between client and backend crosses a proxy;</text>
+            <text x="340" y="204" text-anchor="middle" font-size="9.5" fill="#5a6472">the control plane configures sidecars out-of-band, not in the request path.</text>
+
+            <defs>
+              <marker id="flowArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker>
+              <marker id="flowArrowGray" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#94a3b8"/></marker>
+            </defs>
+          </svg>
+          <div class="diagram-caption">A typical request crosses a reverse proxy/API gateway at the edge, then a service-mesh sidecar before reaching the backend instance — while a separate control plane configures every sidecar out-of-band.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> Istio (richest feature set, Envoy-based, now offering ambient mode); Linkerd (lightweight, lower resource footprint, consistently lower latency in benchmarks); Consul Connect, AWS App Mesh, Cilium Service Mesh (eBPF-based), Kuma, Traefik Mesh.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Adopt a service mesh once there's a nontrivial number of interdependent microservices that all need consistent mTLS, retries, and observability without hand-rolling that networking logic into every service. Istio (or ambient mode) suits teams wanting the richest L7 traffic-shaping and willing to carry the operational overhead; Linkerd suits teams prioritizing simplicity, low latency, and a small footprint. Skip a mesh entirely for small systems where the operational cost outweighs the benefit.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Uniform mTLS/zero-trust security across every service, automatically</li><li>Consistent observability regardless of language</li><li>Fine-grained traffic control without app code changes</li></ul></td>
+            <td><ul><li>Significant operational complexity and learning curve</li><li>Adds per-hop latency at every proxied call</li><li>Sidecar-per-pod resource overhead multiplies at scale (mitigated by ambient mode)</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="forward-vs-reverse-proxy">Forward Proxy vs. Reverse Proxy</h3>
+        <p>Both a forward proxy and a reverse proxy are intermediary servers that sit between a client and a server — the difference is entirely about whose interests they represent. A forward proxy acts on behalf of the client: it sits in front of a client or a network of clients and mediates their outbound requests, so the destination server sees the proxy's IP address rather than the client's — used for client anonymization, corporate content filtering, and outbound caching. A reverse proxy acts on behalf of the server: it sits in front of a server or a pool of servers and mediates inbound requests, so the client sees only the proxy and never the origin server(s) directly — used for TLS termination, caching, load distribution, and hiding backend topology.</p>
+        <p>Framed as a quick comparison: a forward proxy represents the client, hides the client's identity from the server, typically deploys at the edge of a client network, and exists for anonymity/content-filtering/access-control goals. A reverse proxy represents the server, hides the server's identity and topology from the client, typically deploys at the edge of a server or data-center network, and exists for security/TLS-termination/load-distribution goals. In backend system design interviews, the reverse-proxy side is by far the more common pattern — virtually every public-facing service sits behind one — while the forward-proxy side shows up more in client-network and enterprise contexts.</p>
+        <p><strong>Popular tools:</strong> Squid, Privoxy, and enterprise proxy appliances (Zscaler, Blue Coat/Symantec ProxySG) for forward proxies; NGINX, HAProxy, Envoy, and cloud-managed load balancers for reverse proxies (see Reverse Proxy above).</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Use a forward proxy when you control the client side and need to filter, log, anonymize, or cache outbound traffic — corporate network restrictions, scraping pipelines, privacy tooling. Use a reverse proxy when you control the server side and need to protect, distribute, or accelerate inbound traffic — by far the more common pattern in backend system design, since virtually every public-facing service sits behind one.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Forward proxy: client anonymization, content filtering, outbound caching</li><li>Reverse proxy: TLS termination, load distribution, hidden origin topology</li><li>Clear separation of concerns between client-side and server-side control points</li></ul></td>
+            <td><ul><li>Forward proxy requires client-side configuration/trust and can be bypassed if misconfigured</li><li>Reverse proxy becomes critical, highly-available infrastructure since all inbound traffic depends on it</li><li>Easy to confuse in interviews since overlapping software (NGINX, Envoy) can implement either role</li></ul></td>
+          </tr>
+        </table>
+
+        <div class="page-nav">
+          <a class="prev" href="caching-strategies.html"><span class="dir">Previous</span>Caching</a>
+          <a class="next" href="message-queues.html"><span class="dir">Next</span>Messaging &amp; Streaming</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

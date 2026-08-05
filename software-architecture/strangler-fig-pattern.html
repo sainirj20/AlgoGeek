@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strangler Fig Pattern | Software Architecture Patterns | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Software Architecture Patterns</a><span class="sep">/</span><span class="current">Strangler Fig Pattern</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Software Architecture Patterns overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#the-problem-legacy-systems">The Problem: Legacy Systems</a></li>
+        <li><a href="#the-strangler-fig-solution">The Strangler Fig Solution</a></li>
+        <li><a href="#the-architecture">The Architecture</a></li>
+        <li><a href="#detailed-example-migrating-an-online-store">Detailed Example: Migrating an Online Store</a></li>
+        <li><a href="#key-insights-and-implications">Key Insights and Implications</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SOFTWARE ARCHITECTURE PATTERNS</span>
+          <h1>Strangler Fig Pattern</h1>
+        </div>
+
+                <div class="toc-box">
+          <h2>Table of Contents</h2>
+          <ul class="toc-list">
+            <li><a href="#overview">Overview</a>
+            </li>
+            <li><a href="#the-problem-legacy-systems">The Problem: Legacy Systems</a>
+            </li>
+            <li><a href="#the-strangler-fig-solution">The Strangler Fig Solution</a>
+            </li>
+            <li><a href="#the-architecture">The Architecture</a>
+            </li>
+            <li><a href="#detailed-example-migrating-an-online-store">Detailed Example: Migrating an Online Store</a>
+            </li>
+            <li><a href="#key-insights-and-implications">Key Insights and Implications</a>
+            </li>
+            <li><a href="#common-interview-questions">Common Interview Questions</a>
+            </li>
+            <li><a href="#key-takeaways">Key Takeaways</a>
+            </li>
+          </ul>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>The name comes from a real rainforest plant: a strangler fig starts as a small seed dropped in a crack of a large host tree, slowly grows around it sending down roots and reaching up for sunlight, and over years becomes strong enough to survive on its own — until the original tree underneath eventually rots away, leaving only the fig standing in its shape. Martin Fowler borrowed this image in the early 2000s to describe a way of replacing old software systems: instead of tearing down a legacy system and building a replacement from scratch in one risky move, you grow the new system gradually around the old one, piece by piece, until the legacy system is no longer needed and can be safely switched off. It's one of the most trusted ways to move a large, tangled monolith toward a microservices architecture, precisely because it doesn't ask a business to gamble everything on a single high-risk rewrite.</p>
+
+        <h2 id="the-problem-legacy-systems">The Problem: Legacy Systems</h2>
+        <p>A legacy system is simply an older piece of software a business still depends on heavily, even though it's difficult to maintain. These systems are rarely badly built on purpose — they're usually built with the best practices available at the time, then patched and extended for years as new business needs arise. Each patch makes sense on its own, but years of patches on top of patches make the whole system rigid, hard to understand, and risky to change. As dependence on the software grows, so does the cost of changing anything: a small tweak can accidentally break something else because everything inside is tightly coupled, developers become afraid to touch old code, the technology becomes outdated and hard to hire for, and every new feature takes longer than the last.</p>
+        <p>The obvious idea — "let's just build a new version that does the same thing, but better" — sounds simple but rarely works in practice. Rewriting a large system from scratch can take months or years, during which customers still expect new features and bug fixes on the old system, stretching the team thin. Worse, nobody fully remembers or has documented every rule the old system enforces, including strange historical edge cases, so trying to perfectly replicate all of that behavior wastes enormous effort. Consider a bank running its core account ledger on a decades-old system that every transaction ultimately touches: replacing it overnight is extremely risky (any mistake could mean lost transactions or wrong balances), yet keeping it forever isn't sustainable either, since it gets harder and costlier to maintain every year. This is exactly the situation the Strangler Fig pattern is designed to solve.</p>
+
+        <h2 id="the-strangler-fig-solution">The Strangler Fig Solution</h2>
+        <p>Instead of replacing the legacy system all at once, the Strangler Fig approach replaces it gradually, one small piece of functionality at a time. You build a small new service that handles just one feature, while the old system continues handling everything else; over time you build more services for more features, and each time a new piece is ready, you redirect that slice of traffic away from the old system into the new one.</p>
+        <p>The trick that makes this possible is a <strong>facade</strong> (or proxy): a layer sitting between client applications and the backend systems. This proxy inspects each incoming request and decides where it should go — the legacy system, or one of the new services — entirely behind the scenes, so the applications and people using the system never need to know a migration is even happening; they keep talking to the same front door the whole time.</p>
+        <p>This incremental approach has three major benefits: the business starts getting value almost immediately (as soon as the first small service is live, instead of waiting years for a "big bang" release); the risk of any single change is much lower, since it's far easier to detect and roll back a small piece than to unwind an entire rewrite; and teams learn as they go, with each migrated piece teaching the organization more about the old system's real behavior and how to do the next piece even better. It's worth being honest that this doesn't make modernization easy — it still requires real engineering discipline to safely split apart a tangled system — but it makes the investment and the returns visible and gradual, rather than staking everything on one enormous, high-risk event.</p>
+
+        <h2 id="the-architecture">The Architecture</h2>
+        <p>At a high level, the Strangler Fig architecture has four building blocks: the <strong>client applications</strong> making requests, the <strong>facade/proxy</strong> that receives every request, the <strong>legacy system</strong> that still owns not-yet-migrated features, and the <strong>new system</strong> — usually a set of microservices — that owns already-migrated features.</p>
+        <p>The migration typically moves through four phases. In <strong>phase one</strong>, the facade is introduced in front of the legacy system for the first time, acting as a transparent pass-through that forwards almost all traffic straight to the legacy system unchanged. In <strong>phase two</strong>, as new services are built one at a time, the facade routes an increasing share of requests to those new services based on which feature or URL path the request targets. In <strong>phase three</strong>, once every feature has migrated and nothing depends on the legacy system anymore, it can be safely decommissioned and the facade routes 100% of requests to the new system. In <strong>phase four</strong>, some teams remove the facade entirely and let clients talk directly to the new system, while others keep a lightweight version around as a stable adapter for older clients.</p>
+
+        <div class="diagram-box">
+          <img src="../images/software-architecture/strangler-fig-migration-phases.png" alt="Strangler Fig migration phases diagram">
+          <div class="diagram-caption">Strangler Fig migration phases — traffic gradually shifts from the legacy monolith to new services.</div>
+        </div>
+
+        <p>One more architectural piece appears whenever the legacy system and new services need to talk to each other during the transition, which is almost always the case: the <strong>anti-corruption layer</strong>. Think of it as a translator — when an old part of the legacy system needs to call a feature that's already moved into a new microservice, the anti-corruption layer converts the old-style call into whatever format the new microservice expects, and translates the response back. This keeps the new services clean and well-designed instead of forcing them to understand the old system's outdated conventions.</p>
+
+        <h2 id="detailed-example-migrating-an-online-store">Detailed Example: Migrating an Online Store</h2>
+        <p>Consider an online store built as one large monolithic application, bundling three logical pieces of functionality: a <strong>User service</strong> (customer accounts), a <strong>Cart service</strong> (shopping carts, depending on user data), and an <strong>Account service</strong> (order history and settings) — all sharing a single large relational database.</p>
+        <p>The migration begins by placing a proxy layer in front of the storefront's UI and the monolith. At first, this proxy simply forwards every request straight to the monolith, changing nothing about how the system behaves — valuable on its own, since it gives the team a safe place to redirect traffic later without touching the monolith's code yet. Next, the team decides new features will be built as separate microservices going forward, while existing bugs in the monolith are still fixed as needed. The proxy is updated so requests matching the User service's endpoints go to a brand-new User microservice with its own dedicated database, while everything else still goes to the monolith. Because the Cart service inside the monolith still needs user information that no longer lives there, an anti-corruption layer is introduced inside the monolith to translate the Cart service's old-style calls into calls the new User microservice understands.</p>
+
+        <div class="diagram-box">
+          <img src="../images/software-architecture/strangler-fig-ecommerce-example.png" alt="Strangler Fig pattern applied to an e-commerce checkout diagram">
+          <div class="diagram-caption">Strangler Fig pattern applied to an e-commerce checkout — proxy layer routing between the legacy monolith and a new User microservice.</div>
+        </div>
+
+        <p>Because both the legacy monolith and the new User microservice may need access to user data during this in-between period, the team adds a synchronization mechanism: whenever the User microservice's database changes, an event flows through a queue, and a small synchronizing agent applies that same change to the monolith's database, keeping both copies close to consistent until cutover completes. This same playbook — migrate one service, add an anti-corruption layer where needed, sync data if required — is repeated for the Cart service, then the Account service. Each time a service fully migrates out, its access through the anti-corruption layer is removed, since the caller now talks to the new service directly. Once all three services live outside the monolith, the shared database and old monolith code are retired, and eventually the proxy layer itself can be simplified or removed.</p>
+
+        <h2 id="key-insights-and-implications">Key Insights and Implications</h2>
+        <div class="callout">
+          <div class="callout-title">The proxy is the linchpin — treat it that way</div>
+          The facade deserves special care: if it goes down or becomes overloaded, both the old and new parts of the system become unreachable. Real deployments use resilient, managed technology for this layer (such as a cloud provider's API gateway service) rather than a single fragile custom-built router, specifically so it doesn't become a single point of failure.
+        </div>
+        <p>Successfully splitting a system requires understanding where the natural seams are — the places where one piece of business logic can be cleanly separated from another. Techniques like domain-driven design help teams find sensible boundaries so each extracted service represents a coherent, independent piece of the business rather than an arbitrary slice of code. This pattern also generally assumes access to modify the legacy system's source code, since small hooks are often needed to redirect internal calls to new services; if a team can't change the old system at all (e.g. an unsupported, closed third-party product), other modernization approaches are needed instead.</p>
+        <p>Modernization through this pattern isn't purely a technical exercise. Legacy systems often become tangled specifically because of how the teams around them were organized and made decisions, so simply rebuilding the same software with a new team using old habits tends to recreate similar problems over time — lasting success usually requires rethinking how teams are structured and collaborate, not just which programming language they use. Finally, it helps to think of the proxy, anti-corruption layers, and data synchronization mechanisms as temporary scaffolding rather than permanent fixtures: the healthiest migrations plan from day one to eventually remove this scaffolding once the legacy system is fully retired.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">Why migrate incrementally with the Strangler Fig pattern instead of doing a full rewrite?</div>
+          <div class="qa-a">A full rewrite requires the business to bet everything on one high-risk, long-running effort — customers still need bug fixes and features on the old system throughout, and undocumented edge-case behavior is nearly impossible to replicate perfectly. Incremental migration delivers value almost immediately as each small piece goes live, keeps the blast radius of any single change small and easy to roll back, and lets the team learn about the legacy system's real behavior as they go.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What role does the facade/proxy play, and why is it a risk if not built resiliently?</div>
+          <div class="qa-a">The facade is the single front door that routes every request to either the legacy system or the appropriate new service, completely transparently to clients. Because every request passes through it, if the facade goes down or becomes overloaded, both the legacy and new parts of the system become unreachable — so production deployments use resilient, managed infrastructure (like a cloud API gateway) rather than a single custom-built router.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What is an anti-corruption layer, and when is it needed?</div>
+          <div class="qa-a">It's a translation layer used whenever the legacy system and already-migrated new services need to call each other during the transition — it converts old-style calls into the format the new microservice expects, and translates responses back. This keeps the new services clean and free of the legacy system's outdated conventions, instead of forcing them to support both old and new calling styles indefinitely.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you keep data consistent between the legacy monolith and a newly extracted service during migration?</div>
+          <div class="qa-a">A common approach is event-based synchronization: whenever the new service's database changes, an event is published to a queue, and a synchronizing agent applies the equivalent change to the legacy monolith's database, keeping both copies close to consistent until the feature is fully cut over and the legacy copy can be retired.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">When is the Strangler Fig pattern a poor fit?</div>
+          <div class="qa-a">It generally assumes you can still access and modify the legacy system's source code, since you typically need to add hooks so internal calls can be redirected to new services. If the legacy system is an unsupported, closed, third-party product you cannot modify at all, this pattern isn't applicable and a different modernization approach is needed.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The Strangler Fig pattern migrates a legacy system gradually by routing traffic through a facade/proxy that transparently redirects each feature to a new service as it's built, using an anti-corruption layer to bridge old and new calling conventions during the transition. It trades the speed of a big-bang rewrite for lower risk, incremental value delivery, and continuous learning — but it demands a resilient facade, careful identification of natural service boundaries, and organizational change alongside the technical migration.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="index.html"><span class="dir">Previous</span>Topic Overview</a>
+          <a class="next" href="api-gateway-pattern.html"><span class="dir">Next</span>API Gateway Pattern</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

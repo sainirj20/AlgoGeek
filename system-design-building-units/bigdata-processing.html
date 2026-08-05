@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Big-Data Batch &amp; Stream Processing | System Design — Building Units | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Building Units</a><span class="sep">/</span><span class="current">Big-Data Batch &amp; Stream Processing</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Building Units overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#apache-hadoop">Apache Hadoop</a></li>
+        <li><a href="#apache-spark">Apache Spark</a></li>
+        <li><a href="#apache-flink">Apache Flink</a></li>
+        <li><a href="#batch-vs-stream-lambda-kappa">Batch vs. Stream Processing &amp; Lambda vs. Kappa Architecture</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN — BUILDING UNITS</span>
+          <h1>Big-Data Batch &amp; Stream Processing</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Big-data processing is about running computation across datasets or event volumes too large, too fast, or too continuous for a single machine — historically split into two worlds: batch processing (crunch a large, bounded dataset on a schedule) and stream processing (react to unbounded events as they arrive). This page traces how the dominant compute engine evolved from Hadoop's disk-based MapReduce, to Spark's in-memory unification of batch/SQL/streaming/ML, to Flink's purpose-built low-latency streaming, then closes with the architectural question every data platform eventually faces: how do you combine batch's accuracy with streaming's freshness — Lambda's two-layer approach, or Kappa's single-pipeline alternative?</p>
+
+        <h3 id="apache-hadoop">Apache Hadoop</h3>
+        <p>Apache Hadoop is the open-source framework that established distributed storage and batch processing of very large datasets across clusters of commodity hardware — the foundational big-data platform, originating at Yahoo and inspired by Google's GFS and MapReduce papers. It bundles three components: HDFS for storage, MapReduce for processing, and YARN for cluster resource management.</p>
+        <p>HDFS follows a master/slave design: a single NameNode holds filesystem metadata in memory while many DataNodes store the actual 128MB data blocks, replicated three ways by default and spread rack-aware for fault tolerance — DataNodes heartbeat to the NameNode, and missed heartbeats trigger re-replication elsewhere (modern deployments add NameNode high availability via an active/standby pair). MapReduce processes data through a Map phase (transform into key-value pairs), a shuffle/sort, and a Reduce phase (aggregate values sharing a key), materializing every intermediate stage to disk — which makes it highly fault-tolerant, since a failed task simply re-runs from persisted input, but slow for multi-step or iterative jobs, since each step pays a full disk-write/read/network-shuffle cost. YARN, introduced to decouple resource management from MapReduce-specific job logic, uses a cluster-wide ResourceManager to allocate CPU/memory, a per-node NodeManager to launch and monitor containers, and a per-application ApplicationMaster to negotiate resources and coordinate tasks — this let Spark, Hive, and Tez run as YARN applications sharing the same cluster instead of being locked to MapReduce alone.</p>
+        <p><strong>Popular tools:</strong> Cloudera/Hortonworks (merged), Amazon EMR, Google Dataproc, Azure HDInsight; ecosystem projects Hive, HBase, Pig, Sqoop, Oozie.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Legacy environments already invested in the Hadoop ecosystem (HDFS + Hive + HBase); pure, ultra-large batch ETL where cost-per-TB matters more than latency and the job is simple enough that MapReduce's rigidity isn't a bottleneck; anywhere still needing HDFS specifically as durable, rack-aware, replicated storage underneath other engines. Rarely the first choice for new greenfield projects — new big-data work typically starts with Spark or a cloud-native lakehouse over object storage instead.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Mature, battle-tested fault tolerance</li><li>Cheap commodity storage at massive scale</li><li>Strong throughput for write-once/read-many workloads</li></ul></td>
+            <td><ul><li>MapReduce's disk-heavy model is slow for iterative/interactive jobs</li><li>Verbose, low-level programming model versus SQL/DataFrame APIs</li><li>Costlier on-prem cluster operations versus elastic cloud object storage + compute</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="apache-spark">Apache Spark</h3>
+        <p>Apache Spark is a unified, general-purpose distributed data-processing engine that performs in-memory computation across a cluster — covering batch ETL, SQL, streaming, machine learning, and graph processing on one platform. It has largely superseded Hadoop MapReduce as the default big-data compute engine, mainly by fixing MapReduce's disk-bound weakness.</p>
+        <p>The foundational abstraction is the RDD (Resilient Distributed Dataset) — an immutable, partitioned collection built through a lineage of deterministic transformations; fault tolerance comes from replaying that lineage rather than restoring from a replica, and Spark keeps intermediate results in memory (spilling to disk only under pressure), which is why it dramatically outperforms MapReduce on iterative workloads like ML training loops or graph algorithms. Execution is lazy — transformations build a DAG and nothing runs until an action triggers it, enabling whole-pipeline optimization. A Driver runs the user's program and schedules tasks across Executors (worker processes holding cached partitions), with a Cluster Manager — YARN, Kubernetes, Spark's own Standalone manager, or local — allocating the actual resources. Spark SQL/DataFrames layer a higher-level, schema-aware API on top of RDDs, optimized by the Catalyst query optimizer and the Tungsten execution engine, while Structured Streaming models a stream as an unbounded, continuously appended table and executes it as a sequence of small micro-batches — reusing the same DataFrame/SQL APIs as batch, but bounding latency to hundreds of milliseconds or seconds rather than true per-event processing.</p>
+        <p><strong>Popular tools:</strong> Databricks (built by Spark's original authors), Amazon EMR, Google Dataproc, Azure Synapse/HDInsight; commonly paired with Delta Lake, Apache Iceberg, or Apache Hudi as the lakehouse table format.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          ETL pipelines that read raw data from a lake, clean/join/aggregate it, and write curated tables; large-scale data transformation too big for one machine; feature engineering for ML at scale; iterative analytics/ML training that scans the same dataset repeatedly, where in-memory caching avoids MapReduce's repeated disk I/O; and near-real-time (not hard real-time) streaming via Structured Streaming when a few hundred ms to seconds of latency is acceptable and the team wants to reuse the same SQL/DataFrame code as batch. For true low-latency per-event processing, prefer Flink.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Much faster than MapReduce for iterative/interactive workloads</li><li>One engine covers batch/SQL/streaming/ML, reducing tooling sprawl</li><li>Strong ecosystem and connectors (S3, HDFS, Kafka, JDBC, Delta/Iceberg/Hudi)</li></ul></td>
+            <td><ul><li>More memory-hungry/expensive than lean disk-based batch for very simple one-pass ETL</li><li>Real JVM tuning learning curve (GC, memory/executor sizing, shuffle config)</li><li>Micro-batch streaming model can't match a purpose-built engine's sub-second per-event latency</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="apache-flink">Apache Flink</h3>
+        <p>Apache Flink is a distributed stream-processing engine built for continuous, unbounded data — true event-at-a-time (not micro-batch) execution with strong event-time semantics and exactly-once state consistency. It also supports batch processing, treated as a bounded stream, but is streaming-first by design, which is the key architectural difference from Spark Structured Streaming.</p>
+        <p>Flink processes each event as it arrives through a pipelined dataflow graph rather than collecting events into small batches, which is why it typically achieves tens-of-milliseconds latency versus Spark's hundreds of milliseconds to seconds. It distinguishes event time (when something actually happened) from processing time (when it was observed); watermarks assert that no more events earlier than a given point should arrive, letting Flink correctly trigger time-based computations even with late or out-of-order data. Operators maintain state across events — in memory or in RocksDB for very large state — managed as a first-class, fault-tolerant part of the job, with exactly-once guarantees delivered via checkpointing based on the Chandy-Lamport distributed snapshot algorithm: periodic consistent snapshots of operator state and stream position let Flink restore and replay from the last checkpoint on failure. Flink also supports flexible windowing (tumbling, sliding, session) and complex event processing (CEP) for pattern detection.</p>
+        <p><strong>Popular tools:</strong> AWS Managed Service for Apache Flink, Ververica Platform (Flink's creators), Confluent Cloud for Apache Flink, Alibaba Cloud Realtime Compute; widely used at Alibaba, Uber, and Netflix for high-scale, low-latency streaming.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Sub-second/tens-of-milliseconds latency needs (real-time fraud detection, ad-tech bidding, real-time monitoring/alerting, dynamic pricing); significantly out-of-order data requiring rigorous event-time correctness (IoT with variable network delay); or complex, long-lived stateful stream processing — sessionization, pattern detection, continuous joins — with strict exactly-once guarantees, where streaming is the primary workload rather than one part of a broader batch pipeline. Choose Spark Structured Streaming instead when the team already has a Spark-centric batch stack and wants to reuse the same code and skills, and seconds-level latency is fine.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Lowest latency true streaming among mainstream engines</li><li>Superior out-of-order/late-event handling via watermarks</li><li>Strong exactly-once state consistency</li></ul></td>
+            <td><ul><li>Steeper learning curve — event time, watermarks, and stateful operators demand deeper expertise than Spark's batch-like API</li><li>Smaller ecosystem and hiring pool than Spark</li><li>Operationally more specialized (state-backend tuning, checkpoint sizing)</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="batch-vs-stream-lambda-kappa">Batch vs. Stream Processing &amp; Lambda vs. Kappa Architecture</h3>
+        <p>Batch processing takes a large, bounded dataset and processes it all at once, typically on a schedule — optimized for throughput and completeness over latency, since the whole dataset is available before the job even starts (a nightly job rebuilding a reporting table from the day's transaction logs is the classic example). Stream processing instead processes a continuous, unbounded sequence of events as they arrive, computing incremental, low-latency results without waiting for "all" the data, because there is no "all" — a rolling five-minute fraud-risk score updated as transactions stream in. Most real platforms need both, which raises the architectural question of how to combine them.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="24" font-size="13" font-weight="700" fill="#0f2545">Lambda Architecture</text>
+
+            <rect x="20" y="95" width="100" height="50" rx="6" fill="#0f2545"/>
+            <text x="70" y="125" text-anchor="middle" font-size="10.5" fill="#fff">Data Source</text>
+
+            <rect x="185" y="35" width="195" height="68" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="282" y="57" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1d4ed8">Batch Layer</text>
+            <text x="282" y="74" text-anchor="middle" font-size="9.5" fill="#334155">Hadoop / Spark</text>
+            <text x="282" y="90" text-anchor="middle" font-size="9" fill="#5a6472">full history &#183; periodic &#183; accurate</text>
+
+            <rect x="185" y="130" width="195" height="68" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="282" y="152" text-anchor="middle" font-size="11.5" font-weight="700" fill="#6b4a10">Speed / Streaming Layer</text>
+            <text x="282" y="169" text-anchor="middle" font-size="9.5" fill="#334155">Flink / Spark Streaming</text>
+            <text x="282" y="185" text-anchor="middle" font-size="9" fill="#5a6472">recent data &#183; low latency &#183; approximate</text>
+
+            <rect x="470" y="82" width="195" height="68" rx="8" fill="#f0fdf4" stroke="#166534"/>
+            <text x="567" y="104" text-anchor="middle" font-size="11.5" font-weight="700" fill="#166534">Serving Layer</text>
+            <text x="567" y="121" text-anchor="middle" font-size="9.5" fill="#334155">merges batch + speed views</text>
+            <text x="567" y="137" text-anchor="middle" font-size="9" fill="#5a6472">queried by applications</text>
+
+            <line x1="120" y1="110" x2="185" y2="69" stroke="#334155" marker-end="url(#a2)"/>
+            <line x1="120" y1="135" x2="185" y2="164" stroke="#334155" marker-end="url(#a2)"/>
+            <line x1="380" y1="69" x2="470" y2="104" stroke="#334155" marker-end="url(#a2)"/>
+            <line x1="380" y1="164" x2="470" y2="126" stroke="#334155" marker-end="url(#a2)"/>
+
+            <text x="350" y="222" text-anchor="middle" font-size="9.5" fill="#5a6472">Same business logic implemented twice &#8212; one codebase per layer, risk of behavioral divergence</text>
+
+            <line x1="20" y1="245" x2="680" y2="245" stroke="#94a3b8" stroke-dasharray="4,3"/>
+
+            <text x="20" y="268" font-size="13" font-weight="700" fill="#0f2545">Kappa Architecture</text>
+
+            <rect x="20" y="330" width="100" height="50" rx="6" fill="#0f2545"/>
+            <text x="70" y="360" text-anchor="middle" font-size="10.5" fill="#fff">Data Source</text>
+
+            <rect x="185" y="330" width="170" height="50" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="270" y="350" text-anchor="middle" font-size="11" font-weight="700" fill="#1d4ed8">Replayable Log</text>
+            <text x="270" y="366" text-anchor="middle" font-size="9" fill="#334155">(Kafka, long retention)</text>
+
+            <rect x="415" y="310" width="220" height="90" rx="8" fill="#f0fdf4" stroke="#166534"/>
+            <text x="525" y="332" text-anchor="middle" font-size="11.5" font-weight="700" fill="#166534">Single Stream Processing Layer</text>
+            <text x="525" y="349" text-anchor="middle" font-size="9.5" fill="#334155">Flink / Kafka Streams /</text>
+            <text x="525" y="364" text-anchor="middle" font-size="9.5" fill="#334155">Spark Structured Streaming</text>
+            <text x="525" y="380" text-anchor="middle" font-size="9" fill="#5a6472">real-time load + historical reprocessing</text>
+
+            <line x1="120" y1="355" x2="185" y2="355" stroke="#334155" marker-end="url(#a2)"/>
+            <line x1="355" y1="355" x2="415" y2="355" stroke="#334155" marker-end="url(#a2)"/>
+
+            <path d="M525,400 C525,432 270,432 270,380" stroke="#94a3b8" stroke-dasharray="4,3" fill="none" marker-end="url(#a2)"/>
+            <text x="397" y="445" text-anchor="middle" font-size="9" fill="#5a6472">replay log from earlier offset to reprocess / backfill history</text>
+
+            <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Lambda runs a batch layer and a speed layer side by side, merged at serving time; Kappa replaces both with one streaming pipeline fed by a replayable log, reprocessing history by replaying the log instead of running a separate batch layer.</div>
+        </div>
+
+        <p>Lambda Architecture tries to get both batch's correctness and streaming's low latency by running three layers side by side: a batch layer (Hadoop/Spark) periodically recomputes accurate, complete views over full history; a speed/streaming layer (Flink/Spark Streaming) processes only recent data in real time for a low-latency, approximate/incremental view that fills the gap until the batch layer catches up; and a serving layer merges both views for querying. The catch is that the same business logic typically has to be implemented twice — once per engine — which doubles development/maintenance effort and risks behavioral divergence between the two paths; this "two codebases" problem is the primary complaint that motivated Kappa.</p>
+        <p>Kappa Architecture, proposed by Kafka co-creator Jay Kreps in 2014's "Questioning the Lambda Architecture," eliminates the separate batch layer entirely: everything, including historical reprocessing and backfill, runs through a single streaming pipeline. The key insight is that a durable, replayable log with long retention (Kafka) <em>is</em> your batch layer — to reprocess history or fix a bug, you replay the log from an earlier offset through the same (or an updated) streaming job and cut over once it catches up, giving one codebase and one processing model to operate. The trade-off is that this requires a stream engine and log powerful enough to handle both live traffic and full historical reprocessing efficiently — increasingly feasible as Flink, Kafka Streams, and Spark Structured Streaming have matured — though some organizations still keep a dedicated batch layer for very large-scale historical analytics even while defaulting to Kappa for operational pipelines.</p>
+        <p><strong>Popular tools:</strong> Lambda-style stacks — Hadoop/Spark for the batch layer paired with Flink/Spark Streaming for the speed layer. Kappa-style stacks — Kafka as the durable, replayable log feeding a single Flink, Kafka Streams, or Spark Structured Streaming job.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Batch-only for reporting/analytics that can tolerate hours of staleness — daily revenue dashboards, monthly billing — the simplest, cheapest, most mature option. Stream-only/Kappa as the modern default when low latency matters and the team already has streaming infrastructure (Kafka + Flink/Spark Structured Streaming) — real-time personalization, fraud detection, operational monitoring, event-driven microservices. Lambda for legacy or specialized cases where the batch and speed layers are already on very different tech that's hard to unify, or where an organization wants an independently computed batch "audit" path alongside a fast approximate streaming path — increasingly rare as a first choice for new systems given the maintenance burden.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Lambda: combines an accurate full-history batch view with a low-latency approximate streaming view</li><li>Kappa: one codebase and one processing model to build, test, and operate</li><li>Kappa: simpler operationally — no need to keep two engines' behavior in sync</li></ul></td>
+            <td><ul><li>Lambda: business logic must be implemented and maintained twice, risking behavioral divergence between layers</li><li>Kappa: requires a stream engine/log powerful enough for both real-time load and full historical reprocessing</li><li>Kappa: very large-scale historical recomputation can still be more naturally expressed in a dedicated batch/warehouse engine</li></ul></td>
+          </tr>
+        </table>
+
+        <div class="page-nav">
+          <a class="prev" href="realtime-communication.html"><span class="dir">Previous</span>Real-Time Client-Server Communication</a>
+          <a class="next" href="workflow-orchestration.html"><span class="dir">Next</span>Workflow Orchestration &amp; Job Scheduling</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

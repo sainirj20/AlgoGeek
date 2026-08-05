@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CQRS (Command Query Responsibility Segregation) | Software Architecture Patterns | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Software Architecture Patterns</a><span class="sep">/</span><span class="current">CQRS</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Software Architecture Patterns overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#the-problem-traditional-crud-operations">The Problem: Traditional CRUD Operations</a></li>
+        <li><a href="#cqrs-a-solution">CQRS: A Solution</a></li>
+        <li><a href="#the-architecture">The Architecture</a></li>
+        <li><a href="#the-inner-workings">The Inner Workings</a></li>
+        <li><a href="#an-example-rating-products-in-an-online-store">An Example: Rating Products in an Online Store</a></li>
+        <li><a href="#issues-special-considerations-and-performance-implications">Issues, Special Considerations, and Performance Implications</a></li>
+        <li><a href="#system-design-examples">System Design Examples</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SOFTWARE ARCHITECTURE PATTERNS</span>
+          <h1>CQRS (Command Query Responsibility Segregation)</h1>
+        </div>
+
+                <div class="toc-box">
+          <h2>Table of Contents</h2>
+          <ul class="toc-list">
+            <li><a href="#overview">Overview</a>
+            </li>
+            <li><a href="#the-problem-traditional-crud-operations">The Problem: Traditional CRUD Operations</a>
+            </li>
+            <li><a href="#cqrs-a-solution">CQRS: A Solution</a>
+            </li>
+            <li><a href="#the-architecture">The Architecture</a>
+            </li>
+            <li><a href="#the-inner-workings">The Inner Workings</a>
+            </li>
+            <li><a href="#an-example-rating-products-in-an-online-store">An Example: Rating Products in an Online Store</a>
+            </li>
+            <li><a href="#issues-special-considerations-and-performance-implications">Issues, Special Considerations, and Performance Implications</a>
+            </li>
+            <li><a href="#system-design-examples">System Design Examples</a>
+            </li>
+            <li><a href="#common-interview-questions">Common Interview Questions</a>
+            </li>
+            <li><a href="#key-takeaways">Key Takeaways</a>
+            </li>
+          </ul>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>CQRS stands for <strong>Command Query Responsibility Segregation</strong> — an intimidating name for a fairly simple idea: use a different model for writing data than the model you use for reading it. The term was popularized by Greg Young and later explained widely by Martin Fowler. In everyday application design, a <strong>command</strong> is any operation that changes data — placing an order, updating a profile, rating a product — while a <strong>query</strong> is any operation that only reads data and never changes it, like viewing order history or checking an account balance. CQRS's core claim is simply that these two very different jobs shouldn't be forced through the exact same model and the exact same code path.</p>
+        <p>That sounds like a small idea, but it has a large effect on how systems get built — especially in microservices, where each service already owns its own database and answering a single question often means recombining data from several sources. It's worth saying up front, and worth returning to later: CQRS is a powerful tool for specific, complex situations, but most experts, including Fowler himself, caution that it adds real complexity and should not be reached for by default.</p>
+
+        <h2 id="the-problem-traditional-crud-operations">The Problem: Traditional CRUD Operations</h2>
+        <p>Most applications are built around CRUD — Create, Read, Update, Delete — all funneled through one shared data model. That's simple and works well for straightforward applications where reading a record looks basically like writing it. As applications grow more sophisticated, though, that single shared model starts to strain. Reads and writes often have very different needs and very different volumes: a product catalog might be read thousands of times for every single write, like a price update, so the two sides really want to be optimized in opposite directions. A shared model also creates a data-mismatch problem — fields that matter enormously for updating a record, like validation rules or internal status flags, are often irrelevant clutter to someone just trying to display it.</p>
+        <p>There's also a very practical problem: <strong>lock contention</strong>. When many operations — some reading, some writing — hit the same tables at the same time, they can block each other and slow everything down. In microservices specifically, once data is split across multiple services each with its own database, a single query that needs to "join" information from Orders, Products, and Users becomes awkward, since there's no longer one database to run that join in. Finally, mixing read and write concerns in the same model creates a security headache too: it becomes harder to tightly control who's allowed to change data versus who's just allowed to view it, since both flow through the same code paths and objects.</p>
+
+        <h2 id="cqrs-a-solution">CQRS: A Solution</h2>
+        <p>CQRS's answer is to formally split the system into two sides: a <strong>command side</strong> that handles anything that changes data, and a <strong>query side</strong> that handles anything that reads data — each with its own model, its own classes and logic, and sometimes even its own database entirely. The command side is designed around business intent rather than raw field updates. Instead of a generic "update this record" operation, it models an actual business action — "Book Hotel Room," "Rate Product" — carrying the validation and business rules specific to that action, so the write side stays focused on protecting data integrity and enforcing the rules that matter.</p>
+        <p>The query side, by contrast, has no business rules or validation at all — its only job is to serve up data in whatever shape is most convenient and fast for whoever is asking, often via read-optimized copies of the data (sometimes called materialized views or projections) pre-shaped for exactly the questions being asked. Because the two sides are separate, they need a way to stay in sync: in most real implementations, the write side publishes an event whenever it changes something, and the read side listens for that event and updates its own optimized copy accordingly. That means the read side isn't always instantly up to date — it becomes eventually consistent with the write side, catching up shortly after each change.</p>
+
+        <h2 id="the-architecture">The Architecture</h2>
+        <p>CQRS architectures generally come in two levels of maturity. In the simplest version, the command model and query model still share one underlying database, but the application code itself is split into two distinct paths — a write path with full validation and business logic, and a read path that just fetches and formats data with no business logic attached. That alone already gives cleaner code and a clearer separation of concerns, without adding any new infrastructure.</p>
+        <p>The more advanced version goes further and gives the command side and query side entirely separate data stores, which can even run on different database technologies — for instance, a relational database for writes (great for enforcing rules and integrity) and a fast document database for reads (great for pre-shaped, quick-to-fetch views). This is the version that unlocks independent scaling: if a system is read-heavy, teams can add many read replicas or read-optimized nodes without touching the write side at all.</p>
+
+        <div class="diagram-box">
+          <img src="../images/software-architecture/cqrs-architecture.png" alt="CQRS architecture diagram">
+          <div class="diagram-caption">CQRS architecture — separate Command (write) and Query (read) models connected by an event bus</div>
+        </div>
+
+        <h2 id="the-inner-workings">The Inner Workings</h2>
+        <p>When a command arrives, it flows in a predictable way: the client sends a command object describing the intended business action, a command handler receives it and runs validation and business rules — for example, checking that a hotel room is actually available before allowing a booking — and if everything checks out, the handler updates the write database and, often, publishes an event describing what just happened.</p>
+        <p>Queries work completely differently, and far more simply: the client sends a query (say, "get this customer's order history"), and a query handler fetches data directly from the read database, formats it into a plain data object — often called a DTO, or Data Transfer Object — and returns it. There's no validation step and no business logic here; the read side's entire purpose is to answer questions quickly.</p>
+        <p>Synchronization between the two sides usually rides on events: when the write side successfully saves a change, it publishes a domain event describing exactly what changed, and a separate process — sometimes part of the read side, sometimes a dedicated updater — subscribes to these events and updates the read database, often by rebuilding or refreshing a materialized view. Some teams push this further by combining CQRS with <strong>Event Sourcing</strong>, where the write side stores the full history of every event that ever happened instead of just the current state, deriving current state by replaying that history. In that setup the event store becomes the single source of truth, and the read side's materialized views can always be rebuilt from scratch by replaying history — powerful, but noticeably more design complexity.</p>
+
+        <h2 id="an-example-rating-products-in-an-online-store">An Example: Rating Products in an Online Store</h2>
+        <p>Imagine an online store where customers can rate products and also browse a product catalog. On the <strong>command side (write model)</strong>, a <code>RateProduct</code> command carries the product ID, the user ID, and the rating value. A command handler receives it, looks up the product in the write database, applies the rating using business logic — for example, preventing a user from rating the same product twice — and saves the change:</p>
+        <pre><code>RateProduct(productId, userId, rating):
+    product = writeRepository.find(productId)
+    product.applyRating(userId, rating)   // business logic lives here
+    writeRepository.save(product)
+    publish ProductRatedEvent(productId, newAverageRating)</code></pre>
+        <p>On the <strong>query side (read model)</strong>, a separate, simple interface just answers questions, with no business logic at all:</p>
+        <pre><code>ProductsReadModel:
+    findById(productId) -&gt; ProductDisplay { id, name, price, averageRating, inStock }
+    findByName(name) -&gt; list of ProductDisplay
+    findOutOfStockProducts() -&gt; list of ProductInventory</code></pre>
+        <p>When <code>ProductRatedEvent</code> is published, a small listener updates the read model's stored average rating for that product, so the next time someone views the product page they see the updated rating — usually within moments, but not necessarily instantly.</p>
+
+        <h2 id="issues-special-considerations-and-performance-implications">Issues, Special Considerations, and Performance Implications</h2>
+        <p>The biggest and most important trade-off in CQRS is <strong>eventual consistency</strong>: because the read side updates asynchronously after the write side, there's a window of time — sometimes milliseconds, sometimes longer under heavy load — where the read model shows slightly stale data. This "replication lag" has to be designed for explicitly; after a customer places an order, for instance, the confirmation screen might read directly from the write side (or show a "processing" state) rather than immediately querying the read model.</p>
+        <p>CQRS also adds genuine complexity, more so once combined with Event Sourcing — teams now have to write and maintain code for commands, command handlers, events, event handlers, and read models, considerably more moving parts than a single shared CRUD model. Because of this, CQRS is best applied only to the specific parts of a system (sometimes called "bounded contexts") that truly benefit from it — like a complex booking engine — rather than being applied uniformly across an entire application. Messaging reliability becomes its own concern too, once events flow between the command and query sides: messages can fail, arrive twice, or arrive out of order, so consumers need to handle duplicates safely (idempotency) and cope with retries.</p>
+        <p>On the positive side, the performance benefits can be significant for the right workload. Since reads and writes are decoupled, each side scales independently — a system read 100 to 1000 times more often than it's written to (a common ratio for product catalogs) can scale out many cheap, fast read replicas without adding any load or complexity to the write side. Fowler's guidance is a useful rule of thumb: reach for CQRS when there's a genuinely complex domain or a large read/write imbalance that justifies the extra complexity, and avoid it for simple CRUD-style applications, where it mostly just adds risk without a matching benefit.</p>
+
+        <h2 id="system-design-examples">System Design Examples</h2>
+        <p>CQRS tends to appear in systems with complex business rules on the write side, a heavy imbalance between reads and writes, or both:</p>
+        <ul>
+          <li><strong>E-commerce order management</strong>: placing an order — write side, with inventory checks, pricing rules, and payment validation — is handled completely separately from browsing the product catalog or viewing order history — read side, using a denormalized view combining products, users, and orders for fast display.</li>
+          <li><strong>Ticket booking systems</strong>: reserving a seat involves careful write-side logic to avoid double-booking, while searching for available events and seats is a read-heavy operation best served by a separate, fast, cache-friendly read model.</li>
+          <li><strong>Social media feeds</strong>: posting content (a write) is relatively rare compared to the enormous number of times a feed gets read and re-read, making a precomputed, denormalized read model essential for performance.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <img src="../images/software-architecture/cqrs-ecommerce-example.png" alt="CQRS applied to an e-commerce order management system diagram">
+          <div class="diagram-caption">CQRS applied to an e-commerce order management system</div>
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">What problem does CQRS solve that a single shared CRUD model struggles with at scale?</div>
+          <div class="qa-a">A shared model forces reads and writes — which often have very different volumes and needs — through identical code paths, creating field mismatches (validation-heavy write fields cluttering read views), lock contention when reads and writes hit the same tables concurrently, awkward cross-service joins once data is split across microservices, and blurred security boundaries between who can view versus change data. CQRS resolves this by giving commands and queries separate models designed for their own concerns.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What are the two levels of CQRS architecture, from simplest to most advanced?</div>
+          <div class="qa-a">The simplest version keeps one shared database but splits the application code into a write path (full validation and business logic) and a read path (fetch-and-format only, no business logic). The more advanced version gives the command and query sides entirely separate data stores — potentially different database technologies altogether — which unlocks independent scaling, such as adding read replicas without touching the write side.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How do the command side and query side stay in sync, and what consistency model results?</div>
+          <div class="qa-a">The write side publishes a domain event whenever it saves a change, and a listener on the read side (sometimes a dedicated updater process) subscribes to that event and updates its own materialized view accordingly. Because this happens asynchronously, the read side is eventually consistent with the write side rather than instantly consistent — there's a brief replication-lag window where the read model can show slightly stale data.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Walk through what happens when a RateProduct command is submitted.</div>
+          <div class="qa-a">A command handler receives the RateProduct command carrying the product ID, user ID, and rating; it looks up the product in the write repository, applies the rating through business logic (for example, blocking a user from rating the same product twice), saves the updated product to the write database, and publishes a ProductRatedEvent with the new average rating. A listener on the read side then updates the read model's stored average rating, so the product page reflects the new rating shortly after — not instantly, but usually within moments.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">When should you avoid using CQRS, according to Martin Fowler's guidance?</div>
+          <div class="qa-a">Fowler recommends reaching for CQRS only when a domain is genuinely complex or there's a large read/write volume imbalance that justifies the extra moving parts — commands, command handlers, events, event handlers, and read models. For simple CRUD-style applications without that complexity or imbalance, CQRS mostly adds risk and engineering overhead without a matching benefit, so a single shared model is the better choice.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          CQRS splits a system into a command side that enforces business rules and intent on writes, and a query side that serves fast, pre-shaped reads with no business logic — kept in sync via events published from the write side and consumed by the read side, which makes the read side eventually consistent. It ranges from a lightweight split of code paths over one database to fully separate data stores with independent scaling, but the added complexity means it should be reserved for genuinely complex domains or heavily read/write-imbalanced workloads, not applied as a default.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="event-driven-architecture-pattern.html"><span class="dir">Previous</span>Event-Driven Architecture</a>
+          <a class="next" href="configuration-externalization-pattern.html"><span class="dir">Next</span>Configuration Externalization</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

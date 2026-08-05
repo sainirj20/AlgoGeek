@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relationships &amp; Cascading | JPA / Hibernate | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">JPA / Hibernate</a><span class="sep">/</span><span class="current">Relationships &amp; Cascading</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to JPA / Hibernate overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#one-to-one-author-authorprofile">@OneToOne: Author and AuthorProfile</a></li>
+        <li><a href="#one-to-many-many-to-one-author-post">@OneToMany / @ManyToOne: Author and Post</a></li>
+        <li><a href="#many-to-many-post-tag">@ManyToMany: Post and Tag</a></li>
+        <li><a href="#cascade-types">Cascade Types</a></li>
+        <li><a href="#fetch-types-eager-vs-lazy">Fetch Types: EAGER vs. LAZY</a></li>
+        <li><a href="#pitfall-modifying-collections-in-bidirectional-relationships">Pitfall: Modifying Collections in Bidirectional Relationships</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">JPA / HIBERNATE</span>
+          <h1>Relationships &amp; Cascading</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Relationship mapping is one of the most interview-tested areas of JPA because it is where the abstraction leaks the hardest. Almost every painful production bug &mdash; N+1 query storms, <code>LazyInitializationException</code> on a detached entity, infinite recursion when serializing a bidirectional graph to JSON, or silently orphaned rows &mdash; traces back to a misunderstood <code>@OneToOne</code>, <code>@OneToMany</code>, or <code>@ManyToMany</code> mapping. Interviewers use this topic to separate candidates who can copy-paste annotations from candidates who understand what SQL Hibernate actually issues, when it issues it, and why. This page works through the relationships in the blog domain &mdash; <code>Author</code>, <code>AuthorProfile</code>, <code>Post</code>, <code>Comment</code>, and <code>Tag</code> &mdash; covering owning vs. inverse sides, cascade semantics, fetch strategy, and the classic bidirectional-collection pitfall.</p>
+
+        <h2 id="one-to-one-author-authorprofile">@OneToOne: Author and AuthorProfile</h2>
+        <p>Every relationship has an <strong>owning side</strong> (the side that holds the foreign key column and that Hibernate inspects to decide what SQL to run) and an <strong>inverse side</strong> (the side that mirrors the relationship for convenient object navigation but has no direct effect on the schema). For a one-to-one between <code>Author</code> and <code>AuthorProfile</code>, it makes sense for <code>AuthorProfile</code> to own the relationship since it is the "detail" record pointing back at its "parent".</p>
+        <pre><code>// Owning side &mdash; holds the foreign key column author_id
+@Entity
+public class AuthorProfile {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String twitterHandle;
+    private String website;
+
+    @OneToOne
+    @JoinColumn(name = "author_id")
+    private Author author;
+}</code></pre>
+        <pre><code>// Inverse side &mdash; no join column, just mirrors the relationship
+@Entity
+public class Author {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String email;
+
+    @Lob
+    private String bio;
+
+    @OneToOne(mappedBy = "author")
+    private AuthorProfile profile;
+}</code></pre>
+        <p>The <code>mappedBy</code> attribute always lives on the inverse side and names the field on the owning side that maps the relationship. If you set <code>author.setProfile(profile)</code> but never set <code>profile.setAuthor(author)</code>, Hibernate will persist <code>author_id</code> as <code>null</code> &mdash; because it only looks at the owning side to generate the <code>INSERT</code>/<code>UPDATE</code> statement.</p>
+
+        <h2 id="one-to-many-many-to-one-author-post">@OneToMany / @ManyToOne: Author and Post</h2>
+        <p>The <code>@ManyToOne</code>/<code>@OneToMany</code> pair is the most common relationship in any real schema, and it is always the "many" side that owns the relationship, because that is the side whose table physically holds the foreign key.</p>
+        <pre><code>// Owning side &mdash; the "many" side, holds author_id
+@Entity
+public class Post {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+
+    @Lob
+    private String content;
+
+    @Enumerated(EnumType.STRING)
+    private PostStatus status;
+
+    private Instant publishedAt;
+
+    @ManyToOne
+    @JoinColumn(name = "author_id")
+    private Author author;
+}</code></pre>
+        <pre><code>// Inverse side &mdash; the "one" side, mirrors the collection
+@Entity
+public class Author {
+    // ...
+
+    @OneToMany(mappedBy = "author")
+    private List&lt;Post&gt; posts = new ArrayList&lt;&gt;();
+}</code></pre>
+        <p>Always initialize collection fields (<code>new ArrayList&lt;&gt;()</code>) so a freshly-constructed, not-yet-persisted entity never returns <code>null</code> from a getter. Note that <code>@ManyToOne</code> defaults to <code>FetchType.EAGER</code>, which is almost never what you want &mdash; see the fetch types section below.</p>
+
+        <h2 id="many-to-many-post-tag">@ManyToMany: Post and Tag</h2>
+        <p>A many-to-many relationship requires a join table, since neither side's table can hold a foreign key to a collection of rows on the other side. One side owns the <code>@JoinTable</code> definition; the other side simply declares <code>mappedBy</code>.</p>
+        <pre><code>// Owning side &mdash; defines the join table
+@Entity
+public class Post {
+    // ...
+
+    @ManyToMany
+    @JoinTable(
+        name = "post_tags",
+        joinColumns = @JoinColumn(name = "post_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set&lt;Tag&gt; tags = new HashSet&lt;&gt;();
+}</code></pre>
+        <pre><code>// Inverse side
+@Entity
+public class Tag {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @ManyToMany(mappedBy = "tags")
+    private Set&lt;Post&gt; posts = new HashSet&lt;&gt;();
+}</code></pre>
+        <p>A pure <code>@ManyToMany</code> is convenient, but it has a well-known limitation: the join table can only hold the two foreign keys, with no room for extra columns. The moment you need metadata on the association itself &mdash; for example a <code>createdAt</code> timestamp recording when a tag was applied to a post, or a <code>taggedBy</code> user &mdash; you should replace it with an explicit join entity, typically named <code>PostTag</code>, modeled as two <code>@OneToMany</code>/<code>@ManyToOne</code> relationships (<code>Post</code>&#8594;<code>PostTag</code> and <code>Tag</code>&#8594;<code>PostTag</code>). This is a very common "gotcha" question because <code>@ManyToMany</code> looks elegant in a tutorial but rarely survives contact with real requirements.</p>
+
+        <h2 id="cascade-types">Cascade Types</h2>
+        <p>Cascading controls whether an operation performed on a parent entity is automatically propagated to its associated child entities. JPA defines six cascade types, configured via <code>cascade = { ... }</code> on the relationship annotation:</p>
+        <pre><code>@OneToOne(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
+private AuthorProfile profile;</code></pre>
+        <ul>
+          <li><code>CascadeType.PERSIST</code> &mdash; saving the parent also saves any new child entities.</li>
+          <li><code>CascadeType.MERGE</code> &mdash; merging a detached parent also merges its children's state.</li>
+          <li><code>CascadeType.REMOVE</code> &mdash; deleting the parent also deletes its children.</li>
+          <li><code>CascadeType.REFRESH</code> &mdash; refreshing the parent from the database also refreshes its children.</li>
+          <li><code>CascadeType.DETACH</code> &mdash; detaching the parent from the persistence context also detaches its children.</li>
+          <li><code>CascadeType.ALL</code> &mdash; shorthand for all five operations above.</li>
+        </ul>
+        <p><code>CascadeType.ALL</code> is appropriate for a true parent-owns-child relationship where the child has no independent lifecycle and no meaning outside its parent &mdash; the textbook example here is <code>Author</code> owning <code>AuthorProfile</code>: a profile is never shared, never queried on its own, and should be deleted the instant its author is deleted. It is dangerous, however, on shared or independently-meaningful entities. Never cascade <code>REMOVE</code> from <code>Post</code> to <code>Tag</code>: a <code>Tag</code> like "java" or "spring" is referenced by many posts, so deleting one post must never delete a tag that other posts still rely on. The same caution applies to <code>Post</code>&#8594;<code>Comment</code> in some designs and to any many-to-many association in general &mdash; cascading removal across a shared association silently corrupts data for unrelated records.</p>
+
+        <h2 id="fetch-types-eager-vs-lazy">Fetch Types: EAGER vs. LAZY</h2>
+        <p>Every association has a default fetch strategy defined by the JPA specification:</p>
+        <ul>
+          <li><code>@ManyToOne</code> and <code>@OneToOne</code> default to <code>FetchType.EAGER</code>.</li>
+          <li><code>@OneToMany</code> and <code>@ManyToMany</code> default to <code>FetchType.LAZY</code>.</li>
+        </ul>
+        <p>These defaults exist for historical reasons and are widely considered a mistake in practice. The strong, industry-accepted best practice is to explicitly mark <em>every</em> association &mdash; regardless of type &mdash; as <code>FetchType.LAZY</code>:</p>
+        <pre><code>@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "author_id")
+private Author author;</code></pre>
+        <p>Defaulting everything to <code>EAGER</code> means loading a single <code>Post</code> can silently trigger a cascade of extra queries (or one enormous join) to pull in its <code>Author</code>, that author's <code>AuthorProfile</code>, and so on &mdash; work you rarely need for every code path. With everything set to <code>LAZY</code>, you fetch what you actually need, intentionally, using JPQL <code>JOIN FETCH</code> or Spring Data's <code>@EntityGraph</code> at the specific query sites that need the association eagerly loaded (this is covered in depth on the Performance &amp; N+1 page). The rule of thumb interviewers look for: <strong>lazy by default, eager by exception, chosen per-query rather than per-entity.</strong></p>
+
+        <h2 id="pitfall-modifying-collections-in-bidirectional-relationships">Pitfall: Modifying Collections in Bidirectional Relationships</h2>
+        <p>A classic bug in bidirectional relationships is updating only one side of the association:</p>
+        <pre><code>Author author = authorRepository.findById(1L).orElseThrow();
+Post post = new Post();
+post.setTitle("Understanding JPA Cascades");
+
+// BUG: only the in-memory collection is touched
+author.getPosts().add(post);
+
+authorRepository.save(author);
+// post.author is still null &mdash; Hibernate issues nothing for post's author_id</code></pre>
+        <p>This fails silently because Hibernate determines what SQL to issue by inspecting the <strong>owning side</strong> of the relationship &mdash; here, <code>Post.author</code> &mdash; not the inverse-side collection on <code>Author</code>. Adding to <code>author.getPosts()</code> only changes an in-memory <code>List</code>; it has zero effect on the database unless <code>post.setAuthor(author)</code> is also called. The object graph becomes inconsistent: <code>author.getPosts()</code> contains the post, but <code>post.getAuthor()</code> is <code>null</code>, and the foreign key column is never written.</p>
+        <p>The standard fix is to never let callers manipulate the collection directly. Instead, expose synchronized helper methods on the parent that update both sides atomically:</p>
+        <pre><code>public class Author {
+    // ...
+
+    public void addPost(Post post) {
+        posts.add(post);
+        post.setAuthor(this);
+    }
+
+    public void removePost(Post post) {
+        posts.remove(post);
+        post.setAuthor(null);
+    }
+}</code></pre>
+        <p>With this pattern, callers write <code>author.addPost(post)</code> and both sides of the relationship stay consistent, which is what Hibernate needs to generate correct SQL and what keeps the in-memory graph trustworthy for the rest of the application.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between the owning side and the inverse side of a relationship?</div>
+          <div class="qa-a">The owning side holds the foreign key column (or defines the <code>@JoinTable</code> for many-to-many) and is what Hibernate inspects to decide which SQL to issue. The inverse side is declared with <code>mappedBy</code> and exists purely for convenient bidirectional navigation in Java &mdash; changes made only on the inverse side (like adding to a collection) have no effect on the database unless the owning side is also updated.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why should you almost always override the default EAGER fetch type on @ManyToOne?</div>
+          <div class="qa-a">Because <code>@ManyToOne</code> and <code>@OneToOne</code> default to <code>FetchType.EAGER</code>, loading one entity can silently cascade into loading a whole chain of associated entities you didn't ask for, causing unnecessary joins or extra round trips (N+1 queries) on code paths that never touch that association. Explicitly setting <code>FetchType.LAZY</code> everywhere and opting in to eager loading per-query with <code>JOIN FETCH</code> or <code>@EntityGraph</code> keeps query cost predictable and intentional.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What does CascadeType.ALL actually cascade, and when is it dangerous?</div>
+          <div class="qa-a"><code>CascadeType.ALL</code> is shorthand for <code>PERSIST</code>, <code>MERGE</code>, <code>REMOVE</code>, <code>REFRESH</code>, and <code>DETACH</code> &mdash; every lifecycle operation on the parent is propagated to the child. It's safe for a true parent-owns-child association with no independent lifecycle, like <code>Author</code>&#8594;<code>AuthorProfile</code>. It's dangerous on shared or independently-meaningful entities: cascading <code>REMOVE</code> from <code>Post</code> to <code>Tag</code>, for example, would delete a tag still referenced by other posts.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why do bidirectional relationships need helper methods like addPost()/removePost()?</div>
+          <div class="qa-a">Because Hibernate only looks at the owning side of a relationship (<code>Post.author</code>) to generate SQL, updating only the inverse-side collection (<code>author.getPosts().add(post)</code>) leaves the database untouched and the in-memory object graph inconsistent. Helper methods on the parent update both sides together in one call, guaranteeing the collection and the owning-side reference never drift apart.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">When would you model a many-to-many as two one-to-many relationships instead?</div>
+          <div class="qa-a">As soon as the association itself needs its own data &mdash; a <code>createdAt</code> timestamp, a status, an audit field &mdash; a plain <code>@ManyToMany</code> join table has nowhere to put it. Introducing an explicit join entity (e.g. <code>PostTag</code>) modeled as two <code>@OneToMany</code>/<code>@ManyToOne</code> relationships gives you a real, queryable, extensible entity to hold that extra data.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>The owning side holds the foreign key (or <code>@JoinTable</code>); the inverse side is <code>mappedBy</code> and purely for navigation &mdash; Hibernate only reads the owning side to build SQL.</li>
+          <li>Default fetch types are inconsistent and dangerous: <code>@ManyToOne</code>/<code>@OneToOne</code> default to <code>EAGER</code>, <code>@OneToMany</code>/<code>@ManyToMany</code> default to <code>LAZY</code> &mdash; standardize everything to <code>LAZY</code> and fetch intentionally with <code>JOIN FETCH</code>/<code>@EntityGraph</code>.</li>
+          <li>Use <code>CascadeType.ALL</code> only for genuine parent-owns-child relationships (<code>Author</code>&#8594;<code>AuthorProfile</code>); never cascade <code>REMOVE</code> across shared associations like <code>Post</code>&#8594;<code>Tag</code>.</li>
+          <li>Always update both sides of a bidirectional relationship together, ideally through parent-side helper methods like <code>addPost()</code>/<code>removePost()</code>.</li>
+          <li>Reach for an explicit join entity instead of <code>@ManyToMany</code> the moment the association needs its own columns.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="entity-mapping.html"><span class="dir">Previous</span>Entity Mapping</a>
+          <a class="next" href="entity-lifecycle.html"><span class="dir">Next</span>Entity Lifecycle &amp; States</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

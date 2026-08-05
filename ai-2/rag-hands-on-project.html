@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hands-on RAG Project | AI 2 | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">AI 2</a><span class="sep">/</span><span class="current">Hands-on RAG Project</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to AI 2 overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#what-were-building">What We're Building</a></li>
+        <li><a href="#step-1-project-setup">Step 1: Project Setup</a></li>
+        <li><a href="#step-2-application-configuration">Step 2: Application Configuration</a></li>
+        <li><a href="#step-3-ingestion-pipeline-etl">Step 3: Ingestion Pipeline (ETL)</a></li>
+        <li><a href="#step-4-building-the-rag-query-endpoint">Step 4: Building the RAG Query Endpoint</a></li>
+        <li><a href="#step-5-testing-the-application">Step 5: Testing the Application</a></li>
+        <li><a href="#common-pitfalls">Common Pitfalls</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">AI 2</span>
+          <h1>Hands-on RAG Project</h1>
+        </div>
+
+        <h2 id="what-were-building">What We're Building</h2>
+        <p>
+          By the end of this page you'll have a small, fully-working Spring Boot REST service that does real
+          retrieval-augmented generation end to end: it ingests a handful of plain-text FAQ documents, embeds them
+          and stores the vectors in Postgres via the <code>pgvector</code> extension, and exposes a single
+          <code>POST /ask</code> endpoint that answers questions grounded <em>only</em> in those ingested
+          documents. It is intentionally minimal &mdash; no authentication, no UI, no multi-tenant anything &mdash;
+          because the goal is to see the RAG mechanics (chunk, embed, store, retrieve, augment, generate) laid out
+          in actual code you can run on your laptop, not to build a production system. We use
+          <strong>Spring AI + pgvector</strong> here specifically because pgvector is just a Postgres extension:
+          if you've ever run a Postgres container and written a JDBC connection string, there is nothing new to
+          learn about the storage layer, which lets you focus entirely on the RAG logic itself.
+        </p>
+
+        <h2 id="step-1-project-setup">Step 1: Project Setup</h2>
+        <p>
+          Start a normal Spring Boot project (Spring Initializr or your IDE's wizard both work fine) and add the
+          following dependencies to your <code>pom.xml</code>:
+        </p>
+        <pre><code>&lt;dependencies&gt;
+    &lt;!-- Web layer: REST controllers, embedded Tomcat --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+
+    &lt;!-- Spring AI chat model starter (OpenAI shown here).
+         Swap for spring-ai-starter-model-anthropic or spring-ai-starter-model-ollama
+         as needed -- the rest of this tutorial is provider-agnostic. --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.ai&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-ai-starter-model-openai&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+
+    &lt;!-- Vector store backed by the pgvector Postgres extension --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.ai&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-ai-starter-vector-store-pgvector&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+
+    &lt;!-- Testing --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+        &lt;scope&gt;test&lt;/scope&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+
+&lt;!-- Spring AI ships its own BOM -- import it in dependencyManagement to
+     keep every spring-ai-* artifact on a matching, compatible version. --&gt;
+&lt;dependencyManagement&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.ai&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-ai-bom&lt;/artifactId&gt;
+            &lt;version&gt;1.0.0&lt;/version&gt;
+            &lt;type&gt;pom&lt;/type&gt;
+            &lt;scope&gt;import&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/dependencyManagement&gt;</code></pre>
+        <p>
+          Next, spin up a local Postgres instance with the <code>pgvector</code> extension pre-installed using
+          Docker Compose &mdash; this saves you from having to compile the extension yourself:
+        </p>
+        <pre><code># docker-compose.yml
+version: "3.8"
+services:
+  pgvector-db:
+    image: pgvector/pgvector:pg16
+    container_name: rag-pgvector
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ragdb
+      POSTGRES_USER: raguser
+      POSTGRES_PASSWORD: ragpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+
+volumes:
+  pgvector_data:</code></pre>
+        <p>
+          Run <code>docker compose up -d</code> and you should have a Postgres instance listening on
+          <code>localhost:5432</code> with the <code>vector</code> extension available for Spring AI to use.
+        </p>
+
+        <h2 id="step-2-application-configuration">Step 2: Application Configuration</h2>
+        <p>
+          Wire the datasource and the Spring AI properties together in <code>application.yml</code>:
+        </p>
+        <pre><code>spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ragdb
+    username: raguser
+    password: ragpass
+    driver-class-name: org.postgresql.Driver
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+    vectorstore:
+      pgvector:
+        # Must match the embedding model's output dimension exactly.
+        # text-embedding-3-small / text-embedding-ada-002 both produce 1536-dim vectors.
+        dimensions: 1536
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        initialize-schema: true</code></pre>
+        <div class="callout">
+          <div class="callout-title">Secrets hygiene</div>
+          The API key must be supplied via an environment variable (or a proper secrets manager in production)
+          &mdash; never hardcode it into <code>application.yml</code> or commit it to source control.
+        </div>
+        <p>
+          Setting <code>initialize-schema: true</code> tells Spring AI to create the backing table and vector
+          index for you on first startup, which is convenient for a tutorial but is usually something you'd hand
+          off to a proper migration tool (Flyway/Liquibase) in a real project.
+        </p>
+
+        <h2 id="step-3-ingestion-pipeline-etl">Step 3: Ingestion Pipeline (ETL)</h2>
+        <p>
+          Drop a few plain-text FAQ files into <code>src/main/resources/docs/</code> (e.g.
+          <code>shipping-faq.txt</code>, <code>returns-faq.txt</code>, <code>billing-faq.txt</code>). Then write a
+          <code>CommandLineRunner</code> that loads, splits, and embeds them into the vector store the moment the
+          application starts:
+        </p>
+        <pre><code>package com.example.rag.ingestion;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.reader.TextReader;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Runs once at application startup and loads a handful of plain-text FAQ
+ * documents (src/main/resources/docs/*.txt) into the vector store so the
+ * /ask endpoint has something grounded to retrieve from.
+ *
+ * NOTE: this is a tutorial-grade ETL step, not a production ingestion
+ * pipeline -- see the paragraph below this listing for what's missing.
+ */
+@Component
+public class DocumentIngestionRunner implements CommandLineRunner {
+
+    private final VectorStore vectorStore;
+    private final TokenTextSplitter textSplitter;
+
+    // Constructor injection only -- no @Autowired field injection.
+    public DocumentIngestionRunner(VectorStore vectorStore) {
+        this.vectorStore = vectorStore;
+        // Default splitter settings chunk on a few hundred tokens with a
+        // slight overlap; see "Common Pitfalls" below for why this matters.
+        this.textSplitter = new TokenTextSplitter();
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+        Resource[] faqResources = resolver.getResources("classpath:docs/*.txt");
+
+        List&lt;Document&gt; allChunks = new ArrayList&lt;&gt;();
+
+        for (Resource resource : faqResources) {
+            // TextReader turns one Resource into one Document (whole-file text
+            // plus metadata). We tag each Document with its source filename so
+            // later we can trace an answer back to the file it came from.
+            TextReader reader = new TextReader(resource);
+            reader.getCustomMetadata().put("source", resource.getFilename());
+            List&lt;Document&gt; rawDocuments = reader.get();
+
+            // Split each raw document into smaller, retrieval-friendly chunks.
+            List&lt;Document&gt; chunks = textSplitter.apply(rawDocuments);
+            allChunks.addAll(chunks);
+        }
+
+        // Embeds each chunk (via the configured EmbeddingModel) and writes the
+        // resulting vectors + text + metadata into the pgvector-backed table.
+        vectorStore.add(allChunks);
+
+        System.out.printf("Ingested %d chunk(s) from %d file(s) into the vector store.%n",
+                allChunks.size(), faqResources.length);
+    }
+}</code></pre>
+        <p>
+          Note that this ETL step is <strong>idempotent-unsafe as written</strong>: every application restart
+          re-reads, re-splits, and re-embeds the same files and inserts a fresh set of rows, so you'll end up with
+          duplicate vectors for unchanged content. In a real system you'd compute a checksum (or store a stable
+          document id) per source file, check it against what's already in the vector store, and skip
+          re-embedding anything that hasn't changed &mdash; both to save embedding API cost and to keep retrieval
+          results from being cluttered with duplicate chunks.
+        </p>
+
+        <h2 id="step-4-building-the-rag-query-endpoint">Step 4: Building the RAG Query Endpoint</h2>
+        <p>
+          This is the actual RAG loop: retrieve the most relevant chunks for the incoming question, stuff them
+          into a prompt template, and let the chat model generate an answer constrained to that context.
+        </p>
+        <pre><code>package com.example.rag.web;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@RestController
+public class AskController {
+
+    private final VectorStore vectorStore;
+    private final ChatClient chatClient;
+
+    // Constructor injection: VectorStore for retrieval, ChatClient for generation.
+    public AskController(VectorStore vectorStore, ChatClient.Builder chatClientBuilder) {
+        this.vectorStore = vectorStore;
+        this.chatClient = chatClientBuilder.build();
+    }
+
+    public record AskRequest(String question) {}
+
+    public record AskResponse(String answer) {}
+
+    @PostMapping("/ask")
+    public AskResponse ask(@RequestBody AskRequest request) {
+
+        // 1. RETRIEVE: pull the top-4 most similar chunks from pgvector.
+        List&lt;Document&gt; matches = vectorStore.similaritySearch(
+                SearchRequest.query(request.question()).withTopK(4));
+
+        String context = matches.stream()
+                .map(Document::getContent)
+                .collect(Collectors.joining("\n---\n"));
+
+        // 2. AUGMENT: stuff the retrieved context into the prompt template.
+        //    The explicit "say you don't know" instruction is what keeps the
+        //    model from silently falling back on its own general knowledge.
+        String augmentedPrompt = """
+                Answer the question using ONLY the context below. \
+                If the answer isn't in the context, say you don't know.
+
+                Context:
+                %s
+
+                Question:
+                %s
+                """.formatted(context, request.question());
+
+        // 3. GENERATE: send the augmented prompt to the chat model and
+        //    return only the plain-text answer.
+        String answer = chatClient.prompt()
+                .user(augmentedPrompt)
+                .call()
+                .content();
+
+        return new AskResponse(answer);
+    }
+}</code></pre>
+        <p>
+          Notice there is no separate "prompt engineering" service and no manual HTTP call to an embeddings API
+          &mdash; <code>VectorStore.similaritySearch</code> handles embedding the query and running the
+          nearest-neighbor search against pgvector, and <code>ChatClient</code> handles the call to the chat
+          model. All the RAG-specific logic lives in how you build <code>augmentedPrompt</code>.
+        </p>
+
+        <h2 id="step-5-testing-the-application">Step 5: Testing the Application</h2>
+        <p>
+          With the Postgres container running, the FAQ files ingested at startup, and <code>OPENAI_API_KEY</code>
+          exported in your shell, start the app and hit the endpoint:
+        </p>
+        <pre><code>curl -X POST http://localhost:8080/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What is your refund policy for digital purchases?"}'</code></pre>
+        <p>A realistic response, assuming your <code>returns-faq.txt</code> covers this topic, looks like:</p>
+        <pre><code>{
+  "answer": "According to the FAQ, digital purchases are refundable within 14 days of purchase as long as the item has not been downloaded or activated. Refund requests should be submitted through the Support &gt; Billing section of your account."
+}</code></pre>
+        <p>
+          Beyond "did it return 200 OK", the real thing to check is <strong>groundedness</strong>: spot-check a
+          handful of answers against the actual ingested documents and confirm the model is citing facts that are
+          really in your FAQ files rather than quietly falling back on whatever it happens to know about refund
+          policies in general. Try a question you know is <em>not</em> covered by your documents and confirm you
+          get an honest "I don't know" instead of a plausible-sounding hallucination. This manual spot-checking is
+          fine for a tutorial, but in a production system this is exactly where you'd build a proper evaluation
+          harness &mdash; a fixed set of question/expected-answer pairs run automatically on every change to the
+          ingestion pipeline, prompt template, or model, so groundedness regressions get caught before they ship.
+        </p>
+
+        <h2 id="common-pitfalls">Common Pitfalls</h2>
+        <div class="callout">
+          <div class="callout-title">Watch out for these</div>
+          <ul>
+            <li>
+              <strong>Chunk size tuning.</strong> Chunks that are too large hurt retrieval precision (a match
+              drags in a lot of irrelevant surrounding text); chunks that are too small lose context coherence (a
+              match is a fragment with no surrounding meaning). A few hundred tokens per chunk with a small
+              overlap is a reasonable starting point &mdash; tune from there based on your actual documents.
+            </li>
+            <li>
+              <strong>Embedding dimension mismatches.</strong> The <code>spring.ai.vectorstore.pgvector.dimensions</code>
+              value must exactly match the output dimension of whatever embedding model you're actually using.
+              Get this wrong and you'll either get a hard error at write time or, worse, silently corrupted
+              similarity results.
+            </li>
+            <li>
+              <strong>Stale index after source updates.</strong> Editing or replacing a source FAQ file does
+              nothing to the vector store on its own &mdash; if you don't re-run ingestion (and, per Step 3,
+              remove the old chunks for that document first), <code>/ask</code> keeps answering from outdated
+              content.
+            </li>
+          </ul>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>A working RAG service is really just five moving pieces: source documents, a splitter, an
+            embedding model, a vector store, and a chat model that consumes an augmented prompt.</li>
+          <li>Spring AI's <code>VectorStore</code> abstraction and <code>ChatClient</code> API let pgvector,
+            OpenAI, and every other provider slot in behind the same interfaces &mdash; the ingestion and query
+            code you wrote here barely changes if you swap the backing store or model provider.</li>
+          <li><code>TokenTextSplitter</code> chunk size is one of the highest-leverage tuning knobs in the whole
+            pipeline &mdash; get it wrong and no amount of prompt tweaking fixes bad retrieval.</li>
+          <li>The augmented prompt's "answer only from context, otherwise say you don't know" instruction is
+            what actually keeps the system grounded &mdash; without it you have a vector search bolted onto a
+            chatbot, not RAG.</li>
+          <li>Ingestion is not "run once and forget" &mdash; treat it as a pipeline with idempotency and
+            staleness concerns, the same way you would any other ETL job.</li>
+          <li>Groundedness has to be verified deliberately, by spot-check at minimum and by an automated eval
+            harness before this pattern goes anywhere near production.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="ai-tooling-ide.html"><span class="dir">Previous</span>Tooling &amp; IDE Setup</a>
+          <a class="next" href="best-practices.html"><span class="dir">Next</span>Best Practices</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

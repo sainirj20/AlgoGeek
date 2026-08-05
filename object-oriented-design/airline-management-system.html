@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airline Management System | Object Oriented Design | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Object Oriented Design</a><span class="sep">/</span><span class="current">Airline Management System</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Object Oriented Design overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#actors-and-use-cases">Actors &amp; Use Cases</a></li>
+        <li><a href="#key-classes">Key Classes</a></li>
+        <li><a href="#class-diagram">Class Diagram</a></li>
+        <li><a href="#key-flow-activity-diagram">Key Flow: Booking a Seat</a></li>
+        <li><a href="#key-flow-sequence-diagram">Key Flow: Delay Notification</a></li>
+        <li><a href="#design-patterns-applied">Design Patterns Applied</a></li>
+        <li><a href="#code-skeleton">Code Skeleton</a></li>
+        <li><a href="#extensibility-and-edge-cases">Extensibility &amp; Edge Cases</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">OBJECT ORIENTED DESIGN</span>
+          <h1>Design an Airline Management System</h1>
+        </div>
+
+        <p><em>The airline management problem looks like a bigger, fancier parking lot at first glance &mdash; flights instead of spots, passengers instead of vehicles &mdash; but it hides a genuinely different modeling challenge: a Flight (say, "AA100: JFK &rarr; LAX, departing 8:05 AM daily") is not a thing anyone ever boards. What a passenger actually boards is one specific day's occurrence of that route, with its own seat map, its own on-time/delayed/cancelled status, and its own set of paying customers. Missing that split &mdash; modeling "the flight" as a single object that somehow also tracks today's seat availability &mdash; is the single most common mistake candidates make on this problem, and interviewers ask it specifically to see whether you catch it. Treat this page as the template for any "recurring scheduled resource with a per-occurrence state" problem: the same template/instance shape reappears in movie showtimes (a movie vs. a specific 7:30 PM screening), hotel room-night availability, and recurring event ticketing.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design an airline's flight-booking and reservation system: passengers search for flights between an origin and destination on a given date, book one or more seats in a chosen cabin class on a specific date's flight, check in online within a fixed window before departure to receive a boarding pass with a seat assignment, and receive notifications if that flight's status changes (delayed, cancelled). Airline staff configure the airline's aircraft fleet, the airports it serves, and its flight routes/schedules, and can update a flight's status &mdash; which must fan out a notification to every passenger holding a confirmed reservation on that date's flight. Interviewers use this problem to see whether you recognize that a route (e.g., "AA100: JFK to LAX, departs daily at 8:05 AM") and a specific day's occurrence of that route are two different objects with two different lifecycles and two different sets of responsibilities, and whether you can design a seat-booking flow that never double-books a physical seat under concurrent requests.</p>
+
+        <h2 id="requirements">Requirements</h2>
+        <ol>
+          <li>Passengers can <strong>search flights by origin, destination, and date</strong>.</li>
+          <li>A <strong>Flight</strong> is a route/schedule template (e.g., "AA100: JFK to LAX") that can operate on <strong>multiple dates</strong>; each date is a distinct <strong>FlightInstance</strong> with its own seat map, availability, and status.</li>
+          <li>Each FlightInstance carries a <strong>status</strong> &mdash; on-time, delayed, cancelled, or departed &mdash; independent of every other date the same Flight operates.</li>
+          <li>Customers <strong>book one or more seats</strong> on a specific FlightInstance, choosing a <strong>cabin class</strong> (Economy, Business, First) with different pricing and seat maps.</li>
+          <li>The system must <strong>prevent double-booking</strong> the same seat on the same FlightInstance under concurrent requests.</li>
+          <li>Customers can <strong>check in online</strong> within a fixed check-in window before departure and receive a <strong>boarding pass</strong> with a seat assignment.</li>
+          <li>The airline can <strong>delay or cancel</strong> a FlightInstance, which must trigger a <strong>notification to every passenger</strong> holding a confirmed reservation on it.</li>
+          <li>Admin manages <strong>Aircraft</strong>, <strong>Airports</strong>, and <strong>Flights/schedules</strong>; crew assignment is tracked at a high level (which crew is on a given FlightInstance) without modeling crew-legality rules (duty hours, qualifications, rest requirements) in depth.</li>
+          <li>Customers can <strong>cancel a booking</strong> before departure.</li>
+        </ol>
+
+        <h2 id="actors-and-use-cases">Actors &amp; Use Cases</h2>
+        <p>Three actors touch the system, and &mdash; same litmus test as any OOD problem &mdash; each one initiates at least one use case none of the others can:</p>
+        <ul>
+          <li><strong>Passenger</strong> &mdash; searches flights, books seats, checks in, views their boarding pass, and cancels a booking. The only actor who actually holds a reservation.</li>
+          <li><strong>Airline Staff / Admin</strong> &mdash; configures the airline side of the system: aircraft, airports, flights, and schedules, and updates a FlightInstance's status when reality changes (delay, cancellation). Never touches an individual passenger's seat selection.</li>
+          <li><strong>System</strong> &mdash; not a person; the background component that arbitrates seat holds during booking (so two passengers can't both claim the same seat) and drives notification dispatch the moment a FlightInstance's status changes. Modeling it as its own actor keeps "who initiated this" honest: a notification doesn't send itself out of nowhere, the System sends it in reaction to a status update Admin made.</li>
+        </ul>
+        <p>Primary use cases: <strong>Search Flights</strong>, <strong>Book Seat(s)</strong>, <strong>Check In</strong>, <strong>Cancel Booking</strong>, <strong>Update Flight Status</strong> (admin), and <strong>Add/Modify Flight Schedule</strong> (admin).</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 840 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Use case diagram: Passenger, Airline Staff/Admin, and System actors connected to six use cases inside the Airline Reservation System boundary">
+            <rect x="150" y="50" width="520" height="360" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+            <text x="410" y="74" text-anchor="middle" font-size="14" font-weight="700" fill="var(--color-primary-dark)">Airline Reservation System</text>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="72" y1="150" x2="165" y2="120"/>
+              <line x1="72" y1="150" x2="165" y2="200"/>
+              <line x1="72" y1="150" x2="165" y2="280"/>
+              <line x1="72" y1="150" x2="165" y2="360"/>
+
+              <line x1="72" y1="390" x2="435" y2="160"/>
+              <line x1="72" y1="390" x2="435" y2="280"/>
+
+              <line x1="768" y1="270" x2="655" y2="160"/>
+              <line x1="768" y1="270" x2="385" y2="200"/>
+            </g>
+
+            <g font-size="12" fill="var(--color-text)">
+              <circle cx="55" cy="116" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="126" x2="55" y2="160" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="140" x2="70" y2="140" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="160" x2="42" y2="185" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="160" x2="68" y2="185" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="202" text-anchor="middle">Passenger</text>
+
+              <circle cx="55" cy="356" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="366" x2="55" y2="400" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="380" x2="70" y2="380" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="400" x2="42" y2="425" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="400" x2="68" y2="425" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="442" text-anchor="middle">Airline Staff</text>
+              <text x="55" y="456" text-anchor="middle">/ Admin</text>
+
+              <circle cx="785" cy="236" r="10" fill="none" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="785" y1="246" x2="785" y2="280" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="770" y1="260" x2="800" y2="260" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="785" y1="280" x2="772" y2="305" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="785" y1="280" x2="798" y2="305" stroke="var(--color-accent)" stroke-width="2"/>
+              <text x="785" y="322" text-anchor="middle" fill="var(--color-accent-dark)">System</text>
+            </g>
+
+            <g font-size="11" fill="var(--color-text)">
+              <ellipse cx="275" cy="120" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="124" text-anchor="middle">Search Flights</text>
+
+              <ellipse cx="275" cy="200" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="204" text-anchor="middle">Book Seat(s)</text>
+
+              <ellipse cx="275" cy="280" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="284" text-anchor="middle">Check In</text>
+
+              <ellipse cx="275" cy="360" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="364" text-anchor="middle">Cancel Booking</text>
+
+              <ellipse cx="545" cy="160" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="156" text-anchor="middle">Update Flight Status</text>
+              <text x="545" y="170" text-anchor="middle">(Admin)</text>
+
+              <ellipse cx="545" cy="280" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="276" text-anchor="middle">Add / Modify Flight</text>
+              <text x="545" y="290" text-anchor="middle">Schedule (Admin)</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 1. Use-case diagram: Passenger owns search/book/check-in/cancel; Airline Staff/Admin owns flight-status updates and schedule management; System participates in seat-hold arbitration (Book Seat(s)) and drives notification dispatch when status changes (Update Flight Status).</div>
+        </div>
+
+        <h2 id="key-classes">Key Classes</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td>Airline</td><td>The carrier itself; name and airline code, and the set of Flights it operates.</td></tr>
+            <tr><td>Airport</td><td>A physical airport; name, address, and a unique code (e.g. JFK). Used as both the departure and arrival end of a Flight.</td></tr>
+            <tr><td>Aircraft</td><td>A physical airframe; registration/name, model, manufacturing year, and a seat configuration (how many seats per CabinClass).</td></tr>
+            <tr><td>Flight</td><td>The route + schedule <em>template</em> &mdash; flight number, departure/arrival Airport, a default Aircraft, and the recurrence (e.g. daily). Owns every FlightInstance ever scheduled against it. Nobody ever boards a Flight directly.</td></tr>
+            <tr><td>FlightInstance</td><td>One specific date's actual occurrence of a Flight &mdash; its own departure/arrival time, its own (possibly swapped) Aircraft, its own FlightStatus, and its own seat map. This is what a passenger actually books and boards.</td></tr>
+            <tr><td>FlightSeat</td><td>One physical seat on one FlightInstance &mdash; seat number, CabinClass, fare, and booked/free state. The unit of contention the booking flow must protect against double-booking.</td></tr>
+            <tr><td>Reservation (Booking)</td><td>A passenger's claim on one or more FlightSeats on one FlightInstance; tracks status (held/confirmed/cancelled/checked-in) and the booking reference used at check-in.</td></tr>
+            <tr><td>Passenger / Account</td><td>The authenticated customer; profile, contact info, and the reservations they've made. Airline Staff/Admin is a separate Account role with schedule- and status-management permissions instead of booking permissions.</td></tr>
+            <tr><td>CabinClass</td><td>Enum &mdash; ECONOMY, BUSINESS, FIRST. Drives both which seats exist on an Aircraft and what a given FlightSeat costs.</td></tr>
+            <tr><td>Notification</td><td>A message dispatched to a passenger &mdash; reservation confirmation, or a flight-status change (delay/cancellation). Populated reactively by an Observer listening on FlightInstance status changes, not called inline by booking code.</td></tr>
+            <tr><td>CrewAssignment <em>(lightweight)</em></td><td>A thin link between a FlightInstance and its assigned crew members. Deliberately not modeled deeply here &mdash; real crew scheduling (duty-hour limits, qualifications, rest requirements) is its own subsystem and out of scope for this design.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="class-diagram">Class Diagram</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1020 930" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="UML class diagram for the Airline Management System, centered on Flight composed of FlightInstance composed of FlightSeat">
+            <defs>
+              <marker id="alDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-primary-dark)" stroke="var(--color-primary-dark)" stroke-width="1"/>
+              </marker>
+              <marker id="alArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)"/>
+              </marker>
+            </defs>
+
+            <!-- solid association / composition lines -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="450" y1="230" x2="205" y2="132" marker-end="url(#alArrow)"/>
+              <line x1="480" y1="230" x2="480" y2="152" marker-end="url(#alArrow)"/>
+              <line x1="600" y1="230" x2="600" y2="152" marker-end="url(#alArrow)"/>
+              <line x1="650" y1="230" x2="840" y2="172" marker-end="url(#alArrow)"/>
+              <line x1="535" y1="400" x2="535" y2="478" marker-start="url(#alDiamond)"/>
+              <line x1="535" y1="670" x2="535" y2="728" marker-start="url(#alDiamond)"/>
+              <line x1="165" y1="700" x2="165" y2="632" marker-end="url(#alArrow)"/>
+              <line x1="290" y1="790" x2="410" y2="790" marker-end="url(#alArrow)"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,4" fill="none">
+              <line x1="660" y1="550" x2="798" y2="550" marker-end="url(#alArrow)"/>
+              <line x1="660" y1="800" x2="798" y2="800" marker-end="url(#alArrow)"/>
+            </g>
+
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="330" y="165">0..*</text>
+              <text x="210" y="150">1</text>
+              <text x="486" y="190">departs from</text>
+              <text x="486" y="145">1</text>
+              <text x="606" y="190">arrives at</text>
+              <text x="606" y="145">1</text>
+              <text x="740" y="190">default</text>
+              <text x="800" y="150">0..*</text>
+              <text x="545" y="418">1</text>
+              <text x="545" y="470">0..*</text>
+              <text x="545" y="688">1</text>
+              <text x="545" y="720">1..*</text>
+              <text x="172" y="670">1</text>
+              <text x="172" y="722">0..*</text>
+              <text x="300" y="783">1</text>
+              <text x="380" y="783">1..*</text>
+              <text x="700" y="543">&laquo;uses&raquo;</text>
+              <text x="700" y="793">&laquo;uses&raquo;</text>
+            </g>
+
+            <!-- Airline -->
+            <g>
+              <rect x="40" y="20" width="200" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="40" y1="54" x2="240" y2="54" stroke="var(--color-primary)"/>
+              <line x1="40" y1="94" x2="240" y2="94" stroke="var(--color-primary)"/>
+              <text x="140" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Airline</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="48" y="70">- airlineCode: String</text>
+                <text x="48" y="84">- name: String</text>
+                <text x="48" y="112">+ getFlights(): List&lt;Flight&gt;</text>
+              </g>
+            </g>
+
+            <!-- Airport -->
+            <g>
+              <rect x="420" y="20" width="220" height="130" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="420" y1="54" x2="640" y2="54" stroke="var(--color-primary)"/>
+              <line x1="420" y1="112" x2="640" y2="112" stroke="var(--color-primary)"/>
+              <text x="530" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Airport</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="428" y="70">- airportCode: String</text>
+                <text x="428" y="84">- name: String</text>
+                <text x="428" y="98">- address: String</text>
+                <text x="428" y="130">+ getCode(): String</text>
+              </g>
+            </g>
+
+            <!-- Aircraft -->
+            <g>
+              <rect x="800" y="20" width="200" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="800" y1="54" x2="1000" y2="54" stroke="var(--color-primary)"/>
+              <line x1="800" y1="128" x2="1000" y2="128" stroke="var(--color-primary)"/>
+              <text x="900" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Aircraft</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="808" y="70">- registrationNo: String</text>
+                <text x="808" y="84">- model: String</text>
+                <text x="808" y="98">- manufacturingYear: int</text>
+                <text x="808" y="112">- seatConfig: Map&lt;CabinClass,Integer&gt;</text>
+                <text x="808" y="144">+ totalSeats(): int</text>
+                <text x="808" y="158">+ seatsFor(cabin): int</text>
+              </g>
+            </g>
+
+            <!-- Flight -->
+            <g>
+              <rect x="410" y="230" width="250" height="170" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="410" y1="264" x2="660" y2="264" stroke="var(--color-primary)"/>
+              <line x1="410" y1="352" x2="660" y2="352" stroke="var(--color-primary)"/>
+              <text x="535" y="252" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Flight</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="418" y="278">- flightNumber: String</text>
+                <text x="418" y="292">- departureAirport: Airport</text>
+                <text x="418" y="306">- arrivalAirport: Airport</text>
+                <text x="418" y="320">- defaultAircraft: Aircraft</text>
+                <text x="418" y="334">- instances: List&lt;FlightInstance&gt;</text>
+                <text x="418" y="368">+ scheduleInstance(date): FlightInstance</text>
+                <text x="418" y="382">+ findInstance(date): FlightInstance</text>
+              </g>
+            </g>
+
+            <!-- FlightInstance -->
+            <g>
+              <rect x="410" y="480" width="250" height="190" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="410" y1="514" x2="660" y2="514" stroke="var(--color-primary)"/>
+              <line x1="410" y1="612" x2="660" y2="612" stroke="var(--color-primary)"/>
+              <text x="535" y="502" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">FlightInstance</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="418" y="528">- flightDate: LocalDate</text>
+                <text x="418" y="542">- departureTime: LocalDateTime</text>
+                <text x="418" y="556">- arrivalTime: LocalDateTime</text>
+                <text x="418" y="570">- aircraft: Aircraft</text>
+                <text x="418" y="584">- status: FlightStatus</text>
+                <text x="418" y="598">- seats: List&lt;FlightSeat&gt;</text>
+                <text x="418" y="628">+ availableSeats(cabin): List&lt;FlightSeat&gt;</text>
+                <text x="418" y="642">+ updateStatus(status): void</text>
+                <text x="418" y="656">+ swapAircraft(a): void</text>
+              </g>
+            </g>
+
+            <!-- FlightStatus enum -->
+            <g>
+              <rect x="800" y="480" width="200" height="140" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="800" y1="514" x2="1000" y2="514" stroke="var(--color-accent-dark)"/>
+              <text x="900" y="496" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text)">&laquo;enum&raquo;</text>
+              <text x="900" y="508" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">FlightStatus</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="810" y="530">SCHEDULED</text>
+                <text x="810" y="546">ON_TIME</text>
+                <text x="810" y="562">DELAYED</text>
+                <text x="810" y="578">DEPARTED</text>
+                <text x="810" y="594">CANCELLED</text>
+              </g>
+            </g>
+
+            <!-- Passenger -->
+            <g>
+              <rect x="40" y="480" width="250" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="40" y1="514" x2="290" y2="514" stroke="var(--color-primary)"/>
+              <line x1="40" y1="580" x2="290" y2="580" stroke="var(--color-primary)"/>
+              <text x="165" y="502" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Passenger</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="48" y="528">- passengerId: String</text>
+                <text x="48" y="542">- name: String</text>
+                <text x="48" y="556">- email: String</text>
+                <text x="48" y="570">- phone: String</text>
+                <text x="48" y="596">+ getReservations(): List&lt;Reservation&gt;</text>
+              </g>
+            </g>
+
+            <!-- FlightSeat -->
+            <g>
+              <rect x="410" y="730" width="250" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="410" y1="764" x2="660" y2="764" stroke="var(--color-primary)"/>
+              <line x1="410" y1="830" x2="660" y2="830" stroke="var(--color-primary)"/>
+              <text x="535" y="752" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">FlightSeat</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="418" y="778">- seatNumber: String</text>
+                <text x="418" y="792">- cabinClass: CabinClass</text>
+                <text x="418" y="806">- fare: BigDecimal</text>
+                <text x="418" y="820">- booked: boolean</text>
+                <text x="418" y="846">+ holdIfFree(reservationId): boolean</text>
+                <text x="418" y="860">+ release(reservationId): void</text>
+              </g>
+            </g>
+
+            <!-- CabinClass enum -->
+            <g>
+              <rect x="800" y="730" width="200" height="110" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="800" y1="764" x2="1000" y2="764" stroke="var(--color-accent-dark)"/>
+              <text x="900" y="746" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text)">&laquo;enum&raquo;</text>
+              <text x="900" y="758" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">CabinClass</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="810" y="780">ECONOMY</text>
+                <text x="810" y="796">BUSINESS</text>
+                <text x="810" y="812">FIRST</text>
+              </g>
+            </g>
+
+            <!-- Reservation -->
+            <g>
+              <rect x="40" y="700" width="250" height="170" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="40" y1="734" x2="290" y2="734" stroke="var(--color-primary)"/>
+              <line x1="40" y1="808" x2="290" y2="808" stroke="var(--color-primary)"/>
+              <text x="165" y="722" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Reservation</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="48" y="748">- reservationId: String</text>
+                <text x="48" y="762">- passenger: Passenger</text>
+                <text x="48" y="776">- seats: List&lt;FlightSeat&gt;</text>
+                <text x="48" y="790">- status: ReservationStatus</text>
+                <text x="48" y="804">- bookingReference: String</text>
+                <text x="48" y="824">+ confirm(): void</text>
+                <text x="48" y="838">+ cancel(): void</text>
+                <text x="48" y="852">+ checkIn(): BoardingPass</text>
+              </g>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 2. Flight &mdash;filled diamond&rarr; FlightInstance &mdash;filled diamond&rarr; FlightSeat is the backbone of this design: a Flight is a route/schedule template, each FlightInstance is one date's actual occurrence with its own aircraft, status, and seat map, and each FlightSeat tracks one physical seat's booked/free state for that one date. Reservation associates a Passenger with one or more FlightSeats; FlightInstance and FlightSeat each depend on (&laquo;uses&raquo;) an enum (FlightStatus, CabinClass) rather than subclassing.</div>
+        </div>
+        <p><strong>Why Flight and FlightInstance are two separate classes, not one.</strong> It's tempting to model a single <code>Flight</code> class with a <code>date</code> field and call it done &mdash; and that's exactly the shortcut that trips candidates up on this problem. A Flight like "AA100: JFK to LAX, departs daily at 8:05 AM" is a <em>template</em>: it exists once, in a schedule, whether or not a single seat has ever been sold on any date. What a passenger actually searches for, books, and boards is one specific day's occurrence of that template &mdash; today's AA100, not "AA100" in the abstract. Those two things have genuinely different lifecycles and different responsibilities: the Flight rarely changes (a schedule change is a deliberate admin action affecting every future date at once), while a FlightInstance changes constantly and independently of every other date &mdash; today's AA100 can be delayed while tomorrow's AA100 departs on time, and today's seat map can be half-empty while next Tuesday's is sold out. Collapsing them into one class forces awkward questions: does a "delayed" flag on Flight mean the whole route is delayed forever, or just today? Does the seat map belong to the route or to today's specific tail number and cabin configuration? Splitting them resolves all of that cleanly &mdash; <strong>Flight owns zero or more FlightInstances</strong> (composition: a filled diamond, since an instance has no meaning outside its owning Flight), and each FlightInstance independently owns its own aircraft assignment, status, and list of FlightSeats (a second composition, for the same reason: a FlightSeat for July 30th's flight is meaningless once that instance is done). This is also precisely why FlightInstance, not Flight, carries the operational <code>aircraft</code> field &mdash; Flight's <code>defaultAircraft</code> is just the plan; the FlightInstance's actual <code>aircraft</code> can diverge from it the moment an aircraft swap happens (see Extensibility &amp; Edge Cases below), and only the instance-level field needs to change when that occurs.</p>
+
+        <h2 id="key-flow-activity-diagram">Key Flow: Booking a Seat on a Specific Date (Activity Diagram)</h2>
+        <p>Booking only makes sense once the system has resolved an abstract "route on this date" search down to one or more concrete FlightInstances &mdash; that resolution step is easy to skip when sketching this quickly, but it's the whole point of the Flight/FlightInstance split showing up in a runtime flow. From there, seat availability is checked before any payment is attempted, and a seat is only <em>held</em> &mdash; not permanently booked &mdash; until payment actually clears.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 700" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Activity diagram for booking a seat on a specific date's flight instance">
+            <defs>
+              <marker id="alActArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#alActArrow)" fill="none">
+              <line x1="300" y1="30" x2="300" y2="54"/>
+              <line x1="300" y1="105" x2="300" y2="129"/>
+              <line x1="300" y1="180" x2="300" y2="204"/>
+              <line x1="300" y1="255" x2="300" y2="279"/>
+              <line x1="300" y1="360" x2="300" y2="384"/>
+              <line x1="300" y1="435" x2="300" y2="459"/>
+              <line x1="300" y1="540" x2="300" y2="564"/>
+              <line x1="300" y1="615" x2="300" y2="639"/>
+              <line x1="410" y1="320" x2="470" y2="320"/>
+              <line x1="585" y1="345" x2="585" y2="380"/>
+              <line x1="410" y1="500" x2="480" y2="500"/>
+              <line x1="595" y1="525" x2="595" y2="560"/>
+            </g>
+            <circle cx="300" cy="20" r="10" fill="var(--color-primary)"/>
+
+            <rect x="150" y="55" width="300" height="50" rx="22" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="76" text-anchor="middle" font-size="11" fill="var(--color-text)">Passenger searches flights by</text>
+            <text x="300" y="90" text-anchor="middle" font-size="11" fill="var(--color-text)">origin, destination, and date</text>
+
+            <rect x="150" y="130" width="300" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="151" text-anchor="middle" font-size="11" fill="var(--color-text)">System resolves matching</text>
+            <text x="300" y="165" text-anchor="middle" font-size="11" fill="var(--color-text)">FlightInstance(s) for that route/date</text>
+
+            <rect x="150" y="205" width="300" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="226" text-anchor="middle" font-size="11" fill="var(--color-text)">Passenger selects cabin class</text>
+            <text x="300" y="240" text-anchor="middle" font-size="11" fill="var(--color-text)">and seat(s)</text>
+
+            <polygon points="300,280 410,320 300,360 190,320" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="316" text-anchor="middle" font-size="10" fill="var(--color-text)">Seat(s) still free on</text>
+            <text x="300" y="330" text-anchor="middle" font-size="10" fill="var(--color-text)">this FlightInstance?</text>
+            <text x="330" y="300" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="252" y="378" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="470" y="295" width="230" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="585" y="316" text-anchor="middle" font-size="10" fill="var(--color-text)">Show updated seat</text>
+            <text x="585" y="330" text-anchor="middle" font-size="10" fill="var(--color-text)">availability</text>
+
+            <circle cx="585" cy="392" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="585" cy="392" r="6" fill="var(--color-primary)"/>
+
+            <rect x="150" y="385" width="300" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="406" text-anchor="middle" font-size="11" fill="var(--color-text)">Hold seat(s); process payment</text>
+
+            <polygon points="300,460 410,500 300,540 190,500" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="504" text-anchor="middle" font-size="11" fill="var(--color-text)">Payment succeeded?</text>
+            <text x="330" y="480" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="252" y="558" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="480" y="475" width="230" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="595" y="496" text-anchor="middle" font-size="10" fill="var(--color-text)">Release seat hold(s)</text>
+
+            <circle cx="595" cy="572" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="595" cy="572" r="6" fill="var(--color-primary)"/>
+
+            <rect x="150" y="565" width="300" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="586" text-anchor="middle" font-size="10" fill="var(--color-text)">Confirm Reservation; generate</text>
+            <text x="300" y="600" text-anchor="middle" font-size="10" fill="var(--color-text)">boarding reference</text>
+
+            <circle cx="300" cy="650" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="300" cy="650" r="6" fill="var(--color-primary)"/>
+          </svg>
+          <div class="diagram-caption">Figure 3. Activity diagram for booking: the system resolves the abstract route+date search down to concrete FlightInstance(s) before any seat talk happens, and a seat hold is placed before payment is attempted so a slow payment gateway can't let two passengers both believe they hold the same seat.</div>
+        </div>
+
+        <h2 id="key-flow-sequence-diagram">Key Flow: Flight Delay Notification (Sequence Diagram)</h2>
+        <p>A single status change on a single FlightInstance is, structurally, a one-to-many fan-out: every passenger with a confirmed Reservation on that instance needs to hear about it. That fan-out is exactly what Notification-as-Observer is for (see Design Patterns Applied below) &mdash; FlightInstance doesn't need to know who's listening or how many passengers are affected, it just publishes "my status changed."</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 980 520" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Sequence diagram for a flight delay notification fan-out">
+            <defs>
+              <marker id="alSeqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-border)" stroke-width="1.3" stroke-dasharray="4,4">
+              <line x1="80" y1="60" x2="80" y2="470"/>
+              <line x1="280" y1="60" x2="280" y2="470"/>
+              <line x1="480" y1="60" x2="480" y2="470"/>
+              <line x1="680" y1="60" x2="680" y2="470"/>
+              <line x1="880" y1="60" x2="880" y2="470"/>
+            </g>
+            <g fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5">
+              <rect x="15" y="20" width="130" height="40"/>
+              <rect x="210" y="20" width="140" height="40"/>
+              <rect x="405" y="20" width="150" height="40"/>
+              <rect x="615" y="20" width="130" height="40"/>
+              <rect x="815" y="20" width="130" height="40"/>
+            </g>
+            <g font-size="10" font-weight="700" fill="var(--color-text)" text-anchor="middle">
+              <text x="80" y="38">Airline Staff</text>
+              <text x="80" y="50">/ Admin</text>
+              <text x="280" y="44">FlightInstance</text>
+              <text x="480" y="38">Reservation</text>
+              <text x="480" y="50">Lookup</text>
+              <text x="680" y="44">Notification</text>
+              <text x="880" y="44">Passenger</text>
+            </g>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#alSeqArrow)">
+              <line x1="80" y1="100" x2="280" y2="100"/>
+              <line x1="280" y1="140" x2="480" y2="140"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#alSeqArrow)">
+              <line x1="480" y1="175" x2="280" y2="175"/>
+            </g>
+
+            <rect x="230" y="205" width="500" height="150" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M230,205 L275,205 L275,219 L230,219 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="238" y="216" font-size="9" fill="var(--color-text)">loop</text>
+            <text x="282" y="216" font-size="9" fill="var(--color-text)">[for each confirmed reservation r on this FlightInstance]</text>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#alSeqArrow)">
+              <line x1="280" y1="250" x2="680" y2="250"/>
+              <line x1="680" y1="290" x2="880" y2="290"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#alSeqArrow)">
+              <line x1="680" y1="330" x2="280" y2="330"/>
+              <line x1="280" y1="405" x2="80" y2="405"/>
+            </g>
+
+            <g font-size="10" fill="var(--color-text)">
+              <text x="90" y="95">updateStatus(DELAYED)</text>
+              <text x="290" y="135">findConfirmedReservations(instanceId)</text>
+              <text x="330" y="170">reservations: List&lt;Reservation&gt;</text>
+              <text x="290" y="245">notify(r.passenger, DELAYED)</text>
+              <text x="690" y="285">sendDelayAlert()</text>
+              <text x="450" y="325">queued</text>
+              <text x="120" y="400">status updated; N notifications queued</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 4. Sequence diagram for a delay: one status change on one FlightInstance fans out to every confirmed Reservation on it via Notification. Drawn here as a loop for clarity, but at real scale this must be an asynchronous, queued dispatch (publish one event per affected reservation) rather than a synchronous in-process loop that blocks the status-update call until every passenger has been notified.</div>
+        </div>
+        <p>The diagram draws the fan-out as a loop for readability, but that's a whiteboard simplification worth flagging out loud in an interview: a real implementation should <strong>publish one event per affected reservation to a queue</strong> (or a single batch event consumed asynchronously) rather than looping synchronously inside the request that updated FlightInstance's status. A flight with 300 confirmed passengers should not make Admin's "mark this flight delayed" API call wait for 300 notification sends (some of which may hit a slow downstream email/SMS provider) before returning success &mdash; that's an availability and latency problem waiting to happen, and it's the natural seam where this LLD question starts to lean on HLD concepts (message queues, at-least-once delivery, retries) without needing to become a full HLD design.</p>
+
+        <h2 id="design-patterns-applied">Design Patterns Applied</h2>
+        <p>Name the pattern and the forcing function together, not just the name:</p>
+        <ul>
+          <li><strong>Composition</strong> (Flight &rarr; FlightInstance &rarr; FlightSeat) &mdash; this is the load-bearing relationship in the whole design, covered in detail above: an instance or a seat has zero meaning once its owning Flight/FlightInstance is gone, so both relationships get the filled-diamond treatment rather than a weaker aggregation. The practical payoff: retiring a Flight (route discontinued) cleanly cascades to every FlightInstance and FlightSeat that only existed because of it, with no orphaned seat records floating around referencing a route that no longer exists.</li>
+          <li><strong>Observer</strong> (Notification reacting to a FlightInstance status change) &mdash; FlightInstance doesn't call a hardcoded <code>sendEmail()</code> or <code>sendSms()</code> when Admin marks it delayed; it publishes a status-changed event, and one or more listeners (a Notification dispatcher today, potentially a rebooking-suggestion service or a refund-eligibility checker tomorrow) react independently. This is exactly the seam the delay-notification sequence diagram above walks through, and it's also what lets the fan-out move from an in-process loop to an async queue consumer without FlightInstance's code changing at all &mdash; the publisher only ever knows "something changed," never how many listeners there are or how they deliver.</li>
+          <li><strong>State</strong> (FlightInstance's FlightStatus) &mdash; SCHEDULED is the only valid starting point; from there an instance can move to ON_TIME or DELAYED, and only from one of those into DEPARTED, or from almost any pre-departure state into CANCELLED. Modeling this as a guarded state machine inside <code>updateStatus()</code> (reject a transition like DEPARTED &rarr; SCHEDULED outright) is what stops a fat-fingered admin update or a race between two status-update calls from putting a FlightInstance into a nonsensical state &mdash; e.g., "cancelled" three hours after it already shows "departed."</li>
+          <li><strong>Builder</strong> <em>(extension idea, not load-bearing in the base design)</em> &mdash; if Reservation grows to cover multiple passengers, a mix of cabin classes, and add-ons (extra baggage, seat upgrades, travel insurance), a <code>ReservationBuilder</code> that accumulates those pieces step by step before a single <code>build()</code> call reads better than a Reservation constructor with an ever-growing, easy-to-misorder parameter list. It's mentioned here as the natural next pattern to reach for, not forced into the base design, since the requirements above describe a single-passenger, single-cabin-class booking.</li>
+        </ul>
+
+        <h2 id="code-skeleton">Code Skeleton</h2>
+        <p>Fields and method signatures only &mdash; not a runnable program. <code>FlightSeat.holdIfFree</code> is worked out in enough detail to show the concurrency-safe claim, since that's exactly what interviewers probe on for this problem.</p>
+
+        <pre><code>public enum FlightStatus {
+    SCHEDULED, ON_TIME, DELAYED, DEPARTED, CANCELLED
+}
+
+public enum CabinClass {
+    ECONOMY, BUSINESS, FIRST
+}
+
+public enum ReservationStatus {
+    HELD, CONFIRMED, CANCELLED, CHECKED_IN
+}</code></pre>
+
+        <pre><code>public class Flight {
+    private final String flightNumber;
+    private final Airline airline;
+    private final Airport departureAirport;
+    private final Airport arrivalAirport;
+    private Aircraft defaultAircraft;
+    private final List&lt;FlightInstance&gt; instances;
+
+    public Flight(String flightNumber, Airline airline, Airport departureAirport, Airport arrivalAirport) { /* ... */ }
+
+    public FlightInstance scheduleInstance(LocalDate date, LocalDateTime departureTime, Aircraft aircraft);
+    public Optional&lt;FlightInstance&gt; findInstance(LocalDate date);
+    public List&lt;FlightInstance&gt; findInstancesBetween(LocalDate start, LocalDate end);
+    public String getFlightNumber();
+    public Airport getDepartureAirport();
+    public Airport getArrivalAirport();
+}</code></pre>
+
+        <pre><code>public class FlightInstance {
+    private final String instanceId;
+    private final Flight flight;
+    private final LocalDate flightDate;
+    private LocalDateTime scheduledDeparture;
+    private LocalDateTime scheduledArrival;
+    private Aircraft aircraft;              // may diverge from flight's defaultAircraft after a swap
+    private volatile FlightStatus status;
+    private final List&lt;FlightSeat&gt; seats;
+
+    public FlightInstance(Flight flight, LocalDate flightDate, Aircraft aircraft) {
+        // seats are generated from aircraft.getSeatConfig(), one FlightSeat per physical seat
+    }
+
+    public List&lt;FlightSeat&gt; availableSeats(CabinClass cabin);
+
+    public synchronized void updateStatus(FlightStatus newStatus) {
+        if (!isValidTransition(status, newStatus)) {
+            throw new IllegalStateException("Cannot move from " + status + " to " + newStatus);
+        }
+        this.status = newStatus;
+        // publish a status-changed event here -- Observer listeners (Notification, etc.) react
+    }
+
+    public void swapAircraft(Aircraft replacement);   // re-derives the seat map, see Extensibility
+    private boolean isValidTransition(FlightStatus from, FlightStatus to);
+    public FlightStatus getStatus();
+    public LocalDate getFlightDate();
+}</code></pre>
+
+        <pre><code>public class FlightSeat {
+    private final String seatNumber;
+    private final CabinClass cabinClass;
+    private final BigDecimal fare;
+    private volatile boolean booked;
+    private volatile String heldByReservationId;
+    private volatile Instant holdExpiresAt;
+
+    // Concurrency-safe claim -- the same atomic-conditional-update idea used for
+    // seat locking in the Movie Ticket Booking page: either a synchronized guard
+    // like this in-memory version, or a "WHERE booked = false" conditional UPDATE
+    // at the persistence layer, checking that exactly one row changed.
+    public synchronized boolean holdIfFree(String reservationId, Duration holdTtl) {
+        boolean heldBySomeoneElseActively =
+            heldByReservationId != null
+            &amp;&amp; !heldByReservationId.equals(reservationId)
+            &amp;&amp; holdExpiresAt != null &amp;&amp; Instant.now().isBefore(holdExpiresAt);
+
+        if (booked || heldBySomeoneElseActively) {
+            return false;
+        }
+        this.heldByReservationId = reservationId;
+        this.holdExpiresAt = Instant.now().plus(holdTtl);
+        return true;
+    }
+
+    public synchronized void confirmBooking(String reservationId) {
+        if (!reservationId.equals(heldByReservationId)) {
+            throw new IllegalStateException("Seat is not held by this reservation");
+        }
+        this.booked = true;
+        this.holdExpiresAt = null;
+    }
+
+    public synchronized void release(String reservationId) {
+        if (reservationId.equals(heldByReservationId)) {
+            this.heldByReservationId = null;
+            this.holdExpiresAt = null;
+        }
+    }
+
+    public boolean isFree();
+    public String getSeatNumber();
+    public CabinClass getCabinClass();
+}</code></pre>
+
+        <pre><code>public class Reservation {
+    private final String reservationId;
+    private final Passenger passenger;
+    private final FlightInstance flightInstance;
+    private final List&lt;FlightSeat&gt; seats;
+    private ReservationStatus status;
+    private String bookingReference;
+
+    public Reservation(Passenger passenger, FlightInstance flightInstance, List&lt;FlightSeat&gt; seats) { /* ... */ }
+
+    public void confirm();
+    public void cancel();
+    public BoardingPass checkIn(Instant now);
+    public boolean isWithinCheckInWindow(Instant now);
+    public ReservationStatus getStatus();
+}</code></pre>
+
+        <h2 id="extensibility-and-edge-cases">Extensibility &amp; Edge Cases</h2>
+        <ul>
+          <li><strong>Connecting flights / multi-leg itineraries.</strong> A single Reservation should be able to span more than one FlightInstance (e.g., JFK&rarr;ORD then ORD&rarr;LAX). Model this by letting Reservation hold a list of "legs," where each leg pairs a FlightInstance with the seats booked on it, rather than assuming one Reservation maps to exactly one FlightInstance. The booking flow's seat-hold/payment logic barely changes &mdash; it just holds seats across every leg before confirming any of them, since a passenger shouldn't end up confirmed on leg 1 and rejected on leg 2 of the same trip.</li>
+          <li><strong>Overbooking is a deliberate policy, not a bug.</strong> Airlines intentionally oversell Economy cabins on routes with predictable no-show rates &mdash; this is a real, deliberate business rule, not a modeling oversight to "fix." Represent it by giving a FlightInstance's cabin an <code>overbookLimit</code> alongside its physical seat count: <code>availableSeats(cabin)</code> can report bookable capacity up to <code>physicalSeats + overbookLimit</code>, while actual physical-seat assignment only happens at check-in/gate time, once no-shows are known. The system still must never assign the <em>same physical seat</em> to two boarded passengers &mdash; overbooking oversells reservations, never physical FlightSeats at boarding time.</li>
+          <li><strong>Standby passengers.</strong> When a FlightInstance is fully booked (or oversold beyond what no-shows free up), a passenger can be placed on a StandbyList tied to that instance, ranked by priority (fare class, loyalty tier, check-in time). If a seat frees up (cancellation, confirmed no-show), the system offers it to the next standby passenger rather than leaving it empty.</li>
+          <li><strong>Aircraft swap and seat reassignment.</strong> When a FlightInstance's <code>aircraft</code> changes (mechanical substitution, capacity change), its previously generated FlightSeats may no longer correspond to real seats on the new aircraft &mdash; a different cabin configuration can mean fewer Business seats, or an entirely different seat-numbering scheme. <code>swapAircraft()</code> must regenerate the seat map from the new aircraft's <code>seatConfig</code> and re-map existing confirmed Reservations onto the closest equivalent seat (same cabin class at minimum), triggering a Notification to any passenger whose specific seat number changed &mdash; the same Observer channel used for delays, just a different event type.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">Why does this design use separate Flight and FlightInstance classes instead of a single Flight class with a date field?</div>
+          <div class="qa-a">A Flight is a route/schedule template ("AA100: JFK to LAX, daily") that exists independent of any specific day, while a FlightInstance is one date's actual occurrence &mdash; the thing that is actually booked, boarded, delayed, or cancelled. Collapsing them forces awkward semantics: does "delayed" apply to the whole recurring route or just today, and does the seat map belong to the route or to today's specific aircraft and cabin configuration? Splitting them lets Flight own zero or more FlightInstances (a clean composition), with each FlightInstance independently tracking its own status, aircraft, and seat availability &mdash; so today's flight can be delayed while tomorrow's departs on time, without either affecting the other.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A FlightInstance with 300 confirmed passengers gets marked DELAYED. How should the resulting notification fan-out actually be implemented at scale?</div>
+          <div class="qa-a">Not as a synchronous loop inside the status-update call &mdash; that ties Admin's "mark delayed" request to the latency (and failure modes) of 300 individual notification sends, some of which may hit a slow downstream email/SMS/push provider. Instead, updateStatus() should publish a single "FlightInstance status changed" event (or one event per affected reservation) to a queue, and a separate, horizontally scalable consumer fans it out to Notification asynchronously with retries. The status update itself should complete in milliseconds regardless of how many passengers are affected; notification delivery is an eventually-consistent side effect, not something the caller should have to wait on.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Isn't allowing more reservations than physical seats (overbooking) just a bug you should fix?</div>
+          <div class="qa-a">No &mdash; overbooking Economy cabins on routes with predictable no-show rates is a deliberate, real airline business rule, not an oversight. The model should represent it explicitly: an overbookLimit per cabin on a FlightInstance lets bookable capacity exceed physical seat count, while physical-seat assignment is deferred to check-in/gate time once no-shows are known. The one thing the design must never allow, overbooking or not, is assigning the same physical seat to two boarded passengers at gate time &mdash; overbooking oversells reservations, not physical seats.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support multi-leg, connecting itineraries?</div>
+          <div class="qa-a">Let a single Reservation span more than one FlightInstance by modeling it as a list of legs, where each leg pairs a FlightInstance with the specific seats booked on it, instead of assuming a strict one-Reservation-to-one-FlightInstance relationship. The seat-hold/payment flow generalizes naturally: hold seats across every leg first, and only confirm the whole Reservation once every leg's hold succeeds and payment clears &mdash; so a passenger is never left confirmed on one leg of a connection but rejected on the next.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Two passengers try to book the same seat on the same FlightInstance at nearly the same moment. How do you stop a double-booking?</div>
+          <div class="qa-a">The same atomic-conditional-claim shape used for seat locking generally: FlightSeat.holdIfFree() must check "is this seat free" and mark it held in one atomic step, either via a synchronized in-memory guard (as sketched in the Code Skeleton) or a "WHERE booked = false" conditional UPDATE at the persistence layer, verifying exactly one row changed. Whichever request's claim lands first wins the hold; the other's holdIfFree() call returns false and that passenger is shown the seat is no longer available. A naive "read status, decide it's free, then write held" sequence in application code is a textbook lost-update race.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does holdIfFree place a time-limited hold instead of instantly marking the seat booked?</div>
+          <div class="qa-a">Payment doesn't clear instantly &mdash; there's a real gap between "passenger selected this seat" and "payment succeeded," and a payment gateway can be slow or fail outright. If the seat were marked booked the moment it was selected, a passenger who abandons checkout or whose card is declined would permanently lock that seat away from everyone else. A TTL-bounded hold reserves the seat just long enough to complete payment; if the hold expires or payment fails, the seat automatically becomes claimable again, and confirmBooking() is the only path that turns a hold into a permanent booking.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does FlightStatus live on FlightInstance rather than on Flight?</div>
+          <div class="qa-a">Status is inherently a per-occurrence fact &mdash; today's AA100 can be delayed while every other date that same route operates on is unaffected. If status lived on Flight, marking one day's flight delayed would either have to (incorrectly) apply to the entire recurring schedule, or Flight would need its own separate per-date status map, which is just FlightInstance reinvented under a different name. Putting status on FlightInstance keeps each date's operational state independent and is what makes the guarded FlightStatus state machine (SCHEDULED &rarr; ON_TIME/DELAYED &rarr; DEPARTED/CANCELLED) meaningful per occurrence.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you model the check-in window and boarding pass generation?</div>
+          <div class="qa-a">Reservation.isWithinCheckInWindow(now) compares the current time against the FlightInstance's scheduled departure minus a configurable window (e.g., 24 hours before to 45 minutes before departure); checkIn() rejects the call outside that window. On success, checkIn() transitions the Reservation to CHECKED_IN and returns a BoardingPass carrying the passenger's confirmed seat, gate, and boarding group &mdash; generated from the Reservation's already-confirmed FlightSeat rather than re-running seat assignment, since seat selection already happened at booking time.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is CabinClass modeled as a simple enum rather than as a hierarchy of FlightSeat subclasses (EconomySeat, BusinessSeat, FirstSeat)?</div>
+          <div class="qa-a">All three cabin classes behave identically as far as FlightSeat's own responsibilities go &mdash; hold at most one passenger, answer isFree(), track a fare &mdash; and differ only in data (which cabin they belong to, and what that implies for price and seat map). That's the same signal as the parking-lot problem's spot-type decision: when subtypes share behavior and differ only in a data field, favor a single class plus an enum over a subclass per variant. If a future requirement needs real per-class behavior (e.g., only First seats expose a lieFlatRecline() method), that's the point where a per-cabin subtype or a small strategy object attached to the seat would earn its keep.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Key Takeaways</div>
+          <ul>
+            <li>The single most important decision in this design: split <strong>Flight</strong> (route/schedule template) from <strong>FlightInstance</strong> (one date's actual occurrence) &mdash; a Flight is never booked or boarded, only a FlightInstance is.</li>
+            <li>Flight &mdash;filled diamond&rarr; FlightInstance &mdash;filled diamond&rarr; FlightSeat models real lifecycle ownership: none of the three exist meaningfully without the one above it.</li>
+            <li>Seat booking needs an atomic, TTL-bounded hold (holdIfFree) before payment, not an instant book/free flag &mdash; the same seat-locking shape that shows up anywhere a physical resource is claimed under concurrency.</li>
+            <li>A single FlightInstance status change is a one-to-many fan-out; model it with Observer, and implement the actual dispatch as an async/queued job, not a blocking loop inside the status-update call.</li>
+            <li>Overbooking, standby, and aircraft swaps are real airline operating policy, not edge cases to hand-wave away &mdash; a credible design represents them explicitly rather than pretending every flight boards exactly its physical seat count.</li>
+          </ul>
+        </div>
+
+        <h2 id="references">References</h2>
+        <p>This design follows the general shape of the classic "Design an Airline Management System" prompt as commonly treated in object-oriented design / low-level design interview-prep resources (in the style of Grokking the Object Oriented Design Interview-style problem sets) &mdash; the Flight/FlightInstance split, cabin-class seat maps, and status-driven notifications reflect that standard treatment rather than one single cited source.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Observer_pattern" target="_blank" rel="noopener">"Observer pattern"</a> &mdash; general reference for the Observer-driven notification fan-out discussed above.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Builder_pattern" target="_blank" rel="noopener">"Builder pattern"</a> &mdash; general reference for the Builder extension idea mentioned under Design Patterns Applied.</p>
+
+        <div class="page-nav">
+          <a class="prev" href="atm.html"><span class="dir">Previous</span>ATM</a>
+          <a class="next" href="blackjack-and-deck-of-cards.html"><span class="dir">Next</span>Blackjack &amp; a Deck of Cards</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

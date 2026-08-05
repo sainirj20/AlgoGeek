@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing Nearby Friends — Tinder-Style Proximity Matching | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Nearby Friends (Tinder)</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design">Low-Level Design</a></li>
+        <li><a href="#deep-dive-geospatial-indexing-for-moving-points-geohashs2-grid-cells-and-geosharding">Deep Dive — Geospatial Indexing for Moving Points: Geohash/S2 Grid Cells and Geosharding</a></li>
+        <li><a href="#deep-dive-why-a-static-quadtree-yelp-style-doesnt-fit-moving-people">Deep Dive — Why a Static QuadTree (Yelp-Style) Doesn't Fit Moving People</a></li>
+        <li><a href="#deep-dive-candidate-recall-filtering-and-ranking">Deep Dive — Candidate Recall, Filtering, and Ranking</a></li>
+        <li><a href="#deep-dive-matching-notifications-and-real-time-delivery">Deep Dive — Matching, Notifications, and Real-Time Delivery</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing Nearby Friends — Tinder-Style Proximity Matching</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a Tinder-style "who's near me right now" proximity-matching service: requirements and capacity estimation, API &amp; data model, high-level and low-level design, geospatial indexing for a population that moves constantly, mutual-match and notification flows, partitioning, replication, security/privacy, and a bank of follow-up interview questions. The theme running through every section is that <strong>the searchable objects move</strong> &mdash; unlike a places/business directory, the index here must absorb continuous high-volume writes, not just serve reads.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a service that lets a user find other nearby users in real time &mdash; a dating-app-style "who's near me right now" feed, in the spirit of Tinder. Given a user's current location and a search radius, return a ranked list ("deck") of other nearby users the requester can browse, like, or pass on.</p>
+
+        <p>At first glance this looks like the classic "nearby places" problem (Yelp, Google Maps business search): given a point and a radius, find nearby objects. The critical difference is what's being searched for. A restaurant's location changes essentially never; a person's location changes constantly &mdash; every few minutes, as they walk, commute, or open the app in a new place. <strong>The searchable objects move</strong>, and that single fact reshapes the entire design: the geospatial index can no longer assume it's read-mostly. It must sustain a continuous, high-volume stream of location-update writes at the same time it's serving a continuous, high-volume stream of nearby-search reads &mdash; both hot paths, simultaneously, on the same underlying index.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It's frequently paired with (or contrasted against) the "Design Yelp" question specifically to test whether a candidate notices the churn problem. A candidate who reaches for a static QuadTree without questioning its "objects rarely move" assumption will build something that falls over under real-world location update volume. A strong candidate calls out the write-churn problem early and reasons about it explicitly &mdash; this is exactly the kind of design twist interviewers plant on purpose.</p>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Always narrow scope before designing. A few minutes of clarifying questions up front prevents solving the wrong problem.</p>
+        <ol>
+          <li>What is the maximum search radius we need to support (e.g. 1 mile, 50 miles, 100 miles)?</li>
+          <li>How often do we expect the client to push a location update &mdash; every few seconds, every few minutes, or only on app foreground/background transitions?</li>
+          <li>Is this mutual-opt-in matching (both sides must like each other, Tinder-style), or one-way browsing (see who's near you, no reciprocal gate)?</li>
+          <li>What safety requirements exist &mdash; blocking, reporting, distance-fuzzing to hide exact coordinates?</li>
+          <li>What's the expected DAU / concurrently-active-user scale we should design for?</li>
+          <li>Do we need to support filtering by preferences (age range, gender, interests) as part of the nearby query?</li>
+          <li>Should a user be able to browse in a location they aren't physically in (a "travel mode")?</li>
+          <li>Do matched users get an in-app chat, or does a match just surface contact info?</li>
+          <li>Is strong consistency required between "I updated my location" and "I immediately show up in others' searches," or is a small eventual-consistency window acceptable?</li>
+          <li>Single region launch, or global from day one?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't wait for every answer before moving on &mdash; state a reasonable assumption out loud ("I'll assume a 100-mile max radius matching Tinder's real production limit, mutual double opt-in matching, and a location ping every few minutes while the app is foregrounded") and keep going. This shows judgment, not indecision.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>A user can add or update their current location (<code>updateLocation</code>).</li>
+          <li>A user can find other nearby users within a configurable radius, optionally filtered by preferences (<code>findNearby</code>).</li>
+          <li>A user can swipe (like or pass) on a candidate profile (<code>swipe</code>).</li>
+          <li>A mutual like (both users like each other) automatically creates a match and opens a conversation channel.</li>
+          <li>A user can block or report another user, which removes that user from future searches on both sides.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Low-latency real-time search despite constant location churn:</strong> the nearby-search path must stay fast even though the underlying index of candidate positions is being rewritten continuously, not just read.</li>
+          <li><strong>Heavy read AND heavy write load, unlike a static-places search:</strong> a places directory is overwhelmingly read-skewed with near-zero writes; here, both location-update writes and nearby-search reads are large, simultaneous, sustained traffic streams against the same index.</li>
+          <li><strong>High availability:</strong> discovery is the core product experience; an outage in one geography shouldn't take down discovery everywhere else.</li>
+          <li><strong>Eventual consistency is acceptable</strong> between a location update landing and it being reflected in another user's search results, within a small, bounded window (seconds, not minutes).</li>
+          <li><strong>Privacy and safety by default:</strong> never expose another user's exact coordinates; support blocking/reporting as first-class, low-latency operations.</li>
+          <li><strong>Horizontal scalability</strong> that scales independently by geography &mdash; a viral spike in one city shouldn't degrade search everywhere else.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We go deep on location ingestion, geospatial indexing under high churn, candidate recall/ranking, and the mutual-match/notification flow. We explicitly call out &mdash; but don't build in depth &mdash; a full recommendation/ML ranking model, video/photo verification, payments for premium features, and the mobile client's own UI/UX.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>We'll assume <strong>75 million active users</strong> &mdash; a real, public scale figure Tinder itself has cited for its production geosharded system. Unlike a places-search estimate (where writes are close to zero), this system has two simultaneous, large traffic streams: location-update writes and nearby-search/swipe reads. Working out both, and their combined effect on the index, is the whole point of this section.</p>
+
+        <h3>Location-Update Write Volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          75 million active users; each active session generates a location ping roughly every 4 minutes while the app is foregrounded
+          <br>Assume an average of ~3 location pings per user per day (a typical multi-minute swiping session)
+          <br>Location-update writes/day = 75,000,000 &times; 3 &asymp; 225 million/day
+          <br>Writes/sec (average) = 225,000,000 &divide; 86,400 &asymp; 2,604/sec &rarr; round to ~2.6K writes/sec
+          <br>Peak traffic runs 2&ndash;3&times; average &rarr; design for ~7&ndash;8K peak location-update writes/sec.
+        </div>
+
+        <h3>Nearby-Search / Swipe Read Volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Each active user issues ~40 findNearby/swipe requests per day while browsing their deck
+          <br>Requests/day = 75,000,000 &times; 40 = 3 billion/day
+          <br>QPS (average) = 3,000,000,000 &divide; 86,400 &asymp; 34,722/sec &rarr; round to ~35K QPS
+          <br>Peak (2&ndash;3&times;) &rarr; design for ~100&ndash;105K peak QPS.
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">The index-churn implication</div>
+          The read:write ratio here is roughly 13:1 &mdash; heavily read-skewed, but nowhere close to a places directory where writes are near-zero. At ~2.6K&ndash;8K sustained writes/sec, the geospatial index is being continuously rewritten: every location ping is effectively a delete-from-old-cell-plus-insert-into-new-cell operation against a <em>live, serving</em> index, not an occasional background job. A read-optimized static structure that assumes infrequent updates (a classic QuadTree, see the Deep Dive below) would have to constantly rebalance to absorb this churn &mdash; that's the core reason a moving-point workload needs a different indexing strategy than a places directory, even though both are "find nearby X" problems on the surface.
+        </div>
+
+        <h3>Storage Estimates</h3>
+        <p>The <code>user_location</code> table stores only each user's <em>current</em> position (one row per user, overwritten in place) &mdash; not a history log. That keeps it small even at scale.</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          75 million rows &times; &asymp;150 bytes/row (user_id, lat, long, geocell_id, updated_at, index overhead) &asymp; 11.25 GB raw
+          <br>&times; 3 replicas for durability/availability &asymp; ~34 GB provisioned
+        </div>
+        <p>Contrast this with the separate <code>swipe_action</code> ledger, which is append-only and grows historically (never overwritten):</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          3 billion swipe events/day &times; &asymp;80 bytes/row &asymp; 240 GB/day raw before replication
+        </div>
+        <p>This is the key storage contrast for this system: <code>user_location</code> is small but extremely hot (constant overwrite churn); <code>swipe_action</code> is large and steadily growing but append-only and far less latency-sensitive. They deserve very different storage and partitioning treatment (see Data Partitioning and Sharding, below).</p>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Location-update writes/sec (avg / peak)</td><td>~2.6K / ~8K</td></tr>
+          <tr><td>Nearby-search + swipe QPS (avg / peak)</td><td>~35K / ~105K</td></tr>
+          <tr><td>Read:write ratio</td><td>&asymp;13:1 (both streams non-trivial, unlike a static-places index)</td></tr>
+          <tr><td><code>user_location</code> storage (current-state only, 3&times; replicated)</td><td>~34 GB</td></tr>
+          <tr><td><code>swipe_action</code> ledger growth</td><td>~240 GB/day raw before replication</td></tr>
+          <tr><td>Recommended geoshard count (Tinder's own production figure)</td><td>~40&ndash;100 geoshards globally</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Three core operations drive the product: pushing a location update, pulling nearby candidates, and recording a swipe decision.</p>
+        <pre><code>updateLocation(user_id, lat, long) -&gt; void
+  // Called by the client every few minutes while foregrounded, or on a significant
+  // location change. Recomputes the user's S2/Geohash geocell and re-indexes the
+  // user into the geosharded search index (may move them from one geoshard to another).
+  // REST equivalent: PUT /v1/users/{user_id}/location  { "lat": ..., "long": ... }
+
+findNearby(user_id, radius, filters) -&gt; List&lt;CandidateProfile&gt;
+  // filters: { age_min, age_max, gender_pref, max_distance }
+  // Computes the requester's geocell(s), fans the query out to only the overlapping
+  // geoshard(s), applies preference/already-swiped/blocked exclusion, ranks, and
+  // returns a "deck" of candidate profiles (distance is returned fuzzed/bucketed).
+  // REST equivalent: GET /v1/discovery/nearby?radius=..&amp;age_min=..&amp;age_max=..
+
+swipe(user_id, target_id, action) -&gt; { match: boolean, match_id: string|null }
+  // action: "like" | "pass"
+  // Records a one-way decision. If target_id has already liked user_id, this call
+  // creates a mutual match record and returns match=true, then triggers async
+  // real-time push/WebSocket notification delivery to both users.
+  // REST equivalent: POST /v1/swipes  { "target_id": ..., "action": "like" }</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          A common follow-up: "why is <code>findNearby</code> a read against a search index rather than a SQL range query?" Because at this scale, radius search over constantly-moving points is exactly what a geospatial search index (S2/Geohash-partitioned Elasticsearch, in Tinder's real design) is built for &mdash; a relational range scan over lat/long columns doesn't scale to tens of thousands of QPS with sub-second latency.
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li><code>user_location</code> is a small, extremely hot, constantly-overwritten table &mdash; one current row per user, no history.</li>
+          <li><code>swipe_action</code> is a much larger, append-only, historically-growing table with a completely different access pattern (point lookups by user pair, not radius queries).</li>
+          <li>These two datasets have opposite shapes (small+hot vs. large+append-only) and are deliberately kept on separate stores/partitioning schemes (see Data Partitioning and Sharding, below).</li>
+        </ul>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">Table: user_location</th></tr>
+          <tr><td>user_id (PK)</td><td>bigint</td></tr>
+          <tr><td>lat</td><td>double</td></tr>
+          <tr><td>long</td><td>double</td></tr>
+          <tr><td>geocell_id (indexed, S2/Geohash cell)</td><td>varchar(16)</td></tr>
+          <tr><td>updated_at</td><td>datetime</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: swipe_action</th></tr>
+          <tr><td>user_id + target_id (composite PK)</td><td>bigint + bigint</td></tr>
+          <tr><td>action</td><td>enum(like, pass)</td></tr>
+          <tr><td>matched_at (nullable &mdash; set only on mutual like)</td><td>datetime</td></tr>
+          <tr><td>created_at</td><td>datetime</td></tr>
+        </table>
+        <p>A separate lightweight index of active <code>geocell_id &rarr; geoshard</code> mappings (the "shard mapping," discussed in the Deep Dive below) sits alongside these tables and is consulted on every write and every query.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Client apps talk to a single API Gateway, which routes into three focused services: a <strong>Location Service</strong> (accepts and persists location pings), a <strong>Discovery Service</strong> (serves nearby candidates), and a <strong>Swipe/Match Service</strong> (records swipe decisions and creates matches). All three sit in front of a <strong>geosharded search index</strong> &mdash; partitioned by geography rather than by a generic hash &mdash; and a separate <strong>profile store</strong> for the relatively static profile data (photos, bio, preferences) used during ranking. Matches write to a dedicated conversation store and asynchronously trigger a real-time push/WebSocket notification.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 600" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-nby-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-nby-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-nby-1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="290" y="15" width="160" height="40" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="40" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client Apps</text>
+
+            <rect x="270" y="75" width="200" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="97" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">API Gateway</text>
+            <text x="370" y="113" text-anchor="middle" fill="#cbd8ef" font-size="9">authN/Z &#183; rate limiting</text>
+
+            <rect x="15" y="145" width="710" height="340" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="25" y="165" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.04em">DISCOVERY DOMAIN</text>
+
+            <rect x="35" y="180" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="135" y="203" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Location Service</text>
+            <text x="135" y="219" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">ingests location pings</text>
+
+            <rect x="270" y="180" width="200" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="203" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Discovery Service</text>
+            <text x="370" y="219" text-anchor="middle" fill="#cbd8ef" font-size="9">serves nearby candidates</text>
+
+            <rect x="505" y="180" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="605" y="203" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Swipe / Match Service</text>
+            <text x="605" y="219" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">records decisions, creates matches</text>
+
+            <rect x="35" y="260" width="670" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="370" y="283" text-anchor="middle" fill="#6b4a10" font-size="12" font-weight="700">Geosharded Search Index</text>
+            <text x="370" y="299" text-anchor="middle" fill="#6b4a10" font-size="9">S2 / Geohash cells &mdash; sharded by geography, not by generic hash</text>
+
+            <rect x="35" y="340" width="320" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="195" y="362" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Profile Store</text>
+            <text x="195" y="378" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">photos, bio, preferences (used in ranking)</text>
+
+            <rect x="385" y="340" width="320" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="545" y="362" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Match / Conversation Store</text>
+            <text x="545" y="378" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">mutual matches &amp; unlocked chat channels</text>
+
+            <rect x="270" y="510" width="200" height="45" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="370" y="530" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">Push / WebSocket</text>
+            <text x="370" y="544" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">Notification Delivery</text>
+
+            <line x1="370" y1="55" x2="370" y2="73" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nby-1)"></line>
+            <line x1="330" y1="125" x2="160" y2="178" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-nby-1)"></line>
+            <line x1="370" y1="125" x2="370" y2="178" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nby-1)"></line>
+            <line x1="410" y1="125" x2="580" y2="178" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-nby-1)"></line>
+
+            <line x1="135" y1="235" x2="220" y2="258" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-nby-1)"></line>
+            <line x1="370" y1="235" x2="370" y2="258" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-nby-1b)" marker-start="url(#arrow-nby-1b)"></line>
+            <line x1="605" y1="235" x2="545" y2="338" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-nby-1)"></line>
+            <line x1="330" y1="235" x2="250" y2="338" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-nby-1m)"></line>
+
+            <line x1="605" y1="235" x2="430" y2="508" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-nby-1m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. Client apps talk to a single API Gateway routing into Location Service (ingests pings), Discovery Service (serves nearby candidates), and Swipe/Match Service (records decisions and creates matches). All three sit in front of a geosharded search index (partitioned by S2/Geohash cell) and a separate profile store; matches write to a dedicated conversation store and trigger an async push/WebSocket notification.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Three focused services, one shared index:</strong> Location, Discovery, and Swipe/Match are separated by responsibility, but all read/write the same geosharded index, so a location update is visible to searches almost immediately.</li>
+          <li><strong>Geography-based sharding, not generic hashing:</strong> the search index is partitioned by geocell/geoshard specifically so a query never has to touch a shard covering an unrelated part of the world.</li>
+          <li><strong>Notifications are fully decoupled:</strong> match creation triggers an async push, off the critical read/write path.</li>
+          <li><strong>Profile data is separated from location data:</strong> profiles change rarely and can be cached aggressively; locations change constantly and cannot.</li>
+        </ul>
+
+        <h2 id="low-level-design">Low-Level Design</h2>
+        <h3>Core "Find Nearby" Flow</h3>
+        <p>The heart of the system is turning "user opens the app" into a ranked deck of nearby candidates, without ever touching a geoshard that couldn't possibly contain anyone in range.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-nby-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-nby-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="10" y="15" width="100" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="60" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Client</text>
+            <rect x="150" y="15" width="160" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="230" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Discovery Service</text>
+            <rect x="350" y="15" width="160" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="430" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Abstraction Layer</text>
+            <rect x="550" y="15" width="180" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="640" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Overlapping Geoshard(s)</text>
+
+            <line x1="60" y1="51" x2="60" y2="375" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="230" y1="51" x2="230" y2="375" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="430" y1="51" x2="430" y2="375" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="640" y1="51" x2="640" y2="375" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+
+            <line x1="60" y1="80" x2="230" y2="80" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nby-2)"></line>
+            <text x="145" y="72" text-anchor="middle" font-size="9" fill="var(--color-text)">1. open app / send (lat, long, radius)</text>
+
+            <text x="230" y="112" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">2. compute the user's own S2/Geohash cell(s) covering the radius</text>
+
+            <line x1="230" y1="140" x2="430" y2="140" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nby-2)"></line>
+            <text x="330" y="132" text-anchor="middle" font-size="9" fill="var(--color-text)">3. request candidates for these cell(s)</text>
+
+            <line x1="430" y1="175" x2="640" y2="175" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nby-2)"></line>
+            <text x="535" y="167" text-anchor="middle" font-size="9" fill="var(--color-text)">4. fan out query only to overlapping geoshard(s)</text>
+
+            <line x1="640" y1="210" x2="430" y2="210" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-nby-2m)"></line>
+            <text x="535" y="202" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">5. return in-range candidate IDs per shard</text>
+
+            <line x1="430" y1="245" x2="230" y2="245" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-nby-2m)"></line>
+            <text x="330" y="237" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">6. aggregate + de-duplicate results</text>
+
+            <text x="230" y="280" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">7. apply preference filters, already-swiped and blocked-user exclusion</text>
+            <text x="230" y="300" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">   then rank by recency/completeness/mutual-interest signals</text>
+
+            <line x1="230" y1="330" x2="60" y2="330" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nby-2)"></line>
+            <text x="145" y="322" text-anchor="middle" font-size="9" fill="var(--color-text)">8. return ranked deck of nearby candidates</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Core find-nearby flow: the Discovery Service resolves the user's own geo-cell(s), the abstraction layer computes which geoshards overlap the search radius and fans the query out to only those shards, results are aggregated and filtered (preferences, already-swiped, blocked), then ranked into a deck returned to the client.</div>
+        </div>
+
+        <ol>
+          <li>Client opens the app and sends its current location plus the desired search radius.</li>
+          <li>Discovery Service computes the requesting user's own geo-cell(s), using the same S2/Geohash function used on the write path.</li>
+          <li>An abstraction layer determines which geoshard(s) overlap the search radius (a query circle may span more than one geoshard near a boundary) and fans the query out to only those shards &mdash; never the whole global index.</li>
+          <li>Each targeted geoshard independently returns its in-range candidate IDs.</li>
+          <li>Results are aggregated and de-duplicated across shards.</li>
+          <li>Hard filters are applied (preferences, already-swiped exclusion, blocked-user exclusion) before ranking and returning the final deck.</li>
+        </ol>
+
+        <h2 id="deep-dive-geospatial-indexing-for-moving-points-geohashs2-grid-cells-and-geosharding">Deep Dive — Geospatial Indexing for Moving Points: Geohash/S2 Grid Cells and Geosharding</h2>
+        <p>This is the crux of the whole design, and it's drawn directly from Tinder Engineering's own public write-up of their production system ("Geosharded Recommendations"). The world is mapped into grid cells using a geospatial library &mdash; either the simpler Geohash scheme or Google's <strong>S2 geometry library</strong>, which Tinder chose in production because S2 cells stay roughly equal-area near the poles (Geohash cells get badly skewed there) and because S2's Hilbert-curve-based cells preserve spatial locality, which makes aggregation and load-balancing easier. Every user is assigned to a cell purely as a function of their current (lat, long) &mdash; recomputing that assignment on a new ping is a cheap, stateless operation.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-nby-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-nby-3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="30" y="30" width="480" height="260" rx="6" fill="var(--color-bg)" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="270" y="20" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-weight="700" letter-spacing="0.03em">WORLD MAP TILED INTO S2 / GEOHASH GRID CELLS</text>
+
+            <line x1="126" y1="30" x2="126" y2="290" stroke="var(--color-border)" stroke-width="1"></line>
+            <line x1="222" y1="30" x2="222" y2="290" stroke="var(--color-border)" stroke-width="1"></line>
+            <line x1="318" y1="30" x2="318" y2="290" stroke="var(--color-border)" stroke-width="1"></line>
+            <line x1="414" y1="30" x2="414" y2="290" stroke="var(--color-border)" stroke-width="1"></line>
+            <line x1="30" y1="116" x2="510" y2="116" stroke="var(--color-border)" stroke-width="1"></line>
+            <line x1="30" y1="203" x2="510" y2="203" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <rect x="126" y="116" width="96" height="87" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <circle cx="174" cy="160" r="5" fill="var(--color-accent-dark)"></circle>
+            <text x="174" y="182" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-weight="600">You are here</text>
+            <text x="174" y="192" text-anchor="middle" font-size="7" fill="var(--color-text-muted)">(lat, long) &rarr; cell</text>
+
+            <rect x="414" y="30" width="96" height="86" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="2"></rect>
+            <text x="462" y="65" text-anchor="middle" font-size="8" fill="#6b4a10" font-weight="600">Other users</text>
+            <text x="462" y="76" text-anchor="middle" font-size="7" fill="#6b4a10">(a distant city)</text>
+
+            <rect x="560" y="120" width="150" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="635" y="143" text-anchor="middle" font-size="10" font-weight="600" fill="var(--color-primary)">Geoshard 12</text>
+            <text x="635" y="158" text-anchor="middle" font-size="8" fill="var(--color-text-muted)">e.g. San Francisco Bay Area</text>
+            <text x="635" y="170" text-anchor="middle" font-size="8" fill="var(--color-text-muted)">100-mi radius stays inside</text>
+
+            <rect x="560" y="30" width="150" height="60" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="635" y="53" text-anchor="middle" font-size="10" font-weight="600" fill="#6b4a10">Geoshard 47</text>
+            <text x="635" y="68" text-anchor="middle" font-size="8" fill="var(--color-text-muted)">e.g. Greater London</text>
+            <text x="635" y="80" text-anchor="middle" font-size="8" fill="var(--color-text-muted)">a search here never reaches Geoshard 12</text>
+
+            <line x1="222" y1="160" x2="558" y2="150" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-nby-3)"></line>
+            <line x1="462" y1="30" x2="558" y2="60" stroke="var(--color-formula-border)" stroke-width="1.6" marker-end="url(#arrow-nby-3m)"></line>
+
+            <rect x="30" y="330" width="680" height="110" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="370" y="352" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">Instead of one Elasticsearch cluster with a default 5 shards, the index itself is sharded by geography ("geosharding")</text>
+            <text x="370" y="374" text-anchor="middle" font-size="9" fill="var(--color-text-muted)">An abstraction layer hides shard-routing: it computes which geoshards overlap a search radius, fans the query</text>
+            <text x="370" y="392" text-anchor="middle" font-size="9" fill="var(--color-text-muted)">out to just those shards, and aggregates results &mdash; application code never has to know geoshards exist.</text>
+            <text x="370" y="416" text-anchor="middle" font-size="9" fill="#6b4a10" font-style="italic" font-weight="600">Tinder's own production measurements: the geosharded index handled &asymp;20&times; more query throughput than one single-index setup.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. The world is tiled into S2/Geohash grid cells; each user's ping is mapped to exactly one cell, and cells are grouped into a fixed number of geoshards (Tinder's own production system runs roughly 40&ndash;100 globally). A California user's 100-mile search radius stays fully inside one geoshard and never has to touch a geoshard covering London.</div>
+        </div>
+
+        <p>Tinder's original architecture was one Elasticsearch cluster with a single index using the default five shards &mdash; simple, but it doesn't scale, because every query touches an index containing the entire global user base even though recommendations are capped at a maximum 100-mile radius. There is never a reason to compare a user in California against a user in London. The fix: shard the search index itself by geography ("geosharding"), so a query is naturally confined to a small, bounded region.</p>
+        <p>An <strong>abstraction layer</strong> sits between the Discovery Service and the underlying Elasticsearch geoshards, hiding all shard-routing complexity from application code: given a user's search circle, it computes exactly which geoshards that circle overlaps, fans the query out only to those shards, and aggregates the results before returning them. Application code calls a single logical "find nearby" function and never has to know geoshards exist. Tinder's own production measurements, published in their engineering blog, found this geosharded index handled <strong>roughly 20&times; more query throughput</strong> than the original single, default-5-shard index &mdash; the same total hardware footprint doing dramatically more useful work once the search space per query shrank to a bounded region.</p>
+
+        <h2 id="deep-dive-why-a-static-quadtree-yelp-style-doesnt-fit-moving-people">Deep Dive — Why a Static QuadTree (Yelp-Style) Doesn't Fit Moving People</h2>
+        <p>The classic "nearby places" system-design answer builds a <strong>QuadTree</strong> over a largely static set of locations: recursively subdivide any grid cell once it holds more than some threshold (commonly cited as ~500 places), producing a tree that's finer-grained in dense areas and coarser in sparse ones. This works well for a places directory because the fundamental assumption holds: <strong>restaurants and businesses essentially never move</strong>. Occasional rebalancing (a new restaurant opens, one closes) is cheap because it's rare.</p>
+        <p>That assumption breaks completely for a "nearby people" feature. People move every few minutes &mdash; walking, commuting, opening the app in a new city. If we tried to represent that with a QuadTree, every single location update could require moving a leaf node, splitting a now-overcrowded cell, or merging now-empty neighboring cells &mdash; i.e., constant tree rebalancing under the exact write volume calculated in the Capacity Estimation section above (thousands of writes/sec, sustained). Tree rebalancing at that rate is expensive and hard to do safely under concurrent reads.</p>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Static QuadTree (Yelp-style places)</th><th>Geohash/S2 + Geosharding (moving people)</th></tr>
+          <tr><td>Core assumption</td><td>Objects rarely move</td><td>Objects move every few minutes</td></tr>
+          <tr><td>Cost of a location update</td><td>Potentially expensive &mdash; may require splitting/merging tree nodes and rebalancing neighbors</td><td>Cheap and O(1) &mdash; recompute the cell id purely as a function of the new (lat, long); no neighbor coordination needed</td></tr>
+          <tr><td>Structure adapts to density via</td><td>Recursive subdivision (finer cells where objects are dense)</td><td>Fixed-level grid cells grouped into geoshards sized by measured load, not by subdividing on the fly</td></tr>
+          <tr><td>Write volume it's built for</td><td>Near-zero (occasional inserts/deletes)</td><td>Thousands of writes/sec, sustained, continuously</td></tr>
+          <tr><td>Best fit</td><td>Places/business directories</td><td>Live "who's near me" people-search features</td></tr>
+        </table>
+        <p>The geohash/S2-cell approach avoids rebalancing entirely: a cell id is <em>recomputed</em> from a new (lat, long) on every ping, not rebalanced against neighboring cells. There's no tree structure whose shape depends on the history of where objects have been &mdash; only a stateless function from a coordinate to a cell id, plus a separately-maintained (and much more slowly changing) mapping from cell id to geoshard. That decoupling is exactly what lets the system absorb continuous high-churn writes without a rebalancing bottleneck.</p>
+
+        <h2 id="deep-dive-candidate-recall-filtering-and-ranking">Deep Dive — Candidate Recall, Filtering, and Ranking</h2>
+        <p>Once the abstraction layer has fanned a query out to the overlapping geoshard(s) and gotten back a raw candidate set, three distinct steps turn that into the polished "deck" a user actually swipes through:</p>
+        <ol>
+          <li><strong>Recall:</strong> pull every candidate from the geoshard(s) in range of the search radius &mdash; a broad, cheap pass since it's a pure geo-membership check within already-narrowed shards.</li>
+          <li><strong>Hard filters:</strong> exclude candidates that fail non-negotiable criteria &mdash; outside the requested age range, doesn't match gender preference, already swiped on (either like or pass) in a prior session, or on the requester's block list (in either direction).</li>
+          <li><strong>Ranking:</strong> order the surviving candidates by a blend of signals &mdash; recency of activity (an actively-online user is a better candidate than one who hasn't opened the app in weeks), profile completeness (photos, bio filled in), and mutual-interest signals (e.g. has this candidate already liked profiles similar to the requester's).</li>
+        </ol>
+        <p>Hard filters must run before ranking, not after, both for correctness (never show a blocked user, ever) and for efficiency (no reason to spend ranking compute on a candidate we're about to discard anyway).</p>
+
+        <h2 id="deep-dive-matching-notifications-and-real-time-delivery">Deep Dive — Matching, Notifications, and Real-Time Delivery</h2>
+        <p>A match is intentionally gated behind <strong>mutual double opt-in</strong>: user A liking user B creates only a one-way, silent record &mdash; B is never notified of it. Only when B independently likes A back does the Swipe/Match Service detect the reciprocal pair, at which point it writes a match record and fans out a real-time notification to both users simultaneously.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-nby-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-nby-4m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="10" y="15" width="110" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="65" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">User A</text>
+            <rect x="290" y="15" width="160" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="370" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Swipe / Match Service</text>
+            <rect x="620" y="15" width="110" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="675" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">User B</text>
+
+            <line x1="65" y1="51" x2="65" y2="370" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="370" y1="51" x2="370" y2="370" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="675" y1="51" x2="675" y2="370" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+
+            <line x1="65" y1="80" x2="368" y2="80" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nby-4)"></line>
+            <text x="217" y="72" text-anchor="middle" font-size="9" fill="var(--color-text)">1. swipe(A, B, like) &mdash; one-way, stored silently</text>
+            <text x="370" y="100" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">checks: has B already liked A? &mdash; not yet, no notification sent</text>
+
+            <line x1="30" y1="130" x2="710" y2="130" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="2,3"></line>
+            <text x="370" y="123" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">&hellip; time passes &hellip;</text>
+
+            <line x1="675" y1="160" x2="372" y2="160" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nby-4)"></line>
+            <text x="523" y="152" text-anchor="middle" font-size="9" fill="var(--color-text)">2. swipe(B, A, like)</text>
+            <text x="370" y="180" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">checks: has A already liked B? &mdash; yes &rarr; mutual match!</text>
+
+            <rect x="270" y="200" width="200" height="35" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="370" y="222" text-anchor="middle" font-size="9" fill="#6b4a10" font-weight="600">3. write match record (A, B, matched_at)</text>
+
+            <line x1="370" y1="255" x2="70" y2="290" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-nby-4m)"></line>
+            <text x="180" y="278" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">4. push/WebSocket: "It's a Match!"</text>
+
+            <line x1="370" y1="255" x2="670" y2="290" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-nby-4m)"></line>
+            <text x="560" y="278" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">5. push/WebSocket: "It's a Match!"</text>
+
+            <text x="370" y="335" text-anchor="middle" font-size="9" fill="var(--color-text)" font-weight="600">6. chat channel unlocked between A and B</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. A match requires mutual double opt-in: the first like is stored one-way and produces no notification. Only when the second user likes back does the Swipe/Match Service detect the mutual pair, write a match record, and fan out a real-time push/WebSocket notification to both users &mdash; which is also what unlocks their shared chat channel.</div>
+        </div>
+
+        <p>Notification delivery is asynchronous and off the swipe-response critical path &mdash; the <code>swipe()</code> call itself only needs to write the decision and, if it created a match, enqueue two notification-delivery events. Real-time delivery to an actively-connected client goes over a push notification or long-lived WebSocket connection; if a user is offline, the notification queues for delivery on next connect (standard push-notification fallback). The chat channel between matched users is only unlocked at this point &mdash; there's no way to message someone who hasn't mutually matched.</p>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <p>This system has two datasets with genuinely different access patterns, and they're partitioned differently on purpose.</p>
+        <h3>Location / Search Index — Geosharding</h3>
+        <p>Partitioned exactly per the geospatial deep dive above: users are assigned to S2/Geohash cells, and cells are grouped into a fixed number of geoshards (Tinder's own production figure: roughly 40&ndash;100 globally), sized so that no single shard is disproportionately loaded. This is a partitioning scheme built around <em>where</em> the data lives geographically, since queries themselves are inherently geo-bounded.</p>
+        <h3>Swipe / Match Ledger — Hash by user_id</h3>
+        <p>The <code>swipe_action</code> table has a completely different access pattern: lookups are "has user X swiped on user Y," not "who is near this point," so there's no benefit to geographic partitioning here and real cost to imposing it (a user's swipe history should be servable from one place regardless of where they currently are physically). Partition this table by a hash of <code>user_id</code> instead, spreading write/read load evenly and independently of the geosharding scheme used for location data.</p>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li>Each geoshard is replicated (e.g. a primary plus 2 replicas) so read traffic for that region can be scaled horizontally and a single node loss doesn't blackout discovery for that entire geography.</li>
+          <li>Writes (location pings) go to a geoshard's primary; reads (nearby searches) can be served from any in-sync replica for that shard, absorbing the read-heavy skew without adding write capacity.</li>
+          <li>The swipe/match ledger, hash-partitioned by <code>user_id</code>, uses standard master-slave (or multi-replica) replication independent of the geoshard topology.</li>
+          <li>A lost geoshard replica should never cascade into another region's discovery being affected &mdash; that geographic isolation is one of the main payoffs of geosharding in the first place.</li>
+        </ul>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <ul>
+          <li><strong>Distance-fuzzing:</strong> never expose a candidate's exact coordinates to another user &mdash; only a bucketed approximate distance (e.g. "&lt; 1 mile," "2 miles," "5+ miles"), optionally with small randomized jitter, so distance alone can never be used to triangulate someone's exact location.</li>
+          <li><strong>"Already seen" exclusion:</strong> once a candidate has been shown (and especially once swiped on) in a session, exclude them from being served again in the same or a subsequent session, using the <code>swipe_action</code> table as the source of truth for exclusion.</li>
+          <li><strong>Boost / priority placement:</strong> a monetization feature where a paying user's profile is temporarily given elevated ranking within their geoshard's candidate pool &mdash; implemented purely as a ranking-step multiplier (see Deep Dive: Candidate Recall, Filtering, and Ranking), with zero changes needed to the underlying geospatial index.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Never trust client-reported location without sanity bounds:</strong> reject or flag a location update that implies an impossible speed of travel from the user's last known position (a basic anti-spoofing check).</li>
+          <li><strong>Distance-fuzzing as a safety feature:</strong> beyond the UX benefit, this is a direct anti-stalking control &mdash; exact coordinates of other users must never be derivable from the API, even through repeated queries.</li>
+          <li><strong>Block/report pipeline:</strong> a block or report writes an entry that <code>findNearby</code>'s hard-filter step checks in both directions (mutual exclusion), plus an async pipeline that routes reports to a trust-and-safety review queue.</li>
+          <li><strong>Rate-limiting swipe actions:</strong> a per-account token-bucket limit on swipes and searches deters scraping bots and mass profile-harvesting, independent of the geoshard the requests land on.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Location-update ingestion and discovery-query serving have very different traffic shapes and should be load-balanced (and often even scaled) separately:</p>
+        <ul>
+          <li><strong>Ingestion traffic</strong> (location pings) is small, steady, and roughly constant-rate per user &mdash; it benefits from simple round-robin balancing across Location Service instances.</li>
+          <li><strong>Discovery traffic</strong> (nearby search/swipe) is bursty and read-heavy, concentrated during peak local-usage hours in each timezone &mdash; it benefits from least-connections or latency-aware balancing, and from being scaled per-geoshard rather than globally, since one region's peak doesn't align with another's.</li>
+        </ul>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Regional geoshard clusters are aligned to real-world population density: dense cities need many small cells (and therefore finer geoshard boundaries) while sparse rural regions need far fewer, larger cells &mdash; the same dynamic-grid-size idea used in static places-search design (finer QuadTree subdivision where data is dense), re-applied here to a churny, people-based index instead of a static one.</li>
+          <li>Each region can run its own geoshard clusters largely independently, since a 100-mile max search radius means cross-region queries are essentially never required.</li>
+          <li>The swipe/match ledger, being hash-partitioned by <code>user_id</code> rather than geography, can replicate asynchronously across regions so a user's match history follows them if they travel.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Per-geoshard query latency and hot-cell detection:</strong> a viral event, major concert, or unusually dense urban area can overload a single shard &mdash; dashboards and alerting should track load per geoshard, not just fleet-wide averages, and page on-call when one shard deviates sharply from the rest.</li>
+          <li><strong>Swipe-to-match conversion rate:</strong> a key product health metric tracked over time and by region.</li>
+          <li><strong>Location-update ingestion lag:</strong> the gap between a location ping arriving and it being reflected in the search index &mdash; this is the practical size of the eventual-consistency window discussed throughout this design, and it should be monitored directly rather than assumed.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>A viral event creates a hot geoshard</td><td>Finer-grained cells in historically dense areas, dynamic shard re-balancing driven by measured load score, replica read-scaling</td></tr>
+          <tr><td>Eventual-consistency window between a location update and it appearing in search</td><td>Monitor ingestion lag directly; keep the window small (seconds) by prioritizing location-update writes on the ingestion path</td></tr>
+          <tr><td>Boundary users near a geoshard edge</td><td>Abstraction layer computes and queries every geoshard overlapping the search circle, not just the user's own cell</td></tr>
+          <tr><td>Single geoshard cluster failure</td><td>Per-shard replicas; failure is contained to that geography rather than cascading globally</td></tr>
+          <tr><td>Scraping / bot harvesting of profiles</td><td>Per-account rate limiting, device/IP reputation, distance-fuzzing to limit information leakage</td></tr>
+        </table>
+
+        <h3>Freshness vs. Privacy Trade-Off</h3>
+        <p>How often we allow location to update is itself a genuine trade-off: more frequent updates mean fresher, more accurate discovery results, but also a larger stream of precise-location writes that must be protected and a larger attack surface for location-tracking abuse. This design favors updates every few minutes rather than continuous streaming, explicitly trading a small amount of freshness for materially better privacy and lower write load.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Geospatial indexing</td><td>S2 (or Geohash) grid cells; a user's cell is recomputed statelessly on every location ping</td></tr>
+          <tr><td>Index partitioning</td><td>Geosharding &mdash; the search index itself is sharded by geography (&asymp;40&ndash;100 geoshards, per Tinder's real production figure)</td></tr>
+          <tr><td>Query routing</td><td>An abstraction layer computes overlapping geoshards for a search radius and fans the query out only to those</td></tr>
+          <tr><td>Contrast with static places search</td><td>A QuadTree assumes objects rarely move; moving people need O(1) cell recomputation instead of tree rebalancing</td></tr>
+          <tr><td>Matching model</td><td>Mutual double opt-in &mdash; a match and its notification only fire on the second, reciprocal like</td></tr>
+          <tr><td>Ledger partitioning</td><td>Swipe/match table hash-partitioned by user_id &mdash; a different access pattern than location lookups</td></tr>
+          <tr><td>Privacy control</td><td>Distance-fuzzing (bucketed, never exact coordinates); block/report hard-filters both directions</td></tr>
+          <tr><td>Consistency model</td><td>Eventual consistency between a location ping and its effect on search results, bounded to a small window</td></tr>
+          <tr><td>Notifications</td><td>Fully async push/WebSocket, off the swipe-response critical path</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Beyond the core design, interviewers love to pressure-test one component at a time. These are organized by theme &mdash; use them to rehearse, or expect a real interview to pick 3&ndash;5 as "and then what?" follow-ups.</p>
+
+        <h3>Scaling and Performance</h3>
+        <div class="qa-item">
+          <div class="qa-q">A flash-mob event or major stadium concert creates a sudden spike of thousands of users in one small area &mdash; walk through what happens to that one geoshard.</div>
+          <div class="qa-a">That geoshard becomes a hot shard: its query and write load spikes far above the fleet average. Mitigations include finer-grained cells (and therefore more, smaller geoshards) in areas that are historically dense, dynamic shard splitting driven by a measured load score, and read-replica scale-out for that specific shard rather than the whole fleet.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you decide the right number of geoshards for a given region?</div>
+          <div class="qa-a">Compute a "load score" per candidate shard boundary (unique users, active users, or query volume), then pick the shard configuration that minimizes the standard deviation of load across shards. Tinder's own production tuning landed on roughly 40&ndash;100 geoshards globally as the sweet spot balancing latency (too many small shards means expensive query fan-out) against hot-shard risk (too few large shards means load concentrates).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why not just use one Elasticsearch cluster with more replicas instead of geosharding?</div>
+          <div class="qa-a">Index size directly drives search CPU cost; a single global index still forces every query to search across the entire world even though the actual search radius maxes out around 100 miles. More replicas add read capacity but don't shrink the search space per query. Tinder's own measurements found the geosharded design handled roughly 20&times; more query throughput than the original single, default-5-shard index at the same load.</div>
+        </div>
+
+        <h3>Correctness and Data</h3>
+        <div class="qa-item">
+          <div class="qa-q">A user is standing exactly on the boundary between two geoshards &mdash; what happens to their search?</div>
+          <div class="qa-a">The abstraction layer computes every geoshard whose region overlaps the search radius's bounding area, not just the shard containing the user's own cell. A boundary case simply means the query fans out to two (or more) geoshards instead of one &mdash; correctness doesn't depend on which side of a boundary the user happens to fall on.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you keep the index from getting stale as users move?</div>
+          <div class="qa-a">Every <code>updateLocation</code> call re-derives the user's geocell id from their new coordinates and re-indexes (upserts) their document accordingly &mdash; effectively a delete-from-old-cell-plus-insert-into-new-cell operation. The window between a ping landing and the index reflecting it is small (seconds) and is an explicitly accepted eventual-consistency trade-off, not a bug.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens when a user crosses a geoshard boundary (their new location maps to a different geoshard entirely)?</div>
+          <div class="qa-a">The write removes their document from the old geoshard's index and inserts it into the new geoshard's index. Per Tinder's own engineering write-up, this move is not atomic across two independent shards, so there's a brief window of inconsistency &mdash; an accepted trade-off given how temporary and low-impact it is compared to the throughput gains of geosharding.</div>
+        </div>
+
+        <h3>Product and API Design</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you support "who's nearby" as one-way browsing instead of mutual matching?</div>
+          <div class="qa-a">Skip the mutual-opt-in gate entirely: expose profiles and fuzzed distance directly from <code>findNearby</code> as a pure discovery feed, without requiring a reciprocal like before any interaction is possible.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you let a user pause or hide from discovery temporarily without deleting their account?</div>
+          <div class="qa-a">Add an <code>is_discoverable</code> flag checked by <code>findNearby</code>'s hard-filter step, leaving the underlying <code>user_location</code> row untouched so re-enabling discovery is instant and cheap.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you design pagination for the nearby deck so swiping through hundreds of candidates doesn't refetch the same people?</div>
+          <div class="qa-a">Maintain a server-side, session-scoped exclusion list of already-served (or already-swiped) candidate IDs, combined with a stable ranking snapshot taken at the start of the session so the deck doesn't reshuffle mid-swipe.</div>
+        </div>
+
+        <h3>Security and Abuse</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you stop a user from reverse-engineering another user's exact GPS coordinates from the API?</div>
+          <div class="qa-a">Distance-fuzzing: never return raw lat/long for other users, only a bucketed approximate distance (e.g. "2 miles away"), with small randomized jitter so repeated queries from slightly different vantage points can't be combined to triangulate an exact position.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you rate-limit swiping to deter scraping bots that mass-harvest profile photos?</div>
+          <div class="qa-a">Per-account token-bucket quotas on swipes and searches, device fingerprinting, anomaly-triggered CAPTCHA challenges, and IP/device reputation feeding into the same rate limiter used for abuse prevention generally.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A user reports another user for harassment &mdash; what's the technical flow?</div>
+          <div class="qa-a">The block/report writes an entry that <code>findNearby</code>'s hard-filter step checks in both directions (mutual exclusion), and asynchronously feeds a trust-and-safety review queue for human/automated moderation follow-up.</div>
+        </div>
+
+        <h3>Reliability and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">One geoshard's cluster goes down &mdash; what's the user-visible impact?</div>
+          <div class="qa-a">Replica geoshards for that region take over serving reads; if every replica for that shard is unavailable, users physically located in that specific geography temporarily lose discovery &mdash; but the outage is contained to that geography and never cascades to users elsewhere, which is exactly the isolation benefit geosharding is designed to provide.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you detect a hot-cell problem before users notice degraded latency?</div>
+          <div class="qa-a">Track per-geoshard query latency and QPS as first-class metrics (not just fleet-wide averages) and alert when any one shard's load deviates sharply from the rest of the fleet &mdash; catching the imbalance before it becomes a user-visible slowdown.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the operational story if location-update ingestion falls behind (ingestion lag spikes)?</div>
+          <div class="qa-a">Monitor ingestion lag directly as a core metric; degrade gracefully by serving slightly-stale positions rather than failing discovery outright, and backpressure/queue incoming pings instead of silently dropping them.</div>
+        </div>
+
+        <h3>Extensions</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support a "Travel Mode" (browsing a city the user hasn't physically traveled to)?</div>
+          <div class="qa-a">Allow a user-selected synthetic (lat, long) to flow through the same <code>updateLocation</code>-style path as a real GPS ping &mdash; it maps to a geocell and geoshard identically either way, since the index doesn't distinguish a real position from a chosen one.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support super-likes or profile boosts as a monetization feature?</div>
+          <div class="qa-a">Fold a priority flag or ranking multiplier into the existing candidate-ranking step (see Deep Dive: Candidate Recall, Filtering, and Ranking), which temporarily elevates a boosted profile's position in other nearby users' decks &mdash; with zero changes to the underlying geospatial index.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you let two matched users who later move to different cities keep their existing conversation?</div>
+          <div class="qa-a">The match/conversation record lives in its own store keyed by match_id, entirely decoupled from either user's current geocell &mdash; moving physically never affects an already-unlocked chat channel.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The single fact that reshapes this entire design is that the searchable objects <strong>move</strong>. That's why the index can't be a static, read-optimized QuadTree the way it can for a places directory &mdash; it needs a scheme (Geohash/S2 cells recomputed statelessly on every ping) that absorbs continuous, high-volume write churn without expensive rebalancing. Geosharding &mdash; partitioning the search index itself by geography rather than by a generic hash &mdash; is the production-proven answer, cited directly from Tinder's own engineering blog, and it delivered roughly 20&times; more query throughput in their real system. Keep the mutual-match gate simple (a match and its notification fire only on the second, reciprocal like), keep the swipe/match ledger partitioned independently of location data since its access pattern is completely different, and treat distance-fuzzing and block/report as non-negotiable safety features, not afterthoughts. State the eventual-consistency window and the freshness-vs-privacy trade-off explicitly &mdash; interviewers are grading your reasoning about these trade-offs, not just the final architecture diagram.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Frank Ren et al., Tinder Engineering, <a href="https://medium.com/tinder/geosharded-recommendations-part-1-sharding-approach-d5d54e0ec77a" target="_blank" rel="noopener">"Geosharded Recommendations Part 1: Sharding Approach"</a> (Tinder Tech Blog)</li>
+          <li>Xiaohu Li, Tinder Engineering, <a href="https://medium.com/tinder/geosharded-recommendations-part-2-architecture-3396a8a7efb" target="_blank" rel="noopener">"Geosharded Recommendations Part 2: Architecture"</a> (Tinder Tech Blog)</li>
+          <li>Devin Thomson, Tinder Engineering, <a href="https://medium.com/tinder/geosharded-recommendations-part-3-consistency-2d2cb2f0594b" target="_blank" rel="noopener">"Geosharded Recommendations Part 3: Consistency"</a> (Tinder Tech Blog)</li>
+          <li>ByteByteGo, <a href="https://blog.bytebytego.com/p/how-tinder-recommends-to-75-million" target="_blank" rel="noopener">"How Tinder Recommends to 75 Million Users with Geosharding"</a></li>
+          <li>Google, <a href="https://s2geometry.io/" target="_blank" rel="noopener">S2 Geometry Library</a> documentation</li>
+          <li>Background on the Geohash grid-cell encoding scheme (Wikipedia, "Geohash")</li>
+          <li>Educative &mdash; "Grokking the System Design Interview": Designing Yelp / Nearby Places, for the contrasting static-QuadTree approach (course material)</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="web-crawler.html"><span class="dir">Previous</span>Web Crawler</a>
+          <a class="next" href="amazon-shopping.html"><span class="dir">Next</span>Amazon Shopping</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

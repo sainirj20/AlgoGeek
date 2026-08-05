@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entity Lifecycle &amp; States | JPA / Hibernate | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">JPA / Hibernate</a><span class="sep">/</span><span class="current">Entity Lifecycle &amp; States</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to JPA / Hibernate overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#the-four-entity-states">The Four Entity States</a></li>
+        <li><a href="#lifecycle-callback-annotations">Lifecycle Callback Annotations</a></li>
+        <li><a href="#practical-example-auto-populating-timestamps">A Practical Example: Auto-populating Timestamps</a></li>
+        <li><a href="#common-pitfalls">Common Pitfalls</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">JPA / HIBERNATE</span>
+          <h1>Entity Lifecycle &amp; States</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Every JPA entity instance is, at any given moment, in exactly one of four states: <strong>Transient</strong>, <strong>Persistent (Managed)</strong>, <strong>Detached</strong>, or <strong>Removed</strong>. The persistence context (an <code>EntityManager</code>, or a Hibernate <code>Session</code> underneath it) is what tracks managed entities and decides when to synchronize their in-memory state with the database. Almost every confusing bug you'll hit with JPA &mdash; "why didn't my change get saved," "why did I get a <code>LazyInitializationException</code>," "why do I suddenly have two rows for one blog post" &mdash; traces back to a misunderstanding of which state an entity is in and what transition just happened (or didn't). Getting this model solid is one of the highest-leverage things you can do before a JPA/Hibernate interview.</p>
+
+        <h2 id="the-four-entity-states">The Four Entity States</h2>
+        <p>Using the blog domain (<code>Author</code>, <code>Post</code>, <code>Comment</code>, <code>Tag</code>) as the running example, here is what each state means for a <code>Post</code> instance.</p>
+
+        <p><strong>Transient</strong> &mdash; a plain <code>new Post()</code>. Hibernate has never seen this object; it isn't associated with any persistence context, and no row exists for it in the database. Setting fields on a transient entity is just ordinary Java object mutation &mdash; nothing is tracked, nothing is queued for a database write.</p>
+
+        <p><strong>Persistent (Managed)</strong> &mdash; the entity is attached to an active persistence context. This happens after calling <code>entityManager.persist(post)</code>, or when the entity is loaded via <code>entityManager.find(Post.class, id)</code> or a JPQL/Criteria query. While managed, Hibernate performs <strong>dirty checking</strong>: any field mutation you make is automatically detected and flushed to the database (typically at transaction commit, or whenever a flush is triggered), with no explicit "save" call needed.</p>
+
+        <p><strong>Detached</strong> &mdash; the entity used to be persistent, but the persistence context that was tracking it has since closed (the <code>EntityManager</code> was closed, or the request-scoped persistence context ended), or it was explicitly detached via <code>entityManager.detach(post)</code>. The object still holds its data and its identifier, but Hibernate is no longer watching it. Mutating a detached entity does nothing to the database until it is re-attached, typically via <code>entityManager.merge(post)</code>, which copies its state onto a (possibly newly-loaded) managed instance and returns that managed instance.</p>
+
+        <p><strong>Removed</strong> &mdash; <code>entityManager.remove(post)</code> was called on a managed entity. The entity remains in the persistence context (so it can still fire <code>@PreRemove</code>/<code>@PostRemove</code> callbacks and cascade the removal to related entities) but is now scheduled for a <code>DELETE</code> statement at the next flush.</p>
+
+        <p>A full walkthrough, moving a <code>Post</code> through transient &rarr; persistent &rarr; detached &rarr; merged:</p>
+        <pre><code>// 1. TRANSIENT - just a Java object, no persistence context involved
+Post post = new Post();
+post.setTitle("Understanding JPA Entity States");
+post.setStatus(PostStatus.DRAFT);
+
+EntityManager em = emf.createEntityManager();
+em.getTransaction().begin();
+
+// 2. PERSISTENT - now managed; an INSERT is scheduled
+em.persist(post);
+post.setContent("Draft content...");   // dirty checking picks this up automatically
+
+em.getTransaction().commit();          // flush happens here; INSERT is executed
+em.close();                            // persistence context is gone
+
+// 3. DETACHED - post still has data + id, but nothing is tracking it
+post.setTitle("Understanding JPA Entity States (revised)"); // silently NOT saved
+
+// 4. Re-attach via merge()
+EntityManager em2 = emf.createEntityManager();
+em2.getTransaction().begin();
+
+Post managedPost = em2.merge(post);    // returns a NEW managed instance
+managedPost.setStatus(PostStatus.PUBLISHED); // this change IS tracked now
+
+em2.getTransaction().commit();
+em2.close();</code></pre>
+        <p>Notice that <code>merge()</code> does not make <code>post</code> itself managed &mdash; it copies the detached entity's state onto a managed instance (fetched from the persistence context or the database if needed) and returns that instance. Continuing to mutate the original <code>post</code> reference after calling <code>merge()</code> is a common source of confusion.</p>
+
+        <h2 id="lifecycle-callback-annotations">Lifecycle Callback Annotations</h2>
+        <p>JPA defines a set of callback annotations that let an entity (or a separate listener class) react to state transitions as they happen. They are placed on no-argument, <code>void</code>-returning methods within the entity class:</p>
+        <ul>
+          <li><strong><code>@PrePersist</code></strong> &mdash; invoked just before the entity's <code>INSERT</code> is executed (when <code>persist()</code> is called, or when a cascaded persist reaches this entity). Common use: populate <code>createdAt</code>, generate defaults.</li>
+          <li><strong><code>@PostPersist</code></strong> &mdash; invoked just after the <code>INSERT</code> has been executed and the entity has an assigned identifier. Common use: logging, firing a domain event now that the row exists.</li>
+          <li><strong><code>@PreUpdate</code></strong> &mdash; invoked just before an <code>UPDATE</code> is executed for a dirty managed entity. Common use: refresh an <code>updatedAt</code> timestamp.</li>
+          <li><strong><code>@PostUpdate</code></strong> &mdash; invoked just after the <code>UPDATE</code> has completed.</li>
+          <li><strong><code>@PreRemove</code></strong> &mdash; invoked just before the <code>DELETE</code> is executed for a removed entity. Common use: cascading soft-delete logic, audit logging.</li>
+          <li><strong><code>@PostRemove</code></strong> &mdash; invoked just after the <code>DELETE</code> has been executed.</li>
+          <li><strong><code>@PostLoad</code></strong> &mdash; invoked right after an entity has been hydrated from a database row (via <code>find()</code>, a query, or lazy-loading a proxy). Common use: computing transient/derived fields, decrypting values.</li>
+        </ul>
+        <p>These callbacks can be defined directly on the entity (as instance methods) or externalized into a separate class referenced via <code>@EntityListeners</code>, which keeps cross-cutting concerns like auditing out of the entity itself.</p>
+
+        <h2 id="practical-example-auto-populating-timestamps">A Practical Example: Auto-populating Timestamps</h2>
+        <p>A very common real-world use of lifecycle callbacks is stamping <code>createdAt</code>/<code>updatedAt</code> fields automatically, so no calling code needs to remember to set them:</p>
+        <pre><code>@Entity
+public class Post {
+
+    private Instant createdAt;
+    private Instant updatedAt;
+    private Instant publishedAt;
+    private PostStatus status;
+
+    @PrePersist
+    void onCreate() {
+        this.createdAt = Instant.now();
+        if (this.status == PostStatus.PUBLISHED &amp;&amp; this.publishedAt == null) {
+            this.publishedAt = Instant.now();
+        }
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        this.updatedAt = Instant.now();
+    }
+
+    // getters/setters omitted
+}</code></pre>
+        <p>In real-world Spring Data JPA codebases, the more common approach is to skip hand-written callbacks entirely and use the framework's built-in auditing support: annotate fields with <code>@CreatedDate</code> and <code>@LastModifiedDate</code>, put <code>@EntityListeners(AuditingEntityListener.class)</code> on the entity, and enable auditing with <code>@EnableJpaAuditing</code> on a configuration class. It's less code and less error-prone than maintaining callbacks by hand. That said, interviewers usually ask about raw <code>@PrePersist</code>/<code>@PreUpdate</code> specifically, because understanding them is what actually explains the underlying mechanism that <code>AuditingEntityListener</code> is built on top of.</p>
+
+        <h2 id="common-pitfalls">Common Pitfalls</h2>
+        <ul>
+          <li><strong>Mutating a detached entity and expecting it to save.</strong> If the <code>EntityManager</code>/<code>Session</code> that loaded a <code>Post</code> has already closed (e.g., the request finished, or a service method's <code>@Transactional</code> boundary ended), further field changes are ordinary Java mutations. Nothing is flushed. There's no exception &mdash; it just silently doesn't persist, which is often more confusing than a hard failure would be.</li>
+          <li><strong>Calling <code>merge()</code> on a transient entity by mistake.</strong> <code>merge()</code> is meant for re-attaching a <em>detached</em> entity that already has a database identity. If you accidentally call <code>merge()</code> on an entity whose identifier is <code>null</code> (or one that doesn't correspond to an existing row), Hibernate treats it as new and inserts a fresh row &mdash; not the update you expected. This is a classic cause of unexpected duplicate rows.</li>
+          <li><strong>Lifecycle callback method signature constraints.</strong> Callback methods must return <code>void</code> and take no arguments. A method with a return type or parameters is silently ignored (or rejected at startup, depending on the provider) rather than invoked as a callback.</li>
+          <li><strong>Assuming callbacks fire on bulk operations.</strong> JPQL/Criteria bulk <code>UPDATE</code> and <code>DELETE</code> statements (and native SQL) bypass the persistence context entirely, so entity lifecycle callbacks never fire for them.</li>
+        </ul>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">What are the four JPA entity states and how does an entity move between them?</div>
+          <div class="qa-a">The four states are <code>Transient</code>, <code>Persistent</code> (managed), <code>Detached</code>, and <code>Removed</code>. A transient object (e.g., <code>new Post()</code>) becomes persistent via <code>persist()</code> or by being loaded/queried within an active persistence context. A persistent entity becomes detached when its persistence context closes, or via an explicit <code>detach()</code>/<code>clear()</code>. A detached entity can be re-attached (becoming persistent again, as a new managed instance) via <code>merge()</code>. A persistent entity becomes removed via <code>remove()</code>, and is deleted from the database at the next flush.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between <code>merge()</code> and <code>persist()</code>?</div>
+          <div class="qa-a"><code>persist()</code> is for making a transient (brand-new) entity managed &mdash; it schedules an <code>INSERT</code> and the same object instance you pass in becomes managed. <code>merge()</code> is for re-attaching a detached entity's state &mdash; it does not manage the instance you pass in; instead it copies its field values onto a managed instance (loading one from the database if needed) and returns that managed copy. Calling <code>merge()</code> on something with no matching row effectively performs an insert, which can produce a duplicate if used on a transient entity by mistake.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why doesn't modifying a detached entity get saved to the database?</div>
+          <div class="qa-a">Dirty checking only applies to entities tracked by an active persistence context. Once the <code>EntityManager</code> closes (or the entity is detached), Hibernate stops watching it entirely &mdash; there is no snapshot comparison, no flush, no automatic UPDATE. The mutation is just a plain in-memory field change. To persist it, you must re-attach the entity (typically with <code>merge()</code>) inside a live persistence context.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between <code>@PrePersist</code> and <code>@PostPersist</code>?</div>
+          <div class="qa-a"><code>@PrePersist</code> fires before the <code>INSERT</code> statement is executed, when you typically don't yet have a database-generated identifier &mdash; it's the right place to set defaults like <code>createdAt</code>. <code>@PostPersist</code> fires right after the <code>INSERT</code> has run, once the entity's identifier is populated, making it appropriate for logging or firing events that need the persisted id.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does Hibernate detect that a managed entity's field has changed (dirty checking)?</div>
+          <div class="qa-a">When an entity becomes managed (via <code>persist()</code> or on load), Hibernate stores a snapshot of its field values. At flush time, it compares the entity's current state against that snapshot for every managed entity in the persistence context and generates <code>UPDATE</code> statements for anything that differs &mdash; all without you calling an explicit <code>save()</code> or <code>update()</code>. This is why simply calling a setter on a managed entity inside a transaction is enough to persist a change.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>An entity is always in exactly one state: Transient, Persistent (managed), Detached, or Removed &mdash; know the triggers for each transition.</li>
+          <li>Only managed entities get automatic dirty-checking; detached entity mutations are silently ignored until re-attached with <code>merge()</code>.</li>
+          <li><code>persist()</code> manages the exact instance you pass in; <code>merge()</code> returns a different, managed copy &mdash; mixing them up causes duplicate rows or stale-reference bugs.</li>
+          <li>Lifecycle callbacks (<code>@PrePersist</code>, <code>@PostPersist</code>, <code>@PreUpdate</code>, <code>@PostUpdate</code>, <code>@PreRemove</code>, <code>@PostRemove</code>, <code>@PostLoad</code>) must be <code>void</code> and take no arguments, and never fire for bulk JPQL/native operations.</li>
+          <li>Spring Data's <code>@CreatedDate</code>/<code>@LastModifiedDate</code> auditing is the common production shortcut, but raw <code>@PrePersist</code>/<code>@PreUpdate</code> is what reveals the underlying mechanism interviewers want to hear about.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="relationships-cascading.html"><span class="dir">Previous</span>Relationships &amp; Cascading</a>
+          <a class="next" href="querying-data.html"><span class="dir">Next</span>Data Retrieval</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

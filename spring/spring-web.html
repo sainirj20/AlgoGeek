@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring Web (MVC &amp; REST) | Spring | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Spring</a><span class="sep">/</span><span class="current">Spring Web (MVC &amp; REST)</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Spring overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#the-dispatcherservlet-request-lifecycle">The DispatcherServlet &amp; Request Lifecycle</a></li>
+        <li><a href="#building-rest-controllers">Building REST Controllers</a></li>
+        <li><a href="#request-validation">Request Validation</a></li>
+        <li><a href="#centralized-exception-handling">Centralized Exception Handling</a></li>
+        <li><a href="#http-status-codes-content-negotiation">HTTP Status Codes &amp; Content Negotiation</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SPRING</span>
+          <h1>Spring Web (MVC &amp; REST)</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Spring Web interview questions rarely stop at &quot;can you annotate a class with <code>@RestController</code>?&quot; Interviewers use this topic to probe whether you understand how an HTTP request is actually processed &mdash; the front-controller architecture underneath Spring MVC, how request data gets bound and validated before it touches business logic, and how errors are surfaced back to clients in a consistent, machine-readable way. In other words: can you design a resource-oriented HTTP API correctly, not just wire up an endpoint that happens to return JSON. Expect questions that mix framework mechanics (dispatcher lifecycle, argument resolvers, message converters) with API design judgment (status codes, validation boundaries, error contracts).</p>
+
+        <h2 id="the-dispatcherservlet-request-lifecycle">The DispatcherServlet &amp; Request Lifecycle</h2>
+        <p>Spring MVC is built on the <strong>front controller pattern</strong>: every incoming HTTP request is funneled through a single servlet, <code>DispatcherServlet</code>, which delegates the real work to a set of collaborating strategy beans rather than handling routing or rendering itself.</p>
+        <p>At a high level, a request flows through these stages:</p>
+        <pre><code>Client Request
+    &rarr; DispatcherServlet          (front controller, single entry point)
+    &rarr; HandlerMapping              (finds which controller method matches the URL/verb)
+    &rarr; HandlerAdapter              (invokes that method, resolving its arguments)
+    &rarr; Controller method runs      (business logic executes)
+    &rarr; HttpMessageConverter        (for @RestController: serializes return value to JSON/XML)
+      &mdash; or &mdash;
+    &rarr; ViewResolver + View         (for @Controller: resolves a template/view to render)
+    &rarr; Response written back to client</code></pre>
+        <p>For REST APIs specifically, the <code>ViewResolver</code> stage is bypassed &mdash; <code>HttpMessageConverter</code> implementations (like <code>MappingJackson2HttpMessageConverter</code>) take the controller's return value and write it directly to the response body based on content negotiation. You don't need to memorize every internal class name, but you should be able to explain, at a whiteboard level, that a single servlet fronts all requests and delegates to pluggable strategies &mdash; that's what makes Spring MVC extensible (custom argument resolvers, custom converters, interceptors) without touching the servlet itself.</p>
+
+        <h2 id="building-rest-controllers">Building REST Controllers</h2>
+        <p><code>@RestController</code> is a composed annotation: it's <code>@Controller</code> + <code>@ResponseBody</code>. Plain <code>@Controller</code> tells Spring MVC "this bean's methods return view names to resolve," while <code>@ResponseBody</code> tells it "skip view resolution, write the return value straight into the response body via a message converter." For REST APIs, <code>@RestController</code> is the norm; you'd reach for <code>@Controller</code> plus a selective <code>@ResponseBody</code> only in a mixed app that serves both server-rendered views and JSON endpoints from the same class.</p>
+        <p>Routing is declared with <code>@RequestMapping</code> and its HTTP-verb-specific shortcuts &mdash; <code>@GetMapping</code>, <code>@PostMapping</code>, <code>@PutMapping</code>, <code>@PatchMapping</code>, and <code>@DeleteMapping</code> &mdash; which are just <code>@RequestMapping(method = ...)</code> under the hood, added for readability.</p>
+        <p>Request data is bound into method parameters using a small set of annotations, each with a distinct source:</p>
+        <ul>
+          <li><code>@PathVariable</code> &mdash; a segment of the URI path (e.g. the <code>{id}</code> in <code>/products/{id}</code>)</li>
+          <li><code>@RequestParam</code> &mdash; a query string parameter or form field (e.g. <code>?page=2</code>)</li>
+          <li><code>@RequestBody</code> &mdash; the entire request payload, deserialized by a message converter (e.g. JSON &rarr; DTO)</li>
+          <li><code>@RequestHeader</code> &mdash; a single HTTP header value</li>
+        </ul>
+        <p>A minimal but complete example:</p>
+        <pre><code>@RestController
+@RequestMapping("/api/products")
+public class ProductController {
+
+    private final ProductService productService;
+
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
+
+    @GetMapping("/{id}")
+    public ProductResponse getById(@PathVariable Long id) {
+        return productService.findById(id);
+    }
+
+    @GetMapping
+    public List&lt;ProductResponse&gt; search(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String category) {
+        return productService.search(page, category);
+    }
+
+    @PostMapping
+    public ResponseEntity&lt;ProductResponse&gt; create(@Valid @RequestBody CreateProductRequest request) {
+        ProductResponse created = productService.create(request);
+        URI location = URI.create("/api/products/" + created.id());
+        return ResponseEntity.created(location).body(created);
+    }
+}</code></pre>
+        <p>Note the constructor injection (preferred over field injection for testability and immutability) and the use of <code>ResponseEntity</code> in the POST method to control both the status code and the <code>Location</code> header explicitly, rather than letting the framework infer them.</p>
+
+        <h2 id="request-validation">Request Validation</h2>
+        <p>Spring integrates with <strong>Jakarta Bean Validation</strong> (the successor to javax Bean Validation) to declaratively validate incoming request data. You annotate fields on a request DTO with constraints like <code>@NotNull</code>, <code>@NotBlank</code>, <code>@Size</code>, <code>@Min</code>/<code>@Max</code>, and <code>@Email</code>, then trigger validation on the controller parameter with <code>@Valid</code> (standard JSR-380) or Spring's <code>@Validated</code> (which additionally supports validation groups).</p>
+        <pre><code>public record CreateProductRequest(
+        @NotBlank @Size(max = 100) String name,
+        @NotNull @Positive BigDecimal price,
+        @Size(max = 500) String description
+) {}</code></pre>
+        <p>When validation fails, Spring throws <code>MethodArgumentNotValidException</code> by default, which you can either let a global exception handler translate into a 400 response, or capture manually by adding a <code>BindingResult</code> parameter immediately after the validated argument &mdash; in which case Spring will <em>not</em> throw, and you're responsible for inspecting <code>bindingResult.hasErrors()</code> yourself.</p>
+        <p>A recurring interview theme: <strong>validate at the boundary, on DTOs, not on JPA entities.</strong> Entities represent persistence state and are often reused across creation, update, and internal logic where the "required" fields differ (e.g. an <code>id</code> is absent on create but present on update). Binding validation directly to an entity couples your persistence model to your wire format and makes it impossible to have different validation rules per operation. Dedicated request DTOs keep the API contract explicit and decoupled from how data is stored.</p>
+
+        <h2 id="centralized-exception-handling">Centralized Exception Handling</h2>
+        <p><code>@ExceptionHandler</code> can be declared directly on a controller to handle exceptions thrown by that controller's methods, but that scopes the handling to a single class. The more common and interview-relevant pattern is a <strong>global</strong> handler using <code>@RestControllerAdvice</code> (or <code>@ControllerAdvice</code> + <code>@ResponseBody</code>), which applies across every controller in the application and keeps error-handling logic out of business code entirely.</p>
+        <p>The modern best practice &mdash; and something interviewers increasingly expect you to know &mdash; is to return errors using <strong>RFC 7807 Problem Details</strong> rather than an ad-hoc, hand-rolled error JSON shape. Spring Framework 6 / Boot 3 ships a built-in <code>ProblemDetail</code> class that models the standard's fields (<code>type</code>, <code>title</code>, <code>status</code>, <code>detail</code>, <code>instance</code>, plus extension properties) so every error response across the API has a consistent, self-describing shape that clients can parse generically.</p>
+        <pre><code>@RestControllerAdvice
+public class ApiExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity&lt;ProblemDetail&gt; handleNotFound(ResourceNotFoundException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Resource Not Found");
+        problem.setProperty("errorCode", "RESOURCE_NOT_FOUND");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity&lt;ProblemDetail&gt; handleValidation(MethodArgumentNotValidException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "One or more fields are invalid.");
+        problem.setTitle("Validation Failed");
+        return ResponseEntity.badRequest().body(problem);
+    }
+}</code></pre>
+        <p>Centralizing exception translation this way means individual controllers stay focused on orchestration &mdash; they simply throw domain-specific exceptions like <code>ResourceNotFoundException</code> and let the advice class own the mapping to HTTP semantics.</p>
+
+        <h2 id="http-status-codes-content-negotiation">HTTP Status Codes &amp; Content Negotiation</h2>
+        <p>Choosing the right status code is a small thing that signals real REST fluency. A quick reference for the codes that come up most often:</p>
+        <ul>
+          <li><strong>200 OK</strong> &mdash; successful GET, PUT, or PATCH with a response body</li>
+          <li><strong>201 Created</strong> &mdash; successful POST that created a resource; should include a <code>Location</code> header pointing at the new resource</li>
+          <li><strong>204 No Content</strong> &mdash; successful request with nothing to return (e.g. DELETE)</li>
+          <li><strong>400 Bad Request</strong> &mdash; malformed request (unparseable JSON, wrong types)</li>
+          <li><strong>404 Not Found</strong> &mdash; the referenced resource does not exist</li>
+          <li><strong>409 Conflict</strong> &mdash; the request conflicts with current state (duplicate key, version mismatch)</li>
+          <li><strong>422 Unprocessable Entity</strong> &mdash; syntactically valid request that fails semantic/business validation</li>
+        </ul>
+        <p>Two mechanisms give you control over the status code: the class-level or method-level <code>@ResponseStatus</code> annotation (simple and declarative, but static and doesn't let you set response headers), and returning <code>ResponseEntity&lt;T&gt;</code> from the controller method, which lets you set the status, headers (like <code>Location</code> on a 201, or <code>ETag</code>/<code>Cache-Control</code>), and body together, computed at runtime based on the outcome of the request.</p>
+        <p>Content negotiation determines the representation Spring sends back when a client specifies an <code>Accept</code> header (e.g. <code>application/json</code> vs <code>application/xml</code>). Spring's <code>ContentNegotiationManager</code> inspects the <code>Accept</code> header (and, if configured, a path extension or query parameter) and picks the first registered <code>HttpMessageConverter</code> capable of producing a compatible media type; if none match, it responds with <strong>406 Not Acceptable</strong>.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between @Controller and @RestController?</div>
+          <div class="qa-a"><code>@RestController</code> is a composed annotation equal to <code>@Controller</code> + <code>@ResponseBody</code>. A plain <code>@Controller</code> method return value is treated as a view name to be resolved and rendered (e.g. a Thymeleaf template); adding <code>@ResponseBody</code> &mdash; or using <code>@RestController</code> on the class &mdash; tells Spring to skip view resolution and serialize the return value directly into the HTTP response body via a message converter, which is what you want for JSON/XML APIs.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does Spring resolve @PathVariable vs @RequestParam vs @RequestBody?</div>
+          <div class="qa-a">Each annotation tells Spring's argument resolvers where in the request to look: <code>@PathVariable</code> pulls from a named segment of the URI template, <code>@RequestParam</code> pulls from query string parameters (or form-encoded body fields), and <code>@RequestBody</code> hands the entire request payload to an <code>HttpMessageConverter</code> to be deserialized into a Java object, typically a DTO. They're not interchangeable: path variables identify a specific resource, request params filter/paginate, and the request body carries the resource representation itself.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you implement centralized exception handling across all controllers?</div>
+          <div class="qa-a">Define a class annotated with <code>@RestControllerAdvice</code> and add <code>@ExceptionHandler</code> methods for each exception type you want to translate into an HTTP response. Because the advice is global, it applies to every <code>@RestController</code> in the application context, so individual controllers can simply throw domain exceptions (like <code>ResourceNotFoundException</code>) and stay free of try/catch boilerplate. This keeps error-response formatting <ul><li>consistent</li><li>centrally testable</li><li>decoupled from business logic</li></ul></div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is RFC 7807 Problem Details and why prefer it over a custom error format?</div>
+          <div class="qa-a">RFC 7807 defines a standard JSON (or XML) structure for HTTP API error responses, with fields like <code>type</code>, <code>title</code>, <code>status</code>, <code>detail</code>, and <code>instance</code>, plus room for extension properties. Spring 6/Boot 3 provides a built-in <code>ProblemDetail</code> class to build these responses. Using it instead of an ad-hoc error shape means every client &mdash; and every team consuming your API &mdash; can parse errors generically instead of learning a bespoke format per service, which matters a lot once you have dozens of microservices.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does content negotiation work when a client sends an Accept header?</div>
+          <div class="qa-a">Spring's <code>ContentNegotiationManager</code> inspects the incoming <code>Accept</code> header to determine which media types the client can handle, then looks for a registered <code>HttpMessageConverter</code> that can produce the controller's return value in one of those types (for example, Jackson's converter for <code>application/json</code>). The first compatible converter wins and serializes the response; if none of the registered converters can satisfy any of the requested media types, Spring responds with <code>406 Not Acceptable</code>.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li><code>DispatcherServlet</code> is the single front controller; it delegates to <code>HandlerMapping</code>, <code>HandlerAdapter</code>, and message converters rather than doing routing or serialization itself.</li>
+          <li>Use <code>@RestController</code> and the HTTP-verb shortcut mappings (<code>@GetMapping</code>, <code>@PostMapping</code>, etc.), and bind request data with the annotation that matches its actual source: path, query, body, or header.</li>
+          <li>Validate at the DTO boundary with Jakarta Bean Validation (<code>@Valid</code>/<code>@Validated</code>) &mdash; never validate entities directly, since persistence and API contracts have different lifecycles.</li>
+          <li>Centralize error handling with <code>@RestControllerAdvice</code> and return <code>ProblemDetail</code> responses (RFC 7807) instead of inventing a custom error JSON shape.</li>
+          <li>Pick precise HTTP status codes and use <code>ResponseEntity&lt;T&gt;</code> when you need to control headers (like <code>Location</code> on 201) alongside the status and body.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="spring-boot.html"><span class="dir">Previous</span>Spring Boot</a>
+          <a class="next" href="spring-data-jpa.html"><span class="dir">Next</span>Spring Data JPA &amp; Hibernate</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

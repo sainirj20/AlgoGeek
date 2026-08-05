@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing an Observability Platform (Kibana / ELK-Style) | System Design — Case Studies | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Case Studies</a><span class="sep">/</span><span class="current">Observability Platform (Kibana/ELK)</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Case Studies overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design-shared-ingestion-spine-walkthrough">Low-Level Design — Shared Ingestion Spine Walkthrough</a></li>
+        <li><a href="#deep-dive-part-1-distributed-tracing-system">Deep Dive — Part 1: Distributed Tracing System</a></li>
+        <li><a href="#deep-dive-part-2-metrics-collection-from-thousands-of-servers">Deep Dive — Part 2: Metrics Collection from Thousands of Servers</a></li>
+        <li><a href="#deep-dive-part-3-cluster-health-monitoring">Deep Dive — Part 3: Cluster Health Monitoring</a></li>
+        <li><a href="#deep-dive-part-4-distributed-metrics-logging-and-aggregation-system">Deep Dive — Part 4: Distributed Metrics Logging and Aggregation System</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing an Observability Platform (Kibana / ELK-Style)</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a unified observability platform bundling four pillars &mdash; distributed tracing, metrics collection from thousands of servers, cluster health monitoring, and distributed log aggregation &mdash; behind one shared ingestion spine and a single Kibana-style pane of glass: requirements, capacity estimation, API &amp; data-model design, the shared high-level architecture, per-pillar deep dives, sharding &amp; replication, security, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design an <strong>observability platform</strong> for a large distributed system running on 10,000+ hosts: an ELK/Kibana-style stack that lets an on-call engineer go from &ldquo;something's wrong&rdquo; to &ldquo;root cause&rdquo; inside one tool. Concretely, the platform must unify four historically separate concerns:</p>
+        <ol>
+          <li><strong>Distributed tracing</strong> &mdash; follow one request as it hops across dozens of microservices, so you can see exactly where latency or an error was introduced.</li>
+          <li><strong>Metrics collection</strong> from thousands of servers &mdash; CPU, memory, request rate, error rate, latency histograms, and thousands of custom application metrics, collected continuously and cheaply.</li>
+          <li><strong>Cluster health monitoring</strong> &mdash; is each service, shard, and node up, in quorum, and within SLA, without false-positive outage alerts from a transient network blip.</li>
+          <li><strong>Log aggregation</strong> &mdash; centralize, parse, and index unstructured/structured log lines from every host so they're searchable in seconds, not minutes.</li>
+        </ol>
+        <p>Any one of these four is a reasonably scoped interview question on its own. The genuinely interesting design problem &mdash; the one worth spending the whole session on &mdash; is <em>why and how to bundle all four under one platform</em> rather than shipping four independent silos (a tracing vendor, a metrics vendor, a status-page tool, and a log-search tool that don't talk to each other). Four silos mean four different agents on every host, four ingestion pipelines to operate, four storage systems to capacity-plan, and &mdash; the real cost &mdash; an on-call engineer forced to manually correlate a trace ID, a timestamp, and a hostname across four different UIs during an incident, burning the minutes that matter most. A unified platform instead shares one ingestion spine (agents on every host &rarr; a durable buffer &rarr; a processing tier &rarr; one storage engine &rarr; one query/visualization layer) across all four data types, and pays for that sharing with a single, well-designed <strong>correlation key</strong> &mdash; typically a trace ID and a common timestamp &mdash; that lets a single Kibana dashboard pivot from a slow trace span, to the exact log lines emitted during that span, to the metric anomaly that coincided with it, without leaving the page.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It forces you to reason about a system that must simultaneously behave like a write-heavy time-series database (metrics), a write-heavy full-text search index (logs and traces), and a low-latency health/consensus system (cluster status) &mdash; each with wildly different cardinality, retention, and query patterns, yet all sharing infrastructure for cost reasons. A strong candidate recognizes early that the four pillars are not architecturally identical (metrics need rollups and cardinality control; logs need parsing and tiered storage; traces need sampling and context propagation; health needs quorum, not raw counting) and designs one shared spine with pillar-specific processing bolted onto it &mdash; rather than either forcing all four into one identical pipeline, or building four unrelated systems that happen to sit in the same repo.</p>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope across all four pillars before drawing boxes.</p>
+        <ol>
+          <li>How many hosts/servers are we instrumenting today, and what's the expected growth (10,000? 100,000?)?</li>
+          <li>For tracing: what's the acceptable sampling rate, and do we need tail-based sampling (to guarantee we keep 100% of error/slow traces) or is head-based sampling acceptable?</li>
+          <li>For metrics: do we need per-request/per-user-level labels (high cardinality), or are we aggregating at the service/host level only?</li>
+          <li>What data retention do we need per pillar &mdash; are hot logs/metrics needed for 7 days, 30 days, a year for compliance?</li>
+          <li>Is this single-region or does the platform need to span multiple data centers/regions from day one?</li>
+          <li>What's the acceptable end-to-end ingestion lag before a log line or metric point is queryable in Kibana (seconds? a minute?)?</li>
+          <li>Do we need alerting (threshold-based and anomaly-based) built into this platform, or is alerting owned by a separate downstream system that just consumes our data?</li>
+          <li>How is the observability platform itself monitored &mdash; is there a fallback path if the platform monitoring the rest of the fleet goes down?</li>
+          <li>Do we need role-based access control per team/index (e.g. team A can't see team B's logs), and are there PII/compliance constraints on what can be logged?</li>
+          <li>Is a managed/hosted Elasticsearch (Elastic Cloud, OpenSearch Service) acceptable, or must this be self-hosted?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't stall waiting for every answer &mdash; state a reasonable assumption out loud (&ldquo;I'll assume 10,000+ hosts today growing toward 50,000, tail-based sampling for traces since catching every error trumps ingest cost, and 15 days hot / 90 days warm / 1 year cold retention for logs&rdquo;) and keep moving. Naming the cardinality-explosion risk on metrics unprompted is one of the highest-signal moves you can make in this specific interview.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li><strong>Distributed tracing:</strong> instrument services to emit spans, propagate trace context across service hops, ingest and store traces, and let an engineer view a full trace as a tree/waterfall and derive a service dependency graph.</li>
+          <li><strong>Metrics collection:</strong> collect counters, gauges, and histograms from 10,000+ hosts and services (both pulled and pushed), store them as time series, and support ad-hoc queries plus pre-built dashboards.</li>
+          <li><strong>Cluster health monitoring:</strong> continuously track liveness of every service/node/shard, compute an aggregate red/yellow/green health status per cluster, and run synthetic canary checks against critical user journeys.</li>
+          <li><strong>Log aggregation:</strong> ship structured and unstructured logs from every host, parse them into structured fields, index them for full-text and field search, and enforce lifecycle-based retention/tiering.</li>
+          <li><strong>Correlation:</strong> let a user pivot from a trace span to the log lines and metric values that share its timestamp and host/service, in one UI (Kibana).</li>
+          <li><strong>Alerting:</strong> fire alerts on metric thresholds, log patterns (e.g. error-rate spikes), and health-status transitions, with configurable routing (paging, Slack, email).</li>
+          <li><strong>Dashboards and ad-hoc query:</strong> a query language/UI (Kibana Discover/Lens-style) for exploring any of the four data types, plus saved dashboards.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>High ingestion throughput and durability:</strong> the platform must absorb millions of events/sec across all four pillars without data loss, even during a downstream processing slowdown.</li>
+          <li><strong>Low end-to-end latency to queryable:</strong> ideally single-digit seconds from emission to being visible in Kibana, since incident response depends on freshness.</li>
+          <li><strong>Horizontal scalability</strong> of every tier (collectors, buffer, processing, storage) independently, since a metrics cardinality spike and a log-volume spike are uncorrelated events.</li>
+          <li><strong>Cost efficiency at scale:</strong> storage cost dominates total cost of ownership; the design must actively fight cardinality explosion and use tiered storage rather than keeping everything hot forever.</li>
+          <li><strong>High availability of the monitoring platform itself:</strong> this is the system engineers rely on <em>during</em> an outage of something else &mdash; it cannot itself be a single point of failure, and ideally survives the very incident it's helping diagnose.</li>
+          <li><strong>Query performance:</strong> ad-hoc searches over recent (hot-tier) data should return in low seconds even across billions of documents.</li>
+          <li><strong>Eventual consistency is acceptable</strong> for most reads (a dashboard a few seconds stale is a non-issue); cluster health decisions specifically need quorum-based correctness to avoid false-positive outage pages.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on the shared ingestion spine and all four pillars: tracing, metrics, cluster health, and log aggregation, plus sharding, replication, security, and multi-region scaling. We call out but don't build a full anomaly-detection ML pipeline, a complete APM code-profiling/flame-graph product, or a general-purpose BI/reporting layer on top of the same data &mdash; real adjacent products, but layered on top of this core platform.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly and let them drive every downstream decision. Assume a fleet of <strong>12,000 hosts</strong> running a mix of ~3,000 services.</p>
+
+        <h3>Trace / Span Volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          12,000 hosts &times; ~200 requests/sec/host handled &asymp; 2.4M requests/sec fleet-wide entering some service
+          <br>Average request fans out across ~8 downstream spans (service hops) &rarr; &asymp; 19.2M spans/sec generated before sampling
+          <br>Head-based sampling at 1% keeps &asymp; 192,000 spans/sec; tail-based sampling additionally guarantees ~100% of the ~0.5% error/slow traces are kept
+          <br>Average span size (trace/span IDs, service name, timestamps, ~10 tags) &asymp; 600 bytes
+          <br>Ingest &asymp; 192,000 &times; 600 bytes &asymp; 115 MB/sec of span data at steady state (before compression)
+        </div>
+
+        <h3>Metrics Data-Point Volume and Cardinality</h3>
+        <div class="formula-box">
+          <span class="formula-label">Base metrics</span>
+          12,000 hosts &times; ~150 host-level metrics (CPU, mem, disk, net, ...) &times; 1 point/10s &asymp; 180,000 points/sec from infra metrics alone
+          <br>3,000 services &times; ~40 app-level metrics (RPS, latency buckets, error rate, queue depth) &times; 1 point/10s &asymp; 12,000 points/sec
+          <br>Total base cardinality (distinct time series) &asymp; 12,000&times;150 + 3,000&times;40 &asymp; 1.92M distinct series
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Cardinality-explosion danger</span>
+          Adding just one high-cardinality label &mdash; e.g. per-endpoint &times; per-status-code &times; per-customer-id &mdash; on 3,000 services with ~50 endpoints &times; 10 status codes &times; 100,000 active customers:
+          <br>3,000 &times; 50 &times; 10 &times; 100,000 = 150 billion potential series &mdash; utterly infeasible for a TSDB's in-memory index
+          <br>This is why customer_id (and similarly unbounded labels) must never be a raw metric label &mdash; mitigated via bounded label sets, hierarchical aggregation, and pushing per-entity detail into logs/traces instead of metrics (see Deep Dive &mdash; Part 2)
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Sizing at bounded cardinality</span>
+          &asymp;2M series &times; 1 point/10s = 200,000 points/sec ingested
+          <br>&asymp;2 bytes/point (compressed, Gorilla-style delta-of-delta encoding) &times; 200,000/sec &asymp; 400 KB/sec compressed steady-state write &mdash; several orders of magnitude cheaper than uncompressed, which is why virtually every production TSDB uses this encoding
+        </div>
+
+        <h3>Log Line Volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          12,000 hosts &times; ~150 log lines/sec/host average (app + system + access logs) &asymp; 1.8M log lines/sec fleet-wide
+          <br>Average line size (message + structured fields) &asymp; 350 bytes raw
+          <br>Raw ingest &asymp; 1.8M &times; 350 bytes &asymp; 630 MB/sec &asymp; 54.4 TB/day raw
+          <br>Elasticsearch storage overhead: inverted index + doc values roughly &times;1.1&ndash;1.3 of source, then compressed &asymp;&times;0.3&ndash;0.5 net &rarr; &asymp; 20&ndash;25 TB/day indexed
+        </div>
+
+        <h3>Storage Retention Math per Pillar</h3>
+        <table class="sortable">
+          <tr><th>Pillar</th><th>Daily volume (indexed)</th><th>Hot retention</th><th>Warm/cold retention</th><th>Steady-state footprint (with RF=1 replica)</th></tr>
+          <tr><td>Logs</td><td>&asymp;20&ndash;25 TB/day</td><td>15 days hot (SSD)</td><td>90 days warm + 1 year cold/frozen</td><td>&asymp;375 TB hot + &asymp;1.8 PB warm/cold (compressed further, object storage) &times;2 (1 replica) &asymp; multi-PB</td></tr>
+          <tr><td>Traces (post-sampling)</td><td>&asymp;115 MB/sec &asymp; 9.9 TB/day</td><td>7 days hot</td><td>30 days warm</td><td>&asymp;69 TB hot + &asymp;300 TB warm &times;2 &asymp; &asymp;740 TB</td></tr>
+          <tr><td>Metrics (raw, before rollup)</td><td>&asymp;400 KB/sec &asymp; 35 GB/day</td><td>7 days raw resolution</td><td>13 months at 5-min rollups (&asymp;95% smaller)</td><td>&asymp;245 GB raw hot + &asymp;70 GB rolled-up warm &times;2 &asymp; &asymp;630 GB</td></tr>
+          <tr><td>Cluster health / heartbeats</td><td>&asymp;12,000 hosts &times; 1 heartbeat/5s &asymp; 2,400/sec, tiny payload</td><td>3 days hot</td><td>30 days aggregated</td><td>&laquo; 50 GB total &mdash; negligible next to logs/traces</td></tr>
+        </table>
+        <p>Logs dominate storage by one to two orders of magnitude over every other pillar &mdash; the single biggest cost lever in the whole platform is Index Lifecycle Management tiering on the log indices (see Deep Dive &mdash; Part 4), not anything on the metrics or tracing side.</p>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>All three ingestion paths funnel into the same durable buffer, but each has a distinct wire format matching its ecosystem's real-world convention.</p>
+
+        <h3>Trace Ingestion &mdash; OTLP-Style (OpenTelemetry Protocol)</h3>
+        <pre><code>POST /v1/traces          &#8203;// gRPC or HTTP+protobuf, OTLP-compatible
+
+{
+  "resourceSpans": [{
+    "resource": { "attributes": [{"key":"service.name","value":"checkout-service"}] },
+    "scopeSpans": [{
+      "spans": [{
+        "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+        "spanId": "00f067aa0ba902b7",
+        "parentSpanId": "a1b2c3d4e5f60718",
+        "name": "POST /charge",
+        "kind": "SPAN_KIND_SERVER",
+        "startTimeUnixNano": "1700000000000000000",
+        "endTimeUnixNano": "1700000000045000000",
+        "attributes": [{"key":"http.status_code","value":{"intValue":200}}],
+        "status": { "code": "STATUS_CODE_OK" }
+      }]
+    }]
+  }]
+}
+
+Response 200 OK (accepted; async downstream processing)</code></pre>
+
+        <h3>Metrics Ingestion &mdash; Pull (Scrape) and Push</h3>
+        <pre><code>GET /metrics                              &#8203;// Prometheus-style pull target, scraped every 10&ndash;15s
+# HELP http_requests_total Total HTTP requests
+# TYPE http_requests_total counter
+http_requests_total{service="checkout-service",route="/charge",code="200"} 48213
+# TYPE request_latency_seconds histogram
+request_latency_seconds_bucket{le="0.1"} 39120
+request_latency_seconds_bucket{le="0.5"} 47500
+request_latency_seconds_bucket{le="+Inf"} 48213
+
+POST /v1/metrics                          &#8203;// push path, statsd/Beats-style agents
+{ "metric": "checkout.charge.latency_ms", "type": "histogram",
+  "value": 42, "tags": ["service:checkout-service","host:i-0a1b2c"],
+  "timestamp": 1700000000 }</code></pre>
+
+        <h3>Log Shipping &mdash; Beats-Style</h3>
+        <pre><code>POST /_bulk                               &#8203;// Filebeat/Logstash &rarr; Elasticsearch ingest pipeline
+{ "index": { "_index": "logs-app-2026.07.18" } }
+{ "@timestamp": "2026-07-18T09:14:02.331Z", "host.name": "i-0a1b2c",
+  "service.name": "checkout-service", "log.level": "ERROR",
+  "trace.id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "message": "payment gateway timeout after 3000ms", "gateway": "stripe" }
+
+Response 200: { "errors": false, "items": [ ... per-doc ack ... ] }</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Call out that every one of these three payloads deliberately carries the same correlation fields &mdash; a timestamp, a host/service identity, and (for logs and traces) a <code>trace.id</code> &mdash; even though the wire formats themselves are completely different (protobuf vs. text-exposition vs. bulk JSON). That shared vocabulary, not a shared schema, is what makes cross-pillar correlation in Kibana possible later.
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+        <p>All four pillars ultimately land in Elasticsearch/OpenSearch, but as different index patterns with different mappings tuned to their query shape.</p>
+
+        <h3>Span / Trace Document Mapping</h3>
+        <table>
+          <tr><th colspan="2">Index: traces-* (one span per document, daily indices)</th></tr>
+          <tr><td>trace_id</td><td>keyword &mdash; groups all spans of one trace</td></tr>
+          <tr><td>span_id / parent_span_id</td><td>keyword &mdash; reconstructs the span tree</td></tr>
+          <tr><td>service.name</td><td>keyword</td></tr>
+          <tr><td>operation.name</td><td>keyword (e.g. &ldquo;POST /charge&rdquo;)</td></tr>
+          <tr><td>start_time / end_time</td><td>date (nanosecond precision)</td></tr>
+          <tr><td>duration_us</td><td>long &mdash; computed end&minus;start, indexed for range/sort queries</td></tr>
+          <tr><td>status_code</td><td>keyword (OK / ERROR / UNSET)</td></tr>
+          <tr><td>attributes</td><td>flattened / object &mdash; span tags (http.status_code, db.statement, ...)</td></tr>
+          <tr><td>sampled_reason</td><td>keyword (head / tail-error / tail-slow)</td></tr>
+        </table>
+
+        <h3>Metric Time-Series Document</h3>
+        <table>
+          <tr><th colspan="2">Index: metrics-* (TSDS &mdash; time-series data stream, one doc per point or pre-aggregated bucket)</th></tr>
+          <tr><td>@timestamp</td><td>date &mdash; time-series dimension</td></tr>
+          <tr><td>metric.name</td><td>keyword (e.g. http_requests_total)</td></tr>
+          <tr><td>metric.type</td><td>keyword (counter / gauge / histogram)</td></tr>
+          <tr><td>dimensions (service, host, route, code)</td><td>keyword fields, dimension role in the TSDS &mdash; bounded cardinality enforced here</td></tr>
+          <tr><td>value</td><td>double (counter/gauge) or histogram field type (bucketed)</td></tr>
+          <tr><td>rollup_interval</td><td>keyword (raw / 5m / 1h) &mdash; which retention tier this doc belongs to</td></tr>
+        </table>
+
+        <h3>Log Document</h3>
+        <table>
+          <tr><th colspan="2">Index: logs-{service}-{yyyy.MM.dd} (index-per-day-per-service pattern)</th></tr>
+          <tr><td>@timestamp</td><td>date</td></tr>
+          <tr><td>host.name / service.name</td><td>keyword</td></tr>
+          <tr><td>log.level</td><td>keyword (DEBUG/INFO/WARN/ERROR)</td></tr>
+          <tr><td>message</td><td>text &mdash; analyzed, inverted-indexed for full-text search</td></tr>
+          <tr><td>trace.id / span.id</td><td>keyword &mdash; the correlation key back to the tracing pillar</td></tr>
+          <tr><td>fields.* (Grok-parsed)</td><td>dynamic object &mdash; structured fields extracted from unstructured lines</td></tr>
+          <tr><td>_tier</td><td>internal &mdash; hot / warm / cold / frozen, managed by ILM</td></tr>
+        </table>
+        <p>All three mappings share the same three fields &mdash; a timestamp, a service/host identity, and (traces + logs) a <code>trace.id</code> &mdash; by convention, not by a forced common schema. That shared vocabulary is the entire mechanism behind the correlation feature described later.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Every host runs the same class of lightweight agent (an OpenTelemetry Collector for traces/metrics, a Beats-style shipper for logs). Agents write to a durable ingestion buffer (Kafka), decoupling &ldquo;something happened on a host&rdquo; from &ldquo;it's been processed and indexed.&rdquo; A processing tier consumes the buffer, doing pillar-specific work &mdash; sampling decisions for traces, aggregation/rollups for metrics, Grok parsing for logs &mdash; before writing into Elasticsearch/OpenSearch. Kibana sits on top as the single query, dashboard, and alerting surface for all four pillars.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Every host runs agents (OpenTelemetry Collector for traces and metrics, Beats for logs) which write to a Kafka ingestion buffer. A processing tier consumes Kafka, doing sampling, aggregation, and Grok parsing, then writes into Elasticsearch, which is queried and visualized by Kibana, including dashboards and alerting.">
+            <style>
+              .kib-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .kib-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .kib-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .kib-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .kib-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .kib-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .kib-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .kib-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .kib-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:#dbe6ff;}
+              .kib-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .kib-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;}
+              .kib-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-kib-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-kib-1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="20" y="10" width="220" height="50" rx="6" class="kib-box"></rect>
+            <text x="130" y="30" text-anchor="middle" class="kib-title">12,000+ Hosts</text>
+            <text x="130" y="44" text-anchor="middle" class="kib-sub">OTel Collector (traces/metrics)</text>
+            <text x="130" y="55" text-anchor="middle" class="kib-sub">+ Beats agent (logs)</text>
+
+            <rect x="270" y="10" width="220" height="50" rx="6" class="kib-box"></rect>
+            <text x="380" y="30" text-anchor="middle" class="kib-title">Prometheus Scrapers</text>
+            <text x="380" y="44" text-anchor="middle" class="kib-sub">pull-based metrics targets</text>
+            <text x="380" y="55" text-anchor="middle" class="kib-sub">(alternative to push agents)</text>
+
+            <rect x="520" y="10" width="220" height="50" rx="6" class="kib-box"></rect>
+            <text x="630" y="30" text-anchor="middle" class="kib-title">Synthetic Canaries</text>
+            <text x="630" y="44" text-anchor="middle" class="kib-sub">scripted user-journey probes</text>
+            <text x="630" y="55" text-anchor="middle" class="kib-sub">from outside the fleet</text>
+
+            <line x1="130" y1="60" x2="230" y2="99" class="kib-arrow" marker-end="url(#arrow-kib-1)"></line>
+            <line x1="380" y1="60" x2="380" y2="99" class="kib-arrow" marker-end="url(#arrow-kib-1)"></line>
+            <line x1="630" y1="60" x2="530" y2="99" class="kib-arrow" marker-end="url(#arrow-kib-1)"></line>
+
+            <rect x="190" y="100" width="380" height="50" rx="6" class="kib-box-bus"></rect>
+            <text x="380" y="121" text-anchor="middle" class="kib-title-inv">Kafka &mdash; Durable Ingestion Buffer</text>
+            <text x="380" y="136" text-anchor="middle" class="kib-sub-inv">topics per data type, partitioned, RF=3, absorbs backpressure</text>
+
+            <line x1="290" y1="150" x2="290" y2="189" class="kib-arrow" marker-end="url(#arrow-kib-1)"></line>
+            <line x1="380" y1="150" x2="380" y2="189" class="kib-arrow" marker-end="url(#arrow-kib-1)"></line>
+            <line x1="470" y1="150" x2="470" y2="189" class="kib-arrow" marker-end="url(#arrow-kib-1)"></line>
+
+            <rect x="190" y="190" width="380" height="55" rx="6" class="kib-box-strong"></rect>
+            <text x="380" y="211" text-anchor="middle" class="kib-title">Processing Tier</text>
+            <text x="380" y="225" text-anchor="middle" class="kib-sub">tail-sampling (traces) &middot; rollups (metrics) &middot; Grok parsing (logs)</text>
+            <text x="380" y="238" text-anchor="middle" class="kib-sub">quorum health evaluation (cluster status)</text>
+
+            <line x1="380" y1="245" x2="380" y2="284" class="kib-arrow" marker-end="url(#arrow-kib-1)"></line>
+
+            <rect x="190" y="285" width="380" height="55" rx="6" class="kib-box-store"></rect>
+            <text x="380" y="306" text-anchor="middle" class="kib-title">Elasticsearch / OpenSearch</text>
+            <text x="380" y="320" text-anchor="middle" class="kib-sub">traces-* &middot; metrics-* &middot; logs-* indices</text>
+            <text x="380" y="333" text-anchor="middle" class="kib-sub">sharded, replicated, ILM hot/warm/cold/frozen</text>
+
+            <line x1="380" y1="340" x2="380" y2="379" class="kib-arrow-store" marker-end="url(#arrow-kib-1s)"></line>
+
+            <rect x="190" y="380" width="380" height="60" rx="6" class="kib-box-strong"></rect>
+            <text x="380" y="402" text-anchor="middle" class="kib-title">Kibana</text>
+            <text x="380" y="416" text-anchor="middle" class="kib-sub">Discover / Lens dashboards &middot; APM trace view</text>
+            <text x="380" y="429" text-anchor="middle" class="kib-sub">alerting &middot; single pane of glass across all 4 pillars</text>
+
+            <rect x="600" y="285" width="140" height="55" rx="6" class="kib-box-muted"></rect>
+            <text x="670" y="306" text-anchor="middle" class="kib-title">Object Store</text>
+            <text x="670" y="320" text-anchor="middle" class="kib-sub">frozen-tier snapshots</text>
+            <text x="670" y="333" text-anchor="middle" class="kib-sub">searchable snapshots</text>
+            <line x1="570" y1="312" x2="600" y2="312" class="kib-arrow-store" marker-start="url(#arrow-kib-1s)" marker-end="url(#arrow-kib-1s)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; agents on every host feed a shared Kafka ingestion buffer; a processing tier applies pillar-specific logic (sampling, rollups, Grok parsing, quorum health checks) before writing into Elasticsearch/OpenSearch, with Kibana as the single query/dashboard/alerting surface across all four pillars.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>One physical spine, four logical pipelines:</strong> agents, Kafka, and the processing tier are shared infrastructure; what differs per pillar is the processing logic bolted onto that spine, not the spine itself.</li>
+          <li><strong>Kafka decouples emission from indexing</strong> &mdash; a slow Elasticsearch write path or a processing-tier redeploy never causes data loss on the host side; it just grows consumer lag, which is directly observable and alertable.</li>
+          <li><strong>Elasticsearch is the one shared store</strong> across all four pillars, each as its own index pattern &mdash; this is what makes a single Kibana query able to span traces, metrics, and logs together.</li>
+          <li><strong>Kibana is the single pane of glass</strong> by construction, not by a UI-layer trick: because all four pillars already live in the same search engine, a saved search or dashboard can reference any of them, and the correlation feature (below) is just a query joined on shared fields.</li>
+        </ul>
+
+        <h2 id="low-level-design-shared-ingestion-spine-walkthrough">Low-Level Design — Shared Ingestion Spine Walkthrough</h2>
+        <p>Concretely, here is what happens to one unit of data &mdash; say, a single slow HTTP request that also logs an error &mdash; from the moment it happens on a host to the moment an on-call engineer sees it in a Kibana dashboard.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 490" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nine numbered steps: a request enters a host and is instrumented, the agent buffers and batches the resulting span, metric, and log events, forwards them to Kafka, the processing tier consumes Kafka and applies sampling, rollup, and parsing logic, writes to Elasticsearch with routing by shard key, ILM manages the index's tier, and Kibana queries the cluster to render a dashboard, with an alert firing if a threshold is breached.">
+            <style>
+              .kib-circle{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+              .kib-num{font-family:var(--font-sans);font-weight:700;font-size:13px;fill:#ffffff;}
+              .kib-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .kib-sub{font-family:var(--font-sans);font-weight:400;font-size:10px;fill:var(--color-text-muted);}
+              .kib-line{stroke:var(--color-border);stroke-width:2;}
+            </style>
+            <line x1="40" y1="40" x2="40" y2="455" class="kib-line"></line>
+
+            <circle cx="40" cy="40" r="16" class="kib-circle"></circle>
+            <text x="40" y="45" text-anchor="middle" class="kib-num">1</text>
+            <text x="75" y="34" class="kib-title">Request enters an instrumented service</text>
+            <text x="75" y="49" class="kib-sub">OTel SDK creates a span, propagates traceparent to callees</text>
+
+            <circle cx="40" cy="95" r="16" class="kib-circle"></circle>
+            <text x="40" y="100" text-anchor="middle" class="kib-num">2</text>
+            <text x="75" y="89" class="kib-title">Service emits span + log line + metric tick</text>
+            <text x="75" y="104" class="kib-sub">all three tagged with the same trace_id, host, timestamp</text>
+
+            <circle cx="40" cy="150" r="16" class="kib-circle"></circle>
+            <text x="40" y="155" text-anchor="middle" class="kib-num">3</text>
+            <text x="75" y="144" class="kib-title">Local agent batches and buffers</text>
+            <text x="75" y="159" class="kib-sub">OTel Collector (span/metric) + Beats (log) batch on a short flush interval</text>
+
+            <circle cx="40" cy="205" r="16" class="kib-circle"></circle>
+            <text x="40" y="210" text-anchor="middle" class="kib-num">4</text>
+            <text x="75" y="199" class="kib-title">Agent forwards the batch to Kafka</text>
+            <text x="75" y="214" class="kib-sub">durable write, RF=3; host can keep working even if Kafka is briefly slow</text>
+
+            <circle cx="40" cy="260" r="16" class="kib-circle"></circle>
+            <text x="40" y="265" text-anchor="middle" class="kib-num">5</text>
+            <text x="75" y="254" class="kib-title">Processing tier consumes and decides</text>
+            <text x="75" y="269" class="kib-sub">tail-sampler buffers the whole trace, keeps it (this request was slow)</text>
+
+            <circle cx="40" cy="315" r="16" class="kib-circle"></circle>
+            <text x="40" y="320" text-anchor="middle" class="kib-num">6</text>
+            <text x="75" y="309" class="kib-title">Log line is Grok-parsed</text>
+            <text x="75" y="324" class="kib-sub">unstructured message split into structured fields (gateway, error_code, ...)</text>
+
+            <circle cx="40" cy="370" r="16" class="kib-circle"></circle>
+            <text x="40" y="375" text-anchor="middle" class="kib-num">7</text>
+            <text x="75" y="364" class="kib-title">Bulk write into Elasticsearch</text>
+            <text x="75" y="379" class="kib-sub">routed to today's hot-tier shard for traces-*, metrics-*, logs-* respectively</text>
+
+            <circle cx="40" cy="425" r="16" class="kib-circle"></circle>
+            <text x="40" y="430" text-anchor="middle" class="kib-num">8</text>
+            <text x="75" y="419" class="kib-title">On-call opens Kibana</text>
+            <text x="75" y="434" class="kib-sub">sees the slow trace, pivots to correlated logs/metrics at the same timestamp</text>
+
+            <circle cx="40" cy="475" r="16" class="kib-circle"></circle>
+            <text x="40" y="480" text-anchor="middle" class="kib-num">9</text>
+            <text x="75" y="469" class="kib-title">Alert rule fires in parallel</text>
+            <text x="75" y="484" class="kib-sub">latency threshold breach pages on-call before they even open Kibana</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Shared ingestion spine walkthrough &mdash; one request produces a span, a log line, and a metric tick that travel independently through the same agent-&gt;Kafka-&gt;processing-&gt;Elasticsearch pipeline, converging again only in the Kibana UI via shared correlation fields.</div>
+        </div>
+
+        <p>Note what's <em>not</em> shared: step 5's tail-sampling decision (traces-specific), step 6's Grok parsing (logs-specific), and metrics' rollup/downsampling (not shown as a distinct step here since it happens asynchronously post-ingest) are all pillar-specific logic sitting inside the same processing tier. The steps that <em>are</em> shared &mdash; batching, Kafka durability, bulk-writing into Elasticsearch, and Kibana querying &mdash; are exactly the parts that would otherwise be needlessly duplicated four times in a four-silo design.</p>
+
+        <h2 id="deep-dive-part-1-distributed-tracing-system">Deep Dive — Part 1: Distributed Tracing System</h2>
+        <p>Distributed tracing answers: for one specific request, which services did it touch, how long did each hop take, and where exactly did an error or a slowdown originate?</p>
+
+        <h3>The Trace/Span Model</h3>
+        <p>A <strong>trace</strong> is a tree of <strong>spans</strong>. Each span represents one unit of work (an RPC call, a DB query, a function) and carries: a unique <code>span_id</code>, a <code>parent_span_id</code> linking it into the tree (root spans have none), a shared <code>trace_id</code> common to every span in the trace, start/end timestamps, a name, a status (OK/ERROR), and a set of key/value <strong>tags/attributes</strong> (e.g. <code>http.status_code</code>, <code>db.statement</code>). Reconstructing the full trace is a matter of collecting every span sharing a <code>trace_id</code> and rebuilding the parent-child tree from <code>parent_span_id</code> links &mdash; which is exactly why <code>trace_id</code> and <code>parent_span_id</code> are indexed as low-cardinality-friendly <code>keyword</code> fields in the span mapping shown earlier.</p>
+
+        <h3>W3C Trace Context Propagation</h3>
+        <p>For the tree to reconstruct correctly, every service in the call chain must know which trace and which parent span it belongs to. The <strong>W3C Trace Context</strong> standard defines an HTTP header, <code>traceparent</code>, carried on every downstream call: <code>traceparent: 00-{trace_id}-{parent_span_id}-{flags}</code> (version-traceid-spanid-flags, e.g. <code>00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01</code>). Each service reads the incoming header, creates its own span as a child of the given parent span ID, and forwards a new <code>traceparent</code> (same trace_id, its own span_id as the new parent) to whatever it calls next. This is what turns &ldquo;independent services logging independently&rdquo; into &ldquo;one coherent, cross-service trace tree,&rdquo; and it's vendor-neutral &mdash; any OpenTelemetry-instrumented service, regardless of language or hosting, participates correctly.</p>
+
+        <h3>Head-Based vs. Tail-Based Sampling</h3>
+        <p>Recording every span of every request is prohibitively expensive at fleet scale (recall: ~19.2M spans/sec before sampling). Two sampling strategies trade off cost against completeness:</p>
+        <table class="sortable">
+          <tr><th></th><th>Head-based sampling</th><th>Tail-based sampling</th></tr>
+          <tr><td>When the decision is made</td><td>At the very start of the trace (often just a random coin-flip or a hashed trace_id)</td><td>After the entire trace has completed, once the outcome is known</td></tr>
+          <tr><td>Cost</td><td>Cheap &mdash; no buffering, discard unsampled spans immediately at the source</td><td>Expensive &mdash; every span of every trace must be buffered somewhere until the trace finishes</td></tr>
+          <tr><td>Guarantees errors are kept?</td><td>No &mdash; a rare error can easily fall outside the sample</td><td>Yes &mdash; can explicitly keep 100% of error/slow traces and only downsample the &ldquo;boring&rdquo; ones</td></tr>
+          <tr><td>Where the decision happens</td><td>In-process / at the edge, per span or per trace-id hash</td><td>At a dedicated tail-sampling processor downstream, after aggregating all spans of a trace</td></tr>
+          <tr><td>Best fit</td><td>High-volume, cost-sensitive, mostly-uniform traffic</td><td>Systems where the rare error/slow trace is the one you most need to keep</td></tr>
+        </table>
+        <p>In practice, most production observability platforms use a hybrid: head-based sampling at a low base rate (e.g. 1%) to control baseline cost, layered with a tail-sampling processor in the pipeline that overrides the head decision to force-keep any trace containing an error status or exceeding a latency threshold &mdash; giving both a bounded ingest cost and a strong &ldquo;never miss the interesting trace&rdquo; guarantee.</p>
+
+        <h3>OpenTelemetry Instrumentation</h3>
+        <p>OpenTelemetry (OTel) is the vendor-neutral standard for generating this data: SDKs auto-instrument common frameworks/libraries (HTTP servers, database clients, RPC frameworks) to emit spans and propagate <code>traceparent</code> without hand-written code in the common case, plus an API for manual custom spans. The OTel Collector running as an agent (or sidecar) receives spans from local processes, batches them, and exports them onward (to our Kafka buffer here) in the OTLP wire format shown in the API section above &mdash; the same Collector binary also handles metrics, which is part of why OTel is a natural fit for a unified platform rather than needing a second, unrelated agent for tracing alone.</p>
+
+        <h3>Deriving the Service Dependency Graph</h3>
+        <p>Because every span records its own service name and its parent's span_id (and, transitively, the parent's service name), a batch job over stored spans can reconstruct which services call which: for every parent-child span pair, emit an edge (parent.service &rarr; child.service), then aggregate edge counts, error rates, and average latency over a rolling window. Rendered in Kibana, this becomes a live service dependency map &mdash; invaluable both for onboarding (&ldquo;what does this service actually call?&rdquo;) and incident response (&ldquo;which downstream service is really responsible for this latency?&rdquo;).</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A trace tree: a root span for the API gateway has two children, checkout-service and auth-service; checkout-service in turn has two children, payment-service and inventory-service. Each span shows a start offset and duration, illustrating a waterfall view alongside the tree.">
+            <style>
+              .kib-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .kib-box-err{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .kib-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .kib-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .kib-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .kib-bar{fill:var(--color-accent);}
+              .kib-bar-err{fill:var(--color-formula-border);}
+            </style>
+            <defs>
+              <marker id="arrow-kib-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="20" y="16" class="kib-sub">Trace tree (trace_id shared by all 5 spans)</text>
+
+            <rect x="20" y="30" width="180" height="42" rx="6" class="kib-box"></rect>
+            <text x="110" y="48" text-anchor="middle" class="kib-title">api-gateway</text>
+            <text x="110" y="62" text-anchor="middle" class="kib-sub">root span, 0&ndash;180ms</text>
+
+            <line x1="70" y1="72" x2="70" y2="99" class="kib-arrow" marker-end="url(#arrow-kib-2)"></line>
+            <line x1="150" y1="72" x2="150" y2="99" class="kib-arrow" marker-end="url(#arrow-kib-2)"></line>
+
+            <rect x="20" y="100" width="140" height="42" rx="6" class="kib-box"></rect>
+            <text x="90" y="118" text-anchor="middle" class="kib-title">checkout-service</text>
+            <text x="90" y="132" text-anchor="middle" class="kib-sub">child, 10&ndash;175ms</text>
+
+            <rect x="180" y="100" width="130" height="42" rx="6" class="kib-box"></rect>
+            <text x="245" y="118" text-anchor="middle" class="kib-title">auth-service</text>
+            <text x="245" y="132" text-anchor="middle" class="kib-sub">child, 12&ndash;28ms</text>
+
+            <line x1="60" y1="142" x2="60" y2="169" class="kib-arrow" marker-end="url(#arrow-kib-2)"></line>
+            <line x1="130" y1="142" x2="130" y2="169" class="kib-arrow" marker-end="url(#arrow-kib-2)"></line>
+
+            <rect x="20" y="170" width="120" height="46" rx="6" class="kib-box-err"></rect>
+            <text x="80" y="190" text-anchor="middle" class="kib-title">payment-service</text>
+            <text x="80" y="204" text-anchor="middle" class="kib-sub">ERROR, 20&ndash;170ms</text>
+
+            <rect x="150" y="170" width="120" height="46" rx="6" class="kib-box"></rect>
+            <text x="210" y="190" text-anchor="middle" class="kib-title">inventory-service</text>
+            <text x="210" y="204" text-anchor="middle" class="kib-sub">OK, 22&ndash;40ms</text>
+
+            <text x="380" y="16" class="kib-sub">Waterfall (same 5 spans, by time offset)</text>
+            <rect x="380" y="35" width="180" height="12" class="kib-bar"></rect>
+            <text x="565" y="45" class="kib-sub">api-gateway</text>
+            <rect x="389" y="55" width="171" height="12" class="kib-bar"></rect>
+            <text x="565" y="65" class="kib-sub">checkout-svc</text>
+            <rect x="391" y="75" width="16" height="12" class="kib-bar"></rect>
+            <text x="565" y="85" class="kib-sub">auth-svc</text>
+            <rect x="399" y="95" width="150" height="12" class="kib-bar-err"></rect>
+            <text x="565" y="105" class="kib-sub">payment-svc (ERROR, 150ms)</text>
+            <rect x="401" y="115" width="18" height="12" class="kib-bar"></rect>
+            <text x="565" y="125" class="kib-sub">inventory-svc</text>
+            <text x="380" y="145" class="kib-sub">payment-service's 150ms error span is clearly the critical path &mdash; tail sampling force-keeps this trace</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. A reconstructed trace tree and its waterfall view &mdash; the payment-service span's error and outsized duration make it the obvious root cause, and this exact trace is exactly what tail-based sampling guarantees gets kept.</div>
+        </div>
+
+        <h2 id="deep-dive-part-2-metrics-collection-from-thousands-of-servers">Deep Dive — Part 2: Metrics Collection from Thousands of Servers</h2>
+        <p>Metrics answer a different question than tracing: not &ldquo;what happened on this one request&rdquo; but &ldquo;what is the aggregate behavior of this host/service over time,&rdquo; cheaply enough to sample every few seconds across the entire fleet forever.</p>
+
+        <h3>Pull-Based (Prometheus-Style) vs. Push-Based (statsd/Beats-Style)</h3>
+        <table class="sortable">
+          <tr><th></th><th>Pull-based (Prometheus-style scraping)</th><th>Push-based (statsd / Beats-style agents)</th></tr>
+          <tr><td>Mechanism</td><td>Central scraper polls a <code>/metrics</code> HTTP endpoint on each target every N seconds</td><td>Each host/process actively sends metric events to a collector/aggregator</td></tr>
+          <tr><td>Discovery</td><td>Needs service discovery (which targets exist right now?)</td><td>No discovery needed &mdash; the source pushes when ready</td></tr>
+          <tr><td>Short-lived jobs</td><td>Awkward &mdash; a batch job that finishes in 2s might never get scraped (mitigated with a Pushgateway)</td><td>Natural fit &mdash; push once on completion</td></tr>
+          <tr><td>Failure visibility</td><td>A missed scrape is itself a clear signal (&ldquo;target down&rdquo;)</td><td>Silence is ambiguous &mdash; did the host die, or did it just have nothing to report?</td></tr>
+          <tr><td>Network direction</td><td>Central system reaches into every host (needs firewall/network access to all targets)</td><td>Hosts reach out to a central endpoint (simpler through NATs/firewalls)</td></tr>
+          <tr><td>Best fit here</td><td>Long-running services, most infra metrics</td><td>Ephemeral jobs, environments where inbound access to hosts is restricted</td></tr>
+        </table>
+        <p>A large real-world platform typically runs both: Prometheus-style scraping for the bulk of long-lived services (simpler debugging: &ldquo;is the target even scrapeable&rdquo; is itself a health signal), plus a push path (via the same Beats/OTel agents used for logs) for ephemeral jobs, edge devices, and anything that can't be scraped.</p>
+
+        <h3>Metric Types</h3>
+        <ul>
+          <li><strong>Counter</strong> &mdash; monotonically increasing (e.g. total requests served); consumers compute a rate via the delta over a time window, since the raw cumulative value alone is rarely useful.</li>
+          <li><strong>Gauge</strong> &mdash; a point-in-time value that can go up or down (e.g. current queue depth, memory used); read directly, no rate computation needed.</li>
+          <li><strong>Histogram</strong> &mdash; a bucketed distribution (e.g. request latency, with buckets like &le;10ms, &le;50ms, &le;100ms, &le;500ms, +Inf); enables computing percentiles (p50/p95/p99) after the fact, which a single averaged number can never reconstruct.</li>
+        </ul>
+
+        <h3>The Cardinality-Explosion Problem and Mitigation</h3>
+        <p>Every unique combination of metric name + label values is a distinct time series the storage engine must track in its index. As shown in the capacity estimation above, adding one unbounded label (customer_id, request_id, raw URL path with path params) can turn 2 million series into 150 billion &mdash; a TSDB's in-memory series index and per-series storage overhead simply cannot absorb that. Mitigations, in order of preference:</p>
+        <ol>
+          <li><strong>Bound label cardinality by design</strong> &mdash; never put a raw user ID, request ID, or unbounded free-text value in a metric label; route templates (<code>/users/:id</code>) instead of raw paths, and push truly per-entity detail (this specific customer's this specific request) into logs or traces instead, where high-cardinality identifiers belong.</li>
+          <li><strong>Hierarchical aggregation</strong> &mdash; aggregate at the source (per-host) before it ever reaches the central store, so the central TSDB sees one pre-aggregated series per host/service rather than raw per-request data.</li>
+          <li><strong>Downsampling / rollups for long-term retention</strong> &mdash; keep raw resolution (e.g. 10s) for a short hot window (7 days), then roll up to 5-minute or 1-hour resolution for everything older, cutting storage by ~95%+ while preserving trend visibility for capacity planning and long-term SLO tracking.</li>
+          <li><strong>Cardinality limits and alerting</strong> &mdash; the ingestion tier enforces a hard cap on distinct series per metric name and alerts (or drops/samples) when a team's instrumentation change threatens to blow past it, catching the problem before it takes down the shared cluster for everyone.</li>
+        </ol>
+
+        <h3>Hierarchical Federation, Downsampling, and Rollups</h3>
+        <p>At fleet scale, no single ingestion node can be scraped-by or receive-from all 12,000 hosts directly. A federated hierarchy fans this out: per-rack or per-availability-zone local aggregators scrape/receive from hosts in their zone and pre-aggregate; a regional tier federates across zones; only the regional, already-aggregated series get written into the shared Elasticsearch/OpenSearch metrics store. This keeps any single tier's fan-in bounded and turns &ldquo;12,000 hosts&rdquo; into a small, fixed number of federated write paths at the top of the hierarchy.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cardinality explosion diagram: a bounded metric with a service label and status code label produces a manageable number of series; adding a raw, unbounded user_id label multiplies the series count by the number of distinct users, illustrated by a small grid of boxes exploding into an unmanageable large grid.">
+            <style>
+              .kib-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .kib-box-warn{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .kib-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .kib-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .kib-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .kib-cell{fill:var(--color-accent);}
+              .kib-cell-warn{fill:var(--color-formula-border);}
+            </style>
+            <defs>
+              <marker id="arrow-kib-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="20" y="20" class="kib-title">Bounded: service &times; status_code (5 &times; 5 = 25 series)</text>
+            <g>
+              <rect x="20" y="35" width="14" height="14" class="kib-cell"></rect><rect x="38" y="35" width="14" height="14" class="kib-cell"></rect><rect x="56" y="35" width="14" height="14" class="kib-cell"></rect><rect x="74" y="35" width="14" height="14" class="kib-cell"></rect><rect x="92" y="35" width="14" height="14" class="kib-cell"></rect>
+              <rect x="20" y="53" width="14" height="14" class="kib-cell"></rect><rect x="38" y="53" width="14" height="14" class="kib-cell"></rect><rect x="56" y="53" width="14" height="14" class="kib-cell"></rect><rect x="74" y="53" width="14" height="14" class="kib-cell"></rect><rect x="92" y="53" width="14" height="14" class="kib-cell"></rect>
+              <rect x="20" y="71" width="14" height="14" class="kib-cell"></rect><rect x="38" y="71" width="14" height="14" class="kib-cell"></rect><rect x="56" y="71" width="14" height="14" class="kib-cell"></rect><rect x="74" y="71" width="14" height="14" class="kib-cell"></rect><rect x="92" y="71" width="14" height="14" class="kib-cell"></rect>
+              <rect x="20" y="89" width="14" height="14" class="kib-cell"></rect><rect x="38" y="89" width="14" height="14" class="kib-cell"></rect><rect x="56" y="89" width="14" height="14" class="kib-cell"></rect><rect x="74" y="89" width="14" height="14" class="kib-cell"></rect><rect x="92" y="89" width="14" height="14" class="kib-cell"></rect>
+              <rect x="20" y="107" width="14" height="14" class="kib-cell"></rect><rect x="38" y="107" width="14" height="14" class="kib-cell"></rect><rect x="56" y="107" width="14" height="14" class="kib-cell"></rect><rect x="74" y="107" width="14" height="14" class="kib-cell"></rect><rect x="92" y="107" width="14" height="14" class="kib-cell"></rect>
+            </g>
+            <text x="150" y="70" class="kib-sub">manageable &mdash; safe to</text>
+            <text x="150" y="83" class="kib-sub">keep as a raw metric label</text>
+
+            <line x1="150" y1="130" x2="150" y2="150" class="kib-arrow" marker-end="url(#arrow-kib-3)"></line>
+            <text x="170" y="145" class="kib-sub">+ raw user_id label (100,000 distinct values)</text>
+
+            <text x="20" y="175" class="kib-title">Unbounded: service &times; status_code &times; user_id (2.5M+ series)</text>
+            <g>
+              <rect x="20" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="28" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="36" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="44" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="52" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="60" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="68" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="76" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="84" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="92" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="100" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="108" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="116" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="124" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="132" y="185" width="6" height="6" class="kib-cell-warn"></rect><rect x="140" y="185" width="6" height="6" class="kib-cell-warn"></rect>
+              <rect x="20" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="28" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="36" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="44" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="52" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="60" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="68" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="76" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="84" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="92" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="100" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="108" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="116" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="124" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="132" y="193" width="6" height="6" class="kib-cell-warn"></rect><rect x="140" y="193" width="6" height="6" class="kib-cell-warn"></rect>
+              <rect x="20" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="28" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="36" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="44" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="52" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="60" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="68" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="76" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="84" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="92" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="100" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="108" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="116" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="124" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="132" y="201" width="6" height="6" class="kib-cell-warn"></rect><rect x="140" y="201" width="6" height="6" class="kib-cell-warn"></rect>
+            </g>
+            <text x="160" y="200" class="kib-sub">blows up the TSDB's in-memory series index &mdash;</text>
+            <text x="160" y="213" class="kib-sub">push user_id-level detail into logs/traces instead</text>
+
+            <rect x="400" y="35" width="330" height="240" rx="6" class="kib-box-warn"></rect>
+            <text x="565" y="58" text-anchor="middle" class="kib-title">Federated hierarchy (fan-in control)</text>
+            <text x="420" y="82" class="kib-sub">Rack-level aggregators (per-AZ)</text>
+            <text x="420" y="102" class="kib-sub">&rarr; pre-aggregate ~500 hosts each</text>
+            <text x="420" y="130" class="kib-sub">Regional federation tier</text>
+            <text x="420" y="150" class="kib-sub">&rarr; merges rack aggregates per region</text>
+            <text x="420" y="178" class="kib-sub">Shared metrics-* index</text>
+            <text x="420" y="198" class="kib-sub">&rarr; only regional, already-aggregated series land here</text>
+            <text x="420" y="226" class="kib-sub">Retention: 7d raw &rarr; 5m rollup &rarr; 1h rollup</text>
+            <text x="420" y="246" class="kib-sub">(13-month rolled-up retention at ~95% less storage)</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Left: adding one unbounded label multiplies series count by its cardinality &mdash; the #1 real-world metrics failure mode. Right: a federated aggregation hierarchy bounds fan-in from 12,000+ hosts down to a small number of regional write paths.</div>
+        </div>
+
+        <h2 id="deep-dive-part-3-cluster-health-monitoring">Deep Dive — Part 3: Cluster Health Monitoring</h2>
+        <p>Cluster health monitoring answers a narrower but higher-stakes question than metrics or logs: is the system, right now, actually working &mdash; and can we trust that answer enough to wake someone up over it?</p>
+
+        <h3>Heartbeats and Liveness</h3>
+        <p>Every node/service instance emits a lightweight heartbeat (a small &ldquo;I'm alive&rdquo; ping) on a short interval (e.g. every 5 seconds) to a health-tracking component. Missing N consecutive heartbeats (e.g. 3, i.e. 15 seconds of silence) marks that instance as suspected-down. A single missed heartbeat is deliberately not enough to declare an outage &mdash; that would make the system trigger-happy on ordinary network jitter, which is precisely the false-positive problem the next section addresses.</p>
+
+        <h3>Quorum-Based Health Decisions to Avoid Split-Brain False Positives</h3>
+        <p>A naive design has one health-checker node polling every target and declaring outages unilaterally &mdash; but if <em>that one checker</em> loses network connectivity to a healthy region (a transient network partition, not a real outage), it wrongly declares a fleet-wide false alarm, potentially paging everyone for nothing (or worse, triggering automated failover on perfectly healthy infrastructure). The fix is <strong>quorum-based health evaluation</strong>: multiple independent health-checker instances (e.g. 5, spread across different network paths/zones) each independently probe the same targets; a target is only declared genuinely down when a majority (e.g. 3 of 5) of checkers agree. This distinguishes &ldquo;the target is actually down&rdquo; from &ldquo;one checker's view of the world is temporarily wrong&rdquo; &mdash; the same fundamental idea as leader election and distributed consensus, applied to health-checking instead of leadership.</p>
+
+        <h3>The Red/Yellow/Green Cluster-Status Pattern</h3>
+        <p>Rather than a binary up/down, Elasticsearch's classic model computes an aggregate status per cluster/index from shard-level state:</p>
+        <table class="sortable">
+          <tr><th>Status</th><th>Meaning</th><th>Example condition</th><th>Action</th></tr>
+          <tr><td>Green</td><td>Fully healthy &mdash; all primary and replica shards allocated</td><td>Every shard has its full complement of replicas online</td><td>None &mdash; normal operation</td></tr>
+          <tr><td>Yellow</td><td>Degraded but available &mdash; all primaries up, some replicas missing</td><td>One data node lost, its replica shards unassigned, but every primary is intact</td><td>Investigate node loss; data is fully readable/writable, just under-replicated (reduced fault tolerance until it heals)</td></tr>
+          <tr><td>Red</td><td>Data loss or unavailable &mdash; at least one primary shard is unassigned</td><td>Enough nodes lost simultaneously that both a primary and all its replicas are down</td><td>Page immediately &mdash; queries against that shard's data will fail or return partial results</td></tr>
+        </table>
+        <p>This model generalizes well beyond Elasticsearch itself: applying the same red/yellow/green rollup to the whole observability platform (and to monitored services generally) gives a single, glanceable severity signal instead of a wall of raw per-node booleans &mdash; exactly the kind of aggregate status Kibana's own cluster-health view and any downstream health dashboard should surface first.</p>
+
+        <h3>SLA/SLO Tracking</h3>
+        <p>Health monitoring feeds directly into SLO tracking: define an SLI (e.g. &ldquo;% of requests completing under 300ms&rdquo;), a target SLO (e.g. 99.9% over a rolling 30 days), and compute an error budget (the allowed 0.1% of &ldquo;bad&rdquo; requests) from the same metrics/health data already flowing through the platform. Burn-rate alerts (is the error budget being consumed faster than the SLO window can tolerate?) turn a raw health signal into an actionable, business-aligned page instead of noise.</p>
+
+        <h3>Synthetic Canaries</h3>
+        <p>Heartbeats and shard status catch infrastructure failure, but not &ldquo;the login page returns 200 but silently shows a broken form.&rdquo; <strong>Synthetic monitoring</strong> runs scripted probes of real user journeys (log in, search, checkout) from outside the fleet on a fixed schedule, checking not just status codes but response content/timing &mdash; catching a class of failure (a working process serving broken behavior) that pure liveness/heartbeat checks structurally cannot see, and catching it proactively, before a real user reports it.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five independent health-checker instances each probe the same three target nodes. Node A is seen as up by all five checkers (green). Node B is seen as down by only one checker due to a local network blip, so the quorum of four still reports it up (green, false positive avoided). Node C is seen as down by four of five checkers, meeting quorum, so it is declared genuinely down (red).">
+            <style>
+              .kib-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .kib-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .kib-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .kib-node-up{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:2;}
+              .kib-node-down{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .kib-arrow-up{stroke:var(--color-accent);stroke-width:1.3;fill:none;}
+              .kib-arrow-down{stroke:var(--color-formula-border);stroke-width:1.3;fill:none;stroke-dasharray:3 2;}
+            </style>
+            <defs>
+              <marker id="arrow-kib-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-kib-4d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <text x="20" y="16" class="kib-sub">5 independent health-checkers (different zones/network paths)</text>
+            <rect x="20" y="30" width="80" height="30" rx="4" class="kib-box"></rect><text x="60" y="49" text-anchor="middle" class="kib-title">CHK-1</text>
+            <rect x="115" y="30" width="80" height="30" rx="4" class="kib-box"></rect><text x="155" y="49" text-anchor="middle" class="kib-title">CHK-2</text>
+            <rect x="210" y="30" width="80" height="30" rx="4" class="kib-box"></rect><text x="250" y="49" text-anchor="middle" class="kib-title">CHK-3</text>
+            <rect x="305" y="30" width="80" height="30" rx="4" class="kib-box"></rect><text x="345" y="49" text-anchor="middle" class="kib-title">CHK-4</text>
+            <rect x="400" y="30" width="80" height="30" rx="4" class="kib-box"></rect><text x="440" y="49" text-anchor="middle" class="kib-title">CHK-5</text>
+
+            <text x="20" y="100" class="kib-sub">Target: Node A</text>
+            <circle cx="600" cy="95" r="16" class="kib-node-up"></circle><text x="600" y="99" text-anchor="middle" class="kib-title">A</text>
+            <text x="620" y="99" class="kib-sub">5/5 report up &rarr; GREEN</text>
+
+            <text x="20" y="160" class="kib-sub">Target: Node B</text>
+            <circle cx="600" cy="155" r="16" class="kib-node-up"></circle><text x="600" y="159" text-anchor="middle" class="kib-title">B</text>
+            <text x="620" y="159" class="kib-sub">4/5 up, 1 sees down (network blip)</text>
+            <text x="620" y="171" class="kib-sub">quorum still says UP &rarr; false positive avoided</text>
+
+            <text x="20" y="220" class="kib-sub">Target: Node C</text>
+            <circle cx="600" cy="215" r="16" class="kib-node-down"></circle><text x="600" y="219" text-anchor="middle" class="kib-title">C</text>
+            <text x="620" y="219" class="kib-sub">4/5 report down &rarr; quorum met &rarr; RED, page</text>
+
+            <line x1="60" y1="60" x2="590" y2="90" class="kib-arrow-up" marker-end="url(#arrow-kib-4)"></line>
+            <line x1="155" y1="60" x2="592" y2="92" class="kib-arrow-up" marker-end="url(#arrow-kib-4)"></line>
+            <line x1="250" y1="60" x2="596" y2="93" class="kib-arrow-up" marker-end="url(#arrow-kib-4)"></line>
+            <line x1="345" y1="60" x2="600" y2="95" class="kib-arrow-up" marker-end="url(#arrow-kib-4)"></line>
+            <line x1="440" y1="60" x2="605" y2="93" class="kib-arrow-up" marker-end="url(#arrow-kib-4)"></line>
+
+            <line x1="60" y1="60" x2="590" y2="150" class="kib-arrow-down" marker-end="url(#arrow-kib-4d)"></line>
+            <line x1="155" y1="60" x2="592" y2="150" class="kib-arrow-up" marker-end="url(#arrow-kib-4)"></line>
+            <line x1="250" y1="60" x2="596" y2="152" class="kib-arrow-up" marker-end="url(#arrow-kib-4)"></line>
+            <line x1="345" y1="60" x2="600" y2="153" class="kib-arrow-up" marker-end="url(#arrow-kib-4)"></line>
+            <line x1="440" y1="60" x2="605" y2="152" class="kib-arrow-up" marker-end="url(#arrow-kib-4)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 5. Quorum-based health checking: a single checker's transient view (Node B) is overridden by the majority, avoiding a false-positive outage page; only agreement across a quorum (Node C) triggers a red status.</div>
+        </div>
+
+        <h2 id="deep-dive-part-4-distributed-metrics-logging-and-aggregation-system">Deep Dive — Part 4: Distributed Metrics Logging and Aggregation System</h2>
+        <p>The log-aggregation pillar centralizes, structures, and indexes the highest-volume, most heterogeneous data type in the platform &mdash; and, per the capacity estimation above, drives the majority of total storage cost.</p>
+
+        <h3>Filebeat/Logstash Shipping</h3>
+        <p>Filebeat (a lightweight, low-resource-footprint shipper) tails log files on each host and forwards them either directly to an Elasticsearch ingest pipeline or, when heavier transformation is needed, to Logstash (a more capable, pluggable processing pipeline: input &rarr; filter &rarr; output) before Elasticsearch. In this platform, both paths write into the same shared Kafka buffer first, so a slow or restarting Elasticsearch cluster never causes a host to drop log lines &mdash; they simply queue in Kafka until the processing tier catches up.</p>
+
+        <h3>Structured JSON Logging</h3>
+        <p>Wherever the application can control its own log format, structured JSON logging (each line already a JSON object with named fields, as shown in the log document mapping above) is strongly preferred over free-text: it skips the Grok-parsing step entirely, is unambiguous to index, and lets every log line carry the shared correlation fields (<code>trace.id</code>, <code>service.name</code>) natively as first-class fields rather than something to extract after the fact.</p>
+
+        <h3>Grok Parsing / Ingest Pipelines</h3>
+        <p>For log lines that aren't already structured (legacy services, third-party components, raw syslog), a <strong>Grok pattern</strong> &mdash; a named-regex-based pattern language &mdash; extracts structured fields from an unstructured line inside an Elasticsearch ingest pipeline. For example, the line <code>2026-07-18 09:14:02 ERROR [checkout-service] payment gateway timeout after 3000ms</code> matches a Grok pattern like <code>%{TIMESTAMP_ISO8601:ts} %{LOGLEVEL:level} \[%{DATA:service}\] %{GREEDYDATA:message}</code>, producing the structured fields <code>ts</code>, <code>level</code>, <code>service</code>, and <code>message</code> &mdash; which then become searchable/filterable fields in Kibana instead of buried substrings inside one giant text blob.</p>
+
+        <h3>Index Lifecycle Management (ILM) — Hot/Warm/Cold/Frozen Tiers</h3>
+        <p>Given log storage dominates cost, ILM automatically migrates an index through cost/performance tiers as it ages, entirely policy-driven with no manual intervention:</p>
+        <table class="sortable">
+          <tr><th>Tier</th><th>Hardware</th><th>Write activity</th><th>Query latency</th><th>Typical age in this design</th></tr>
+          <tr><td>Hot</td><td>Fast local SSD, highest-spec nodes</td><td>Actively written (today's index)</td><td>Sub-second</td><td>0&ndash;15 days</td></tr>
+          <tr><td>Warm</td><td>Cheaper SSD/HDD, fewer replicas</td><td>Read-only, no more writes</td><td>Low seconds</td><td>15&ndash;90 days</td></tr>
+          <tr><td>Cold</td><td>Cheap dense storage, further shard merge/shrink</td><td>Read-only, rarely accessed</td><td>Several seconds</td><td>90&ndash;365 days</td></tr>
+          <tr><td>Frozen / deleted</td><td>Object storage (e.g. S3), searchable snapshot, or deleted entirely</td><td>Read-only, very rare access</td><td>Tens of seconds (rehydration)</td><td>&gt;365 days, or deleted per retention policy</td></tr>
+        </table>
+        <p>Moving an index from hot to warm can also reduce its replica count and force-merge its segments (fewer, larger segments compress and query better once writes have stopped); moving to frozen typically converts it to a searchable snapshot backed by object storage, trading query latency for a large storage-cost reduction. ILM policies are configured once per index template and then run automatically forever, which is what makes multi-petabyte log retention operationally tractable rather than a constant manual chore.</p>
+
+        <h3>Inverted-Index Basics</h3>
+        <p>Elasticsearch's full-text search (and Kibana's &ldquo;search anything&rdquo; Discover experience) is built on an <strong>inverted index</strong>: for each distinct term (a tokenized word from an analyzed <code>text</code> field like <code>message</code>), the index stores the list of document IDs containing that term, plus position/frequency data for relevance scoring. Searching for &ldquo;payment gateway timeout&rdquo; means looking up the (typically short) posting lists for &ldquo;payment,&rdquo; &ldquo;gateway,&rdquo; and &ldquo;timeout&rdquo; and intersecting/scoring them &mdash; dramatically cheaper than scanning every document's raw text, and the reason a full-text query across billions of log documents can still return in low seconds.</p>
+
+        <h3>Shard Sizing Guidance (~10–50 GB/Shard)</h3>
+        <p>Each Elasticsearch shard is itself a complete, independent Lucene index with real per-shard overhead (file handles, memory for its segment metadata, merge costs). Too many tiny shards wastes overhead and cluster-state size; too few, oversized shards make recovery and rebalancing slow and risk hitting a single shard's practical size ceiling. The standard operational guidance is to size each shard in the <strong>10&ndash;50&nbsp;GB</strong> range: given the log pillar's &asymp;20&ndash;25&nbsp;TB/day indexed volume, at a target of &asymp;30&nbsp;GB/shard that implies roughly 700&ndash;830 primary shards/day for logs alone across index-per-day-per-service indices &mdash; a number that directly drives the index-per-day sharding strategy discussed next.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Log pipeline: Filebeat tails log files on a host and ships to Kafka; the processing tier reads from Kafka, applies a Grok pattern to unstructured lines to extract structured fields, and bulk-writes into today's hot-tier log index; ILM then migrates the index through warm, cold, and frozen tiers as it ages, eventually deleting it per retention policy.">
+            <style>
+              .kib-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .kib-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .kib-box-hot{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .kib-box-warm{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1.5;}
+              .kib-box-cold{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;stroke-dasharray:3 2;}
+              .kib-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .kib-title-inv{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:#ffffff;}
+              .kib-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .kib-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:#dbe6ff;}
+              .kib-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-kib-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="20" y="20" width="140" height="46" rx="6" class="kib-box"></rect>
+            <text x="90" y="40" text-anchor="middle" class="kib-title">Host log files</text>
+            <text x="90" y="54" text-anchor="middle" class="kib-sub">Filebeat tails &amp; ships</text>
+
+            <line x1="160" y1="43" x2="199" y2="43" class="kib-arrow" marker-end="url(#arrow-kib-5)"></line>
+
+            <rect x="200" y="20" width="120" height="46" rx="6" class="kib-box-bus"></rect>
+            <text x="260" y="40" text-anchor="middle" class="kib-title-inv">Kafka</text>
+            <text x="260" y="54" text-anchor="middle" class="kib-sub-inv">logs topic</text>
+
+            <line x1="320" y1="43" x2="359" y2="43" class="kib-arrow" marker-end="url(#arrow-kib-5)"></line>
+
+            <rect x="360" y="15" width="150" height="56" rx="6" class="kib-box"></rect>
+            <text x="435" y="35" text-anchor="middle" class="kib-title">Grok / ingest pipeline</text>
+            <text x="435" y="49" text-anchor="middle" class="kib-sub">unstructured &rarr; structured fields</text>
+            <text x="435" y="61" text-anchor="middle" class="kib-sub">(skipped for native JSON logs)</text>
+
+            <line x1="435" y1="71" x2="435" y2="99" class="kib-arrow" marker-end="url(#arrow-kib-5)"></line>
+
+            <rect x="290" y="100" width="290" height="46" rx="6" class="kib-box-hot"></rect>
+            <text x="435" y="120" text-anchor="middle" class="kib-title">HOT: logs-checkout-2026.07.18</text>
+            <text x="435" y="134" text-anchor="middle" class="kib-sub">SSD, ~10&ndash;50GB/shard, actively written, 0&ndash;15d</text>
+
+            <line x1="435" y1="146" x2="435" y2="174" class="kib-arrow" marker-end="url(#arrow-kib-5)"></line>
+
+            <rect x="290" y="175" width="290" height="34" rx="6" class="kib-box-warm"></rect>
+            <text x="435" y="196" text-anchor="middle" class="kib-title">WARM: read-only, fewer replicas, 15&ndash;90d</text>
+
+            <line x1="435" y1="209" x2="435" y2="222" class="kib-arrow" marker-end="url(#arrow-kib-5)"></line>
+
+            <rect x="290" y="223" width="140" height="30" rx="6" class="kib-box-cold"></rect>
+            <text x="360" y="242" text-anchor="middle" class="kib-title">COLD, 90&ndash;365d</text>
+
+            <rect x="440" y="223" width="140" height="30" rx="6" class="kib-box-cold"></rect>
+            <text x="510" y="242" text-anchor="middle" class="kib-title">FROZEN / deleted</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. Log pipeline: Filebeat &rarr; Kafka &rarr; Grok parsing &rarr; hot-tier index; Index Lifecycle Management then automatically migrates the index through warm, cold, and frozen tiers (or deletes it) purely by age, with no manual intervention.</div>
+        </div>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <p>Sharding strategy differs meaningfully by pillar because query patterns differ: logs and traces are almost always time-bounded (&ldquo;show me the last hour&rdquo;), while metrics are queried as continuous time series per entity.</p>
+        <ul>
+          <li><strong>Index-per-day (logs, traces):</strong> a new index (e.g. <code>logs-checkout-service-2026.07.18</code>) is created daily per service. This makes time-bounded queries efficient (only touch the days in range), makes ILM tier transitions a simple whole-index operation, and makes deleting old data a cheap index-drop instead of an expensive delete-by-query.</li>
+          <li><strong>Index-per-metric-family (metrics):</strong> metrics use a time-series data stream backed by rolling indices per retention tier (raw vs. 5-minute vs. 1-hour rollup), rather than per-day, since metric queries typically span long ranges (a week, a month) rather than one day at a time.</li>
+          <li><strong>Shard count and sizing:</strong> per the 10&ndash;50&nbsp;GB/shard guidance above, each daily log index is pre-sized with enough primary shards to keep every shard in that range given expected daily volume for that service &mdash; a high-volume service gets more shards than a low-volume one, set via an index template rather than one global default.</li>
+          <li><strong>Routing:</strong> within an index, documents route to a shard by a hash of the routing value (default <code>_id</code>, but can be pinned to e.g. <code>service.name</code> or <code>trace_id</code> when co-locating related documents on the same shard measurably speeds up a common query pattern).</li>
+        </ul>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <p>Elasticsearch's primary/replica shard model is the fault-tolerance backbone across all three data-holding pillars (logs, traces, metrics):</p>
+        <ul>
+          <li>Every shard has one <strong>primary</strong> and N <strong>replicas</strong> (typically 1 in hot tier for cost, sometimes reduced to 0 in cold/frozen tiers where the object-store-backed snapshot itself is the durability guarantee). Writes go to the primary first, then replicate to replicas; reads can be served by either, which is also a natural read-scaling mechanism.</li>
+          <li><strong>Node loss handling:</strong> if a node holding a primary shard is lost, Elasticsearch promotes an in-sync replica on another node to primary automatically, and schedules a new replica to restore full redundancy &mdash; this promotion is exactly what produces a transient yellow status (see Deep Dive &mdash; Part 3) until the new replica catches up.</li>
+          <li><strong>Cross-cluster replication (CCR)</strong> asynchronously replicates indices from one cluster to another (typically a different region), providing disaster recovery: if the primary region's cluster is lost entirely, the DR region has a recent (seconds-to-minutes-stale) copy to fail over to, and CCR is also the mechanism behind cross-cluster search for multi-region query patterns.</li>
+        </ul>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <p>The feature that actually justifies bundling four pillars into one platform &mdash; rather than four independent tools &mdash; is <strong>correlation</strong>: given a trace span, a log line, or a metric anomaly at a given moment, show everything else that happened at that same moment for that same service/host, in one view.</p>
+        <p>Concretely, the correlation query is a straightforward cross-index search enabled entirely by the shared vocabulary established back in the data model: given a span with <code>trace_id = T</code>, <code>service.name = S</code>, and a time range <code>[start, end]</code>, Kibana issues (1) a query against <code>logs-*</code> for <code>trace.id: T</code> (exact log lines emitted during that span), and (2) a query against <code>metrics-*</code> for <code>service: S AND @timestamp: [start-30s, end+30s]</code> (was there a metric anomaly &mdash; a CPU spike, an error-rate jump &mdash; around the same window). The result, stitched together in one Kibana view, is the &ldquo;single pane of glass&rdquo;: a slow, erroring trace span, the exact error log line it produced, and the host-level metric spike that coincided with it, all visible without the engineer manually copying a timestamp between three different tools.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A single Kibana correlation view pulls from three separate indices at once: a slow, erroring span from traces-star filtered by trace id, the matching error log line from logs-star filtered by the same trace id, and a CPU metric spike from metrics-star filtered by service name and a time window around the span, all rendered together in one dashboard panel.">
+            <style>
+              .kib-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .kib-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .kib-box-err{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .kib-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .kib-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .kib-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .kib-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-kib-6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="20" y="20" width="210" height="60" rx="6" class="kib-box-err"></rect>
+            <text x="125" y="42" text-anchor="middle" class="kib-title">traces-* index</text>
+            <text x="125" y="57" text-anchor="middle" class="kib-sub">span: payment-service, ERROR</text>
+            <text x="125" y="70" text-anchor="middle" class="kib-sub">trace_id = T, 150ms duration</text>
+
+            <rect x="20" y="120" width="210" height="60" rx="6" class="kib-box"></rect>
+            <text x="125" y="142" text-anchor="middle" class="kib-title">logs-* index</text>
+            <text x="125" y="157" text-anchor="middle" class="kib-sub">query: trace.id = T</text>
+            <text x="125" y="170" text-anchor="middle" class="kib-sub">&ldquo;payment gateway timeout&rdquo;</text>
+
+            <rect x="20" y="220" width="210" height="60" rx="6" class="kib-box"></rect>
+            <text x="125" y="242" text-anchor="middle" class="kib-title">metrics-* index</text>
+            <text x="125" y="257" text-anchor="middle" class="kib-sub">query: service=payment-service</text>
+            <text x="125" y="270" text-anchor="middle" class="kib-sub">@timestamp in [start-30s, end+30s]</text>
+
+            <line x1="230" y1="50" x2="309" y2="145" class="kib-arrow" marker-end="url(#arrow-kib-6)"></line>
+            <line x1="230" y1="150" x2="309" y2="153" class="kib-arrow" marker-end="url(#arrow-kib-6)"></line>
+            <line x1="230" y1="250" x2="309" y2="161" class="kib-arrow" marker-end="url(#arrow-kib-6)"></line>
+            <text x="255" y="110" class="kib-label">same trace_id</text>
+            <text x="255" y="210" class="kib-label">same service + time window</text>
+
+            <rect x="310" y="80" width="430" height="140" rx="8" class="kib-box-strong"></rect>
+            <text x="525" y="105" text-anchor="middle" class="kib-title">Kibana &mdash; one correlation view</text>
+            <text x="330" y="128" class="kib-sub">09:14:02.331 &nbsp;ERROR &nbsp;payment-service &nbsp;trace=T &nbsp;span=150ms</text>
+            <text x="330" y="146" class="kib-sub">09:14:02.334 &nbsp;log &nbsp;&ldquo;payment gateway timeout after 3000ms&rdquo;</text>
+            <text x="330" y="164" class="kib-sub">09:14:02.300&ndash;02.500 &nbsp;metric &nbsp;CPU on host i-0a1b2c spikes to 97%</text>
+            <text x="330" y="185" class="kib-sub">&rarr; root cause visible in one panel, zero manual timestamp copying</text>
+          </svg>
+          <div class="diagram-caption">Figure 7. The correlation feature: one Kibana view issues parallel queries against traces-*, logs-*, and metrics-* using the shared trace_id / service / timestamp vocabulary, converging a slow error span, its log line, and its coincident metric spike into a single panel.</div>
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If asked &ldquo;what's the one feature that makes this a platform instead of four tools glued together,&rdquo; this correlation query is the answer. It's worth stating explicitly that it works <em>because</em> of the shared data model discipline (every document type carries a timestamp, a service/host identity, and where applicable a trace_id) established from day one &mdash; not because of any special cross-index join feature in Elasticsearch, which doesn't really have relational joins at all.
+        </div>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Role-based access to indices/dashboards:</strong> role definitions grant access to specific index patterns (e.g. team A can query <code>logs-team-a-*</code> and <code>traces-team-a-*</code> but not team B's), and to specific Kibana spaces/dashboards, so a shared multi-tenant platform doesn't leak one team's operational data to another.</li>
+          <li><strong>PII scrubbing/redaction in logs before ingestion:</strong> an ingest-pipeline processor (or a pre-ingestion agent-side filter) detects and masks/redacts known-sensitive patterns (emails, card numbers, SSNs, auth tokens) before a log line is ever indexed &mdash; redaction has to happen before storage, since retroactively scrubbing already-indexed documents at petabyte scale is impractical.</li>
+          <li><strong>Audit logging:</strong> the platform logs who queried what (which user, which index pattern, which query, when) as its own audit trail, both for compliance and to detect misuse of a system that, by design, has broad visibility into the rest of the company's operational data.</li>
+          <li><strong>Transport security:</strong> TLS between every hop (agents &rarr; Kafka &rarr; processing tier &rarr; Elasticsearch &rarr; Kibana), with mTLS for service-to-service legs and API keys/tokens scoped per team for ingestion credentials.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <ol>
+          <li><strong>Ingest-side load balancing:</strong> agents/collectors on each host are configured with the full set of Kafka broker addresses and rely on Kafka's own partition-leader-aware client routing; a coordinating-node-style ingest layer in front of Elasticsearch load-balances bulk writes across data nodes.</li>
+          <li><strong>Query-side load balancing:</strong> Kibana and any direct API clients route through <strong>coordinating nodes</strong> (Elasticsearch nodes with no data role, dedicated to fanning a query out to the relevant data nodes/shards and merging results), which both load-balances query fan-out and insulates data nodes from a query-storm caused by an expensive ad-hoc search.</li>
+          <li><strong>Scrape-target load balancing:</strong> for pull-based metrics, service discovery plus consistent-hash sharding of scrape targets across a pool of scraper instances keeps any one scraper's fan-out bounded as the fleet grows.</li>
+        </ol>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li><strong>Regional clusters, not one global cluster:</strong> each region runs its own Elasticsearch cluster and Kafka buffer, keeping the vast majority of ingestion and query traffic local and avoiding a single global cluster's blast radius and cross-region latency tax.</li>
+          <li><strong>Cross-cluster search</strong> lets a Kibana instance in one region query indices in other regions live, for the rarer &ldquo;show me this incident across all regions&rdquo; investigation, without requiring all data to be centrally replicated first.</li>
+          <li><strong>Cross-cluster replication</strong> selectively replicates specific indices (e.g. a global services' logs) to a designated DR or reporting region, per the replication section above.</li>
+          <li><strong>Edge aggregation before long-haul shipping:</strong> for regions/edge locations with constrained or expensive backhaul bandwidth, pre-aggregate metrics and pre-filter/sample logs and traces locally before shipping only the reduced volume across the long-haul link to a central or regional cluster &mdash; this is the same hierarchical-federation idea from the metrics deep dive, applied at the WAN-link level instead of the rack level.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <p>The recursive question &mdash; who monitors the monitoring system &mdash; has to have a real answer, since this platform is exactly what's relied on <em>during</em> an incident.</p>
+        <ul>
+          <li><strong>Self-monitoring:</strong> the observability platform emits its own logs, metrics, and traces (Kafka consumer lag, Elasticsearch cluster health, ingest-pipeline error rate, Kibana query latency) into a physically or at least logically separate &ldquo;meta&rdquo; cluster/index set, so a failure in the primary cluster doesn't also take down the dashboards showing that it's failing.</li>
+          <li><strong>Alerting on ingestion-pipeline backlog/lag:</strong> Kafka consumer lag per topic is the single most important self-monitoring metric &mdash; growing lag on the logs topic, for instance, means data is arriving but not yet queryable, silently degrading freshness without an outright outage; alert on lag trend, not just an absolute threshold.</li>
+          <li><strong>Synthetic self-checks:</strong> a canary that writes a known synthetic log line/metric/span end-to-end and alerts if it doesn't appear in Kibana within an expected SLA, catching a &ldquo;the pipeline looks up but nothing is actually flowing&rdquo; failure mode that infrastructure-level health checks alone would miss.</li>
+          <li><strong>A minimal, independent fallback path:</strong> a lightweight, separately-hosted status page or basic metrics view that doesn't depend on the main platform's own Elasticsearch/Kafka, so on-call still has some signal if the main platform itself is the thing that's down.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Cardinality explosion on metrics (the #1 real-world failure mode)</td><td>Bounded label design, hierarchical aggregation, downsampling/rollups, hard cardinality caps with alerting before it blows up the shared TSDB</td></tr>
+          <tr><td>Log storage cost dominates total platform cost</td><td>Aggressive ILM tiering (hot/warm/cold/frozen), force-merge on warm, searchable snapshots on frozen, shard sizing at 10&ndash;50GB</td></tr>
+          <tr><td>Kafka buffer backpressure during a downstream processing slowdown</td><td>Kafka absorbs bursts durably up to its retention window; alert on consumer lag; scale processing-tier consumers independently per topic</td></tr>
+          <tr><td>Tail-based sampling requires buffering entire traces</td><td>Bound buffering window and memory per trace; fall back to head-based sampling if buffer pressure exceeds a threshold, trading completeness for stability under extreme load</td></tr>
+          <tr><td>Single global health-checker false-positiving on a network blip</td><td>Quorum-based health decisions across geographically/network-diverse checkers</td></tr>
+          <tr><td>A noisy team's dashboard/query storms an Elasticsearch cluster</td><td>Coordinating nodes isolate data nodes from query fan-out; per-role/per-team query resource limits</td></tr>
+          <tr><td>Region-wide outage of the primary observability cluster</td><td>Regional clusters + cross-cluster replication to a DR region + an independent minimal fallback status path</td></tr>
+          <tr><td>The observability platform itself going dark during the incident it should help diagnose</td><td>Self-monitoring into a logically separate meta-cluster, synthetic self-checks, independent fallback path</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor availability for the bulk of reads (a dashboard a few seconds stale, or a query hitting a slightly-behind replica, is a non-issue during normal operation) and for ingestion (never block a host's agent on a strongly-consistent write &mdash; Kafka buffering is exactly what lets ingestion degrade gracefully instead of blocking). Favor consistency specifically for cluster-health quorum decisions, where a wrong answer (a false-positive outage page, or worse, a missed real outage) has an outsized cost relative to the small latency of requiring quorum agreement first.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Shared ingestion spine</td><td>OTel Collector (traces/metrics) + Beats (logs) on every host &rarr; Kafka durable buffer &rarr; processing tier &rarr; Elasticsearch/OpenSearch &rarr; Kibana</td></tr>
+          <tr><td>Tracing: context propagation</td><td>W3C Trace Context traceparent header across every service hop</td></tr>
+          <tr><td>Tracing: sampling</td><td>Hybrid &mdash; low-rate head-based sampling + tail-based override that force-keeps every error/slow trace</td></tr>
+          <tr><td>Metrics: collection</td><td>Hybrid pull (Prometheus-style scrape) + push (statsd/Beats), federated hierarchically to bound fan-in from 12,000+ hosts</td></tr>
+          <tr><td>Metrics: cardinality control</td><td>Bounded labels by design, hierarchical aggregation, downsample/rollup for long retention, hard cardinality caps</td></tr>
+          <tr><td>Cluster health</td><td>Quorum-based heartbeat evaluation, red/yellow/green shard-level status rollup, synthetic canaries</td></tr>
+          <tr><td>Log aggregation</td><td>Filebeat/Logstash shipping, Grok parsing for unstructured lines, ILM hot/warm/cold/frozen, 10&ndash;50GB/shard sizing</td></tr>
+          <tr><td>Sharding</td><td>Index-per-day-per-service (logs/traces), rollup-tiered time-series data streams (metrics)</td></tr>
+          <tr><td>Replication</td><td>Primary + replica shards per index, cross-cluster replication for DR and cross-region search</td></tr>
+          <tr><td>Correlation feature</td><td>Shared timestamp + service/host + trace_id vocabulary across all indices, queried together in Kibana</td></tr>
+          <tr><td>Security</td><td>Role-based access per index pattern/space, pre-ingestion PII redaction, full query audit logging</td></tr>
+          <tr><td>Multi-region</td><td>Regional clusters, cross-cluster search/replication, edge aggregation before long-haul shipping</td></tr>
+          <tr><td>Self-monitoring</td><td>Logically separate meta-cluster, consumer-lag alerting, synthetic self-checks, independent minimal fallback</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect a real interview to pick several of these as &ldquo;and then what?&rdquo; follow-ups on whatever you draw first.</p>
+
+        <h3>Why Bundle Four Pillars Into One Platform</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why not just use four separate best-of-breed tools &mdash; a tracing vendor, a metrics vendor, a status dashboard, and a log-search tool?</div>
+          <div class="qa-a">Four silos mean four agents per host, four ingestion pipelines to operate, and &mdash; the real cost &mdash; an on-call engineer manually correlating a timestamp and trace ID across four disconnected UIs during an incident. A shared spine (agents &rarr; Kafka &rarr; processing &rarr; one Elasticsearch cluster &rarr; Kibana) with a common correlation vocabulary turns that manual correlation into a single query.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What actually makes this a "platform" rather than four tools glued together?</div>
+          <div class="qa-a">The correlation feature: because all four pillars share a timestamp, a service/host identity, and (traces/logs) a trace_id, and all land in the same Elasticsearch cluster, Kibana can pivot from a slow span to its correlated log lines and metric anomalies in one view &mdash; a feature that's structurally impossible if the four pillars live in four separate, unrelated storage systems.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Are the four pillars really the same architecture underneath, or just glued together?</div>
+          <div class="qa-a">Neither &mdash; they share the generic spine (agents, Kafka, Elasticsearch, Kibana) but each has genuinely distinct processing logic (tail-sampling for traces, cardinality-aware rollups for metrics, quorum health evaluation, Grok parsing for logs) bolted onto that shared spine, not forced into one identical pipeline.</div>
+        </div>
+
+        <h3>Distributed Tracing</h3>
+        <div class="qa-item">
+          <div class="qa-q">How does trace context propagate across service hops in different languages/frameworks?</div>
+          <div class="qa-a">The W3C Trace Context standard traceparent HTTP header (00-trace_id-parent_span_id-flags) is vendor- and language-neutral; every OpenTelemetry-instrumented service reads the incoming header, creates a child span, and forwards a new traceparent with its own span_id as the parent for whatever it calls next.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why not just sample every trace at a fixed rate (head-based only)?</div>
+          <div class="qa-a">A fixed sampling rate decided at the start of a trace has no way to know the trace will end in an error or unusual latency, so rare-but-critical traces are dropped just as often as boring ones. Tail-based sampling defers the decision until the full trace (and its outcome) is known, letting you force-keep 100% of errors/slow traces while still downsampling the boring majority &mdash; at the cost of buffering every span until each trace completes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you derive a service dependency graph from trace data?</div>
+          <div class="qa-a">For every parent-child span pair (linked via parent_span_id), emit an edge from the parent's service name to the child's service name, then aggregate edge counts, latency, and error rate over a rolling window &mdash; rendered as a live graph in Kibana.</div>
+        </div>
+
+        <h3>Metrics at Scale</h3>
+        <div class="qa-item">
+          <div class="qa-q">Pull-based (Prometheus) or push-based (statsd) metrics collection &mdash; which do you pick?</div>
+          <div class="qa-a">Both, for different workloads: pull-based scraping for long-running services (a missed scrape is itself a useful "target down" signal, and it's simpler to reason about), push-based for ephemeral jobs and hosts that can't be reliably scraped (e.g. behind restrictive network policy). This platform runs both paths into the same shared spine.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is cardinality explosion and why is it the #1 real-world metrics failure mode?</div>
+          <div class="qa-a">Every unique combination of metric name and label values is a distinct time series the store must index in memory; one unbounded label like a raw user_id can turn a manageable 2 million series into 150 billion, which no time-series database's in-memory series index can absorb. It's mitigated by bounding label cardinality by design, aggregating hierarchically before central ingestion, downsampling for long retention, and enforcing hard cardinality caps with alerting.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Counter, gauge, or histogram &mdash; how do you decide which metric type to use?</div>
+          <div class="qa-a">Counter for anything monotonically increasing where you care about rate (total requests served); gauge for a point-in-time value that can go up or down (queue depth, memory used); histogram whenever you need percentiles (p95/p99 latency) rather than just an average, since a bucketed distribution is the only type that can reconstruct percentiles after the fact.</div>
+        </div>
+
+        <h3>Cluster Health Monitoring</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you avoid a false-positive outage page from a transient network blip?</div>
+          <div class="qa-a">Quorum-based health evaluation: multiple independent health-checker instances across different network paths/zones each probe the same targets independently, and only a majority agreement declares a genuine outage &mdash; a single checker's transient bad view is outvoted rather than trusted.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Walk me through the red/yellow/green cluster-status model.</div>
+          <div class="qa-a">Green means every primary and replica shard is allocated and healthy. Yellow means every primary is intact and the cluster is fully readable/writable, but some replicas are missing (e.g. after a single node loss) &mdash; degraded fault tolerance, not degraded availability. Red means at least one primary shard is unassigned &mdash; genuine data unavailability or loss, and the only status that should page immediately.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why do you need synthetic canaries if you already have heartbeats and metrics?</div>
+          <div class="qa-a">Heartbeats and metrics catch infrastructure-level failure (a process died, CPU spiked) but not a process that's alive and returning 200s while silently serving broken behavior (a broken login form, a checkout flow that fails on step 3). Synthetic canaries script real user journeys end-to-end and check actual behavior, catching a class of failure liveness checks structurally can't see.</div>
+        </div>
+
+        <h3>Log Aggregation</h3>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between using Filebeat directly to Elasticsearch versus routing through Logstash first?</div>
+          <div class="qa-a">Filebeat-to-Elasticsearch-ingest-pipeline is lighter weight and sufficient for straightforward parsing (Grok, simple field extraction). Logstash's filter stage is more capable for heavier transformation (joining against external lookups, complex conditional routing, multi-stage enrichment) at the cost of an extra hop and more operational overhead &mdash; pick Logstash only when the transformation genuinely needs it.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does Index Lifecycle Management matter so much for cost here?</div>
+          <div class="qa-a">Logs dominate total platform storage by one to two orders of magnitude over traces and metrics combined. ILM automatically ages indices from fast/expensive hot-tier SSD down through warm, cold, and frozen/deleted tiers purely by policy, which is what makes multi-petabyte retention affordable instead of keeping everything on the most expensive tier forever.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why size shards at roughly 10-50GB instead of very small or very large shards?</div>
+          <div class="qa-a">Each shard is a full independent Lucene index with real per-shard overhead (file handles, segment metadata, merge cost); too many tiny shards wastes that overhead and bloats cluster state, while too few oversized shards make recovery/rebalancing slow. 10-50GB is the empirically-recommended sweet spot balancing both failure modes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does full-text log search stay fast across billions of documents?</div>
+          <div class="qa-a">The inverted index: for each distinct term, Elasticsearch stores a posting list of the documents containing it. A multi-word search intersects/scores a handful of typically-short posting lists instead of scanning raw text, which is what keeps queries in the low seconds even at petabyte scale.</div>
+        </div>
+
+        <h3>Cross-Cutting: Sharding, Replication, Security, Scale</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why index-per-day for logs and traces but not for metrics?</div>
+          <div class="qa-a">Logs and traces are almost always queried over a bounded recent time window, so index-per-day lets a query touch only relevant days and lets ILM/deletion operate on whole indices cheaply. Metrics are typically queried over longer continuous ranges (a week or month of a trend line), so a rollup-tiered time-series data stream fits the access pattern better than daily buckets.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens when a data node holding a primary shard is lost?</div>
+          <div class="qa-a">Elasticsearch automatically promotes an in-sync replica on a surviving node to primary and schedules a new replica elsewhere to restore full redundancy. This is exactly the kind of event that produces a transient yellow cluster status until the new replica finishes catching up.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you keep one team's noisy dashboard from degrading the cluster for everyone else?</div>
+          <div class="qa-a">Coordinating nodes (data-role-free nodes dedicated to query fan-out and result merging) insulate data nodes from query storms, combined with per-role/per-team resource limits on expensive ad-hoc queries.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you redact PII before it's ever searchable?</div>
+          <div class="qa-a">An ingest-pipeline processor (or agent-side filter, ideally as early as possible) pattern-matches known-sensitive fields (emails, card numbers, tokens) and masks/redacts them before the document is indexed &mdash; redaction must happen pre-ingestion, since scrubbing already-indexed petabyte-scale data after the fact is impractical.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Who monitors the observability platform itself?</div>
+          <div class="qa-a">The platform self-monitors by emitting its own logs/metrics/traces into a logically separate meta-cluster, alerts on Kafka consumer lag as the earliest backlog signal, runs synthetic self-checks that verify a known event actually appears end-to-end, and maintains a minimal independent fallback status path that doesn't depend on the main cluster.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does the platform scale to multiple regions?</div>
+          <div class="qa-a">Each region runs its own Elasticsearch cluster and Kafka buffer to keep the bulk of traffic local; cross-cluster search enables live cross-region investigation without pre-replicating everything; cross-cluster replication selectively mirrors specific indices to a DR region; and edge locations with constrained bandwidth pre-aggregate/sample locally before shipping the reduced volume onward.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The interesting design problem is the bundling itself: one shared spine (agents/collectors on every host &rarr; a durable Kafka buffer &rarr; a pillar-specific processing tier &rarr; a shared Elasticsearch/OpenSearch store &rarr; Kibana) carries all four pillars, with genuinely different processing logic per pillar bolted onto that spine rather than forced into an identical pipeline. Cardinality explosion is the single most common real-world metrics failure mode &mdash; know the mitigation chain (bounded labels, hierarchical aggregation, downsampling, hard caps) cold. Tracing lives or dies on context propagation (W3C traceparent) and a defensible sampling strategy (hybrid head+tail). Cluster health must be quorum-based to avoid false-positive outages, and the red/yellow/green model is the standard vocabulary for communicating aggregate status. Logs dominate storage cost, so ILM tiering is the platform's single biggest cost lever. And the feature that actually justifies calling this a "platform" rather than four tools is correlation &mdash; a shared timestamp/service/trace_id vocabulary that lets one Kibana view span all four pillars at once.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>OpenTelemetry documentation &mdash; tracing, metrics, and the OTLP protocol specification</li>
+          <li>W3C Trace Context specification &mdash; the traceparent/tracestate HTTP headers</li>
+          <li>Elastic (Elasticsearch, Kibana, Beats, Logstash) documentation &mdash; the ELK/Elastic Stack, ILM, and cluster health</li>
+          <li>OpenSearch documentation &mdash; the open-source Elasticsearch/Kibana fork and its equivalent APIs</li>
+          <li>Prometheus documentation &mdash; pull-based scraping, metric types, and federation</li>
+          <li>Google's Dapper paper, "Dapper, a Large-Scale Distributed Systems Tracing Infrastructure" &mdash; the foundational distributed-tracing design</li>
+          <li>Jaeger documentation &mdash; an open-source, OpenTelemetry-compatible distributed tracing backend</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="distributed-queue.html"><span class="dir">Previous</span>Distributed Message Queue (RabbitMQ)</a>
+          <a class="next" href="bittorrent.html"><span class="dir">Next</span>Distributed File Transfer (BitTorrent)</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

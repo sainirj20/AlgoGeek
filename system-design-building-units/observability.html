@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Observability | System Design — Building Units | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Building Units</a><span class="sep">/</span><span class="current">Observability</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Building Units overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#monitoring-metrics">Monitoring &amp; Metrics (Prometheus, Grafana, Datadog)</a></li>
+        <li><a href="#centralized-logging">Centralized Logging (ELK/EFK, Splunk)</a></li>
+        <li><a href="#distributed-tracing">Distributed Tracing (Jaeger, Zipkin, OpenTelemetry)</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN — BUILDING UNITS</span>
+          <h1>Observability</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Observability is the ability to ask new questions about a running system from the outside, without shipping new code first — the difference between monitoring (watching predefined dashboards for problems you anticipated) and true observability (diagnosing failure modes you never thought to instrument for). In practice it rests on three complementary signal types, often called the three pillars: metrics (cheap, aggregated numerical time series, good for trends and alerting), logs (rich, per-event text, good for forensic detail), and traces (request-scoped causal timelines, good for pinpointing exactly where in a distributed call graph something went wrong). No single pillar tells the whole story alone — mature teams instrument for all three and pivot between them as an incident unfolds: metrics flag that something is wrong and roughly when, traces narrow down where in the request path it's happening, and logs supply the exact error detail once the culprit service is known.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="24" font-size="13" font-weight="700" fill="#0f2545">The Three Pillars of Observability</text>
+
+            <rect x="20" y="45" width="190" height="130" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="115" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">Metrics</text>
+            <text x="115" y="92" text-anchor="middle" font-size="9.5" fill="#334155">Prometheus &middot; Grafana</text>
+            <text x="115" y="106" text-anchor="middle" font-size="9.5" fill="#334155">Datadog</text>
+            <text x="115" y="130" text-anchor="middle" font-size="9.5" fill="#5a6472">aggregate trends,</text>
+            <text x="115" y="144" text-anchor="middle" font-size="9.5" fill="#5a6472">threshold/SLO alerting</text>
+
+            <rect x="245" y="45" width="190" height="130" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="340" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="#6b4a10">Logs</text>
+            <text x="340" y="92" text-anchor="middle" font-size="9.5" fill="#334155">ELK / EFK &middot; Splunk</text>
+            <text x="340" y="106" text-anchor="middle" font-size="9.5" fill="#334155">Loki</text>
+            <text x="340" y="130" text-anchor="middle" font-size="9.5" fill="#5a6472">detailed per-event</text>
+            <text x="340" y="144" text-anchor="middle" font-size="9.5" fill="#5a6472">forensic text</text>
+
+            <rect x="470" y="45" width="190" height="130" rx="8" fill="#f0fdf4" stroke="#166534"/>
+            <text x="565" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">Traces</text>
+            <text x="565" y="92" text-anchor="middle" font-size="9.5" fill="#334155">Jaeger &middot; Zipkin</text>
+            <text x="565" y="106" text-anchor="middle" font-size="9.5" fill="#334155">OpenTelemetry</text>
+            <text x="565" y="130" text-anchor="middle" font-size="9.5" fill="#5a6472">per-request causal</text>
+            <text x="565" y="144" text-anchor="middle" font-size="9.5" fill="#5a6472">call-graph path</text>
+
+            <line x1="115" y1="175" x2="300" y2="228" stroke="#334155" marker-end="url(#a1-1)"/>
+            <line x1="340" y1="175" x2="340" y2="228" stroke="#334155" marker-end="url(#a1-1)"/>
+            <line x1="565" y1="175" x2="380" y2="228" stroke="#334155" marker-end="url(#a1-1)"/>
+
+            <rect x="190" y="230" width="300" height="55" rx="8" fill="#0f2545"/>
+            <text x="340" y="253" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff">Unified operational view</text>
+            <text x="340" y="270" text-anchor="middle" font-size="9.5" fill="#cbd8ef">dashboards &middot; alerting &middot; incident response</text>
+
+            <defs><marker id="a1-1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Metrics, logs, and traces are complementary signal types — most incidents are diagnosed by starting on one pillar and pivoting to another.</div>
+        </div>
+
+        <h3 id="monitoring-metrics">Monitoring &amp; Metrics (Prometheus, Grafana, Datadog)</h3>
+        <p>Monitoring and metrics tooling collects, stores, visualizes, and alerts on numerical time-series data — CPU, request latency, error rates, business KPIs — describing system health over time. Two collection models dominate: a <strong>pull model</strong>, where a central server like Prometheus scrapes an HTTP <code>/metrics</code> endpoint on each target at a fixed interval (a failed scrape is itself an unambiguous down signal, which works well for stable, discoverable infrastructure), and a <strong>push model</strong>, where an agent actively ships metrics to a backend — necessary for ephemeral, serverless, or NAT'd targets that can't be scraped. Metrics land in a purpose-built time-series database — Prometheus's own TSDB, often paired with remote-write to Thanos, Mimir, or Cortex for long-term retention at scale, or a vendor's managed backend in Datadog's case — and PromQL-style query languages drive both dashboards and alert-routing rules; Grafana is popular precisely because it visualizes across many of these backends without owning the underlying data.</p>
+        <p>The data model matters as much as the collection mechanism: counters, gauges, and histograms/summaries are the core metric types, and dimensional/labeled metrics let you slice the same signal by service, region, or endpoint. Alerting layers thresholds, burn-rate rules, and SLO-based rules on top, routed into on-call tooling — but cardinality has to be actively managed, since a label with too many unique values (a raw user ID, say) can blow up storage and cost almost overnight.</p>
+        <p><strong>Popular tools:</strong> Prometheus + Grafana (+ Alertmanager; long-term storage via Thanos, Cortex, Mimir, or VictoriaMetrics) — the de facto open-source, Kubernetes-native combo. Datadog — fully managed SaaS unifying metrics, logs, traces, and APM. Also New Relic, Dynatrace, and AWS CloudWatch.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Always needed in any production system — this is the "vital signs" layer. Reach for Prometheus/Grafana when you're Kubernetes-heavy, cost-sensitive, and want full operational control; reach for Datadog when time-to-value and unified cross-signal correlation matter more than owning the stack. Use metrics for aggregate health/trend questions and threshold-based alerting — not for root-causing one specific request, which is what tracing and logging are for.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Cheap to store/query at high volume relative to logs or traces</li><li>Excellent for trend detection and threshold/SLO-based alerting</li><li>Dimensional labels enable flexible slicing without re-instrumenting</li></ul></td>
+            <td><ul><li>Pull model struggles with very ephemeral/short-lived jobs</li><li>High-cardinality labels can silently blow up storage cost</li><li>Aggregate by nature — can't reconstruct one specific request's path</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="centralized-logging">Centralized Logging (ELK/EFK, Splunk)</h3>
+        <p>Centralized logging replaces "SSH into each box and grep a file" with one searchable, aggregated system spanning every distributed service and host. Lightweight collection agents — Filebeat, Fluentd/Fluent Bit, Logstash, or Splunk Forwarders — tail logs on each host or pod; a processing/enrichment stage then parses raw text into structured fields and attaches metadata like service name, host, and trace ID, with Logstash offering heavier and more powerful filtering and Fluentd/Fluent Bit favored as a lighter Kubernetes DaemonSet. From there logs land in a storage and indexing layer — Elasticsearch/OpenSearch (the same inverted-index mechanics used for search) or Splunk's proprietary indexers — queried through Kibana or Splunk's Search Head. EFK is simply ELK with Logstash swapped for Fluentd/Fluent Bit to shrink the Kubernetes footprint.</p>
+        <p>Structured, JSON-formatted logging is what makes this searchable at scale rather than just concatenated text; hot/warm/cold retention tiers balance query speed against storage cost as data ages; and pairing every log line with a trace ID is what lets an engineer jump directly from a slow span in a trace to the exact log line that explains why.</p>
+        <p><strong>Popular tools:</strong> ELK/EFK Stack (Elasticsearch/OpenSearch + Logstash/Fluentd + Kibana, plus Beats); Splunk (enterprise-grade, SPL query language, strong compliance/SIEM use cases, but expensive at scale); Grafana Loki (indexes only metadata/labels, storing content cheaply in object storage — much cheaper at scale, weaker full-text search); cloud-native CloudWatch Logs/Cloud Logging.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Needed on essentially any system with more than a handful of instances or containers. Reach for it debugging production incidents and maintaining compliance/audit trails — favoring Splunk or ELK with strict retention policies where regulation demands it — and reach for Loki specifically when log volume is very high and queries mainly filter by label rather than needing rich ad hoc full-text search.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Correlates logs across every service in one searchable place</li><li>Structured/JSON logging makes forensic debugging dramatically faster</li><li>Retention tiers let you balance cost vs. query speed</li></ul></td>
+            <td><ul><li>Operationally heavy to run at scale (ELK/EFK)</li><li>Licensing costs scale with data volume (Splunk)</li><li>Cheaper alternatives (Loki) trade away full-text search power</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="distributed-tracing">Distributed Tracing (Jaeger, Zipkin, OpenTelemetry)</h3>
+        <p>Distributed tracing follows a single logical request as it hops across multiple services, reconstructing the end-to-end path and timing to answer "where did this request spend its time, and where exactly did it fail?" A <strong>trace</strong> represents one end-to-end transaction, identified by a globally unique trace ID; a <strong>span</strong> represents one unit of work inside it — an API call, a database query — carrying timestamps, a service/operation name, a status, and a parent span ID that links it into the trace's causal tree. As a request crosses a service boundary — an HTTP header, gRPC metadata, a queue header — its trace and span IDs propagate with it, which is the exact mechanic that lets independently generated spans from unrelated services stitch back together into one coherent trace. Because tracing every request at high volume gets expensive fast, sampling — either head-based (decided up front) or tail-based (decided after seeing the outcome, better for catching rare slow or error traces) — keeps it affordable at scale.</p>
+        <p>Tracing answers a different question than metrics or logs: not "is something wrong in aggregate" or "what exactly did this one event say," but "why was this specific request slow or broken." The output is typically visualized as a service dependency graph or a flame-graph-style waterfall of nested spans, immediately showing which downstream hop consumed the most time.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="22" font-size="13" font-weight="700" fill="#0f2545">Trace Waterfall — One Request, Multiple Spans</text>
+            <text x="20" y="40" font-size="9.5" fill="#5a6472">trace_id: 8f3a41c7...c21b</text>
+
+            <rect x="40" y="52" width="580" height="26" rx="4" fill="#0f2545"/>
+            <text x="330" y="69" text-anchor="middle" font-size="10" fill="#fff">API Gateway (root span) &mdash; 240ms</text>
+
+            <rect x="90" y="86" width="480" height="24" rx="4" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="330" y="102" text-anchor="middle" font-size="9.5" fill="#1d4ed8">Order Service &mdash; 210ms</text>
+
+            <rect x="140" y="118" width="260" height="22" rx="4" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="270" y="133" text-anchor="middle" font-size="9.5" fill="#6b4a10">Payment Service &mdash; 130ms</text>
+
+            <rect x="420" y="118" width="150" height="22" rx="4" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="495" y="133" text-anchor="middle" font-size="9.5" fill="#6b4a10">Inventory Service &mdash; 60ms</text>
+
+            <rect x="170" y="150" width="140" height="20" rx="4" fill="#f0fdf4" stroke="#166534"/>
+            <text x="240" y="164" text-anchor="middle" font-size="9.5" fill="#166534">DB Query &mdash; 45ms</text>
+
+            <line x1="40" y1="188" x2="620" y2="188" stroke="#94a3b8" marker-end="url(#a1-2)"/>
+            <text x="330" y="203" text-anchor="middle" font-size="9.5" fill="#5a6472">time &rarr;</text>
+
+            <defs><marker id="a1-2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">A single trace decomposed into parent/child spans — indentation and color depth show the causal call hierarchy; sibling spans (Payment Service, Inventory Service) run sequentially under the same parent, Order Service.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> OpenTelemetry (OTel) — the modern, vendor-neutral instrumentation standard (SDKs, W3C Trace Context propagation, the OTel Collector) feeding into whichever backend you choose. Jaeger (CNCF, originally Uber, rich feature set, tail sampling). Zipkin (originally Twitter, simpler, lower memory footprint). Also Grafana Tempo, AWS X-Ray, Datadog APM, Honeycomb.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Reach for distributed tracing in any microservices or service-mesh architecture where a single request touches three or more services — diagnosing which downstream call is causing a slow p99, or exactly where a failed request broke. It's not a substitute for logs or metrics: use tracing to find where in the call graph the problem lives, then pivot to logs and metrics for detail and trend confirmation — the three pillars working together.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Dramatically reduces mean-time-to-diagnose for latency and cross-service failures</li><li>Makes implicit request flow explicit via dependency graphs and flame graphs</li></ul></td>
+            <td><ul><li>Requires instrumentation effort across every service in the path</li><li>Sampling can miss the exact failing request</li><li>Storage/ingestion cost rises fast at high trace volume</li></ul></td>
+          </tr>
+        </table>
+
+        <div class="page-nav">
+          <a class="prev" href="search-indexing.html"><span class="dir">Previous</span>Search &amp; Indexing</a>
+          <a class="next" href="security-edge-protection.html"><span class="dir">Next</span>Security &amp; Edge Protection</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

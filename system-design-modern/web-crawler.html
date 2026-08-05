@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design a Web Crawler | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Web Crawler</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design-mercator-style-url-frontier-internals-priority-politeness">Low-Level Design — Mercator-Style URL Frontier Internals (Priority + Politeness)</a></li>
+        <li><a href="#deep-dive-url-frontier-internals-prioritizer-front-queues-and-back-queues">Deep Dive — URL Frontier Internals: Prioritizer, Front Queues, and Back Queues</a></li>
+        <li><a href="#deep-dive-fetching-dns-resolution-and-rendering">Deep Dive — Fetching, DNS Resolution, and Rendering</a></li>
+        <li><a href="#deep-dive-politeness-duplicate-detection-and-url-filtering">Deep Dive — Politeness, Duplicate Detection, and URL Filtering</a></li>
+        <li><a href="#deep-dive-distributed-crawling-consistent-hashing-and-crawler-traps">Deep Dive — Distributed Crawling, Consistent Hashing, and Crawler Traps</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Design a Web Crawler</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a large-scale Web Crawler: requirements and capacity estimation, the worker-thread crawl-loop contract, data model, high-level architecture, a Mercator-style priority/politeness-aware URL Frontier, fetching &amp; DNS &amp; rendering internals, deduplication &amp; URL filtering, distributed crawling with consistent hashing, partitioning, fault tolerance, and a bank of follow-up interview questions.</em></p>
+
+        <div class="callout">
+          <div class="callout-title">A note on sources</div>
+          This design synthesizes two ground-truth sources: (1) the classic "Design a Web Crawler" reference write-up (used for requirements rigor, the 15-billion-page/4-week capacity estimation, and the checksum-store sizing), and (2) a pair of hand-drawn whiteboard diagrams — a bare-minimum component wiring diagram, and a Mercator-style URL Frontier internals diagram — reproduced faithfully below as the High-Level Design and Low-Level Design figures.
+        </div>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a Web Crawler: a system that systematically browses the World Wide Web, downloads documents, and stores/indexes them at massive scale &mdash; while staying <strong>extensible</strong> enough that new media types (images, video, audio) and new network protocols (FTP, and beyond) can be added later without redesigning the core. Web crawlers are also known as spiders, robots, worms, and walkers. Search engines are the canonical use case: a fresh, comprehensive index depends entirely on how well the underlying crawl keeps up with a Web that is both enormous and constantly changing.</p>
+        <p>The same core machinery also underlies several adjacent use cases, worth naming to an interviewer to show you understand the problem's breadth:</p>
+        <ul>
+          <li>Testing pages and links for valid syntax and structure.</li>
+          <li>Monitoring sites to detect when their structure or content changes.</li>
+          <li>Maintaining mirror sites for popular destinations.</li>
+          <li>Scanning for copyright infringement across the Web.</li>
+          <li>Building a special-purpose index — e.g. one with deep understanding of content buried inside multimedia files.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>This problem is deceptively open-ended. The scope decisions below change the entire shape of the design, so surface them explicitly in the first few minutes rather than silently assuming.</p>
+        <ol>
+          <li>Is this crawler for HTML pages only, or must it also fetch and store other media types (images, audio, video)? (We'll assume HTML-only to start, but keep the parsing/processing layer modular per MIME type.)</li>
+          <li>What protocols must it support — HTTP only, or also FTP and others? (We'll assume HTTP only initially, with the protocol module pluggable for later extension.)</li>
+          <li>What scale are we targeting, and over what time window? (We'll assume roughly 1 billion websites yielding an upper bound of 15 billion distinct pages, crawled within 4 weeks.)</li>
+          <li>How should the crawler handle robots.txt and politeness — is respecting the Robots Exclusion Protocol a hard requirement?</li>
+          <li>How often must already-crawled pages be refreshed — is there a freshness SLA for fast-changing content like news homepages, versus mostly-static reference pages?</li>
+          <li>Does this run on a single datacenter, or must it be distributed across multiple machines/regions from day one?</li>
+          <li>Do we need near-real-time crawling for a subset of "hot" URLs, or is a multi-week batch-style crawl acceptable for the whole corpus?</li>
+          <li>Is strict avoidance of duplicate content (mirrors, syndicated articles) required, or is some redundant storage acceptable?</li>
+          <li>Do we need to defend against crawler traps and adversarial content (infinite URL generators, spam)?</li>
+          <li>Is there a requirement to expose crawl results (raw HTML, extracted text, a search index) to a downstream consumer, or does this system's scope end at durable storage?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't wait for every answer before moving on — state a reasonable assumption out loud ("I'll assume HTML-only over HTTP, ~15 billion pages in 4 weeks, and that we must honor robots.txt") and keep going. Interviewers are grading whether you can scope a genuinely open-ended problem, not whether you guessed their exact numbers.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Given a set of seed URLs, systematically discover and download reachable pages across the Web.</li>
+          <li>Extract outbound links from each downloaded page and feed newly-discovered URLs back into the crawl.</li>
+          <li>Respect the Robots Exclusion Protocol (robots.txt) for every host before downloading any real content from it.</li>
+          <li>Avoid downloading/processing the same document more than once (document dedupe), and avoid re-enqueuing a URL already seen (URL dedupe).</li>
+          <li>Store downloaded documents and their metadata durably so downstream systems (indexing, search) can consume them.</li>
+          <li>(Extended) Recrawl previously-downloaded pages on a freshness/priority-driven schedule.</li>
+          <li>(Extended) Support path-ascending crawling to discover isolated resources that have no inbound link.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Scalability:</strong> the service must scale horizontally to fetch hundreds of millions to tens of billions of documents — no single server can carry this workload.</li>
+          <li><strong>Extensibility:</strong> new media types and new network protocols must be addable as modular units, without redesigning the frontier, dedupe, or storage layers.</li>
+          <li><strong>Politeness:</strong> the crawler must never overload a single host, and must never have more than one open connection to a given host at a time.</li>
+          <li><strong>Throughput:</strong> must sustain the fetch rate implied by the corpus size and time budget (see Capacity Estimation below).</li>
+          <li><strong>Fault tolerance:</strong> a multi-week crawl must survive individual server failures without losing meaningful progress.</li>
+          <li><strong>Robustness against traps:</strong> must not get stuck indefinitely on crawler traps or adversarially-generated infinite URL spaces.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We go deep on the frontier, fetch, dedupe, partitioning, and fault-tolerance core — the parts that make this problem hard. We explicitly call out, but don't build, the internals of a full-text search index/ranking system, an ML-based content or spam classifier, or a headless browser's JavaScript execution engine, since each is a substantial sub-system in its own right.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>All figures below use the standard assumption for this class of problem: an upper bound of 15 billion distinct pages, reached from roughly 1 billion websites, crawled within a 4-week window.</p>
+
+        <h3>Crawl-Rate Estimate</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Target: crawl 15 billion pages within 4 weeks
+          <br>Seconds available = 4 weeks &times; 7 days &times; 86,400 sec/day &asymp; 2,419,200 sec
+          <br>Pages / second = 15,000,000,000 &divide; 2,419,200 &asymp; 6,200 pages/sec
+        </div>
+
+        <h3>Storage Estimate</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Average page size &asymp; 100 KB (HTML text only) + 500 bytes of metadata per page
+          <br>Raw storage = 15,000,000,000 &times; (100 KB + 500 bytes) &asymp; 1.5 petabytes
+          <br>Applying a 70% capacity model (never run a storage system above 70% full): 1.5 PB &divide; 0.7 &asymp; 2.14 petabytes
+        </div>
+
+        <h3>Checksum Store Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Document-checksum store (content dedupe)</span>
+          15,000,000,000 documents &times; 8 bytes (64-bit checksum) &asymp; 120 GB
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">URL-checksum store (URL dedupe)</span>
+          15,000,000,000 URLs &times; 4 bytes (32-bit checksum) &asymp; 60 GB
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Target corpus</td><td>15 billion pages (&asymp;1 billion websites) in 4 weeks</td></tr>
+          <tr><td>Fetch rate</td><td>&asymp;6,200 pages/sec sustained</td></tr>
+          <tr><td>Raw page + metadata storage</td><td>&asymp;1.5 petabytes</td></tr>
+          <tr><td>Storage w/ 70% capacity headroom</td><td>&asymp;2.14 petabytes</td></tr>
+          <tr><td>Document-checksum store (dedupe)</td><td>&asymp;120 GB (15B &times; 8 bytes)</td></tr>
+          <tr><td>URL-checksum store (dedupe)</td><td>&asymp;60 GB (15B &times; 4 bytes)</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>A web crawler doesn't expose a public request/response API to end users the way a consumer-facing service does — its real "interface" is the contract every worker thread follows on each iteration of its crawl loop. Getting that contract right (and keeping each step modular/extensible) is the actual API design problem here.</p>
+        <pre><code>WORKER THREAD LOOP (runs continuously on each of N worker threads):
+
+loop:
+  url = URLFrontier.dequeue()            // pick next URL, respecting priority + politeness
+  if url is null: sleep(); continue
+
+  host = canonicalHost(url)
+  ip    = DNSResolver.resolve(host)       // cached — see Deep Dive: Fetching, DNS, Rendering
+
+  if not RobotsCache.isAllowed(host, url):
+      continue                            // Robots Exclusion Protocol check, cached per host
+
+  conn = ProtocolModule.connect(ip, url)   // HTTP today; pluggable per URL scheme
+  dis  = conn.downloadInto(DocumentInputStream)  // <64KB in memory, else backing file
+
+  if DocumentDedupe.isDuplicate(checksum64(dis)):  // ~120 GB checksum store
+      continue                                      // seen this content before under a different URL
+
+  Datastore.store(url, dis, metadata)
+  extractedLinks = Extractor.parse(dis)   // MIME-specific processing module (HTML today)
+
+  for link in extractedLinks:
+      absUrl = normalize(link, baseUrl=url)
+      if not UrlFilter.allowed(absUrl):
+          continue                         // domain / prefix / protocol blacklist
+      if UrlDedupe.seen(checksum32(absUrl)):  // ~60 GB checksum store / Bloom filter
+          continue
+      URLFrontier.enqueue(absUrl)
+
+  goto loop</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Walk the interviewer through this loop step by step — <strong>pick URL &rarr; DNS resolve &rarr; connect/download &rarr; parse &rarr; extract new URLs &rarr; dedupe &rarr; store</strong> — before drawing any boxes. Every subsequent deep dive in this design is really just "how do we make one step of this loop scale/behave correctly."
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+
+        <h3>URL Frontier — Persisted Fields</h3>
+        <table>
+          <tr><th colspan="2">Table: url_frontier_entry</th></tr>
+          <tr><td>url (PK)</td><td>varchar(2048)</td></tr>
+          <tr><td>canonical_host</td><td>varchar(255)</td></tr>
+          <tr><td>front_queue_id (1..F)</td><td>smallint</td></tr>
+          <tr><td>priority_score</td><td>float</td></tr>
+          <tr><td>back_queue_id (1..B)</td><td>smallint</td></tr>
+          <tr><td>next_allowed_fetch_time</td><td>datetime</td></tr>
+          <tr><td>last_crawled_at (nullable)</td><td>datetime</td></tr>
+          <tr><td>discovered_at</td><td>datetime</td></tr>
+          <tr><td>depth (for max-depth / trap limiting)</td><td>int</td></tr>
+        </table>
+
+        <h3>Document-Checksum Store (content dedupe)</h3>
+        <table>
+          <tr><th colspan="2">Table: document_checksum</th></tr>
+          <tr><td>checksum_64 (PK)</td><td>bigint (64-bit, MD5/SHA truncated)</td></tr>
+          <tr><td>canonical_url</td><td>varchar(2048)</td></tr>
+          <tr><td>first_seen_at</td><td>datetime</td></tr>
+        </table>
+        <p>&asymp;120 GB total for 15 billion documents (15B &times; 8 bytes) — small enough to fit in memory on a modern server, or shard with an LRU cache backed by persistent storage.</p>
+
+        <h3>URL-Checksum Store (URL dedupe)</h3>
+        <table>
+          <tr><th colspan="2">Table / Bloom filter: url_checksum</th></tr>
+          <tr><td>checksum_32 (PK / bit-vector membership)</td><td>int (32-bit)</td></tr>
+          <tr><td>in_frontier_or_downloaded</td><td>boolean</td></tr>
+        </table>
+        <p>&asymp;60 GB total for 15 billion URLs (15B &times; 4 bytes). A Bloom filter over this same keyspace trades a small, tunable false-positive rate for large memory savings — see "Deep Dive — Politeness, Duplicate Detection, and URL Filtering" for the specific trade-off this introduces.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>A bare-minimum crawler needs at least these components: a <strong>URL Frontier</strong> to hold and prioritize what to crawl next, an <strong>HTTP Fetcher</strong> to retrieve pages, an <strong>Extractor</strong> to pull links out of downloaded documents, a <strong>Duplicate Eliminator</strong> so the same content isn't processed twice, and a <strong>Datastore</strong> to durably hold what's been downloaded. Figure 1 wires these together into two cooperating loops: a <strong>crawl-management loop</strong> (which URL do we work on next?) and a <strong>fetch-execution loop</strong> (actually go get it), decoupled by a Response Queue so a slow parse never blocks a fast fetch.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-wc-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-wc-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-wc-1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="20" width="120" height="42" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="80" y="46" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Seed URLs</text>
+
+            <rect x="220" y="14" width="240" height="54" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="340" y="46" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">URL Frontier</text>
+
+            <rect x="760" y="20" width="150" height="48" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="835" y="40" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">DNS Resolver</text>
+            <text x="835" y="55" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(cached)</text>
+
+            <rect x="20" y="160" width="160" height="66" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="100" y="188" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">URL Loader</text>
+            <text x="100" y="205" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">"is crawled?"</text>
+
+            <rect x="220" y="160" width="150" height="66" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="295" y="198" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">URL Filter</text>
+
+            <rect x="410" y="130" width="150" height="54" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="485" y="162" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">URL Extractor</text>
+
+            <rect x="410" y="220" width="150" height="54" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="485" y="252" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Duplicate Detection</text>
+
+            <rect x="600" y="160" width="130" height="42" rx="21" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="665" y="186" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Response Queue</text>
+
+            <rect x="786" y="166" width="130" height="80" rx="8" fill="var(--color-primary-light)" stroke="var(--color-primary-dark)" stroke-width="1.3"></rect>
+            <rect x="778" y="158" width="130" height="80" rx="8" fill="var(--color-primary-light)" stroke="var(--color-primary-dark)" stroke-width="1.3"></rect>
+            <rect x="770" y="150" width="130" height="80" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="835" y="185" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Fetcher +</text>
+            <text x="835" y="200" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Renderer</text>
+            <text x="835" y="216" text-anchor="middle" fill="#cbd8ef" font-size="8">(worker thread pool)</text>
+
+            <rect x="770" y="270" width="150" height="48" rx="24" fill="none" stroke="var(--color-text-muted)" stroke-width="1.4" stroke-dasharray="5,3"></rect>
+            <text x="845" y="299" text-anchor="middle" fill="var(--color-text-muted)" font-size="11" font-weight="600">Internet</text>
+
+            <rect x="600" y="340" width="120" height="50" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="660" y="370" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">Redis</text>
+
+            <rect x="770" y="340" width="150" height="50" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="845" y="370" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">Storage</text>
+
+            <line x1="140" y1="41" x2="218" y2="41" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-wc-1)"></line>
+            <path d="M100,160 C104,108 150,86 218,62" fill="none" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-wc-1)"></path>
+            <path d="M460,50 C610,50 690,95 768,168" fill="none" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-wc-1)"></path>
+            <text x="640" y="80" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-style="italic">URL</text>
+            <line x1="220" y1="193" x2="182" y2="193" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wc-1)"></line>
+            <line x1="410" y1="160" x2="372" y2="182" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wc-1)"></line>
+
+            <line x1="630" y1="163" x2="562" y2="158" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-wc-1m)"></line>
+            <line x1="630" y1="200" x2="562" y2="235" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-wc-1m)"></line>
+            <line x1="770" y1="200" x2="732" y2="182" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-wc-1m)"></line>
+
+            <line x1="835" y1="150" x2="835" y2="70" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-wc-1b)" marker-start="url(#arrow-wc-1b)"></line>
+            <line x1="845" y1="230" x2="845" y2="268" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-wc-1b)" marker-start="url(#arrow-wc-1b)"></line>
+            <line x1="790" y1="230" x2="670" y2="338" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-wc-1b)"></line>
+            <line x1="845" y1="230" x2="845" y2="338" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-wc-1b)"></line>
+
+            <line x1="490" y1="184" x2="640" y2="340" stroke="var(--color-accent-dark)" stroke-width="1.1" stroke-dasharray="3,3" marker-end="url(#arrow-wc-1b)"></line>
+            <text x="610" y="270" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">mark seen</text>
+            <line x1="620" y1="345" x2="555" y2="258" stroke="var(--color-accent-dark)" stroke-width="1.1" stroke-dasharray="3,3" marker-end="url(#arrow-wc-1b)"></line>
+            <text x="545" y="300" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">checksum lookup</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level design — the crawl-management loop (Seed URLs &rarr; URL Frontier &rarr; URL Loader &rarr; URL Filter &rarr; URL Extractor &rarr; back to URL Frontier) runs alongside the fetch-execution loop (Fetcher + Renderer pool &harr; DNS Resolver &harr; Internet, writing to Redis and Storage), decoupled by a Response Queue that fans out to the URL Extractor and Duplicate Detection.</div>
+        </div>
+
+        <h3>Component Walkthrough</h3>
+        <table>
+          <tr><th>Component</th><th>Responsibility</th></tr>
+          <tr><td>URL Frontier</td><td>Holds all not-yet-downloaded URLs and decides fetch order (priority + politeness); seeded initially from a fixed Seed URL list.</td></tr>
+          <tr><td>URL Loader</td><td>Pulls the next candidate URL from the Frontier and checks "is crawled?" against the crawled-state store (Redis) before letting it proceed further.</td></tr>
+          <tr><td>URL Filter</td><td>Applies user-supplied domain/prefix/protocol blacklist rules before a freshly-extracted URL is allowed back into the Frontier.</td></tr>
+          <tr><td>URL Extractor</td><td>Parses a fetched document (from the Response Queue) for outbound links, converts them to absolute URLs, and routes them through URL Filter back into the Frontier.</td></tr>
+          <tr><td>Duplicate Detection</td><td>Consumes the same Response Queue as the Extractor and runs the 64-bit content-checksum dedupe test, so identical documents (mirrors, syndicated content) are processed only once.</td></tr>
+          <tr><td>Response Queue</td><td>Decouples the Fetcher + Renderer pool (producer) from the Extractor and Duplicate Detection (consumers), so a slow parse never blocks a fast fetch.</td></tr>
+          <tr><td>Fetcher + Renderer (worker thread pool)</td><td>Resolves DNS, opens the connection, downloads (and, for JS-heavy pages, renders) the document, then pushes the raw response onto the Response Queue and durably records it in Redis + Storage.</td></tr>
+          <tr><td>DNS Resolver</td><td>Local caching resolver in front of the fetch path — see Deep Dive: Fetching, DNS Resolution, and Rendering for why this is a major bottleneck if left uncached.</td></tr>
+          <tr><td>Redis</td><td>Fast "is this URL/host already crawled or in-flight" lookups and per-host politeness bookkeeping.</td></tr>
+          <tr><td>Storage (Datastore)</td><td>Durable landing zone for downloaded documents and their metadata — the &asymp;2.14 PB store sized in Capacity Estimation above.</td></tr>
+        </table>
+
+        <h2 id="low-level-design-mercator-style-url-frontier-internals-priority-politeness">Low-Level Design — Mercator-Style URL Frontier Internals (Priority + Politeness)</h2>
+        <p>The URL Frontier from the High-Level Design isn't a single FIFO queue — at this scale it must satisfy two independent, sometimes-competing goals simultaneously: <strong>crawl the most important/freshest URLs first</strong> (priority), and <strong>never send back-to-back requests to the same host</strong> (politeness). The Mercator crawler's classic answer, adopted by essentially every production crawler since, is to split the frontier into two queue tiers connected by a router and a heap-based selector.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 1200 540" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-wc-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-wc-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-wc-2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <text x="95" y="45" text-anchor="middle" fill="var(--color-primary)" font-size="13" font-weight="700">Front queues</text>
+            <text x="650" y="45" text-anchor="middle" fill="var(--color-primary)" font-size="13" font-weight="700">Back queues</text>
+
+            <rect x="20" y="120" width="110" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="75" y="160" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Prioritizer</text>
+
+            <rect x="170" y="75" width="170" height="32" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="150" y="96" text-anchor="end" fill="var(--color-primary)" font-size="11" font-weight="700">1</text>
+            <rect x="170" y="125" width="170" height="32" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="150" y="146" text-anchor="end" fill="var(--color-primary)" font-size="11" font-weight="700">2</text>
+            <text x="255" y="180" text-anchor="middle" fill="var(--color-text-muted)" font-size="18">&#8942;</text>
+            <rect x="170" y="205" width="170" height="32" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="150" y="226" text-anchor="end" fill="var(--color-primary)" font-size="11" font-weight="700">F</text>
+
+            <text x="20" y="242" fill="var(--color-text-muted)" font-size="9" font-style="italic">Priority /</text>
+            <text x="20" y="255" fill="var(--color-text-muted)" font-size="9" font-style="italic">Recrawl /</text>
+            <text x="20" y="268" fill="var(--color-text-muted)" font-size="9" font-style="italic">Freshness</text>
+            <line x1="55" y1="232" x2="140" y2="195" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="3,3" marker-end="url(#arrow-wc-2m)"></line>
+
+            <rect x="420" y="125" width="140" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="490" y="153" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Back queue</text>
+            <text x="490" y="169" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Router</text>
+
+            <rect x="600" y="55" width="170" height="32" rx="16" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="790" y="76" text-anchor="start" fill="#6b4a10" font-size="11" font-weight="700">1</text>
+            <rect x="600" y="100" width="170" height="32" rx="16" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="790" y="121" text-anchor="start" fill="#6b4a10" font-size="11" font-weight="700">2</text>
+            <text x="685" y="150" text-anchor="middle" fill="var(--color-text-muted)" font-size="18">&#8942;</text>
+            <rect x="600" y="185" width="170" height="32" rx="16" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="790" y="206" text-anchor="start" fill="#6b4a10" font-size="11" font-weight="700">B-1</text>
+            <rect x="600" y="230" width="170" height="32" rx="16" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="790" y="251" text-anchor="start" fill="#6b4a10" font-size="11" font-weight="700">B</text>
+
+            <rect x="830" y="125" width="150" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="905" y="153" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Back queue</text>
+            <text x="905" y="169" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Selector</text>
+            <text x="905" y="212" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">(non-empty queue per host,</text>
+            <text x="905" y="224" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">queue per thread)</text>
+
+            <path d="M905,20 L955,95 L855,95 Z" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></path>
+            <text x="905" y="70" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Heap</text>
+            <text x="905" y="85" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">1..B</text>
+            <line x1="905" y1="125" x2="905" y2="98" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-wc-2b)" marker-start="url(#arrow-wc-2b)"></line>
+
+            <rect x="1026" y="141" width="120" height="70" rx="8" fill="var(--color-primary-light)" stroke="var(--color-primary-dark)" stroke-width="1.3"></rect>
+            <rect x="1018" y="133" width="120" height="70" rx="8" fill="var(--color-primary-light)" stroke="var(--color-primary-dark)" stroke-width="1.3"></rect>
+            <rect x="1010" y="125" width="120" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="1070" y="155" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">Fetcher +</text>
+            <text x="1070" y="170" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">Renderer</text>
+            <text x="1070" y="185" text-anchor="middle" fill="#cbd8ef" font-size="8">Threads</text>
+            <line x1="980" y1="170" x2="1008" y2="170" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wc-2)" marker-start="url(#arrow-wc-2)"></line>
+
+            <line x1="130" y1="150" x2="168" y2="93" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+            <line x1="130" y1="158" x2="168" y2="143" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+            <line x1="130" y1="166" x2="168" y2="223" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+
+            <line x1="340" y1="91" x2="418" y2="140" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+            <line x1="340" y1="141" x2="418" y2="155" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+            <line x1="340" y1="221" x2="418" y2="175" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+
+            <line x1="560" y1="145" x2="598" y2="71" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+            <line x1="560" y1="155" x2="598" y2="116" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+            <line x1="560" y1="170" x2="598" y2="201" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+            <line x1="560" y1="180" x2="598" y2="246" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+
+            <line x1="770" y1="71" x2="828" y2="140" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+            <line x1="770" y1="116" x2="828" y2="150" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+            <line x1="770" y1="201" x2="828" y2="170" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+            <line x1="770" y1="246" x2="828" y2="180" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wc-2)"></line>
+
+            <rect x="170" y="400" width="280" height="30" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.2"></rect>
+            <text x="255" y="420" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">HOST</text>
+            <text x="395" y="420" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">Back Queue ID</text>
+            <rect x="170" y="430" width="280" height="32" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1"></rect>
+            <text x="255" y="451" text-anchor="middle" fill="var(--color-text)" font-size="10">Digit.com</text>
+            <text x="395" y="451" text-anchor="middle" fill="var(--color-text)" font-size="10">5</text>
+            <rect x="170" y="462" width="280" height="32" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1"></rect>
+            <text x="255" y="483" text-anchor="middle" fill="var(--color-text)" font-size="10">Techcrunch.com</text>
+            <text x="395" y="483" text-anchor="middle" fill="var(--color-text)" font-size="10">1</text>
+            <line x1="350" y1="400" x2="350" y2="494" stroke="var(--color-border)" stroke-width="1"></line>
+          </svg>
+          <div class="diagram-caption">Figure 2. Mercator-style URL Frontier internals — a Prioritizer assigns each URL to one of F front queues (priority/recrawl/freshness tier); a Back Queue Router drains the front queues and routes each URL into one of B back queues, keyed by host; a Back Queue Selector pulls the next-ready back queue via a min-heap keyed by next-allowed-fetch-time and hands it to the Fetcher + Renderer thread pool.</div>
+        </div>
+
+        <h3>Host &rarr; Back Queue Mapping (example)</h3>
+        <table>
+          <tr><th>Host</th><th>Back Queue ID</th></tr>
+          <tr><td>Digit.com</td><td>5</td></tr>
+          <tr><td>Techcrunch.com</td><td>1</td></tr>
+          <tr><td>&hellip;</td><td>&hellip;</td></tr>
+        </table>
+        <p>Every URL for a given host always routes to the same back queue, which is exactly what makes "one queue per host, one thread per queue" a structural guarantee rather than a policy someone could forget to enforce.</p>
+
+        <h2 id="deep-dive-url-frontier-internals-prioritizer-front-queues-and-back-queues">Deep Dive — URL Frontier Internals: Prioritizer, Front Queues, and Back Queues</h2>
+        <p>Figure 2 solves two orthogonal problems with two separate queue tiers — collapsing them into a single queue would break one or the other.</p>
+
+        <h3>Front Queues — Priority, Recrawl Cadence, and Freshness</h3>
+        <p>The Prioritizer looks at signals like a page's importance, how often it has historically changed, and how "fresh" its content category needs to be (a news homepage vs. a static reference page), and assigns each URL to one of <em>F</em> front queues. Front queue 1 might hold "recrawl within the hour" URLs; front queue <em>F</em> might hold "recrawl within a month" URLs. This tier answers exactly one question — <em>of everything we could crawl next, what matters most right now?</em> — and says nothing about which host a URL belongs to.</p>
+
+        <h3>Back Queues — One Queue, One Host, One Thread</h3>
+        <p>The Back Queue Router pulls URLs out of the front queues (biased toward higher-priority ones, but not exclusively — a pure priority order would starve low-priority queues forever) and routes each URL into exactly one of <em>B</em> back queues, keyed by canonical hostname. This is the politeness mechanism: because every URL for a given host always lands in the same back queue, and each back queue is drained by exactly one worker thread, it is structurally impossible for two threads to hit the same host concurrently — the invariant holds by construction, not by a runtime check that could be missed under load.</p>
+
+        <h3>Why a Min-Heap Instead of Round Robin?</h3>
+        <p>A naive round robin over the <em>B</em> back queues would frequently select a queue whose host was fetched moments ago, violating the minimum inter-request delay for that host. Instead, the Back Queue Selector maintains a min-heap of size <em>B</em>, keyed by each queue's <code>next_allowed_fetch_time</code>. Popping the heap's minimum always yields the queue that has waited longest since its last fetch (and is past its politeness delay); after a fetch, that queue's next-allowed time is recomputed and pushed back onto the heap. This gives O(log B) selection while guaranteeing every host-level delay is honored — a guarantee round robin cannot make once queue occupancy becomes uneven.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If asked "why not skip the front-queue tier and just have one queue per host?" — because priority and politeness are genuinely different axes. Without front queues, a flood of low-priority URLs from one prolific host could crowd out high-priority URLs from a host that only just became reachable. The two-tier design lets you reason about "what to crawl next" and "how not to overload a host" independently.
+        </div>
+
+        <h2 id="deep-dive-fetching-dns-resolution-and-rendering">Deep Dive — Fetching, DNS Resolution, and Rendering</h2>
+        <p>Once a URL is selected, the worker thread hands it to a protocol-specific fetcher module, which resolves the host, opens a connection, and streams the response into a reusable, per-thread abstraction called a Document Input Stream (DIS) — so every downstream processing module can re-read the same content without triggering a second download.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 1020 380" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-wc-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-wc-3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-wc-3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="150" width="140" height="50" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="90" y="180" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Worker Thread</text>
+
+            <rect x="200" y="145" width="180" height="62" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="290" y="170" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">HTTP Protocol Module</text>
+            <text x="290" y="185" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">robots.txt cache (per host)</text>
+
+            <rect x="210" y="35" width="160" height="54" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="290" y="57" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">DNS Resolver</text>
+            <text x="290" y="72" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">resolver cache</text>
+
+            <rect x="430" y="150" width="150" height="50" rx="24" fill="none" stroke="var(--color-text-muted)" stroke-width="1.4" stroke-dasharray="5,3"></rect>
+            <text x="505" y="179" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-weight="600">Target Host (Internet)</text>
+
+            <rect x="630" y="135" width="180" height="72" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="720" y="163" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Document Input</text>
+            <text x="720" y="178" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Stream (DIS)</text>
+            <text x="720" y="193" text-anchor="middle" fill="#cbd8ef" font-size="8">per-thread, reusable</text>
+
+            <rect x="630" y="235" width="180" height="42" rx="7" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="720" y="260" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">&lt; 64 KB &rarr; in-memory</text>
+
+            <rect x="630" y="287" width="180" height="42" rx="7" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="720" y="312" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">&#8805; 64 KB &rarr; backing file</text>
+
+            <rect x="870" y="100" width="140" height="42" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="940" y="125" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">HTML Processor</text>
+
+            <rect x="870" y="152" width="140" height="42" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="940" y="177" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Image Processor</text>
+
+            <rect x="870" y="204" width="140" height="42" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="940" y="229" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Other MIME Module</text>
+
+            <line x1="160" y1="176" x2="198" y2="176" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wc-3)"></line>
+            <line x1="290" y1="145" x2="290" y2="91" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-wc-3b)" marker-start="url(#arrow-wc-3b)"></line>
+            <line x1="380" y1="176" x2="428" y2="176" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wc-3)"></line>
+            <line x1="580" y1="176" x2="628" y2="172" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wc-3)"></line>
+            <text x="605" y="163" text-anchor="middle" fill="var(--color-primary)" font-size="8" font-style="italic">download</text>
+
+            <line x1="680" y1="207" x2="680" y2="233" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-wc-3m)"></line>
+            <line x1="760" y1="207" x2="760" y2="285" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-wc-3m)"></line>
+
+            <line x1="810" y1="150" x2="868" y2="121" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="3,3" marker-end="url(#arrow-wc-3m)"></line>
+            <line x1="810" y1="170" x2="868" y2="173" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="3,3" marker-end="url(#arrow-wc-3m)"></line>
+            <line x1="810" y1="190" x2="868" y2="225" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="3,3" marker-end="url(#arrow-wc-3m)"></line>
+            <text x="840" y="255" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">re-read, no re-download</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Fetch pipeline — the protocol module checks a per-host robots.txt cache and a cached DNS resolver before downloading into a per-thread Document Input Stream; documents under 64 KB stay in memory, larger ones spill to a backing file, and every MIME-specific processing module re-reads the same DIS instead of re-downloading.</div>
+        </div>
+
+        <h3>HTTP Fetcher Module and robots.txt Caching</h3>
+        <p>Courteous crawlers fetch a host's robots.txt before downloading anything else from it. Re-fetching that file on every single request would double the request volume against every host for no benefit, so the HTTP protocol module keeps a fixed-size cache mapping hostnames to their parsed robots exclusion rules.</p>
+
+        <h3>DNS Resolution — Cache It, or It Becomes the Bottleneck</h3>
+        <p>At roughly 6,200 pages/sec sustained, an uncached DNS lookup on every fetch would saturate any resolver long before the fetch layer itself became the limiting factor (see Bottlenecks below). A local caching DNS server converts the overwhelming majority of lookups — anything for a host already seen this crawl — into an in-memory hit instead of a network round trip.</p>
+
+        <h3>Document Input Stream (DIS) — Download Once, Read Many Times</h3>
+        <p>Because the same downloaded document may need to be processed by several different modules (link extraction, MIME-specific processing, dedupe checksumming), the crawler wraps every download in a Document Input Stream: documents 64 KB or smaller are cached entirely in memory, while larger documents are temporarily written to a backing file. Each worker thread reuses one DIS instance across documents, so every processing module can re-read the same content without ever triggering a second network fetch.</p>
+
+        <h2 id="deep-dive-politeness-duplicate-detection-and-url-filtering">Deep Dive — Politeness, Duplicate Detection, and URL Filtering</h2>
+
+        <h3>Politeness Is Structural, Not a Runtime Check</h3>
+        <p>Per-host politeness isn't enforced by a rate-limiter bolted on afterward — it falls directly out of the back-queue-per-host design (Figure 2): since exactly one back queue holds a given host's URLs and exactly one thread drains that queue, only one connection to that host can ever be open at a time, and the min-heap selector enforces the minimum delay between requests.</p>
+
+        <h3>Document Dedupe — 64-bit Checksum Against a ~120 GB Store</h3>
+        <p>Many documents are reachable under multiple different URLs, or mirrored across servers — without a check, a crawler will download the same content repeatedly. After download, the crawler computes a 64-bit checksum (MD5/SHA, truncated) of the document and compares it against a store of all previously-seen checksums (&asymp;120 GB for 15 billion documents). A hit means "discard, we've already stored this content under a different URL."</p>
+
+        <h3>URL Dedupe — Bloom Filter Over a ~60 GB Checksum Space</h3>
+        <p>Before a newly-extracted URL is even allowed back into the Frontier, it's checked against a store of all previously-seen URL checksums (&asymp;60 GB for 15 billion URLs, 4 bytes each). To avoid the cost of a full lookup on every single extracted link, this set is commonly implemented as a Bloom filter — a compact, probabilistic membership structure where a "no" answer is 100% certain, but a "yes" answer only means "probably present."</p>
+        <div class="callout">
+          <div class="callout-title">The Bloom filter trade-off is not what you'd expect</div>
+          A false positive on the URL-seen Bloom filter does <strong>not</strong> mean a duplicate slips through and gets crawled twice. It means the opposite: a brand-new, never-before-seen URL gets incorrectly classified as "already seen," is silently dropped, and is <strong>never added to the Frontier at all</strong> — the crawler simply never learns that page exists. The mitigation is a larger bit vector (lower false-positive rate), not a secondary duplicate check.
+        </div>
+
+        <h3>URL Filtering</h3>
+        <p>Before a URL is enqueued, it also passes through a user-supplied URL filter that restricts crawling by domain, path prefix, or protocol — the mechanism used to blacklist entire sites the crawler should ignore (spam farms, known crawler traps, disallowed domains).</p>
+
+        <h2 id="deep-dive-distributed-crawling-consistent-hashing-and-crawler-traps">Deep Dive — Distributed Crawling, Consistent Hashing, and Crawler Traps</h2>
+
+        <h3>Consistent Hashing Across Crawl Servers</h3>
+        <p>URLs are distributed across crawl servers by hashing the canonical hostname, so that every URL for a given host is handled by the same server (which is also what lets that server co-locate the host's frontier entries with its checksum-store shard — see Data Partitioning below). Using a plain modulo hash would mean that adding or removing even one server reshuffles almost every host's assignment. Consistent hashing avoids that: servers are placed on a hash ring, and only the range owned by the failing/joining server needs to move.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-wc-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <text x="320" y="30" text-anchor="middle" fill="var(--color-primary)" font-size="13" font-weight="700">Consistent Hashing Ring — Crawl Servers</text>
+
+            <circle cx="320" cy="320" r="220" fill="none" stroke="var(--color-border)" stroke-width="2"></circle>
+
+            <circle cx="320" cy="100" r="20" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></circle>
+            <text x="320" y="105" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">S1</text>
+
+            <circle cx="529" cy="252" r="20" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></circle>
+            <text x="529" y="257" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">S2</text>
+
+            <circle cx="449" cy="498" r="20" fill="var(--color-bg)" stroke="var(--color-text-muted)" stroke-width="1.6" stroke-dasharray="4,3"></circle>
+            <text x="449" y="503" text-anchor="middle" fill="var(--color-text-muted)" font-size="11" font-weight="700">S3</text>
+            <text x="449" y="540" text-anchor="middle" fill="var(--color-accent-dark)" font-size="10" font-weight="700">DOWN</text>
+
+            <circle cx="191" cy="498" r="20" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></circle>
+            <text x="191" y="503" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">S4</text>
+
+            <circle cx="111" cy="252" r="20" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></circle>
+            <text x="111" y="257" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">S5</text>
+
+            <circle cx="540" cy="320" r="5" fill="var(--color-accent-dark)"></circle>
+            <circle cx="529" cy="388" r="5" fill="var(--color-accent-dark)"></circle>
+            <circle cx="498" cy="449" r="5" fill="var(--color-accent-dark)"></circle>
+            <text x="600" y="410" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">hostnames hashed</text>
+            <text x="600" y="422" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">to this arc</text>
+
+            <path d="M520,410 C420,470 320,510 213,505" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.6" stroke-dasharray="6,4" marker-end="url(#arrow-wc-4)"></path>
+            <text x="360" y="470" text-anchor="middle" fill="var(--color-accent-dark)" font-size="9" font-weight="600">reassigned to next server clockwise</text>
+
+            <text x="320" y="325" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">Only S3's arc moves —</text>
+            <text x="320" y="338" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">S1, S2, S5 unaffected</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Consistent hashing across crawl servers — hostnames hash to points on the ring and are owned by the next server clockwise. When S3 fails, only the hostnames between S2 and S3 (its arc) reassign to S4; every other server's assignment is untouched.</div>
+        </div>
+
+        <h3>Checkpointing for Restart-Ability</h3>
+        <p>Every crawl server performs regular checkpointing of its FIFO frontier queues to disk, and periodically dumps a snapshot of everything it holds to a remote server. If a server dies, consistent hashing shifts its load elsewhere, and a replacement can rebuild from the last snapshot rather than needing to re-derive the entire crawl state from scratch.</p>
+
+        <h3>Crawler Traps</h3>
+        <p>A crawler trap is a URL or set of URLs that causes a crawler to crawl indefinitely. Some are unintentional — a symbolic link within a file system can create a cycle that looks like an endless chain of new pages. Others are introduced deliberately: dynamically-generated infinite webs of documents, sometimes built as anti-spam traps to catch email-harvesting bots, and sometimes built purely to consume search-engine crawler budget and boost a site's perceived ranking. Mitigate with hard limits: max crawl depth per host, and a cap on total pages fetched per host, both tracked via the <code>depth</code> field on each frontier entry.</p>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <p>The crawler deals with three kinds of data: (1) URLs still to visit, (2) URL checksums for dedupe, and (3) document checksums for dedupe. Since URLs are already distributed by hostname (Deep Dive: Distributed Crawling above), all three data sets for a given host are stored together on the same shard — a host's pending URLs, its URL checksums, and its document checksums never need a cross-shard lookup. When consistent hashing redistributes load after a node failure or addition, all three co-located data sets move together as a unit.</p>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <p>Each crawl server checkpoints periodically and dumps a snapshot of all the data it holds to a remote server. If a server goes down, a replacement is brought up and rebuilds its state from the last snapshot rather than from an empty start, while consistent hashing shifts new load away from the failed node in the meantime. This bounds the "blast radius" of any single failure to whatever changed since the last checkpoint, not the entire multi-week crawl.</p>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <ul>
+          <li><strong>Path-ascending crawling:</strong> helps discover isolated resources that have no inbound link. Given a seed URL like <code>http://foo.com/a/b/page.html</code>, the crawler additionally attempts to crawl <code>/a/b/</code>, <code>/a/</code>, and <code>/</code>.</li>
+          <li><strong>BFS by default, DFS within a host as an optimization:</strong> breadth-first search is the default traversal strategy, but once a connection to a given host is already open, the crawler may DFS the remaining URLs on that host to avoid the handshake overhead of reopening the connection repeatedly.</li>
+          <li><strong>Extensible MIME-type processing modules:</strong> the Extractor invokes the processing module registered for a document's MIME type; adding a new media type (image, video, audio) later means registering a new module, not redesigning the pipeline.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Robots Exclusion Protocol compliance</strong> is the primary "permission" mechanism on the Web — a courteous crawler always fetches and honors a host's robots.txt before downloading any real content, and caches the parsed rules per host.</li>
+          <li><strong>Rate limiting per host</strong> (enforced structurally via the back-queue-per-host + min-heap design) avoids the crawler being mistaken for — or effectively behaving like — a distributed denial-of-service attack against any single host.</li>
+          <li><strong>User-supplied URL filter blacklists</strong> let operators exclude entire domains, path prefixes, or protocols from being crawled at all.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Distribute crawl servers via the same consistent-hashing ring used for host assignment (Figure 4), so adding or removing capacity only reshuffles a bounded slice of hosts. Within a single crawl server, distribute worker threads evenly across its assigned back queues, so no one thread becomes a bottleneck while others sit idle waiting on their heap turn.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <p>Run regional crawl clusters physically closer to their target hosts to cut fetch latency (a crawl server in the same region as the hosts it's fetching sees materially lower round-trip time than one crawling cross-continent). Share or asynchronously replicate the URL-seen and document-checksum indexes across regions so two regions never redundantly crawl and store the same content, while accepting a short propagation delay as a reasonable trade-off given the corpus is already only refreshed on a multi-week cadence.</p>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Crawl rate vs. target:</strong> track pages fetched/sec against the &asymp;6,200 pages/sec target derived in Capacity Estimation, and alarm on sustained deviation.</li>
+          <li><strong>Per-host politeness-violation alarms:</strong> detect any host receiving requests faster than its configured minimum delay — a sign the back-queue invariant has been broken somewhere.</li>
+          <li><strong>Frontier queue depth:</strong> monitor per front-queue and per back-queue depth; a queue that only grows and never drains signals either a capacity shortfall or a trap.</li>
+          <li><strong>Storage growth rate vs. the 2.14 PB budget:</strong> track actual bytes stored/day against the capacity-estimation plan so the storage tier is provisioned ahead of, not behind, real growth.</li>
+          <li><strong>Crawler-trap detection heuristics:</strong> alert when a single host's crawl depth or page count blows past expected norms, which is exactly the trap-detection signal described above.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Uncached DNS resolution</td><td>Local caching DNS resolver in front of the fetch path (Deep Dive: Fetching, DNS Resolution, and Rendering)</td></tr>
+          <tr><td>Politeness violation from naive scheduling</td><td>Back-queue-per-host + min-heap keyed by next-allowed-fetch-time (Figure 2)</td></tr>
+          <tr><td>Crawler traps consuming fetch budget</td><td>Max-depth / max-pages-per-host limits, plus trap-detection heuristics (Monitoring)</td></tr>
+          <tr><td>Single crawl server failure mid-crawl</td><td>Consistent hashing reshuffles only the failed server's range (Figure 4); regular checkpointing to disk + remote snapshot</td></tr>
+          <tr><td>Bloom filter false positive</td><td>Size the bit vector generously per shard; understand the failure mode is "URL never crawled," not "duplicate slips through"</td></tr>
+          <tr><td>Storage growth outpacing capacity plan</td><td>Monitor growth rate against the 2.14 PB budget; compress, tier cold/rarely-revisited content</td></tr>
+          <tr><td>Large volume of the Web</td><td>Prioritization (front queues) so the crawler always works the most important backlog first, since it can only ever download a fraction of the Web at any instant</td></tr>
+          <tr><td>High rate of change on the Web</td><td>Freshness-aware recrawl scheduling (front-queue tiering) instead of a one-shot crawl</td></tr>
+        </table>
+
+        <h3>BFS vs. DFS Trade-Off</h3>
+        <p>Breadth-first search is the safer default: it spreads fetches across many hosts naturally, which plays well with politeness constraints and avoids getting stuck deep inside one site. Depth-first search within an already-connected host is a narrow, deliberate optimization — it saves reopening a connection/handshake for the next URL on the same host — but used as a global strategy it risks exactly the crawler-trap and single-host-monopolization failure modes described above.</p>
+        <p>Two properties of the Web itself are what make this whole problem hard, independent of any implementation choice: its <strong>large volume</strong> (the crawler can only ever download a fraction of it at any moment, so prioritization is mandatory, not optional) and its <strong>high rate of change</strong> (by the time the last page of a site is downloaded, an earlier page may have already changed — freshness is a moving target, not a one-time achievement).</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Target scale</td><td>15 billion pages / &asymp;1 billion sites in 4 weeks &asymp; 6,200 pages/sec</td></tr>
+          <tr><td>Storage</td><td>&asymp;2.14 PB (70% capacity headroom over 1.5 PB raw)</td></tr>
+          <tr><td>Traversal strategy</td><td>BFS by default; DFS within an already-connected host to save handshakes</td></tr>
+          <tr><td>Frontier design</td><td>Mercator-style: Prioritizer &rarr; F front queues &rarr; Back Queue Router &rarr; B back queues (one host per queue) &rarr; heap-based Back Queue Selector</td></tr>
+          <tr><td>Politeness</td><td>Structural — one back queue per host, one thread per queue, min-delay enforced via heap</td></tr>
+          <tr><td>Document dedupe</td><td>64-bit checksum store, &asymp;120 GB for 15B documents</td></tr>
+          <tr><td>URL dedupe</td><td>32-bit checksum / Bloom filter, &asymp;60 GB for 15B URLs</td></tr>
+          <tr><td>DNS</td><td>Local caching resolver — avoids the single biggest uncached bottleneck</td></tr>
+          <tr><td>Fetch caching</td><td>Document Input Stream (DIS) — &lt;64 KB in memory, larger to backing file, re-readable by every processing module</td></tr>
+          <tr><td>Partitioning</td><td>By hostname (co-locates a host's URLs + both checksum stores); consistent hashing across crawl servers</td></tr>
+          <tr><td>Fault tolerance</td><td>Regular FIFO-queue checkpointing to disk + remote snapshot dumps</td></tr>
+          <tr><td>Extensibility</td><td>Modular protocol modules (HTTP today, FTP later) and MIME-specific processing modules (HTML today, image/video later)</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Interviewers love pressure-testing one component at a time. Expect a real interview to pick 3&ndash;5 of these as "and then what?" follow-ups.</p>
+
+        <h3>Scaling and Performance</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you crawl 15 billion pages in 4 weeks without DNS resolution becoming the bottleneck?</div>
+          <div class="qa-a">Cache DNS lookups locally (Deep Dive: Fetching, DNS Resolution). At &asymp;6,200 pages/sec sustained, an uncached resolver would be overwhelmed long before the fetch layer itself became the limit — a local caching resolver turns repeated-host lookups into in-memory hits.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A single popular host has millions of pages queued — how do you avoid hammering it?</div>
+          <div class="qa-a">The back-queue-per-host design plus the min-heap keyed by next-allowed-fetch-time in the Back Queue Selector (Figure 2) — only one queue, and thus one connection, is ever active against that host at a time, with an enforced minimum delay between requests.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you reduce the &asymp;2.14 PB storage footprint?</div>
+          <div class="qa-a">Compress stored HTML (text typically compresses 5&ndash;10&times;), store only extracted structured data instead of raw bytes for some content types, and tier cold/rarely-revisited pages to cheaper storage classes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What would you change if the target grew from 15 billion to 150 billion pages?</div>
+          <div class="qa-a">Widen the partitioning (more crawl servers, larger F/B queue counts), and re-check whether 8-byte/4-byte checksums still give an acceptably low collision rate at 10&times; the corpus size before assuming the same schema scales unchanged.</div>
+        </div>
+
+        <h3>Correctness and Deduplication</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why use two separate checksum stores (document vs. URL) instead of one?</div>
+          <div class="qa-a">They answer different questions at different pipeline stages — document checksum dedupes by content after download (&asymp;120 GB), URL checksum dedupes by identity before ever downloading (&asymp;60 GB). Collapsing them would mean either re-downloading known duplicate content, or losing the ability to detect the same document living behind two different URLs.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What actually happens when the URL-seen Bloom filter produces a false positive?</div>
+          <div class="qa-a">Not a duplicate slipping through — the opposite. A brand-new URL gets misclassified as "already seen" and is silently never added to the Frontier, so that page is simply never crawled. The fix is a larger bit vector, not a secondary dedupe pass.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you dedupe near-identical pages (same article, different ad slots) that don't share an exact checksum?</div>
+          <div class="qa-a">A byte-level checksum only catches exact duplicates. Near-duplicate detection needs a similarity technique such as shingling or SimHash over normalized content, at the cost of extra CPU per page — a legitimate extension beyond the bare-minimum dedupe design.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Should URL normalization happen before or after the URL dedupe check?</div>
+          <div class="qa-a">Before. Normalize query-parameter ordering, trailing slashes, and default ports first, then checksum — otherwise cosmetically different URLs pointing at the same resource each look "new" and both get crawled and stored.</div>
+        </div>
+
+        <h3>Politeness, Distribution, and Fault Tolerance</h3>
+        <div class="qa-item">
+          <div class="qa-q">How does the design guarantee only one thread ever hits a given host at a time?</div>
+          <div class="qa-a">Each back queue holds URLs for exactly one host, and each back queue is drained by exactly one worker thread — one queue per thread, one host per queue, by construction (Figure 2).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A crawl server holding 5% of the frontier crashes — what happens?</div>
+          <div class="qa-a">Consistent hashing reassigns only that server's arc on the ring to its clockwise neighbor (Figure 4); the neighbor rebuilds that slice from the last on-disk or remote checkpoint rather than needing to re-derive the entire crawl state.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you restart a multi-week crawl after a full datacenter power loss?</div>
+          <div class="qa-a">Regular checkpointing of the FIFO frontier queues to disk, plus periodic snapshot dumps to a remote server — restart from the latest checkpoint rather than reseeding the entire crawl from scratch.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you detect a crawler trap before it consumes a disproportionate share of the fetch budget?</div>
+          <div class="qa-a">Track max-depth and max-pages-per-host counters per host (the frontier entry's depth field); a host that keeps generating "new" URLs indefinitely past a sane threshold is very likely a trap — intentional or an unintentional symlink cycle — and gets throttled or blacklisted.</div>
+        </div>
+
+        <h3>Extensions and Product</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend the crawler to index images and video, not just HTML?</div>
+          <div class="qa-a">The MIME-specific processing-module design (Figure 3) is already built for this — register a new Image or Video processing module for those content types; the Extractor, Frontier, and dedupe machinery are unchanged.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support near-real-time recrawling of a fast-changing news homepage vs. a mostly-static reference page?</div>
+          <div class="qa-a">The Prioritizer assigns front-queue tier by expected recrawl/freshness need — a news homepage lands in a high-priority, short-interval front queue, while a static page lands in a long-interval one (Deep Dive: URL Frontier Internals).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you add FTP support alongside HTTP without a redesign?</div>
+          <div class="qa-a">The worker thread already selects a protocol module based on the URL's scheme (an explicit Non-Functional Requirement) — add an FTP protocol module alongside the HTTP one; everything downstream (DIS, Extractor, Dedupe) is protocol-agnostic.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you let an operator scope a crawl to "only this domain's /docs subdirectory"?</div>
+          <div class="qa-a">Express it as a URL Filter policy scoped to that path prefix; combine with path-ascending crawling if isolated resources within that subdirectory (with no inbound link) also need to be discovered.</div>
+        </div>
+
+        <h3>Reliability and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you know politeness is being violated against a host in production before that host's admin emails you?</div>
+          <div class="qa-a">Alarm on per-host request-rate metrics exceeding the configured minimum-delay policy (Monitoring, Logging and Analytics) rather than waiting for an abuse complaint.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Frontier queue depth is growing faster than the fetch rate can drain it — what do you do?</div>
+          <div class="qa-a">Treat it as a monitored signal that either the corpus estimate was too low or a spike in outbound links (a trap, or a genuinely large new site) needs investigation, rather than blindly adding more fetch capacity.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Start with the two numbers that drive everything else: &asymp;6,200 pages/sec sustained and &asymp;2.14 PB of storage, derived from a 15-billion-page, 4-week target. The Mercator-style two-tier frontier (front queues for priority/freshness, back queues for per-host politeness, a heap-based selector tying them together) is the single most important piece of machinery in this design — know it well enough to draw it from memory. Dedupe happens at two distinct layers for two distinct reasons (URL checksum before download, document checksum after), and the Bloom filter's failure mode is counter-intuitive — a false positive means a page is silently never crawled, not that a duplicate slips through. Consistent hashing plus regular checkpointing is what makes a multi-week, many-server crawl survivable when (not if) individual servers fail. And the two properties that make crawling fundamentally hard — the Web's sheer volume and its constant rate of change — are exactly what the Prioritizer and front-queue tiering exist to manage.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Educative — "Grokking the System Design Interview": Designing a Web Crawler (course material)</li>
+          <li>Allan Heydon and Marc Najork, <a href="https://research.google/pubs/mercator-a-scalable-extensible-web-crawler/" target="_blank" rel="noopener">"Mercator: A Scalable, Extensible Web Crawler"</a>, World Wide Web Journal, 1999</li>
+          <li>The Robots Exclusion Protocol — <a href="https://www.robotstxt.org/" target="_blank" rel="noopener">robotstxt.org</a> specification, and <a href="https://www.rfc-editor.org/rfc/rfc9309.html" target="_blank" rel="noopener">RFC 9309, "Robots Exclusion Protocol"</a> (IETF, 2022)</li>
+          <li>Burton H. Bloom, "Space/Time Trade-offs in Hash Coding with Allowable Errors", Communications of the ACM, 1970 (Bloom filter background)</li>
+          <li>Community write-ups on distributed web crawling, consistent hashing for crawl-server assignment, and crawler-trap mitigation strategies</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="facebook-marketplace.html"><span class="dir">Previous</span>Facebook Marketplace</a>
+          <a class="next" href="nearby-friends.html"><span class="dir">Next</span>Nearby Friends (Tinder)</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

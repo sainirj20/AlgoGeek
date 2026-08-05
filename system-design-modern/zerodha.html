@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zerodha | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Zerodha</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-scope">Problem Statement &amp; Scope</a></li>
+        <li><a href="#functional-requirements">Functional Requirements</a></li>
+        <li><a href="#non-functional-requirements">Non-Functional Requirements</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#api-design">API Design</a></li>
+        <li><a href="#low-level-design-deep-dive">Low-Level Design (Deep Dive)</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-sharding-and-partitioning">Data Sharding and Partitioning</a></li>
+        <li><a href="#feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#caching-strategy">Caching Strategy</a></li>
+        <li><a href="#monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</a></li>
+        <li><a href="#security-considerations">Security Considerations</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing Zerodha</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a Zerodha/Kite-style discount stock-broking platform covering user onboarding and authentication, real-time market-data streaming, order placement/execution, portfolio and P&amp;L tracking, and fund management: requirements and capacity estimation, high-level architecture, API and low-level design, database schema, sharding, feature-specific deep dives (the order-placement timing budget, the concurrent-margin-check correctness walkthrough, exchange reconciliation), replication and fault tolerance, caching, monitoring, security, and a bank of follow-up interview questions. The thread running through every section is that this system has <strong>two very different scaling problems living under one roof</strong> &mdash; a correctness-bound transactional core (orders, margin, funds) sharded by <code>account_id</code>, and a throughput-bound market-data fan-out sharded by <code>symbol</code> &mdash; plus one architectural fact that trips up most candidates: the broker risk-checks and routes orders, but <strong>never matches them</strong>. Matching happens at the exchange.</em></p>
+
+        <h2 id="problem-statement-and-scope">Problem Statement &amp; Scope</h2>
+        <p>Design a discount stock-broking platform, similar to Zerodha's Kite, that lets retail users:</p>
+        <ul>
+          <li><strong>Register and onboard</strong> with KYC (PAN, Aadhaar e-KYC, bank account and demat account linkage) and authenticate securely (password + mandatory 2FA/TOTP).</li>
+          <li>View <strong>real-time stock prices</strong> for thousands of listed instruments across NSE and BSE via a live-updating watchlist, quote panel, and market-depth (5-level order book) view.</li>
+          <li><strong>Place, modify, and cancel</strong> buy/sell orders &mdash; market and limit, equity and F&amp;O &mdash; that are risk-checked and routed to the exchange for matching.</li>
+          <li>Track a <strong>portfolio</strong>: delivery holdings (T+1) and open positions (intraday/carry-forward) with live, unrealized and realized P&amp;L, plus a full order and trade history.</li>
+          <li><strong>Add or withdraw funds</strong>, moving money exclusively between the trading ledger balance and the client's own registered bank account.</li>
+          <li>Give the business an <strong>admin/analytics dashboard</strong> over the same event stream for operational, revenue, and risk visibility.</li>
+        </ul>
+
+        <h3>In scope</h3>
+        <p>The order-execution core: the risk (RMS) gate, the order-management state machine, exchange connectivity, the market-data fan-out, the funds ledger, portfolio/holdings computation, and reconciliation against the exchange's end-of-day files.</p>
+
+        <h3>Out of scope (acknowledged, not designed in depth)</h3>
+        <p>The exchange's own matching engine internals (NEAT/BOLT), full SEBI/exchange membership and clearing-corporation onboarding, margin-funding/BNPL products, options-strategy builders, charting internals, and the mobile client UI. We treat SEBI/exchange rules (RMS mandate, T+1 settlement, Algo-ID regime, client-fund segregation) as <strong>constraints the design must satisfy</strong>, not as features to build from scratch.</p>
+
+        <div class="callout">
+          <div class="callout-title">Key design tension</div>
+          Two correctness-critical facts shape almost every later decision. First, <strong>the broker is a router, not a matcher</strong>: order-matching is the exchange's job (price-time priority at NSE/BSE), so our Order Management Service (OMS) is a state machine and FIX-style client, never an order book. Second, <strong>every order must clear a synchronous, SEBI-mandated Risk Management System (RMS) check against available margin before it ever leaves the broker</strong> &mdash; get this wrong (race two orders past the same margin) and you can let a client trade with money that isn't there, which is a regulatory incident, not just a bug.
+        </div>
+
+        <h2 id="functional-requirements">Functional Requirements</h2>
+        <table>
+          <tr><th>#</th><th>Requirement</th><th>Notes</th></tr>
+          <tr><td>FR1</td><td>User registration &amp; authentication</td><td>KYC onboarding (PAN validation, Aadhaar e-KYC, bank + demat linkage), password login, and mandatory 2FA/TOTP on every session (SEBI-mandated for trading platforms). Kite Connect API clients authenticate via an API-key + request-token/access-token exchange rather than a password.</td></tr>
+          <tr><td>FR2</td><td>View real-time stock prices</td><td>Live LTP (last traded price), OHLC, volume, and 5-level market depth for any subscribed instrument, streamed over WebSocket with sub-second staleness for the instruments a user is actually watching.</td></tr>
+          <tr><td>FR3</td><td>Buy/sell stocks</td><td>Place orders against equity and derivatives instruments; every order is risk-checked (RMS) before being routed to the exchange, which performs the actual match.</td></tr>
+          <tr><td>FR4</td><td>View portfolio and order history</td><td>Delivery holdings, intraday/carry-forward positions with live P&amp;L, and a paginated, filterable order/trade history derived from the orders/trades store.</td></tr>
+          <tr><td>FR5</td><td>Fund management (add/withdraw money)</td><td>Move money between the trading ledger and the client's <strong>own</strong> registered bank account only (UPI/net-banking/NEFT for add-funds; bank transfer for withdrawal). No user-to-user wallet transfer &mdash; see Security Considerations.</td></tr>
+          <tr><td>FR6</td><td>Support for limit/market orders</td><td>MARKET (immediate, best-available price), LIMIT (execute at a specified price or better), plus stop-loss variants (SL, SL-M) needed to make the margin/risk story realistic; product types CNC (delivery), MIS (intraday, higher leverage, auto square-off), NRML (carry-forward F&amp;O).</td></tr>
+          <tr><td>FR7</td><td>Admin dashboard for analytics</td><td>Internal, near-real-time view over the same event stream: order funnel/drop-off, RMS rejection rates, DAU/order volume, most-traded instruments, revenue (brokerage/STT), and operational health &mdash; a downstream consumer, never on the trading critical path.</td></tr>
+        </table>
+        <p>Non-goals for this doc: options-strategy builders, margin-funding/BNPL products, GTT (good-till-triggered) order internals, and the exchange's own matching-engine implementation.</p>
+
+        <h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+        <p>These are the constraints that actually shape the architecture.</p>
+        <ul>
+          <li><strong>High availability and low latency.</strong> Target 99.95%+ availability during market hours (9:15 AM&ndash;3:30 PM IST) &mdash; every minute of downtime is a minute a client cannot manage a live position. Order-acceptance latency (gateway&rarr;RMS&rarr;OMS&rarr;exchange ack) should be well under 200&ndash;300 ms P95, excluding the exchange's own matching time, which is outside the broker's control. Multi-AZ deployment (Zerodha's own real infrastructure runs its user-facing tier across 3 AWS availability zones in Mumbai) with auto-scaling absorbs both baseline load and daily spikes.</li>
+          <li><strong>Scalability during market open/close peaks.</strong> Traffic is not diurnal in the generic web-traffic sense &mdash; it is a predictable, sharp, twice-daily spike at 9:15 AM open and around 3:00&ndash;3:30 PM close, plus event-driven spikes on high-volatility days. Unlike a general consumer app, the peak windows are <em>known in advance</em>, so scaling can be scheduled/predictive rather than purely reactive (see Capacity Estimation and Feature-Specific Logic).</li>
+          <li><strong>Event-driven architecture for order processing.</strong> Order-lifecycle transitions (RMS-checked, routed, filled, rejected) and fund movements are published as events; portfolio/holdings recomputation, notifications, the admin analytics dashboard, and reconciliation are all async consumers off the same stream, never blocking the synchronous order-placement path.</li>
+          <li><strong>Strong consistency for portfolio/account balance.</strong> Available margin, blocked margin, holdings quantity, and ledger balance must never be read stale on a path that decides whether an order can be placed. This is the same "no lost update" discipline as a payments ledger, applied to margin instead of wallet balance &mdash; see the RMS deep dive.</li>
+          <li><strong>Secure fund transfers and compliance with SEBI regulations.</strong> Client funds are segregated and can only move to/from the client's own registered bank account (no P2P wallet). Every order carries an audit trail sufficient for SEBI/exchange inspection. Algorithmic order flow (via Kite Connect) must comply with the Algo-ID framework (see Security Considerations). RMS is a regulatory requirement, not just good engineering practice.</li>
+        </ul>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p><strong>Given assumptions (illustrative, for this exercise &mdash; not a claim about Zerodha's actual current user base):</strong> &asymp;2 crore (20M) registered trading accounts; &asymp;30 lakh (3M) DAU; &asymp;15 lakh (1.5M) of those place at least one order on a given trading day ("active traders/day"); &asymp;1.5&ndash;2M concurrently logged in right as the market opens. That concurrent-login figure is not arbitrary &mdash; it is chosen to sit in the same order of magnitude as the <strong>2M+ concurrent logins at market open</strong> Zerodha's own engineering blog (zerodha.tech) has publicly cited, and we treat that as grounding for a reasonable assumption, not as an assertion of today's exact numbers. Similarly, our order-volume assumptions below land in the same order of magnitude as the <strong>7&ndash;9 million trades/day</strong> Zerodha has cited on its busiest historical days.</p>
+
+        <h3>Order &amp; trade volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Active traders/day = 1.5M
+          <br>Order events/trader/day (new + modify + cancel) &asymp; 8 &rarr; Order events/day &asymp; 1.5M &times; 8 = 12M/day
+          <br>Assume &asymp;70% of order events resolve into a fill &rarr; Trades/day &asymp; 12M &times; 0.7 &asymp; 8.4M &asymp; 8M/day
+          <br><em>(8M/day lands inside the real, cited 7&ndash;9M historical range &mdash; used here only as a sanity check on the assumption, not as today's actual figure.)</em>
+        </div>
+
+        <h3>Throughput (TPS) &mdash; and why the open matters more than the average</h3>
+        <p>NSE/BSE equity cash session runs 9:15 AM&ndash;3:30 PM IST = 6h15m = 22,500 s.</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Average order TPS = 12M &divide; 22,500 s &asymp; 533 orders/sec
+          <br>Peak-open concentration (assumption): &asymp;10% of the day's order volume arrives in the first 5 minutes (300 s) after 9:15
+          <br>Orders in first 5 min = 12M &times; 10% = 1.2M &rarr; 1.2M &divide; 300 s = 4,000 orders/sec sustained
+          <br>Instantaneous burst multiplier for the literal first 10&ndash;15 s (queued AMO releases + simultaneous manual clicks): &times;1.5 &rarr; &asymp;6,000 orders/sec peak
+        </div>
+        <p>So the system must be provisioned for <strong>&asymp;6,000 orders/sec at the open</strong> &mdash; roughly 11&times; the all-day average &mdash; even though the all-day average (&asymp;533/sec) is unremarkable. This is a fundamentally different shape from a generic web app's peak: the spike is scheduled, recurring daily at 9:15:00 AM, and known in advance.</p>
+
+        <h3>Storage growth (orders / trades / funds ledger)</h3>
+        <p>Per order record &asymp;0.5 KB; per trade/execution row &asymp;0.6 KB (adds exchange trade id, fill price/qty); per funds_ledger double-entry leg &asymp;0.4 KB (assume &asymp;2 legs/trade for margin block+settlement).</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Orders: 12M &times; 0.5 KB = 6 GB/day
+          <br>Trades: 8M &times; 0.6 KB = 4.8 GB/day
+          <br>Funds ledger legs: 8M &times; 2 &times; 0.4 KB = 6.4 GB/day
+          <br>Raw total &asymp; 17.2 GB/day &rarr; round to &asymp;18 GB/day
+          <br>+ secondary indexes (&asymp;50%) &asymp; 27 GB/day
+          <br>Trading days/year (NSE/BSE holidays + weekends) &asymp; 250 &rarr; &asymp;27 GB &times; 250 &asymp; 6.75 TB/year
+          <br>Assume &asymp;8-year retention (illustrative, in the spirit of SEBI's multi-year record-keeping requirements) &asymp; 54 TB raw+idx
+          <br>&times; 3 replicas (quorum) &asymp; 162 TB provisioned
+        </div>
+        <p>Zerodha's own engineering blog describes its Postgres fleet, with logical partitioning and read replicas, as comfortably handling "hundreds of billions of records" &mdash; consistent with this being a storage-manageable, not storage-bound, problem once sharded and partitioned (see Data Sharding).</p>
+
+        <h3>Database write IOPS</h3>
+        <p>Writes per order (worst case &mdash; a limit order that gets RMS-checked, routed, partially filled twice, then completed):</p>
+        <table>
+          <tr><th>Write</th><th>Count</th></tr>
+          <tr><td>client_order_id idempotency insert</td><td>1</td></tr>
+          <tr><td>Order header insert + state transitions (PLACED&rarr;RMS_CHECKED&rarr;ROUTED&rarr;OPEN&rarr;FILLED, &asymp;4 updates)</td><td>4</td></tr>
+          <tr><td>Margin reservation legs (reserve on placement, release/adjust on fill or cancel)</td><td>2</td></tr>
+          <tr><td>Trade/execution insert (avg &asymp;1.3 fills per filled order, partials)</td><td>1.3</td></tr>
+          <tr><td>Funds ledger legs (margin block/release, settlement)</td><td>2</td></tr>
+          <tr><td>Outbox event row</td><td>1</td></tr>
+          <tr><td><strong>Total</strong></td><td><strong>&asymp;11 writes/order</strong></td></tr>
+        </table>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Peak write IOPS = 6,000 orders/sec &times; 11 &asymp; 66,000 IOPS &rarr; provision &asymp;100k IOPS with headroom, spread across account-sharded Postgres instances (no single primary takes this whole number &mdash; see Data Sharding).
+        </div>
+        <p>Reads per order on the synchronous path (client_order_id lookup, available-margin read-for-update, instrument-master lookup, exposure/leverage limit check) &asymp;4:</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Peak sync read IOPS &asymp; 6,000 &times; 4 = 24,000 IOPS
+          <br>+ portfolio/holdings/order-status read traffic (assume &asymp;6&times; order RPS of pure reads, since Kite polls/streams portfolio views continuously) &rarr; provision &asymp;150k read IOPS
+        </div>
+        <p>Crucially, almost none of that 150k read IOPS actually hits Postgres: it is absorbed by the Redis "hot cache" tier described in Caching Strategy, which is precisely why Zerodha's own architecture serves every Kite UI read &mdash; orders, positions, portfolio &mdash; as an O(1) in-memory lookup rather than a database query.</p>
+
+        <h3>WebSocket tick fan-out throughput</h3>
+        <p>This is the other scaling axis, and it dwarfs the order-write path in raw message volume.</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Peak concurrent WebSocket connections &asymp; 2M (grounded by the real, cited 2M+ concurrent logins at open)
+          <br>Raw exchange tick ingest &asymp; 2,000 actively-traded instruments &times; up to 10 updates/sec at peak volatility &asymp; 20,000 ticks/sec into the Ticker Service (single ingest point)
+          <br>Per-connection fan-out is coalesced/rate-limited to &asymp;1 update/sec per subscribed symbol (a human doesn't need every micro-tick); assume &asymp;8 actively-watched symbols/connection
+          <br>Egress messages/sec &asymp; 2M connections &times; 8 symbols &times; 1 msg/sec = 16M messages/sec
+          <br>At &asymp;100 bytes/msg (compact binary tick packet) &asymp; 1.6 GB/sec egress bandwidth at absolute peak
+        </div>
+        <p>A fan-out ratio like this &mdash; one exchange feed in, 16M coalesced messages/sec out &mdash; is precisely why Zerodha built a bespoke, single-binary Go "ticker" service rather than routing client-facing ticks through a general-purpose message broker: a generic pub/sub layer pays serialization and per-message broker overhead that a purpose-built, zero-allocation broadcast loop does not (see Low-Level Design and Caching Strategy).</p>
+
+        <h3>App-server instances at peak (Little's Law)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Order placement (sync hold &asymp;150 ms incl. RMS+OMS+exchange ack): 6,000 TPS &times; 0.15 s = 900 concurrent
+          <br>Portfolio/order-status reads (served mostly from Redis, &asymp;50 ms hold): 20,000 RPS &times; 0.05 s = 1,000 concurrent
+          <br>Total &asymp; 1,900 concurrent requests (API/OMS tier, excludes the ticker tier below)
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Result</span>
+          Instances (raw) = 1,900 &divide; 500 concurrent-per-instance &asymp; 4 &rarr; provision 3 AZs &times; 4 instances = 12 API/OMS instances at peak.
+          <br>Ticker tier sizing is a different calculation: a single lightweight Go binary handles &asymp;50k concurrent WS connections comfortably (per Zerodha's own published design) &rarr; 2M &divide; 50k = 40 ticker instances, provisioned ahead of the 9:15 AM open (see Feature-Specific Logic: market-open surge handling).
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Takeaway</div>
+          The transactional core (&asymp;6,000 orders/sec peak, &asymp;100k write IOPS) is <strong>correctness-bound</strong>: the engineering effort goes into the RMS margin check, idempotent order handling, and reconciliation. The market-data path (16M coalesced messages/sec, 2M concurrent connections) is <strong>throughput-bound</strong>: the engineering effort there goes into a lean, purpose-built broadcast service. These are two different problems, sharded on two different keys (<code>account_id</code> vs <code>symbol</code>) &mdash; see Data Sharding and Partitioning.
+        </div>
+
+
+        <h2 id="high-level-design">High-Level Design</h2>
+
+        <h3>Services</h3>
+        <table>
+          <tr><th>Service</th><th>Responsibility</th></tr>
+          <tr><td>API Gateway / BFF</td><td>TLS termination, authN/Z, per-user/per-IP rate limiting, and the HTTP ETag/304 cache layer (see Caching Strategy). Shapes responses differently for Kite Web/App vs. the public Kite Connect API.</td></tr>
+          <tr><td>Auth Service</td><td>Password + mandatory 2FA/TOTP login for Kite users; issues session tokens. For Kite Connect (third-party/algo) clients, runs the API-key &rarr; request-token &rarr; access-token exchange and enforces the 2026 Algo-ID registration on API order flow.</td></tr>
+          <tr><td>Order Management Service (OMS)</td><td>The <strong>order router and state-machine</strong>, not a matching engine. Validates order shape, drives the order through its lifecycle, and is the single place that talks to the Exchange Connectivity Gateway. It never decides who trades with whom &mdash; that is the exchange's job.</td></tr>
+          <tr><td>Risk Management Service (RMS)</td><td><strong>Synchronous, SEBI-mandated pre-trade check.</strong> Validates the order against the account's available margin/exposure limit and atomically reserves margin <em>before</em> the order is forwarded to the exchange. If margin would be breached, RMS rejects at the broker &mdash; the exchange never sees the order.</td></tr>
+          <tr><td>Market Data / Ticker Service</td><td>Ingests the live NSE/BSE tick feed once and fans it out over WebSocket to hundreds of thousands of subscriber connections. A lightweight, low-allocation single-binary service (Go, in Zerodha's own real stack) &mdash; this is the flagship low-latency component, deliberately separate from the transactional core.</td></tr>
+          <tr><td>Portfolio/Holdings Service</td><td>Maintains delivery holdings (with T+1 unsettled quantity) and open positions (intraday/carry-forward), computing average price and realized/unrealized P&amp;L as fills and price ticks arrive.</td></tr>
+          <tr><td>Funds/Ledger Service</td><td><strong>Append-only, double-entry ledger</strong> of every cash movement: margin blocks/releases, trade settlement, brokerage/STT/fees, deposits, withdrawals. The source of truth for the account's ledger balance.</td></tr>
+          <tr><td>Exchange Connectivity Gateway</td><td>FIX/proprietary NSE-BSE protocol adapter over colocated/leased-line connectivity. The <strong>only</strong> network egress point to the exchanges; translates internal order objects to exchange wire format and exchange acks/fills back.</td></tr>
+          <tr><td>Notification Service</td><td>Async push/SMS/email on order fill/reject, margin call, and fund credit/debit &mdash; off the event bus, never on the order-placement critical path.</td></tr>
+          <tr><td>Admin/Analytics Service</td><td>Internal dashboards over the same event stream (FR7): order funnel, RMS rejection rate, revenue, most-traded instruments &mdash; a downstream consumer, not a write participant.</td></tr>
+          <tr><td>Reconciliation Service</td><td><strong>Async, end-of-day matching:</strong> compares the broker's own order/trade records against the exchange's end-of-day contract/obligation files and flags mismatches.</td></tr>
+          <tr><td>Supporting infra</td><td>Redis hot cache (disk persistence off, multiple independent instances), Event Bus (Kafka/NATS), Postgres (sharded by account_id), ClickHouse/ScyllaDB for tick time-series &amp; analytics, Instrument Master data service.</td></tr>
+        </table>
+
+        <h3>Architecture overview</h3>
+        <p>The diagram below turns the service list into a wiring diagram. A single API Gateway routes into the Order Management Service, which runs a synchronous margin/exposure check against the Risk Management Service and then &mdash; and only then &mdash; hands the order to the Exchange Connectivity Gateway. The Ticker Service ingests the exchange's live feed independently of the order path and fans it out to millions of WebSocket subscribers. Notification, Reconciliation, and Admin/Analytics sit off to the side as async consumers of the event bus, never on the order's critical path.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 700" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-zrd-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-zrd-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-zrd-1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="10" width="200" height="42" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="35" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client (Kite Web/App/Connect API)</text>
+
+            <rect x="270" y="72" width="200" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="94" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">API Gateway / BFF</text>
+            <text x="370" y="110" text-anchor="middle" fill="#cbd8ef" font-size="9">TLS &#183; authN/Z &#183; rate limit &#183; ETag cache</text>
+
+            <rect x="15" y="148" width="710" height="432" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="25" y="168" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.04em">TRADING DOMAIN</text>
+
+            <rect x="30" y="182" width="150" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="105" y="204" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Auth Service</text>
+            <text x="105" y="219" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">login, 2FA, Connect tokens</text>
+
+            <rect x="290" y="177" width="200" height="60" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="390" y="200" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Order Management Service</text>
+            <text x="390" y="217" text-anchor="middle" fill="#cbd8ef" font-size="9">router/state-machine &mdash; never matches</text>
+
+            <rect x="560" y="182" width="150" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="635" y="202" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Risk Mgmt (RMS)</text>
+            <text x="635" y="217" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">sync pre-trade margin check</text>
+
+            <rect x="30" y="267" width="215" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="137" y="290" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Ticker Service</text>
+            <text x="137" y="306" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">WS fan-out, single Go binary</text>
+
+            <rect x="262" y="267" width="215" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="290" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Portfolio/Holdings Service</text>
+            <text x="370" y="306" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">positions, holdings, P&amp;L</text>
+
+            <rect x="495" y="267" width="215" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="602" y="290" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Funds/Ledger Service</text>
+            <text x="602" y="306" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">double-entry cash ledger</text>
+
+            <rect x="30" y="357" width="680" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="370" y="380" text-anchor="middle" fill="#6b4a10" font-size="12" font-weight="700">Exchange Connectivity Gateway</text>
+            <text x="370" y="396" text-anchor="middle" fill="#6b4a10" font-size="9">FIX/proprietary adapter &#183; colocation/leased line &#183; only egress to NSE/BSE</text>
+
+            <rect x="30" y="437" width="215" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="137" y="459" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Redis Hot Cache</text>
+            <text x="137" y="474" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">dumb cache, serves all Kite reads</text>
+
+            <rect x="262" y="437" width="215" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="459" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Event Bus (Kafka/NATS)</text>
+            <text x="370" y="474" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">order/trade/fund events</text>
+
+            <rect x="495" y="437" width="215" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="602" y="459" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Notification Service</text>
+            <text x="602" y="474" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">async push/SMS/email</text>
+
+            <rect x="160" y="507" width="210" height="48" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="265" y="528" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Reconciliation Service</text>
+            <text x="265" y="543" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">vs. exchange EOD obligation files</text>
+
+            <rect x="390" y="507" width="210" height="48" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="495" y="528" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Admin / Analytics Service</text>
+            <text x="495" y="543" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">downstream event consumer</text>
+
+            <rect x="270" y="605" width="200" height="55" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="370" y="627" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">Exchange (NSE/BSE)</text>
+            <text x="370" y="642" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">NEAT/BOLT matching engine</text>
+
+            <line x1="370" y1="52" x2="370" y2="70" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-zrd-1)"></line>
+            <line x1="330" y1="122" x2="150" y2="180" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-1)"></line>
+            <line x1="370" y1="122" x2="390" y2="175" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-zrd-1)"></line>
+            <line x1="180" y1="205" x2="288" y2="205" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-zrd-1b)" marker-start="url(#arrow-zrd-1b)"></line>
+            <line x1="490" y1="205" x2="558" y2="205" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-zrd-1b)" marker-start="url(#arrow-zrd-1b)"></line>
+
+            <line x1="370" y1="237" x2="370" y2="265" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-1)"></line>
+            <path d="M420,225 L486,252 L486,355" fill="none" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-1)"></path>
+            <text x="440" y="245" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">margin block/settle</text>
+
+            <line x1="100" y1="357" x2="100" y2="329" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-zrd-1m)"></line>
+            <text x="100" y="345" text-anchor="middle" font-size="7" fill="var(--color-text-muted)" font-style="italic">raw tick feed</text>
+
+            <line x1="370" y1="412" x2="370" y2="603" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-zrd-1)" marker-start="url(#arrow-zrd-1)"></line>
+            <text x="440" y="500" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">orders out, acks/fills back</text>
+
+            <line x1="370" y1="327" x2="370" y2="435" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-zrd-1m)"></line>
+            <line x1="370" y1="487" x2="265" y2="505" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-zrd-1m)"></line>
+            <line x1="440" y1="487" x2="470" y2="505" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-zrd-1m)"></line>
+            <line x1="477" y1="462" x2="493" y2="462" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-zrd-1m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. Service topology: the API Gateway routes into the Order Management Service, which runs a synchronous margin check against RMS before handing the order to the Exchange Connectivity Gateway &mdash; the only path to the exchange. The Ticker Service ingests the exchange feed independently and fans it out over WebSocket. Notification, Reconciliation, and Admin/Analytics are async consumers off the event bus.</div>
+        </div>
+
+        <h3>Data flow (a): Order placement (limit order, equity)</h3>
+        <ol>
+          <li>Client &rarr; Gateway &rarr;(client_order_id)&rarr; OMS.</li>
+          <li>OMS: idempotency check on client_order_id (new &rarr; insert PLACED).</li>
+          <li>OMS &rarr; RMS: synchronous margin/exposure check.</li>
+          <li>RMS: atomic conditional reserve of margin (available_margin &ge; required) &mdash; single local ACID transaction (see Low-Level Design 7.2).</li>
+          <li>RMS &rarr; OMS: APPROVED (or REJECTED &mdash; INSUFFICIENT_MARGIN, order never leaves the broker).</li>
+          <li>OMS &rarr; Exchange Connectivity Gateway &rarr; Exchange: route order (colocation/leased-line hop); state = ROUTED_TO_EXCHANGE.</li>
+          <li>Exchange acks (exchange_order_id assigned) &rarr; OMS marks state = OPEN; return to client.</li>
+          <li>(async, as fills arrive) Exchange &rarr; OMS: fill event(s) &rarr; PARTIALLY_FILLED/FILLED &rarr; Portfolio Service updates position &rarr; Funds/Ledger settles the margin reservation &rarr; outbox &rarr; Kafka &rarr; Notification.</li>
+        </ol>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-zrd-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-zrd-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="5" y="15" width="100" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="55" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Client</text>
+            <rect x="150" y="15" width="100" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="200" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Gateway</text>
+            <rect x="295" y="15" width="110" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="350" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">OMS</text>
+            <rect x="450" y="15" width="100" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="500" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">RMS</text>
+            <rect x="595" y="15" width="130" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="660" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Exchange</text>
+
+            <line x1="55" y1="51" x2="55" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="200" y1="51" x2="200" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="350" y1="51" x2="350" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="500" y1="51" x2="500" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="660" y1="51" x2="660" y2="430" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+
+            <line x1="55" y1="80" x2="200" y2="80" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-2)"></line>
+            <text x="127" y="72" text-anchor="middle" font-size="9" fill="var(--color-text)">1. POST /v1/orders (client_order_id)</text>
+
+            <line x1="200" y1="112" x2="350" y2="112" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-2)"></line>
+            <text x="275" y="104" text-anchor="middle" font-size="9" fill="var(--color-text)">2. idempotency check &rarr; insert PLACED</text>
+
+            <line x1="350" y1="145" x2="500" y2="145" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-2)"></line>
+            <text x="425" y="137" text-anchor="middle" font-size="9" fill="var(--color-text)">3. sync margin/exposure check</text>
+
+            <rect x="440" y="163" width="240" height="45" rx="6" fill="none" stroke="var(--color-accent)" stroke-dasharray="3,3"></rect>
+            <text x="560" y="178" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">4. atomic conditional margin reserve</text>
+            <text x="560" y="192" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">(single local ACID transaction)</text>
+
+            <line x1="500" y1="225" x2="350" y2="225" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-2)"></line>
+            <text x="425" y="217" text-anchor="middle" font-size="9" fill="var(--color-text)">5. APPROVED (or REJECTED, order stops here)</text>
+
+            <line x1="350" y1="258" x2="660" y2="258" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-2)"></line>
+            <text x="505" y="250" text-anchor="middle" font-size="9" fill="var(--color-text)">6. route via Exchange Connectivity Gateway (colocation)</text>
+
+            <line x1="660" y1="290" x2="350" y2="290" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-2)"></line>
+            <text x="505" y="282" text-anchor="middle" font-size="9" fill="var(--color-text)">7. exchange ack (exchange_order_id) &rarr; state=OPEN</text>
+
+            <line x1="350" y1="322" x2="55" y2="322" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-2)"></line>
+            <text x="200" y="314" text-anchor="middle" font-size="9" fill="var(--color-text)">7b. 201 Created, status: OPEN</text>
+
+            <line x1="660" y1="360" x2="350" y2="360" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-zrd-2m)"></line>
+            <text x="505" y="352" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">8. async fill event(s)</text>
+
+            <text x="350" y="395" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">9. Portfolio update, ledger settle, outbox &rarr; Kafka &rarr; Notification (async)</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Order placement: the margin check against RMS is synchronous and blocks routing to the exchange &mdash; an order that fails it never leaves the broker. Once acked by the exchange, fills arrive asynchronously and drive the portfolio/ledger updates off the critical path.</div>
+        </div>
+
+        <h3>Data flow (b): Live market data (WebSocket tick fan-out)</h3>
+        <p>Market data is a completely separate pipeline from the order path: one exchange feed in, fanned out to every subscribed client.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 380" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-zrd-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="15" width="200" height="45" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="370" y="35" text-anchor="middle" fill="#6b4a10" font-size="11" font-weight="700">Exchange live feed</text>
+            <text x="370" y="50" text-anchor="middle" fill="#6b4a10" font-size="8">NSE/BSE, &asymp;20,000 ticks/sec</text>
+
+            <line x1="370" y1="60" x2="370" y2="88" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-zrd-3)"></line>
+
+            <rect x="235" y="90" width="270" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="112" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Ticker Service (single Go binary)</text>
+            <text x="370" y="128" text-anchor="middle" fill="#cbd8ef" font-size="8">per-symbol topic table &#183; coalesce to &asymp;1 update/sec/conn</text>
+
+            <line x1="290" y1="145" x2="140" y2="185" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-3)"></line>
+            <line x1="340" y1="145" x2="280" y2="185" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-3)"></line>
+            <line x1="400" y1="145" x2="460" y2="185" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-3)"></line>
+            <line x1="450" y1="145" x2="600" y2="185" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-3)"></line>
+
+            <rect x="60" y="187" width="150" height="40" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="135" y="211" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">topic: NIFTY 50</text>
+            <rect x="225" y="187" width="150" height="40" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="300" y="211" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">topic: RELIANCE</text>
+            <rect x="390" y="187" width="150" height="40" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="465" y="211" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">topic: INFY</text>
+            <rect x="555" y="187" width="150" height="40" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="630" y="211" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">topic: &#8230; (2,000+)</text>
+
+            <line x1="135" y1="227" x2="135" y2="255" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-zrd-3)"></line>
+            <line x1="300" y1="227" x2="300" y2="255" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-zrd-3)"></line>
+            <line x1="465" y1="227" x2="465" y2="255" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-zrd-3)"></line>
+            <line x1="630" y1="227" x2="630" y2="255" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-zrd-3)"></line>
+
+            <rect x="30" y="257" width="680" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="280" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">&asymp;2M concurrent WebSocket subscriber connections</text>
+            <text x="370" y="297" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">each subscribed to &asymp;8 symbols on average (watchlist + open positions)</text>
+
+            <rect x="130" y="330" width="480" height="35" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.3"></rect>
+            <text x="370" y="352" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">&asymp;16M coalesced messages/sec egress at absolute peak</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. WebSocket tick fan-out: the Ticker Service ingests the exchange feed once, maintains a per-symbol topic/subscription table, and broadcasts &mdash; the same design Zerodha's own engineering blog describes for Kite, purpose-built rather than routed through a generic message broker because of the fan-out ratio involved.</div>
+        </div>
+
+        <h3>Data flow (c): Add funds / withdraw funds</h3>
+        <ol>
+          <li>Client &rarr; Gateway &rarr; Funds/Ledger Service: initiate deposit (UPI/net-banking) or withdrawal, referencing the client's <strong>own</strong> registered bank account &mdash; never another user's account or wallet.</li>
+          <li>Funds Service calls the bank/payment rail; for deposits the confirmation may return synchronously (UPI) or via an async callback.</li>
+          <li>On confirmed credit: append a ledger leg (CREDIT ledger_balance, DEBIT bank-transit suspense) and update the account's available_margin.</li>
+          <li>On withdrawal: reserve/deduct ledger balance atomically (never allow withdrawal to push balance negative or below blocked margin), then initiate the bank payout; reverse the reservation if the payout fails.</li>
+          <li>Outbox &rarr; Kafka &rarr; Notification ("funds credited/debited").</li>
+        </ol>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 340" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-zrd-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-zrd-4m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="10" y="15" width="110" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="65" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Client</text>
+            <rect x="180" y="15" width="130" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="245" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Funds/Ledger Svc</text>
+            <rect x="370" y="15" width="150" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="445" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Bank (own account)</text>
+            <rect x="580" y="15" width="140" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="650" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Notification</text>
+
+            <line x1="65" y1="51" x2="65" y2="300" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="245" y1="51" x2="245" y2="300" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="445" y1="51" x2="445" y2="300" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="650" y1="51" x2="650" y2="300" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+
+            <line x1="65" y1="80" x2="245" y2="80" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-4)"></line>
+            <text x="155" y="72" text-anchor="middle" font-size="9" fill="var(--color-text)">1. deposit/withdraw request (own bank a/c only)</text>
+
+            <line x1="245" y1="115" x2="445" y2="115" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-4)"></line>
+            <text x="345" y="107" text-anchor="middle" font-size="9" fill="var(--color-text)">2. UPI/net-banking/NEFT call</text>
+
+            <line x1="445" y1="150" x2="245" y2="150" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-zrd-4m)"></line>
+            <text x="345" y="142" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">2b. confirmation (sync or async callback)</text>
+
+            <rect x="150" y="170" width="220" height="42" rx="6" fill="none" stroke="var(--color-accent)" stroke-dasharray="3,3"></rect>
+            <text x="260" y="188" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">3. append ledger leg, update</text>
+            <text x="260" y="200" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">available_margin atomically</text>
+
+            <line x1="245" y1="222" x2="65" y2="245" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-4)"></line>
+            <text x="155" y="245" text-anchor="middle" font-size="9" fill="var(--color-text)">4. balance updated, 200 OK</text>
+
+            <line x1="245" y1="260" x2="650" y2="260" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-zrd-4m)"></line>
+            <text x="447" y="252" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">5. outbox &rarr; Kafka &rarr; notify (async)</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Fund transfer: money moves only between the client's own bank account and their trading ledger balance &mdash; there is no peer-to-peer wallet transfer between users, unlike a payments app (see Security Considerations).</div>
+        </div>
+
+        <h2 id="api-design">API Design</h2>
+        <p>Conventions: JSON over HTTPS (REST) for Kite Web/App and the public Kite Connect API; gRPC internally between services. Every order-mutating endpoint requires a client-generated <code>client_order_id</code> (idempotency key, unique per account). Amounts and prices are integers in <strong>minor units</strong> (paise) with an explicit currency &mdash; never floats.</p>
+
+        <h3>Login (2FA)</h3>
+        <pre><code>POST /v1/auth/login
+{ "user_id": "AB1234", "password": "..." }
+&#8594; 200 { "session_token": "...", "requires_2fa": true }
+
+POST /v1/auth/login/totp
+{ "session_token": "...", "totp": "482913" }
+&#8594; 200 { "access_token": "...", "expires_at": "..." }</code></pre>
+
+        <h3>Place order</h3>
+        <pre><code>POST /v1/orders
+Client-Order-Id: 6f1c...e2 (required, idempotency key)
+Authorization: Bearer &lt;access_token&gt;
+
+{
+  "tradingsymbol": "INFY", "exchange": "NSE",
+  "transaction_type": "BUY" | "SELL",
+  "order_type": "MARKET" | "LIMIT" | "SL" | "SL-M",
+  "product": "CNC" | "MIS" | "NRML",
+  "quantity": 10, "price": 152500, "trigger_price": null
+}
+
+201 Created
+{ "order_id": "ord_01H...", "status": "PLACED|RMS_CHECKED|ROUTED_TO_EXCHANGE|OPEN|REJECTED",
+  "rejection_reason": null | "INSUFFICIENT_MARGIN" }</code></pre>
+
+        <h3>Modify / cancel order</h3>
+        <pre><code>PUT /v1/orders/{order_id}
+Client-Order-Id: &lt;same-or-new-per-modify&gt;
+{ "quantity": 5, "price": 153000 }
+&#8594; 200 { "order_id","status":"OPEN|REJECTED" }
+
+DELETE /v1/orders/{order_id}
+&#8594; 200 { "order_id","status":"CANCELLED" }</code></pre>
+
+        <h3>Get order status / order history</h3>
+        <pre><code>GET /v1/orders/{order_id}
+&#8594; 200 { "order_id","status","filled_quantity","average_price","exchange_order_id" }
+
+GET /v1/orders?from=2026-07-01&amp;to=2026-07-30
+&#8594; 200 { "orders": [ ... ] } // paginated, filterable, served from read replica/cache</code></pre>
+
+        <h3>Portfolio: holdings &amp; positions</h3>
+        <pre><code>GET /v1/portfolio/holdings
+&#8594; 200 { "holdings": [ { "tradingsymbol","quantity","average_price","last_price","pnl" } ] }
+
+GET /v1/portfolio/positions
+&#8594; 200 { "positions": [ { "tradingsymbol","product","quantity","average_price","unrealized_pnl","realized_pnl" } ] }</code></pre>
+
+        <h3>Funds: add / withdraw</h3>
+        <pre><code>POST /v1/funds/deposits
+Client-Order-Id: &lt;uuid&gt;
+{ "amount": 5000000, "currency":"INR", "method":"UPI|NETBANKING", "bank_account_ref":"own_acc_1" }
+&#8594; 201 { "deposit_id","status":"PROCESSING|COMPLETED" }
+
+POST /v1/funds/withdrawals
+Client-Order-Id: &lt;uuid&gt;
+{ "amount": 2000000, "currency":"INR", "bank_account_ref":"own_acc_1" }
+&#8594; 201 { "withdrawal_id","status":"PROCESSING|COMPLETED" }</code></pre>
+
+        <h3>WebSocket: subscribe to live ticks</h3>
+        <pre><code>wss://ws.example.com/v3?api_key=...&amp;access_token=...
+
+&#8594; client sends: { "a": "subscribe", "v": [408065, 738561] } // instrument_tokens
+&#8592; server streams: binary tick packets, one per subscribed instrument_token,
+   coalesced to &asymp;1 update/sec per connection per symbol, plus async
+   order-update frames (fill/reject) on the same socket</code></pre>
+        <p>Idempotent reads (order status, portfolio, history) are safe to poll and are served from the Redis hot cache, not the primary database (see Caching Strategy).</p>
+
+        <h3>What the server does with Client-Order-Id</h3>
+        <ol>
+          <li>Compute request_hash = SHA-256(method + path + canonical(body)).</li>
+          <li><strong>Miss</strong> &rarr; atomically insert (client_order_id, account_id, request_hash, status=PLACED) guarded by a <strong>unique constraint</strong>; proceed to RMS check and routing.</li>
+          <li><strong>Hit, same hash, terminal status</strong> (OPEN/FILLED/REJECTED/CANCELLED) &rarr; return the <strong>stored order state</strong> verbatim. No re-routing to the exchange.</li>
+          <li><strong>Hit, in-flight</strong> (still being RMS-checked/routed) &rarr; return 409 Conflict with Retry-After; never place a second order for the same client_order_id.</li>
+          <li><strong>Hit, different hash</strong> &rarr; 422 Unprocessable Entity &mdash; a client reusing a key for a different order is a client bug, not something to silently mask.</li>
+        </ol>
+
+        <h2 id="low-level-design-deep-dive">Low-Level Design (Deep Dive)</h2>
+
+        <h3>7.1 Order lifecycle state machine</h3>
+        <p>The OMS state machine is the backbone of the whole design. Every transition is durably persisted before the next step runs, so a crash mid-flight resumes from a known state rather than a guess.</p>
+        <div class="formula-box">
+          <span class="formula-label">States</span>
+          PLACED &rarr; RMS_CHECKED &rarr; ROUTED_TO_EXCHANGE &rarr; OPEN &rarr; PARTIALLY_FILLED &rarr; FILLED
+          <br>Branches: RMS_CHECKED &rarr; REJECTED (insufficient margin, never reaches the exchange)
+          <br>ROUTED_TO_EXCHANGE &rarr; REJECTED (exchange-side reject: price band breach, instrument halted, session closed)
+          <br>OPEN / PARTIALLY_FILLED &rarr; CANCELLED (user cancel, or MIS auto square-off near session close)
+        </div>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 340" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-zrd-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-zrd-5b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="10" y="40" width="105" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="62" y="70" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">PLACED</text>
+
+            <rect x="150" y="40" width="130" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="215" y="70" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">RMS_CHECKED</text>
+
+            <rect x="315" y="40" width="170" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="400" y="70" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">ROUTED_TO_EXCHANGE</text>
+
+            <rect x="520" y="40" width="90" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="565" y="70" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">OPEN</text>
+
+            <rect x="645" y="20" width="85" height="45" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="687" y="46" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">PARTIALLY_FILLED</text>
+
+            <rect x="645" y="85" width="85" height="45" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="687" y="111" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">FILLED</text>
+
+            <line x1="115" y1="65" x2="148" y2="65" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-zrd-5)"></line>
+            <line x1="280" y1="65" x2="313" y2="65" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-zrd-5)"></line>
+            <line x1="485" y1="65" x2="518" y2="65" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-zrd-5)"></line>
+            <line x1="610" y1="55" x2="643" y2="42" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-5)"></line>
+            <line x1="645" y1="65" x2="611" y2="65" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="3,3"></line>
+            <line x1="687" y1="65" x2="687" y2="83" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-5)"></line>
+
+            <rect x="270" y="230" width="130" height="45" rx="8" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.8"></rect>
+            <text x="335" y="257" text-anchor="middle" fill="var(--color-accent-dark)" font-size="10" font-weight="700">REJECTED</text>
+
+            <rect x="440" y="230" width="140" height="45" rx="8" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.8"></rect>
+            <text x="510" y="257" text-anchor="middle" fill="var(--color-accent-dark)" font-size="10" font-weight="700">CANCELLED</text>
+
+            <line x1="200" y1="90" x2="320" y2="228" stroke="var(--color-accent-dark)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-zrd-5b)"></line>
+            <text x="205" y="170" text-anchor="middle" font-size="8" fill="var(--color-accent-dark)" font-weight="600">insufficient margin</text>
+
+            <line x1="380" y1="90" x2="345" y2="228" stroke="var(--color-accent-dark)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-zrd-5b)"></line>
+            <text x="415" y="170" text-anchor="middle" font-size="8" fill="var(--color-accent-dark)" font-weight="600">exchange-side reject</text>
+
+            <line x1="565" y1="90" x2="500" y2="228" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-zrd-5b)"></line>
+            <text x="565" y="170" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">user cancel / MIS square-off</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Order lifecycle state machine: RMS_CHECKED is the SEBI-mandated gate &mdash; an order that fails it moves straight to REJECTED and never reaches ROUTED_TO_EXCHANGE. Fills and cancels are driven by asynchronous exchange events once the order is OPEN.</div>
+        </div>
+
+        <h3>7.2 RMS pre-trade margin check &mdash; atomic reservation</h3>
+        <p>The classic bug this must prevent: two concurrent orders from the same account both read "available margin = &#8377;50,000", each requiring &#8377;40,000, both pass the check, both get routed &mdash; the account is now exposed for &#8377;80,000 against &#8377;50,000 of margin. This is the exact same shape of bug as a wallet double-spend, applied to margin instead of cash balance.</p>
+        <pre><code>def rms_check(order, account_id):
+  instrument = get_instrument(order.tradingsymbol, order.exchange)
+  required_margin = compute_required_margin(order, instrument)
+  # SPAN+exposure for F&amp;O; price*qty*margin_pct for MIS; full value for CNC delivery
+
+  # single indivisible statement: the predicate is evaluated under the row lock
+  rows = UPDATE trading_accounts
+         SET available_margin = available_margin - :required_margin,
+             blocked_margin   = blocked_margin + :required_margin,
+             version = version + 1
+         WHERE account_id = :account_id AND available_margin &gt;= :required_margin
+
+  if rows == 0:
+    reject(order, reason="INSUFFICIENT_MARGIN")   # order never reaches OMS routing
+    return
+
+  reservation_id = insert_margin_reservation(account_id, order.order_id, required_margin)
+  route_to_oms(order, reservation_id)              # ROUTED_TO_EXCHANGE
+
+# on exchange reject/cancel: release_reservation(reservation_id) -&gt; available_margin += required_margin
+# on fill: settle_reservation(reservation_id) -&gt; move blocked_margin into realized cost basis</code></pre>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 500" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-zrd-6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-zrd-6b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="255" y="10" width="230" height="45" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="30" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Order arrives at RMS</text>
+            <text x="370" y="45" text-anchor="middle" fill="#cbd8ef" font-size="9">compute required_margin</text>
+
+            <rect x="230" y="85" width="280" height="55" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="370" y="107" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">UPDATE ... SET available_margin -= req</text>
+            <text x="370" y="122" text-anchor="middle" fill="#6b4a10" font-size="9">WHERE available_margin &gt;= req</text>
+
+            <line x1="370" y1="55" x2="370" y2="83" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-6)"></line>
+
+            <line x1="290" y1="140" x2="170" y2="175" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-6)"></line>
+            <text x="200" y="163" text-anchor="middle" font-size="9" fill="var(--color-primary)" font-weight="600">1 row affected</text>
+
+            <line x1="450" y1="140" x2="570" y2="175" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-zrd-6b)"></line>
+            <text x="555" y="163" text-anchor="middle" font-size="9" fill="var(--color-accent-dark)" font-weight="600">0 rows affected</text>
+
+            <rect x="40" y="180" width="260" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="170" y="203" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Insert margin_reservation row</text>
+            <text x="170" y="218" text-anchor="middle" fill="var(--color-primary)" font-size="9">linked to order_id</text>
+
+            <line x1="170" y1="230" x2="170" y2="258" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-6)"></line>
+
+            <rect x="40" y="260" width="260" height="48" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="170" y="290" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">route_to_oms() &rarr; ROUTED_TO_EXCHANGE</text>
+
+            <rect x="480" y="180" width="230" height="48" rx="6" fill="var(--color-surface)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="595" y="209" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">reject(INSUFFICIENT_MARGIN)</text>
+
+            <line x1="595" y1="228" x2="595" y2="248" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-zrd-6b)"></line>
+
+            <rect x="480" y="250" width="230" height="45" rx="6" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.6"></rect>
+            <text x="595" y="277" text-anchor="middle" fill="var(--color-accent-dark)" font-size="10" font-weight="700">REJECTED &mdash; never reaches OMS/exchange</text>
+
+            <text x="370" y="360" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">The predicate (available_margin &gt;= req) is evaluated INSIDE the row-locked write, so</text>
+            <text x="370" y="378" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">two concurrent orders for the same account serialize: the second sees the already-</text>
+            <text x="370" y="396" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">decremented balance and fails atomically &mdash; there is no read-then-check gap.</text>
+
+            <rect x="150" y="420" width="440" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="370" y="443" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">Single-writer-per-account routing (same principle as the</text>
+            <text x="370" y="460" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">wallet-debit case) removes contention; the conditional UPDATE is the safety net.</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. RMS atomic margin reservation: the check-and-reserve is one indivisible SQL statement, so two orders racing against the same available margin cannot both pass &mdash; exactly analogous to the atomic-conditional-debit pattern used to prevent wallet double-spend in payments systems, applied here to margin instead of cash.</div>
+        </div>
+        <p><strong>Why not a generic optimistic-lock retry loop?</strong> Read-balance-then-check-in-app-then-write has the same TOCTOU gap as the classic wallet double-spend bug: two reads can both see sufficient margin before either write lands. The conditional UPDATE closes that gap by making the check and the decrement one statement, evaluated under the row's lock. <strong>Why not pessimistic SELECT ... FOR UPDATE?</strong> It works too and is a reasonable alternative, but it holds a row lock for the duration of margin-calculation logic (SPAN/exposure computation can be non-trivial for F&amp;O), which is worse under contention than a single conditional UPDATE that does the calculation first and the lock-and-check only at the very end.</p>
+
+        <h3>7.3 WebSocket ticker fan-out design</h3>
+        <ul>
+          <li><strong>Single ingest, per-symbol topic model.</strong> The Ticker Service maintains one process-local table mapping instrument_token &rarr; the set of subscriber connections currently interested in it. A tick for INFY is looked up once and written to every subscribed connection's send buffer &mdash; there is no per-subscriber re-fetch or re-computation.</li>
+          <li><strong>Why a bespoke Go binary, not a generic pub/sub broker.</strong> At &asymp;16M coalesced messages/sec egress (see Capacity Estimation), a general-purpose broker's per-message overhead (serialization, broker hop, ack bookkeeping) becomes the bottleneck. A single lightweight, low-allocation binary handling connections as goroutines and doing raw byte-buffer broadcasts is dramatically cheaper per message &mdash; this is the actual, published reasoning behind Zerodha choosing Go for this component starting around 2014.</li>
+          <li><strong>Per-connection coalescing.</strong> The exchange may emit several ticks/sec for a liquid instrument; the Ticker Service coalesces to the latest value per symbol per connection at a bounded rate (&asymp;1/sec) rather than relaying every raw tick, which is both unnecessary for a human-readable UI and what keeps egress bandwidth bounded.</li>
+          <li><strong>Order-update frames share the same socket.</strong> Fill/reject/cancel notifications for the user's own orders are multiplexed onto the same WebSocket connection as price ticks, avoiding a second connection per client.</li>
+          <li><strong>Decoupled from the transactional core.</strong> The Ticker Service has no dependency on Postgres, RMS, or the OMS on its hot path &mdash; a slow or degraded order-placement path never throttles price streaming, and vice versa. This separation is what makes the dual-sharding-axis architecture in Section 9 possible.</li>
+        </ul>
+
+        <h3>7.4 Idempotency / duplicate-order protection on retries</h3>
+        <p>A client that times out waiting for a response to <code>POST /v1/orders</code> and retries must never place the order twice. The mechanism is the same insert-first, unique-constraint pattern used for payments idempotency, keyed on <code>client_order_id</code> instead of a generic idempotency key:</p>
+        <pre><code>def handle_place_order(client_order_id, account_id, req):
+  h = sha256(canonical(req))
+  try:
+    INSERT INTO orders(client_order_id, account_id, request_hash, status)
+    VALUES(client_order_id, account_id, h, 'PLACED')  -- unique(client_order_id, account_id)
+  except UniqueViolation:
+    row = SELECT ... WHERE client_order_id=client_order_id AND account_id=account_id
+    if row.request_hash != h: return 422       # same key, different order
+    if row.status in TERMINAL_STATES: return replay(row)   # OPEN/FILLED/REJECTED/CANCELLED
+    return 409  # RMS-checking/routing in flight, do not place a second order
+
+  # we won the insert -&gt; we own this order's execution
+  result = run_rms_check_and_route(req)
+  UPDATE orders SET status=result.status, exchange_order_id=result.exchange_order_id
+  WHERE client_order_id=client_order_id AND account_id=account_id
+  return result</code></pre>
+        <p><strong>Why this matters more here than in a generic API:</strong> a duplicated order isn't just a duplicate database row &mdash; if it were re-routed, it would become a <em>second live order in the market</em>, potentially executing against real liquidity and creating a real, expensive-to-unwind position. The unique-constraint insert is the race-safe boundary that guarantees exactly one execution path per client_order_id, exactly as it does for a payment.</p>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>Postgres-style DDL. Monetary amounts are BIGINT minor units (paise). IDs are Snowflake-style BIGINT (see Data Sharding). Orders/holdings/funds_ledger are the strongly-consistent core; tick/analytics data lives in a separate time-series store (see Data Sharding).</p>
+
+        <h3>users</h3>
+        <pre><code>CREATE TABLE users (
+  user_id BIGINT PRIMARY KEY, -- snowflake
+  pan VARCHAR(10) NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  email VARCHAR(255),
+  kyc_status VARCHAR(16) NOT NULL DEFAULT 'PENDING', -- PENDING|VERIFIED|REJECTED
+  aadhaar_ekyc_ref VARCHAR(64), -- tokenized reference, never raw Aadhaar
+  status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (pan)
+);</code></pre>
+
+        <h3>trading_accounts (demat + trading, RMS state lives here)</h3>
+        <pre><code>CREATE TABLE trading_accounts (
+  account_id BIGINT PRIMARY KEY, -- snowflake; this is the shard key for everything below
+  user_id BIGINT NOT NULL REFERENCES users(user_id),
+  client_id VARCHAR(16) NOT NULL, -- exchange-facing trading code
+  dp_id VARCHAR(16) NOT NULL, -- depository participant id
+  segments_enabled VARCHAR(64) NOT NULL DEFAULT 'EQUITY', -- EQUITY,FNO,CURRENCY,COMMODITY
+  bank_account_ref VARCHAR(64) NOT NULL, -- tokenized; client's OWN registered bank account only
+  available_margin BIGINT NOT NULL DEFAULT 0, -- materialized, minor units
+  blocked_margin BIGINT NOT NULL DEFAULT 0, -- reserved by open orders/positions
+  version BIGINT NOT NULL DEFAULT 0, -- optimistic-lock guard for the RMS conditional update
+  status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT chk_margin_nonneg CHECK (available_margin &gt;= 0),
+  UNIQUE (client_id)
+);</code></pre>
+
+        <h3>instruments (instrument master)</h3>
+        <pre><code>CREATE TABLE instruments (
+  instrument_token BIGINT PRIMARY KEY,
+  tradingsymbol VARCHAR(32) NOT NULL,
+  exchange VARCHAR(8) NOT NULL, -- NSE|BSE
+  segment VARCHAR(8) NOT NULL, -- EQ|FNO|CDS
+  isin CHAR(12),
+  lot_size INT NOT NULL DEFAULT 1,
+  tick_size NUMERIC(10,2) NOT NULL DEFAULT 0.05,
+  expiry DATE, -- null for equity, set for F&amp;O contracts
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tradingsymbol, exchange)
+);</code></pre>
+
+        <h3>orders</h3>
+        <pre><code>CREATE TABLE orders (
+  order_id BIGINT PRIMARY KEY, -- snowflake (embeds shard+time)
+  account_id BIGINT NOT NULL REFERENCES trading_accounts(account_id),
+  client_order_id VARCHAR(64) NOT NULL, -- idempotency key
+  instrument_token BIGINT NOT NULL REFERENCES instruments(instrument_token),
+  exchange_order_id VARCHAR(32), -- assigned once ROUTED_TO_EXCHANGE
+  transaction_type CHAR(4) NOT NULL, -- BUY|SELL
+  order_type VARCHAR(8) NOT NULL, -- MARKET|LIMIT|SL|SL-M
+  product VARCHAR(8) NOT NULL, -- CNC|MIS|NRML
+  variety VARCHAR(12) NOT NULL DEFAULT 'regular', -- regular|amo|co|iceberg
+  quantity INT NOT NULL,
+  price BIGINT, -- minor units; null for MARKET
+  trigger_price BIGINT,
+  filled_quantity INT NOT NULL DEFAULT 0,
+  status VARCHAR(20) NOT NULL, -- PLACED|RMS_CHECKED|ROUTED_TO_EXCHANGE|OPEN|PARTIALLY_FILLED|FILLED|CANCELLED|REJECTED
+  rejection_reason VARCHAR(64),
+  request_hash CHAR(64) NOT NULL,
+  placed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (account_id, client_order_id) -- race-safe idempotency insert
+);
+
+CREATE INDEX idx_orders_account_time ON orders(account_id, placed_at DESC); -- order history
+CREATE INDEX idx_orders_status ON orders(status) WHERE status NOT IN ('FILLED','CANCELLED','REJECTED'); -- open-order sweeps
+CREATE UNIQUE INDEX uq_orders_exchange_ref ON orders(exchange_order_id) WHERE exchange_order_id IS NOT NULL;</code></pre>
+
+        <h3>trades (executions)</h3>
+        <pre><code>CREATE TABLE trades (
+  trade_id BIGINT PRIMARY KEY,
+  order_id BIGINT NOT NULL REFERENCES orders(order_id),
+  account_id BIGINT NOT NULL,
+  instrument_token BIGINT NOT NULL,
+  exchange_trade_id VARCHAR(32) NOT NULL,
+  quantity INT NOT NULL,
+  price BIGINT NOT NULL,
+  traded_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (exchange_trade_id) -- dedupe on redelivered exchange trade confirms
+);
+
+CREATE INDEX idx_trades_account_time ON trades(account_id, traded_at DESC);
+CREATE INDEX idx_trades_order ON trades(order_id);</code></pre>
+
+        <h3>holdings (delivery, T+1 aware)</h3>
+        <pre><code>CREATE TABLE holdings (
+  account_id BIGINT NOT NULL,
+  instrument_token BIGINT NOT NULL,
+  isin CHAR(12) NOT NULL,
+  quantity INT NOT NULL DEFAULT 0, -- settled (demat) quantity
+  t1_quantity INT NOT NULL DEFAULT 0, -- bought, not yet settled (T+1)
+  average_price BIGINT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (account_id, instrument_token)
+);</code></pre>
+
+        <h3>positions (intraday / carry-forward)</h3>
+        <pre><code>CREATE TABLE positions (
+  account_id BIGINT NOT NULL,
+  instrument_token BIGINT NOT NULL,
+  product VARCHAR(8) NOT NULL, -- MIS|NRML
+  quantity INT NOT NULL DEFAULT 0, -- signed: +long / -short
+  average_price BIGINT NOT NULL DEFAULT 0,
+  realized_pnl BIGINT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (account_id, instrument_token, product)
+);</code></pre>
+
+        <h3>funds_ledger (double-entry, append-only)</h3>
+        <pre><code>CREATE TABLE funds_ledger (
+  entry_id BIGINT PRIMARY KEY, -- snowflake, sortable
+  posting_group_id BIGINT NOT NULL, -- all legs of one movement share this
+  account_id BIGINT NOT NULL,
+  direction CHAR(1) NOT NULL, -- 'D' or 'C'
+  amount BIGINT NOT NULL CHECK (amount &gt; 0),
+  signed_amount BIGINT NOT NULL, -- +credit / -debit; group SUM must = 0
+  reference_type VARCHAR(24) NOT NULL, -- MARGIN_BLOCK|MARGIN_RELEASE|TRADE_SETTLEMENT|DEPOSIT|WITHDRAWAL|BROKERAGE_FEE|STT_TAX
+  reference_id BIGINT, -- order_id / trade_id / deposit_id
+  balance_after BIGINT, -- optional point-in-time balance for audit
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  -- NO updated_at, NO deletes: append-only
+);
+
+CREATE INDEX idx_ledger_account_time ON funds_ledger(account_id, created_at DESC); -- statements
+CREATE INDEX idx_ledger_group ON funds_ledger(posting_group_id);
+-- Invariant (enforced in-txn): SUM(signed_amount) per posting_group_id = 0</code></pre>
+
+        <h3>watchlists</h3>
+        <pre><code>CREATE TABLE watchlists (
+  watchlist_id BIGINT PRIMARY KEY,
+  account_id BIGINT NOT NULL REFERENCES trading_accounts(account_id),
+  name VARCHAR(64) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE watchlist_items (
+  watchlist_id BIGINT NOT NULL REFERENCES watchlists(watchlist_id),
+  instrument_token BIGINT NOT NULL REFERENCES instruments(instrument_token),
+  sort_order INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (watchlist_id, instrument_token)
+);</code></pre>
+        <p><strong>Unique constraints that matter:</strong> orders(account_id, client_order_id) (race-safe idempotency insert), orders(exchange_order_id) (dedupe exchange acks), trades(exchange_trade_id) (dedupe exchange trade confirms), trading_accounts(client_id). <strong>Indexes for query patterns:</strong> order history &rarr; (account_id, placed_at DESC); open-order sweeps &rarr; partial index on non-terminal status; statements &rarr; (account_id, created_at DESC) on funds_ledger.</p>
+
+        <h2 id="data-sharding-and-partitioning">Data Sharding and Partitioning</h2>
+        <p>This is the single most distinctive structural idea in this design: the system has <strong>two independent scaling axes that must not be conflated.</strong></p>
+
+        <h3>Axis 1 &mdash; the transactional core, sharded by account_id</h3>
+        <p><strong>Shard key: <code>account_id</code>.</strong> Orders, trades, holdings, positions, and funds_ledger rows for one account live together on one shard, so RMS's margin reservation, the order-state transitions, and the ledger legs for that account are all a <strong>single local ACID transaction</strong>. Consistent hashing maps account_id &rarr; shard.</p>
+        <p><strong>Notably simpler than a P2P payments platform:</strong> because funds can only move between an account's own ledger and that same account's own registered bank account (see Security Considerations), there is <strong>no cross-shard money movement to reconcile</strong> &mdash; no saga, no two-phase commit, no cross-account distributed transaction is ever required for a fund transfer. The hard cross-shard problem that a wallet-to-wallet payments app must solve (two different accounts' balances, possibly on two different shards, both needing to change atomically) simply does not exist here, because Zerodha has no peer-to-peer wallet. The only place sharding gets interesting on this axis is a shard-migration/rebalance, which follows the same "freeze one account, replicate, cut over" playbook used for wallet migrations elsewhere (see Follow-up Interview Questions).</p>
+
+        <h3>Axis 2 &mdash; market data, partitioned by symbol/instrument_token</h3>
+        <p>Live ticks are a completely different workload shape: a <strong>single high-fan-in write path</strong> (one exchange feed, &asymp;20,000 ticks/sec across &asymp;2,000 instruments) feeding a <strong>massive fan-out read path</strong> (millions of WebSocket subscribers). There is no per-account concept here at all &mdash; the natural partition key is the <code>instrument_token</code> (symbol), and the store is a time-series-oriented system (ClickHouse/ScyllaDB in Zerodha's own real stack) rather than the OLTP Postgres fleet, because the query patterns (latest value per symbol, historical OHLC, high write throughput) are analytical/time-series, not transactional.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 480" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-zrd-7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-zrd-7m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="15" width="330" height="30" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="185" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">AXIS 1: Transactional core &mdash; sharded by account_id</text>
+
+            <rect x="390" y="15" width="330" height="30" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="555" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">AXIS 2: Market data &mdash; partitioned by symbol</text>
+
+            <rect x="20" y="65" width="150" height="110" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="95" y="87" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Shard A</text>
+            <text x="95" y="105" text-anchor="middle" fill="var(--color-primary)" font-size="8">orders + holdings +</text>
+            <text x="95" y="118" text-anchor="middle" fill="var(--color-primary)" font-size="8">positions + funds_ledger</text>
+            <text x="95" y="136" text-anchor="middle" fill="var(--color-primary)" font-size="8">co-located per account</text>
+            <text x="95" y="158" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">local ACID txn</text>
+
+            <rect x="190" y="65" width="150" height="110" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="265" y="87" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Shard B</text>
+            <text x="265" y="105" text-anchor="middle" fill="var(--color-primary)" font-size="8">orders + holdings +</text>
+            <text x="265" y="118" text-anchor="middle" fill="var(--color-primary)" font-size="8">positions + funds_ledger</text>
+            <text x="265" y="136" text-anchor="middle" fill="var(--color-primary)" font-size="8">co-located per account</text>
+            <text x="265" y="158" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">local ACID txn</text>
+
+            <rect x="20" y="195" width="320" height="60" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3"></rect>
+            <text x="180" y="217" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">no cross-shard money movement:</text>
+            <text x="180" y="232" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">funds only move to/from the account's</text>
+            <text x="180" y="247" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">own bank account &mdash; no saga needed</text>
+
+            <rect x="405" y="65" width="300" height="45" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="555" y="92" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">single exchange feed &mdash; high write fan-IN</text>
+
+            <line x1="555" y1="110" x2="555" y2="133" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-zrd-7)"></line>
+
+            <rect x="405" y="135" width="90" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.6"></rect>
+            <text x="450" y="162" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">symbol</text>
+            <text x="450" y="176" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">partition A</text>
+
+            <rect x="510" y="135" width="90" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.6"></rect>
+            <text x="555" y="162" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">symbol</text>
+            <text x="555" y="176" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">partition B</text>
+
+            <rect x="615" y="135" width="90" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.6"></rect>
+            <text x="660" y="162" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">symbol</text>
+            <text x="660" y="176" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">partition &#8230;</text>
+
+            <line x1="450" y1="195" x2="450" y2="220" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-zrd-7m)"></line>
+            <line x1="555" y1="195" x2="555" y2="220" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-zrd-7m)"></line>
+            <line x1="660" y1="195" x2="660" y2="220" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-zrd-7m)"></line>
+
+            <rect x="405" y="222" width="300" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="555" y="250" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">millions of subscriber connections &mdash; high read fan-OUT</text>
+
+            <rect x="70" y="290" width="600" height="70" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="370" y="313" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Snowflake ID: [ 41 bits time ][ 10 bits shard/worker ][ 12 bits sequence ]</text>
+            <text x="370" y="330" text-anchor="middle" fill="#6b4a10" font-size="9">time-sortable &#183; shard-embedding for account_id-sharded tables (routes without a directory hop)</text>
+            <text x="370" y="346" text-anchor="middle" fill="#6b4a10" font-size="9">Kafka partitioned by account_id (orders/funds) vs. by instrument_token (ticks) &mdash; different keys, different guarantees</text>
+
+            <text x="370" y="400" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">Two axes, two datastores, two consistency models &mdash; sharing an architecture would</text>
+            <text x="370" y="418" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">force either the transactional core to be over-provisioned for tick throughput, or the</text>
+            <text x="370" y="436" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">tick pipeline to pay for ACID guarantees it does not need.</text>
+          </svg>
+          <div class="diagram-caption">Figure 7. The dual sharding axis: the transactional core (orders/holdings/positions/funds_ledger) shards by account_id with no cross-shard money movement to coordinate, while market data partitions by symbol/instrument_token with a single high-fan-in write path and a massive read fan-out &mdash; two unrelated scaling problems, deliberately kept on separate infrastructure.</div>
+        </div>
+
+        <p><strong>Retention/tiering:</strong> partition orders/trades/funds_ledger tables by month; hot months on fast storage, older partitions moved to cheaper storage (still queryable for SEBI/exchange audit) &mdash; keeps the multi-year, &asymp;160 TB footprint affordable while the hot working set stays small. Tick/time-series data in ClickHouse/ScyllaDB is retained separately and at much higher volume/velocity, with its own downsampling and cold-tiering policy, since it is an analytics/audit trail, not a transactional store.</p>
+
+        <h2 id="feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</h2>
+
+        <h3>10.1 Order placement end-to-end timing budget</h3>
+        <table>
+          <tr><th>Time</th><th>Step</th><th>Duration</th></tr>
+          <tr><td>t=0</td><td>Gateway: authN, rate-limit, client_order_id insert</td><td>&asymp;5 ms</td></tr>
+          <tr><td>t+5</td><td>RMS: compute required margin (SPAN/exposure for F&amp;O, price&times;qty&times;margin% for MIS) + atomic reserve</td><td>&asymp;10&ndash;20 ms</td></tr>
+          <tr><td>t+25</td><td>OMS: validate order shape, persist ROUTED_TO_EXCHANGE</td><td>&asymp;10 ms</td></tr>
+          <tr><td>t+35</td><td>Exchange Connectivity Gateway: build FIX/proprietary message, colocation hop</td><td>&asymp;2&ndash;5 ms</td></tr>
+          <tr><td>t+40</td><td>Exchange (NEAT/BOLT) matching engine: accept into the order book, ack</td><td>&asymp;5&ndash;15 ms (outside broker's control)</td></tr>
+          <tr><td>t+55</td><td>OMS marks OPEN, returns to client</td><td>&mdash;</td></tr>
+          <tr><td>t+55</td><td>Outbox &rarr; Kafka &rarr; Notification, Admin/Analytics (async, not on critical path)</td><td>async</td></tr>
+        </table>
+        <p><strong>Internal P95 well under 200&ndash;300 ms</strong> for the broker-controlled portion (&asymp;50&ndash;80 ms typical); the exchange's own matching/ack time is outside the broker's control and explicitly excluded from the internal SLO, the same way a card network's authorization round-trip is excluded from a payments platform's internal SLO.</p>
+
+        <h3>10.2 Market-open surge handling (9:00&ndash;9:15&ndash;9:45 AM IST)</h3>
+        <ul>
+          <li><strong>9:00&ndash;9:08 AM &mdash; pre-open session:</strong> NSE/BSE collect orders and compute an equilibrium opening price without live matching; the broker's OMS accepts and queues orders normally, but nothing is ROUTED_TO_EXCHANGE-and-matched yet. This window is a natural place to pre-warm caches and pre-scale.</li>
+          <li><strong>9:15 AM &mdash; continuous trading begins:</strong> the scheduled, known-in-advance spike hits simultaneously across (a) the order-write path (RMS+OMS+Exchange Gateway) and (b) the WebSocket tier (mass reconnect/login as users open Kite at the bell). Because this spike is <em>predictable and recurring daily</em> &mdash; unlike a generic web app's organic traffic &mdash; capacity is <strong>scheduled/predictive-scaled ahead of 9:15</strong> (e.g., pre-warm the 40 ticker instances and the 12 API/OMS instances from Capacity Estimation a few minutes before the bell) rather than purely reactive auto-scaling, which would react a few seconds too late for a spike this sharp.</li>
+          <li><strong>WebSocket connection-storm handling:</strong> client SDKs reconnect with exponential backoff + jitter so a ticker-instance restart or deploy does not create a synchronized reconnect thundering herd; the Ticker Service load-balancer spreads new connections across instances with least-connections routing, and a connection admission limit per instance protects against a single instance being overwhelmed.</li>
+          <li><strong>3:00&ndash;3:30 PM close:</strong> a second, similarly predictable spike as intraday (MIS) positions are auto-square-off by RMS ahead of the close and users adjust final positions; sized identically to the open in this design.</li>
+        </ul>
+
+        <h3>10.3 Reconciliation against exchange end-of-day files</h3>
+        <p>Purpose: prove the broker's own order/trade/position records agree with what the exchange's clearing corporation says was actually obligated/settled, and catch anything stuck.</p>
+        <ol>
+          <li>End of day (T+0 evening): ingest the exchange's contract note / obligation file per segment (rows of exchange_order_id/exchange_trade_id, quantity, price, net obligation).</li>
+          <li>Match each external row to internal orders/trades by exchange_order_id / exchange_trade_id (unique index).</li>
+          <li>Classify:</li>
+        </ol>
+        <table>
+          <tr><th>Classification</th><th>Meaning / action</th></tr>
+          <tr><td>MATCHED</td><td>internal FILLED, quantities/prices agree &rarr; ok</td></tr>
+          <tr><td>MISSING_INTERNAL</td><td>exchange shows a fill with no/incomplete internal record &rarr; investigate a possibly-lost fill event; correct the order/position, else escalate</td></tr>
+          <tr><td>MISSING_EXTERNAL</td><td>internal FILLED, absent from the exchange file &rarr; chase the exchange feed; possible duplicate/phantom fill on our side &rarr; reverse if confirmed absent</td></tr>
+          <tr><td>AMOUNT_MISMATCH</td><td>brokerage/STT/exchange-fee differences &rarr; post adjustment ledger legs</td></tr>
+          <tr><td>STUCK</td><td>internal ROUTED_TO_EXCHANGE/OPEN past session close with no terminal exchange status &rarr; resolve via exchange status query / manual queue</td></tr>
+        </table>
+        <ol start="4">
+          <li>Every mismatch posts a ledger <em>suspense</em> entry plus an incident record &mdash; nothing is silently written off; reconciliation mismatch count is a first-class SLI (see Monitoring).</li>
+          <li>Separately, recompute SUM(margin reservations released/settled) per account against trading_accounts.available_margin/blocked_margin as an internal self-recon, the same way a payments ledger self-reconciles SUM(legs) against a materialized balance.</li>
+          <li>Settlement follows India's T+1 cycle for equities (as of Jan 2023), so the obligation file for a given trade date is confirmed the next business day; NSE has piloted an optional T+0 window for select securities, which reconciliation must be able to handle on a per-security basis.</li>
+        </ol>
+
+        <h3>10.4 Concurrent margin-check correctness walkthrough (the interview classic, adapted)</h3>
+        <p>Scenario: account has &#8377;50,000 available margin; two concurrent MIS buy orders each require &#8377;40,000. Walkthrough with the chosen <strong>atomic conditional reserve</strong> (Section 7.2):</p>
+        <ol>
+          <li>Both orders carry different client_order_ids (different logical operations), so both pass idempotency and reach RMS.</li>
+          <li>Both target the same account_id, which lives on one shard; requests serialize at the row (whether via single-writer routing or simply the DB's row lock) &mdash; order A is processed, then order B.</li>
+          <li>Order A executes: <code>UPDATE trading_accounts SET available_margin = available_margin - 40000 WHERE account_id=X AND available_margin &gt;= 40000;</code> &rarr; 1 row affected, available_margin 50000&rarr;10000. Margin reservation row inserted, order routed. Commit.</li>
+          <li>Order B executes the same statement, but now <code>10000 &gt;= 40000</code> is <strong>false</strong> &rarr; <strong>0 rows affected</strong> &rarr; RMS returns INSUFFICIENT_MARGIN. Order B never reaches the Exchange Connectivity Gateway.</li>
+        </ol>
+        <p>Even without single-writer routing, the <strong>conditional predicate inside the UPDATE</strong> (evaluated under the row lock) is what prevents the over-exposure: the two UPDATEs serialize at the row level, whichever commits first wins, and the second sees the decremented balance and fails. The bug this eliminates &mdash; "read available margin, check in the app layer, then write" &mdash; is exactly the wallet double-spend bug, just with margin instead of cash; the fix is the same atomic-check-and-decrement discipline.</p>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li><strong>Synchronous / quorum writes for the orders/margin/funds_ledger DB.</strong> Writes on this path replicate <strong>synchronously to a quorum</strong> (primary + &ge;1 sync replica) before ack. Rationale: with async replication, a primary crash after ack-but-before-replication can lose a committed order state or a margin reservation &mdash; a client believes an order is OPEN, or believes margin was released, and it silently reverts. For money and live-order state that is intolerable, so we accept a few extra milliseconds of intra-region write latency for durability. Same CP choice, same trade-off, as a payments ledger.</li>
+          <li><strong>Multi-region: active-passive, not active-active, for the transactional core.</strong> A single region is authoritative for writes for a given account, with a warm standby kept current via replication and promoted on regional failure. <strong>Active-active for order routing is actively dangerous here, arguably more so than for a wallet:</strong> if two regions both accepted and routed live orders for the same account during a network partition, the failure mode is not just a reconciliation headache &mdash; it can mean <em>two live orders in the real market</em> that both execute, creating a real position that must be unwound at whatever price the market offers by the time anyone notices. We accept bounded failover downtime (measured RTO/RPO) over that risk. Read traffic (portfolio, quotes, history) can be served active-active from replicas/cache; <strong>writes are single-region-authoritative per account.</strong></li>
+          <li><strong>Circuit breakers around the Exchange Connectivity Gateway.</strong> If the FIX session's error-rate/latency crosses a threshold (network blip, exchange-side degradation), open the breaker: fail order-routing fast with a clear "exchange connectivity degraded" status rather than piling up threads waiting on a stalled session. Half-open probes restore traffic once the session recovers. This protects the OMS's own SLO from a slow external dependency, exactly as a payments platform circuit-breaks around a slow PSP.</li>
+          <li><strong>Redis hot-cache tier: multiple independent instances, no single point of failure.</strong> Because <em>every</em> Kite UI read (orders, positions, portfolio) is served from this cache (see Caching Strategy), it cannot be a single instance. Multiple independent Redis instances (sharded by account_id, mirroring the DB shard boundary) provide HA; disk persistence is deliberately turned off for speed, so a lost instance is repopulated from the authoritative Postgres/event stream by the async cache-populator, not restored from an RDB/AOF file &mdash; the cache is disposable by design, the database is not.</li>
+          <li><strong>Retry-with-backoff, made safe by idempotency.</strong> Client retries and internal service-to-service retries use exponential backoff + jitter and carry the same client_order_id/idempotency key, so a retry can never double-place an order or double-move funds &mdash; the same inseparable pairing of "retries are safe" and "everything is idempotent" as in a payments platform.</li>
+        </ul>
+
+        <h2 id="caching-strategy">Caching Strategy</h2>
+        <p>Guiding rule: <strong>cache reads that are safe to be slightly stale for display; never cache anything a margin/order-routing decision depends on.</strong></p>
+        <table>
+          <tr><th>Data</th><th>Cache?</th><th>Rationale / invalidation</th></tr>
+          <tr><td>Live price for display (LTP, watchlist, depth widget)</td><td><strong>Yes</strong> &mdash; served from the Redis hot cache, populated by the Ticker Service</td><td>A UI showing a price that is a few hundred ms old is completely normal for a human trader; staleness is bounded and harmless for display.</td></tr>
+          <tr><td>Static instrument master data (lot size, tick size, tradingsymbol&rarr;token)</td><td><strong>Yes</strong>, long TTL / read-through</td><td>Changes rarely (contract rollovers, corporate actions); invalidate on the instrument-master refresh job.</td></tr>
+          <tr><td>User profile, KYC status, segment enablement</td><td><strong>Yes</strong>, TTL minutes</td><td>Rarely changes; invalidate on profile update.</td></tr>
+          <tr><td>Orders, positions, holdings, portfolio (every Kite UI read)</td><td><strong>Yes</strong> &mdash; but as a "dumb", populated-async cache, never the write-of-record</td><td>Served as an O(1) raw-bytes GET with zero serialization on the hot path; an async pipeline repopulates it after every state change (fill, margin update, deposit). This mirrors Zerodha's own published architecture for Kite.</td></tr>
+          <tr><td><strong>Available margin at the moment of order placement</strong></td><td><strong>No &mdash; never</strong></td><td>The RMS check must read (and atomically reserve against) the authoritative value in trading_accounts, under the row lock, at write time. Serving it from a cache reopens exactly the double-spend-style race the atomic conditional UPDATE exists to prevent. A cached <em>display</em> figure for the margin widget is fine; the debit/reserve path never uses it.</td></tr>
+        </table>
+
+        <p><strong>The "dumb cache" read path, in Zerodha's own real design:</strong> a GET for orders/positions/portfolio does an O(1) in-memory lookup in Redis and writes the raw stored bytes straight onto the HTTP response &mdash; no query, no serialization, no computation on the hot path. A separate, decoupled async job is responsible for keeping that cache populated whenever the underlying state changes. Disk persistence is turned off on these Redis instances for raw speed (see Replication and Fault Tolerance for why that is safe). On top of this, an HTTP <strong>ETag/304</strong> layer &mdash; a Redis-backed map of per-user-per-resource ETags &mdash; lets a client send <code>If-None-Match</code> and get back a bodyless <code>304 Not Modified</code> when nothing changed (e.g., an unchanged order list on a background poll), which matters a great deal for mobile clients on cellular data.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 380" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-zrd-8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-zrd-8m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="15" width="220" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="130" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">State change (fill, margin</text>
+            <text x="130" y="53" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">update, deposit)</text>
+
+            <line x1="240" y1="42" x2="273" y2="42" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-zrd-8)"></line>
+
+            <rect x="275" y="15" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="375" y="38" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Async cache-populator</text>
+            <text x="375" y="53" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">decoupled from the read path</text>
+
+            <line x1="475" y1="42" x2="508" y2="42" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-zrd-8)"></line>
+
+            <rect x="510" y="15" width="205" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="612" y="38" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Redis (dumb cache)</text>
+            <text x="612" y="53" text-anchor="middle" fill="#6b4a10" font-size="8">raw bytes, disk persistence off</text>
+
+            <line x1="612" y1="70" x2="612" y2="118" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-zrd-8)" marker-start="url(#arrow-zrd-8)"></line>
+
+            <rect x="470" y="120" width="245" height="60" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="592" y="145" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Client GET /v1/orders</text>
+            <text x="592" y="160" text-anchor="middle" fill="#cbd8ef" font-size="8">If-None-Match: &lt;etag&gt;</text>
+
+            <line x1="470" y1="150" x2="90" y2="150" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-zrd-8m)"></line>
+
+            <rect x="20" y="120" width="200" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="120" y="143" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">ETag map lookup</text>
+            <text x="120" y="158" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">(per-user, per-resource)</text>
+
+            <line x1="120" y1="180" x2="120" y2="210" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-zrd-8)"></line>
+
+            <rect x="20" y="212" width="200" height="45" rx="6" fill="var(--color-surface)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="120" y="230" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">ETag matches</text>
+            <text x="120" y="245" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">&rarr; 304 Not Modified (no body)</text>
+
+            <line x1="220" y1="150" x2="500" y2="212" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-zrd-8m)"></line>
+
+            <rect x="470" y="212" width="245" height="45" rx="6" fill="var(--color-surface)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="592" y="230" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">ETag mismatch (or none sent)</text>
+            <text x="592" y="245" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">&rarr; O(1) lookup, dump raw bytes, new ETag</text>
+
+            <text x="370" y="300" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">Zero serialization and zero query on the hot path: the cache is populated once, asynchronously,</text>
+            <text x="370" y="318" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">and read many times as raw bytes &mdash; this is the "dumb cache" pattern behind every Kite UI read.</text>
+          </svg>
+          <div class="diagram-caption">Figure 8. The dumb-cache / ETag read path: state changes populate Redis asynchronously; reads are an O(1) byte-dump with no computation, and an ETag map lets an unchanged resource short-circuit to a bodyless 304 &mdash; the design that lets millions of portfolio/order-status reads never touch Postgres.</div>
+        </div>
+
+        <h2 id="monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</h2>
+        <p><strong>Key SLIs / metrics:</strong></p>
+        <ul>
+          <li><strong>Order acceptance latency P95/P99</strong> (gateway&rarr;RMS&rarr;OMS&rarr;exchange ack), tracked separately from the exchange's own matching time, which is outside the broker's control.</li>
+          <li><strong>RMS rejection rate</strong> (INSUFFICIENT_MARGIN and others) &mdash; a sudden spike can indicate a margin-calculation bug or a market-wide volatility event driving margin requirements up.</li>
+          <li><strong>Tick delivery lag</strong> &mdash; exchange-feed timestamp vs. the time a tick is actually flushed to a subscriber connection; a growing lag under load is the earliest signal the Ticker tier needs to scale.</li>
+          <li><strong>WebSocket reconnect-storm rate</strong> &mdash; a spike here after a deploy or an instance restart signals the backoff/jitter strategy isn't spreading reconnects enough.</li>
+          <li><strong>Reconciliation mismatch count and aging</strong> &mdash; any nonzero mismatch against the exchange's EOD files is investigated; trend is a compliance signal, not just an ops one.</li>
+          <li>PSP/bank error rate for fund transfers, circuit-breaker state on the Exchange Connectivity Gateway, idempotency-replay rate (duplicate client_order_id hits), DLQ depth on the event bus.</li>
+        </ul>
+        <p><strong>Audit logging (immutable, tamper-evident):</strong> the orders/trades/funds_ledger tables are append-only for state history; hash-chaining each ledger entry (store prev_hash and hash = H(prev_hash || record)) makes retroactive tampering detectable, and SEBI/exchange inspection requires this trail to be retained for years and be reconstructable per client, per instrument, per day &mdash; not just aggregated.</p>
+        <p><strong>Admin/Analytics dashboard (FR7) as a downstream consumer:</strong> the same order/trade/fund event stream that feeds Notification and Reconciliation also feeds the internal analytics pipeline &mdash; order funnel and drop-off (PLACED&rarr;REJECTED ratio by reason), DAU and order-volume trends, most-traded instruments, brokerage/STT revenue, and RMS rejection breakdowns. It reads the stream asynchronously and never sits on the order-placement critical path.</p>
+        <p><strong>Notification triggers:</strong> order filled/rejected/cancelled, margin call (intraday margin utilization crossing a threshold, e.g. MIS position approaching auto-square-off), fund credit/debit confirmation. All delivered async off the event bus.</p>
+
+        <h2 id="security-considerations">Security Considerations</h2>
+        <ul>
+          <li><strong>2FA/TOTP on every login.</strong> SEBI requires two-factor authentication for trading platforms; Kite enforces password + TOTP for user sessions. Kite Connect (API/algo) clients authenticate via an API-key + request-token/access-token exchange instead of a password, but the underlying account still sits behind the user's own 2FA-gated login when the token was issued.</li>
+          <li><strong>KYC / Aadhaar e-KYC onboarding.</strong> PAN verification and Aadhaar-based e-KYC establish identity before an account can trade; segment enablement (equity/F&amp;O/currency/commodity) is gated on KYC completeness and risk profiling (e.g., F&amp;O suitability checks).</li>
+          <li><strong>Encryption in transit &amp; at rest.</strong> TLS 1.2+/mTLS between services; database and backups encrypted (AES-256); secrets/keys in a KMS/HSM with rotation.</li>
+          <li><strong>Client funds are segregated and self-only &mdash; no peer-to-peer wallet.</strong> This is a load-bearing, easy-to-get-wrong point: unlike a payments app such as Paytm, there is <strong>no user-to-user transfer</strong> anywhere in this design. Fund management (FR5) moves money only between the client's ledger balance and that <strong>same client's own registered bank account</strong>. This follows SEBI's client-fund-segregation rules, which require a broker to keep client funds distinct from the broker's own funds and settle through client-designated bank accounts &mdash; it is a regulatory constraint, not a product choice, and it is exactly why the sharding story in Section 9 never needs a cross-account money saga.</li>
+          <li><strong>The 2026 SEBI Algo-ID framework, for any algorithmic/API order flow.</strong> Since the framework took effect on <strong>April 1, 2026</strong>, every order placed algorithmically &mdash; including via the public Kite Connect API &mdash; must carry a unique, <strong>exchange-issued Algo-ID</strong> so exchanges can trace, monitor, and audit its origin and behavior. No algorithm may go live without prior <strong>exchange approval</strong>. Algorithms fall into two categories with different obligations:
+            <ul>
+              <li><strong>White-box algos:</strong> fully transparent, documented logic, self-registered by the user/broker with the exchange. Suited to a retail trader running their own simple, disclosed strategy through the API.</li>
+              <li><strong>Black-box algos:</strong> logic undisclosed to the end user. The <strong>provider</strong> of a black-box algo must hold a SEBI <strong>Research Analyst (RA) license</strong> and publish periodic performance/risk disclosures &mdash; a materially higher compliance bar than white-box, because the end user cannot independently verify what the algorithm is doing.</li>
+            </ul>
+            Architecturally, this means the Auth Service/API-key issuance path for Kite Connect must capture and validate an Algo-ID on every order that originates from a registered algorithmic client, and RMS/OMS must be able to reject or flag an order arriving without one once the client is enrolled as an algo trader.</li>
+          <li><strong>Rate limiting &amp; anomaly detection.</strong> Per-account/per-API-key rate limits at the gateway; velocity checks in RMS (unusually large order sizes/frequency relative to the account's history) can trigger a step-up or a manual review, independent of the margin check.</li>
+          <li><strong>Idempotency as a security control.</strong> Just as in a payments platform, the client_order_id/unique-constraint discipline prevents replay-based duplicate order placement, whether from a client bug or a malicious retry.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <p>Interviewers commonly push into these areas after the base design. Rehearse the reasoning out loud, not just the one-line answer &mdash; the "why" is what actually gets evaluated.</p>
+
+        <h3>Concurrency, Correctness &amp; Margin</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q1. Two concurrent orders hit the same account with &#8377;50,000 available margin, each requiring &#8377;40,000 &mdash; walk me through exactly how you prevent both from being routed.</div>
+          <div class="qa-a">Both requests reach RMS and execute <code>UPDATE trading_accounts SET available_margin=available_margin-40000 WHERE account_id=X AND available_margin&gt;=40000</code>. The first commits (50000&rarr;10000); the second's predicate <code>10000&gt;=40000</code> is false &rarr; 0 rows affected &rarr; INSUFFICIENT_MARGIN, and that order never reaches the Exchange Connectivity Gateway. The check is atomic with the decrement inside the row lock, so there is no read-then-check gap.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q2. Why can't you just cache the available-margin figure to make the RMS check faster?</div>
+          <div class="qa-a">Because the RMS check is a write decision, not a read: it must reserve margin atomically at the moment it evaluates it, or two orders can race the same stale cached value and both pass. A cache is fine for a <em>display</em> of margin in the UI, but the actual reserve-and-route decision must hit the authoritative, row-locked value in trading_accounts every time &mdash; exactly the same reasoning that keeps a payments platform's wallet-debit decision off any cache.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q3. A client's order request times out and they retry 30 seconds later. How do you guarantee they don't end up with two live orders in the market?</div>
+          <div class="qa-a">The retry carries the same client_order_id. The unique-constraint insert on (account_id, client_order_id) means only one execution path ever owns RMS-checking and routing for that key; a retry either replays the stored terminal state (if the first attempt finished) or gets a 409 if it's still in flight. This matters more here than in a generic API: a duplicate isn't just a duplicate row, it's a second live order that could actually execute against the market.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q4. RMS rejects an order for insufficient margin, but the client swears they had enough. What's your debugging path?</div>
+          <div class="qa-a">Check the margin_reservation history for the account around that timestamp &mdash; a prior order (possibly still OPEN) may have already reserved margin that hasn't been released yet, e.g., a stale reservation from a cancelled order whose release event was delayed. Cross-check trading_accounts.blocked_margin against SUM of active reservations as a self-recon; a mismatch there is a bug, not a normal condition, and should be treated as an incident exactly like ledger balance drift in a payments system.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q5. Why is a pessimistic SELECT ... FOR UPDATE not the first choice here, given F&amp;O margin math can be non-trivial?</div>
+          <div class="qa-a">Because SPAN/exposure margin computation for F&amp;O can take real time, and holding a row lock for the duration of that computation serializes unrelated orders on the same account for longer than necessary. Doing the margin calculation first and only taking the lock for the final conditional UPDATE minimizes lock hold time; the conditional UPDATE alone is sufficient to prevent the race because the check and the decrement are one statement.</div>
+        </div>
+
+        <h3>Sharding, Replication &amp; Recovery</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q6. Why does this system shard by account_id for the transactional core but by symbol for market data &mdash; why not one scheme for everything?</div>
+          <div class="qa-a">They are different workloads with different natural keys. Orders/margin/funds are per-account, low-fan-out, correctness-bound &mdash; account_id co-locates everything one account needs for a local ACID transaction. Ticks are a single high-fan-in stream (one exchange feed) with a massive read fan-out to millions of subscribers, with no per-account meaning at all &mdash; symbol/instrument_token is the only sensible partition key, and the store is time-series-oriented (ClickHouse/ScyllaDB), not OLTP Postgres. Forcing one scheme onto both would either over-provision the transactional core for tick throughput or force the tick pipeline to carry ACID overhead it doesn't need.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q7. Why active-passive rather than active-active across regions for order routing, especially compared to a payments platform where the same question comes up?</div>
+          <div class="qa-a">Active-active risks two regions both accepting and routing live orders for the same account during a partition. For a wallet, that risk is a divergent balance that reconciliation must repair. For order routing it can be worse: both regions could route conflicting live orders into the actual market, and once an order matches at an exchange, it cannot be undone by fixing a database row afterward &mdash; you now have a real position at a real price. We accept bounded failover downtime (active-passive, fast promotion) rather than risk that.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q8. One of your Redis "dumb cache" instances dies mid-market-hours. What happens to reads?</div>
+          <div class="qa-a">Reads for the accounts on that shard fail over to another independent Redis instance (multiple instances per shard boundary, no single point of failure); since disk persistence is intentionally off, the failed instance's content isn't recovered from disk &mdash; it's simply repopulated by the async cache-populator reading current state from Postgres/the event stream. The cache is disposable by design; only the underlying database and event log are durable sources of truth.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q9. How would you migrate one account from one shard to another with zero downtime?</div>
+          <div class="qa-a">Replicate the account's orders/holdings/positions/funds_ledger rows to the target shard while the source stays authoritative; once caught up, briefly freeze writes for that single account_id (a tiny blast radius, since RMS is single-writer-per-account anyway), flip the routing entry, verify available_margin/blocked_margin match on the target, then unfreeze. Only that one account sees a sub-second pause; nothing else on either shard is affected.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q10. Why synchronous quorum replication for the orders/margin database given the latency cost, instead of async replication?</div>
+          <div class="qa-a">With async replication, a primary crash right after acking a commit but before it replicates can lose a committed order state or a margin release &mdash; the client believes an order is OPEN or margin is available, and that fact silently reverts on failover. For live-order state and money that's unacceptable and hard to audit after the fact. Quorum writes cost a few extra milliseconds intra-region but guarantee a committed transition survives a single node loss.</div>
+        </div>
+
+        <h3>Market Data, Reconciliation &amp; Extensions</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q11. Why doesn't the broker itself match buy and sell orders? Where exactly does matching happen?</div>
+          <div class="qa-a">Matching (price-time priority) happens inside the exchange's own matching engine &mdash; NEAT at NSE, and BSE's equivalent &mdash; not inside the broker. The broker's Order Management Service is a router and state machine: it validates the order, risk-checks it via RMS, and forwards it to the exchange over the Exchange Connectivity Gateway; everything after that (does this order actually trade, at what price, against whom) is decided by the exchange and reported back to the broker as acks and fills. This is different from, say, an internal dark pool or a broker that internalizes order flow &mdash; here the broker is a client of the exchange's order book, never the order book itself.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q12. Walk me through the 2026 SEBI Algo-ID rule and how it constrains the Kite Connect API surface.</div>
+          <div class="qa-a">Since April 1, 2026, every algorithmic order &mdash; including ones placed via the public Kite Connect API &mdash; must carry a unique, exchange-issued Algo-ID, and the algorithm must have prior exchange approval before it can go live. Algorithms are classified as white-box (transparent, documented, self-registered) or black-box (logic hidden from the end user, in which case the provider must hold a SEBI Research Analyst license and publish periodic disclosures). Architecturally this means the Auth/API-key layer has to track which callers are enrolled as algo traders, capture their Algo-ID on order submission, and RMS/OMS must be able to reject an algo-flagged order that arrives without a valid, approved Algo-ID.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q13. What happens if the exchange's end-of-day obligation file shows a trade your system has no record of?</div>
+          <div class="qa-a">That's a MISSING_INTERNAL case in reconciliation: the exchange asserts a fill happened, but the broker's own orders/trades tables don't reflect it, most likely a lost or delayed fill event. Reconciliation raises an incident, attempts to reconstruct the fill from the exchange's authoritative record, updates the account's position/holdings/ledger to match, and never silently ignores the discrepancy &mdash; a wrong guess here either creates a phantom position or leaves the client's real position unrepresented.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q14. Your WebSocket tier restarts for a deploy at 11 AM. What stops every client from reconnecting at the exact same instant and overwhelming the tier?</div>
+          <div class="qa-a">Client SDKs reconnect with exponential backoff and jitter rather than an immediate retry, which spreads the reconnect load over a window instead of a single instant. The load balancer in front of the Ticker Service instances uses least-connections routing so new connections spread evenly, and each instance enforces a connection admission cap so it fails fast rather than degrading for everyone if it's approaching its limit.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q15. A single popular stock like RELIANCE is ticking 10 times/sec and has hundreds of thousands of subscribers. How do you keep that from blowing up bandwidth?</div>
+          <div class="qa-a">The Ticker Service coalesces per-symbol updates to roughly one update per second per connection &mdash; a human doesn't need every micro-tick, so intermediate ticks for a hot symbol are simply superseded by the latest value before the next scheduled flush to each connection. This keeps egress bandwidth bounded regardless of how fast the underlying instrument is actually trading, at the cost of showing a slightly-lagged (sub-second) price, which is an acceptable trade-off for a display use case.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q16. How do you keep transaction/order history reads fast without ever risking the write path?</div>
+          <div class="qa-a">History is served from the Redis hot cache/read replicas, populated asynchronously by consumers of the order/trade event stream; it never takes a lock that the RMS margin-reservation or OMS state-transition path depends on. If a client needs a guaranteed-fresh view (e.g., right after placing an order), the order-status endpoint can fall back to reading the authoritative row directly, but the default, high-volume history/portfolio traffic is fully decoupled from the write path.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This design has two genuinely different systems sharing one product surface, and conflating them is the most common mistake. The <strong>transactional core</strong> (orders, margin, funds) is correctness-bound and sharded by <code>account_id</code>: RMS's atomic conditional margin reservation is the load-bearing pattern &mdash; check-and-reserve as one indivisible statement, exactly like a wallet-debit CAS but for margin instead of cash &mdash; backed by quorum-replicated, append-only ledger legs and idempotent order handling on client_order_id. Because funds only ever move between an account's own ledger and its own bank account, this core never needs a cross-shard money saga, which is a genuine simplification versus a peer-to-peer payments platform. The <strong>market-data path</strong> (ticks) is throughput-bound and partitioned by <code>symbol</code>: one exchange feed in, a purpose-built low-allocation broadcast service, and a "dumb cache" read path (raw-bytes Redis GETs plus ETag/304) that lets millions of portfolio/order reads never touch Postgres. Layered on both: the broker <strong>routes and risk-checks, but never matches</strong> &mdash; that happens at the exchange &mdash; and SEBI's Algo-ID regime, client-fund-segregation rules, and the mandatory RMS gate are regulatory constraints, not optional hardening, that shape the design as much as any scaling number does.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Zerodha Tech, <a href="https://zerodha.tech/" target="_blank" rel="noopener">zerodha.tech</a> &mdash; Zerodha's own engineering blog, source for the Go ticker service, the Redis "dumb cache" pattern, and published scale figures</li>
+          <li>Zerodha Tech, <a href="https://zerodha.tech/stack/" target="_blank" rel="noopener">"The Zerodha Technology Stack"</a> &mdash; the real FOSS stack: Go/Python, Postgres, Redis, ClickHouse/ScyllaDB, Kafka/NATS, Nomad/Kubernetes, Prometheus/Grafana</li>
+          <li>Kite Connect, <a href="https://kite.trade/docs/connect/v3/" target="_blank" rel="noopener">Kite Connect API v3 documentation</a> &mdash; the real public REST + WebSocket API this design's API section is modeled on</li>
+          <li>NSE, <a href="https://www.nseindia.com/static/products-services/equity-market-segment" target="_blank" rel="noopener">"Equity Market Segment"</a> &mdash; exchange-side context on the cash market segment this design routes orders into</li>
+          <li>Martin Kleppmann, <a href="https://dataintensive.net/" target="_blank" rel="noopener">"Designing Data-Intensive Applications"</a> &mdash; foundational background on replication, partitioning, and consistency trade-offs used throughout Sections 9 and 11</li>
+          <li>Martin Fowler, <a href="https://martinfowler.com/eaaCatalog/" target="_blank" rel="noopener">"Patterns of Enterprise Application Architecture"</a> &mdash; background on the state-machine and domain-model patterns behind the order lifecycle</li>
+          <li>AWS Builders' Library, <a href="https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-apis/" target="_blank" rel="noopener">"Making retries safe with idempotent APIs"</a> &mdash; the idempotent-retry reasoning behind the client_order_id design</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="netflix.html"><span class="dir">Previous</span>Netflix / YouTube</a>
+          <a class="next" href="index.html"><span class="dir">Next</span>Topic Overview</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

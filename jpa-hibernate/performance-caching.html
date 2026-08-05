@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance &amp; Caching | JPA / Hibernate | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">JPA / Hibernate</a><span class="sep">/</span><span class="current">Performance &amp; Caching</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to JPA / Hibernate overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#the-n1-select-problem-demonstrated">The N+1 Select Problem, Demonstrated</a></li>
+        <li><a href="#fix-1-join-fetch-in-jpql">Fix 1: JOIN FETCH in JPQL</a></li>
+        <li><a href="#fix-2-entitygraph">Fix 2: @EntityGraph</a></li>
+        <li><a href="#detecting-n1-in-practice">Detecting N+1 in Practice</a></li>
+        <li><a href="#second-level-cache">Second-Level Cache</a></li>
+        <li><a href="#when-not-to-cache">When Not to Cache</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">JPA / HIBERNATE</span>
+          <h1>Performance &amp; Caching</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>The N+1 select problem is the single most common Hibernate performance bug found in production systems, and it is a favorite interview topic precisely because spotting it requires more than knowing which annotation to write &mdash; it requires actually understanding how lazy loading and the persistence context work under the hood. An engineer who can only recite <code>@OneToMany(fetch = FetchType.LAZY)</code> without being able to explain when and why that laziness silently multiplies your query count has memorized syntax, not behavior. This page walks through how N+1 happens, the two standard fixes (<code>JOIN FETCH</code> and <code>@EntityGraph</code>), how to detect it before it reaches production, and how to use Hibernate's second-level cache correctly &mdash; including when caching makes things worse, not better.</p>
+
+        <h2 id="the-n1-select-problem-demonstrated">The N+1 Select Problem, Demonstrated</h2>
+        <p>Consider the domain model shared across this course: an <code>Author</code> has a one-to-many collection of <code>Post</code> entities, mapped as <code>FetchType.LAZY</code> &mdash; the correct default for collections, per the best practice covered on the Relationships page. Now suppose we fetch every author and then print how many posts each one has:</p>
+        <pre><code>List&lt;Author&gt; authors = entityManager.createQuery("select a from Author a", Author.class).getResultList(); // 1 query
+for (Author author : authors) {
+    System.out.println(author.getPosts().size()); // N additional queries - one per author!
+}</code></pre>
+        <p>The first line issues exactly one <code>SELECT</code> against the <code>author</code> table, returning, say, 50 rows. But <code>posts</code> is an uninitialized lazy proxy on every one of those 50 <code>Author</code> objects. The moment <code>author.getPosts().size()</code> is called inside the loop, Hibernate has to go back to the database to populate that collection &mdash; and it does so one author at a time, because each proxy is initialized independently the first time it is touched. The result: 1 query to fetch the authors, plus 50 more queries (one per author) to fetch their posts, for a total of 51 queries where a well-written query could have done the job in one. This is exactly the "N+1" pattern: 1 initial query, N follow-up queries, where N is the size of the outer result set. In a paginated list with 20 authors this is mildly wasteful; in a batch job or a poorly-bounded API response with thousands of authors, it can bring a database to its knees.</p>
+
+        <h2 id="fix-1-join-fetch-in-jpql">Fix 1: JOIN FETCH in JPQL</h2>
+        <p>The most direct fix is to tell JPQL to eagerly pull the association into the same SQL statement using <code>JOIN FETCH</code>. Instead of issuing a separate query per author, Hibernate performs a single SQL join and hydrates both the <code>Author</code> and its <code>posts</code> collection from one result set:</p>
+        <pre><code>List&lt;Author&gt; authors = entityManager.createQuery(
+    "select distinct a from Author a left join fetch a.posts", Author.class
+).getResultList(); // now just 1 query total</code></pre>
+        <p>Because a SQL join between <code>author</code> and <code>post</code> produces one row per matching post, an author with five posts appears five times in the raw result set. The <code>distinct</code> keyword tells JPQL to de-duplicate the <code>Author</code> objects at the result level (this is purely a Java/JPQL-level de-duplication &mdash; it does not add a <code>DISTINCT</code> to the generated SQL in the way you might expect from plain SQL). Hibernate 6 is smart enough to apply this de-duplication automatically in many cases even without the keyword, but relying on that implicit behavior is fragile across versions and configurations &mdash; writing <code>distinct</code> explicitly costs nothing and makes the intent unambiguous to the next engineer reading the code.</p>
+
+        <h2 id="fix-2-entitygraph">Fix 2: @EntityGraph</h2>
+        <p><code>@EntityGraph</code> offers a more declarative and reusable alternative to hand-writing <code>JOIN FETCH</code> in every query that touches an association. You can define a named graph once on the entity:</p>
+        <pre><code>@Entity
+@NamedEntityGraph(
+    name = "Author.withPosts",
+    attributeNodes = @NamedAttributeNode("posts")
+)
+public class Author {
+    @Id
+    private Long id;
+    private String name;
+
+    @OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
+    private List&lt;Post&gt; posts;
+}</code></pre>
+        <p>and reference it from a Spring Data JPA repository method, or apply an ad-hoc graph inline without ever defining a named one:</p>
+        <pre><code>public interface AuthorRepository extends JpaRepository&lt;Author, Long&gt; {
+
+    @EntityGraph(attributePaths = "posts")
+    List&lt;Author&gt; findAll();
+}</code></pre>
+        <p>The practical difference: <code>JOIN FETCH</code> is baked into a specific JPQL query and always fires whenever that query runs, which means you end up writing near-duplicate queries if some callers need the posts eagerly loaded and others don't. <code>@EntityGraph</code> decouples the fetch strategy from the query itself &mdash; the same underlying query (or even the same repository method signature) can be called with or without the graph attached, so you can selectively opt in to eager loading per use case without maintaining parallel copies of the same JPQL.</p>
+
+        <h2 id="detecting-n1-in-practice">Detecting N+1 in Practice</h2>
+        <p>N+1 bugs are easy to miss in development because a test database with three rows in every table never surfaces the problem &mdash; three extra queries are invisible in a debugger, but three thousand extra queries against a production table will page someone at 2 a.m. The fix is to make the query count visible during development, not just at test time:</p>
+        <ul>
+          <li>Enable <code>logging.level.org.hibernate.SQL=debug</code> (or the older <code>hibernate.show_sql</code> / <code>hibernate.format_sql</code> properties) in a Spring Boot application so every generated SQL statement is printed to the console &mdash; a suspicious wall of near-identical <code>SELECT ... FROM post WHERE author_id = ?</code> statements is the classic tell.</li>
+          <li>Use Hibernate's built-in statistics API, <code>SessionFactory.getStatistics()</code>, to programmatically assert on query counts in integration tests &mdash; for example, asserting that fetching a page of authors executes exactly one query, not one-plus-N.</li>
+          <li>Reach for third-party tooling built specifically for this, such as the <code>db-util</code> / <code>datasource-proxy</code> libraries or Hypersistence Utils' query-count assertions, which fail a test automatically the moment an unexpected number of queries is issued.</li>
+        </ul>
+        <p>Catching N+1 in a fast unit or integration test, before it ever reaches a code review or production, is far cheaper than diagnosing it later from a slow-query log.</p>
+
+        <h2 id="second-level-cache">Second-Level Cache</h2>
+        <p>Hibernate actually has two distinct caching layers, and conflating them is a common interview stumble:</p>
+        <ul>
+          <li><strong>First-level cache</strong> &mdash; the persistence context (the <code>EntityManager</code> / Hibernate <code>Session</code> itself). It is always on, cannot be disabled, and is scoped to a single transaction: load the same <code>Author</code> by id twice within one transaction and the second call returns the same in-memory instance without hitting the database. It disappears the moment the transaction/session ends.</li>
+          <li><strong>Second-level cache</strong> &mdash; an opt-in cache shared across sessions and transactions, backed by an external provider such as Ehcache or Caffeine. Because it survives beyond a single transaction, it is what actually saves round-trips to the database across unrelated requests.</li>
+        </ul>
+        <p><code>Tag</code> is a good candidate for the second-level cache: it is fairly static reference data (a small, slow-changing set of labels), so paying the cost of caching it is clearly worth the savings in repeated lookups:</p>
+        <pre><code>@Entity
+@Cacheable
+@org.hibernate.annotations.Cache(usage = org.hibernate.annotations.CacheConcurrencyStrategy.READ_ONLY)
+public class Tag {
+    @Id
+    private Long id;
+    private String name;
+}</code></pre>
+        <p><code>CacheConcurrencyStrategy</code> controls the correctness/performance trade-off for cached writes:</p>
+        <ul>
+          <li><code>READ_ONLY</code> &mdash; for data that is never updated after creation (a great fit for <code>Tag</code>); the simplest and fastest strategy since there is no invalidation logic to reason about.</li>
+          <li><code>READ_WRITE</code> &mdash; for data that changes occasionally but needs strong correctness guarantees; Hibernate uses soft locks around updates to prevent stale reads during a write.</li>
+          <li><code>NONSTRICT_READ_WRITE</code> &mdash; for data that is rarely updated and can tolerate a brief window of staleness after a write, in exchange for lower locking overhead than <code>READ_WRITE</code>.</li>
+        </ul>
+
+        <h2 id="when-not-to-cache">When Not to Cache</h2>
+        <p>Second-level caching is not a general-purpose performance switch to flip on every entity. <code>Post</code> is a poor candidate: its <code>status</code> and content change frequently as authors edit and publish, so the cache would need constant invalidation, and any lag between a write and the invalidation propagating shows up as a real correctness bug (a user editing a post and immediately seeing stale data reflected back). The overhead of managing invalidation and the risk of serving stale results on volatile entities generally outweighs the read savings. As a rule of thumb: reserve the second-level cache for small, mostly-static reference or lookup data (like <code>Tag</code>), and leave frequently mutated, business-critical entities (like <code>Post</code> or <code>Author</code>) to be read straight from the database or handled with a more deliberate, invalidation-aware caching strategy at the application layer.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">What causes the N+1 select problem?</div>
+          <div class="qa-a">It happens when you run one query to fetch a list of parent entities, and then access a lazily-loaded association on each parent inside a loop. Because each uninitialized lazy proxy is fetched independently the first time it's touched, you end up with 1 initial query plus N follow-up queries &mdash; one per parent row &mdash; instead of a single combined query.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does JOIN FETCH solve N+1, and why is distinct sometimes needed with it?</div>
+          <div class="qa-a"><code>JOIN FETCH</code> pulls the association into the same SQL query as the parent, via a SQL join, so everything comes back in a single round-trip instead of N extra ones. Because a join produces one row per matching child, a parent with multiple children appears multiple times in the raw result; <code>distinct</code> tells JPQL to de-duplicate the parent entities in the returned <code>List</code>.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between @EntityGraph and JOIN FETCH?</div>
+          <div class="qa-a"><code>JOIN FETCH</code> is embedded directly in a specific JPQL query and always applies whenever that query runs. <code>@EntityGraph</code> decouples the fetch plan from the query itself, letting you reuse a named graph (or an ad-hoc <code>attributePaths</code> list) across different repository methods, and selectively opt individual call sites in or out of eager loading without duplicating JPQL.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between Hibernate's first-level and second-level cache?</div>
+          <div class="qa-a">The first-level cache is the persistence context itself &mdash; always on, not configurable, and scoped to a single <code>EntityManager</code>/transaction. The second-level cache is opt-in, backed by an external provider such as <code>Ehcache</code> or <code>Caffeine</code>, and shared across sessions and transactions, so it can actually reduce database load across unrelated requests.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What kind of data is a good candidate for second-level caching, and what kind is a bad candidate?</div>
+          <div class="qa-a">Good candidates are small, mostly-static reference or lookup tables that rarely change, like <code>Tag</code>. Bad candidates are entities that mutate frequently, like <code>Post</code>, where cache invalidation overhead and the risk of serving stale data outweigh the benefit of avoiding a database read.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>N+1 happens when a lazy association is accessed inside a loop over a parent result set, turning 1 query into 1+N.</li>
+          <li><code>JOIN FETCH</code> collapses parent and child into a single SQL query; add <code>distinct</code> to de-duplicate parents produced by the join.</li>
+          <li><code>@EntityGraph</code> gives you the same eager-fetch benefit as <code>JOIN FETCH</code>, but as a reusable, declarative plan instead of query-specific JPQL.</li>
+          <li>Detect N+1 early with SQL logging and Hibernate's statistics API, ideally as an automated assertion in integration tests, not by reading production slow-query logs.</li>
+          <li>Reserve the second-level cache for small, static reference data like <code>Tag</code>; avoid it for frequently-updated entities like <code>Post</code> where staleness and invalidation costs outweigh the gains.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="querying-data.html"><span class="dir">Previous</span>Data Retrieval</a>
+          <a class="next" href="transactions-concurrency.html"><span class="dir">Next</span>Transactions &amp; Concurrency</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

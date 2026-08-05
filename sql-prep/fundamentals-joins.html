@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Fundamentals &amp; Joins | SQL Prep | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">SQL Prep</a><span class="sep">/</span><span class="current">SQL Fundamentals &amp; Joins</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to SQL Prep overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#select-where-order-by-basics">SELECT, WHERE, ORDER BY Basics</a></li>
+        <li><a href="#join-types">Join Types</a></li>
+        <li><a href="#null-semantics-in-joins">NULL Semantics in Joins</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SQL PREP</span>
+          <h1>SQL Fundamentals &amp; Joins</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Every SQL interview starts here: can you write a correct <code>SELECT</code>, filter and order results, and — most importantly — combine rows from multiple tables using the right join type. Interviewers watch for whether you understand what a join actually does to the row set (a Cartesian product filtered by a predicate) rather than just memorizing syntax, and whether you can reason about how <code>NULL</code> behaves in join conditions and filters.</p>
+
+        <h2 id="select-where-order-by-basics">SELECT, WHERE, ORDER BY Basics</h2>
+        <p>The logical processing order of a query is <em>not</em> the order you type it in: <code>FROM</code>/<code>JOIN</code> &rarr; <code>WHERE</code> &rarr; <code>GROUP BY</code> &rarr; <code>HAVING</code> &rarr; <code>SELECT</code> &rarr; <code>ORDER BY</code> &rarr; <code>LIMIT</code>. This is why you can't reference a <code>SELECT</code>-defined column alias in a <code>WHERE</code> clause (it doesn't exist yet at that stage) but you generally can in <code>ORDER BY</code> (evaluated after <code>SELECT</code>).</p>
+        <pre><code>SELECT customer_id, order_date, total_amount
+FROM orders
+WHERE total_amount &gt; 100
+ORDER BY order_date DESC;
+</code></pre>
+
+        <h2 id="join-types">Join Types</h2>
+        <p>Given two tables <code>Customers</code> and <code>Orders</code>, where not every customer has placed an order and not every order references a valid customer:</p>
+        <pre><code>Customers                Orders
++----+---------+         +----+-------------+--------+
+| id | name    |         | id | customer_id | amount |
++----+---------+         +----+-------------+--------+
+| 1  | Alice   |         | 10 | 1           | 50     |
+| 2  | Bob     |         | 11 | 1           | 75     |
+| 3  | Carol   |         | 12 | 4           | 20     |  &lt;- orphan (no customer 4)
++----+---------+         +----+-------------+--------+
+                          (Carol, id 3, has no orders)
+</code></pre>
+        <pre><code>-- INNER JOIN: only rows with a match on both sides
+SELECT c.name, o.amount
+FROM customers c
+INNER JOIN orders o ON c.id = o.customer_id;
+-- Alice/50, Alice/75   (Bob and Carol excluded; orphan order 12 excluded)
+
+-- LEFT (OUTER) JOIN: all rows from the left table, NULLs where no match
+SELECT c.name, o.amount
+FROM customers c
+LEFT JOIN orders o ON c.id = o.customer_id;
+-- Alice/50, Alice/75, Bob/NULL, Carol/NULL
+
+-- RIGHT (OUTER) JOIN: all rows from the right table, NULLs where no match
+SELECT c.name, o.amount
+FROM customers c
+RIGHT JOIN orders o ON c.id = o.customer_id;
+-- Alice/50, Alice/75, NULL/20   (order 12's orphan customer_id 4 shows as NULL name)
+
+-- FULL OUTER JOIN: all rows from both sides, NULLs where no match on either side
+SELECT c.name, o.amount
+FROM customers c
+FULL OUTER JOIN orders o ON c.id = o.customer_id;
+-- Alice/50, Alice/75, Bob/NULL, Carol/NULL, NULL/20
+
+-- CROSS JOIN: Cartesian product, every row from A paired with every row from B
+SELECT c.name, o.amount
+FROM customers c
+CROSS JOIN orders o;
+-- 3 customers x 3 orders = 9 rows, no matching condition at all
+
+-- SELF JOIN: a table joined to itself, typically for hierarchical/comparison data
+SELECT e.name AS employee, m.name AS manager
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.id;
+</code></pre>
+
+        <table>
+          <tr><th>Join type</th><th>Result includes</th></tr>
+          <tr><td>INNER JOIN</td><td>Only rows with a match in both tables</td></tr>
+          <tr><td>LEFT JOIN</td><td>All left rows, matched right columns or <code>NULL</code></td></tr>
+          <tr><td>RIGHT JOIN</td><td>All right rows, matched left columns or <code>NULL</code></td></tr>
+          <tr><td>FULL OUTER JOIN</td><td>All rows from both sides, <code>NULL</code>s where unmatched</td></tr>
+          <tr><td>CROSS JOIN</td><td>Cartesian product — every combination of rows, no condition</td></tr>
+          <tr><td>SELF JOIN</td><td>Not a distinct join type — a table aliased and joined to itself</td></tr>
+        </table>
+
+        <h2 id="null-semantics-in-joins">NULL Semantics in Joins</h2>
+        <p><code>NULL</code> represents "unknown," so it never equals anything in a three-valued logic system — not even another <code>NULL</code>. <code>a = NULL</code>, <code>NULL = NULL</code>, and <code>a &lt;&gt; NULL</code> all evaluate to <code>UNKNOWN</code>, which is treated as false for filtering purposes. This has two important consequences for joins: (1) an outer join produces <code>NULL</code>s for the unmatched side, and any subsequent <code>WHERE</code> filter on those columns (instead of the join's <code>ON</code> clause) will silently drop those rows because the comparison evaluates to <code>UNKNOWN</code>; (2) you cannot join two rows purely because both have a <code>NULL</code> in the join column — use <code>IS NOT DISTINCT FROM</code> (Postgres) or explicit <code>COALESCE</code> logic if you need <code>NULL</code>-inclusive matching.</p>
+        <div class="callout">
+          <div class="callout-title">Common bug: filtering an outer join back into an inner join</div>
+          <code>LEFT JOIN orders o ON ... WHERE o.amount &gt; 50</code> silently discards every unmatched left row, because <code>NULL &gt; 50</code> is <code>UNKNOWN</code>, not true. If you need to keep unmatched rows while still filtering matched ones, move the condition into the <code>ON</code> clause instead of <code>WHERE</code>.
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Join algorithm complexity</span>
+          Nested-loop join: O(N &times; M) &nbsp;|&nbsp; Hash join: O(N + M) &nbsp;|&nbsp; Sort-merge join: O(N log N + M log M)
+          <br>e.g. joining a 1,000-row table against a 1,000,000-row table: nested-loop &asymp; 1 billion comparisons worst case, vs. a hash join &asymp; 1,001,000 operations — this gap is exactly why query planners fight to avoid nested-loop joins on large, unindexed tables.
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between <code>WHERE</code> filtering in the join's <code>ON</code> clause vs. the query's <code>WHERE</code> clause for an outer join?</div>
+          <div class="qa-a">A condition in <code>ON</code> is applied while the join is being formed, so it only affects which right-side rows are matched — unmatched left rows still appear with <code>NULL</code>s. The same condition in <code>WHERE</code> is applied <em>after</em> the join, so it filters the final result set and will drop any row where the condition evaluates to <code>UNKNOWN</code>/false, including legitimately unmatched left rows — effectively turning a <code>LEFT JOIN</code> back into an <code>INNER JOIN</code>.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you find all customers who have never placed an order?</div>
+          <div class="qa-a">Use a <code>LEFT JOIN</code> from customers to orders and filter for <code>orders.id IS NULL</code> in the <code>WHERE</code> clause (safe here because the filter is on a column that is only <code>NULL</code> for genuinely unmatched rows): <code>SELECT c.* FROM customers c LEFT JOIN orders o ON c.id = o.customer_id WHERE o.id IS NULL</code>. A <code>NOT IN</code> subquery works too but is a trap if the subquery's column can contain <code>NULL</code> — <code>NOT IN</code> against a list containing <code>NULL</code> returns no rows at all.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Is a <code>SELF JOIN</code> a distinct kind of join?</div>
+          <div class="qa-a">No — it's just any join type (commonly <code>INNER</code> or <code>LEFT</code>) where the same table is referenced twice under different aliases, typically to compare rows within the table (e.g. an employee to their manager, who is also a row in the employees table) or find pairs/duplicates.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">When would you deliberately use a <code>CROSS JOIN</code>?</div>
+          <div class="qa-a">When you genuinely need every combination of two sets — e.g. generating a calendar of all (store, date) pairs to left-join against actual sales data so that days/stores with zero sales still appear as rows with 0, rather than being absent entirely.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why does <code>NOT IN (SELECT ... )</code> sometimes return zero rows unexpectedly?</div>
+          <div class="qa-a">If the subquery's result set contains even one <code>NULL</code>, the entire <code>NOT IN</code> predicate evaluates to <code>UNKNOWN</code> for every row, because comparing against a <code>NULL</code> in the list can never be proven false. The safe alternatives are <code>NOT EXISTS</code> (correlated subquery, unaffected by <code>NULL</code>s) or filtering the subquery with <code>WHERE column IS NOT NULL</code> before using <code>NOT IN</code>.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Query clauses execute in logical order (FROM/JOIN &rarr; WHERE &rarr; GROUP BY &rarr; HAVING &rarr; SELECT &rarr; ORDER BY), not written order. Choose the join type based on which side's unmatched rows you need to preserve, and always double-check whether a post-join filter belongs in <code>ON</code> or <code>WHERE</code> — that choice changes your result set with outer joins. <code>NULL</code> never equals anything, including itself.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="index.html"><span class="dir">Previous</span>Topic Overview</a>
+          <a class="next" href="aggregations-grouping.html"><span class="dir">Next</span>Aggregations &amp; Grouping</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

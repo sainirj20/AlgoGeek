@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing a Hyperlocal Weather App (Dark-Sky-Style Nowcasting) | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Weather Application</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design">Low-Level Design</a></li>
+        <li><a href="#deep-dive-nowcasting-model-radarsatellite-ingestion-and-short-horizon-precipitation-prediction">Deep Dive &mdash; Nowcasting Model: Radar/Satellite Ingestion and Short-Horizon Precipitation Prediction</a></li>
+        <li><a href="#deep-dive-hyperlocal-grid-resolution-and-serving-architecture">Deep Dive &mdash; Hyperlocal Grid Resolution and Serving Architecture</a></li>
+        <li><a href="#deep-dive-push-notification-engine-for-precipitation-alerts">Deep Dive &mdash; Push Notification Engine for Precipitation Alerts</a></li>
+        <li><a href="#deep-dive-data-pipeline-batch-model-training-vs-real-time-inference-serving">Deep Dive &mdash; Data Pipeline: Batch Model Training vs. Real-Time Inference Serving</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing a Hyperlocal Weather App (Dark-Sky-Style Nowcasting)</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a hyperlocal, minute-by-minute precipitation-nowcasting product in the mold of the original Dark Sky: requirements and capacity estimation, the <code>getNowcast</code> / <code>subscribeToRainAlerts</code> API and grid-cell data model, radar/satellite ingestion and transformer-based nowcasting architecture, hyperlocal grid serving, push-notification fan-out via a cell-to-subscriber reverse index, batch-training vs. real-time-serving trade-offs, partitioning, replication, and a bank of follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a hyperlocal weather app in the mold of the real, historically notable Dark Sky product. Dark Sky was a predictive weather app and API, acquired by Apple in March 2020 and shut down as a standalone product in January 2023, built around a proprietary machine-learning model that could tell a user, with uncanny accuracy, when rain would start or stop &mdash; often down to the exact minute &mdash; at their precise location. That is a fundamentally different problem from a generic weather app: instead of a city-level forecast refreshed a handful of times a day from sparse, widely-spaced weather-station readings, the goal here is a per-minute precipitation timeline for the next one to two hours, computed for the user's exact latitude/longitude from live radar reflectivity and satellite imagery rather than station interpolation.</p>
+        <p>Apple absorbed Dark Sky's approach into its own Weather app and WeatherKit API, which today offers hyperlocal forecasts down to roughly 0.001 degrees of latitude/longitude (block-level precision), including a "Next Hour" precipitation forecast at about 15-minute steps, high-resolution radar, and proactive rain notifications. Former Dark Sky team members have since built spiritual successors (e.g. Acme Weather) that lean on transformer-based neural network architectures &mdash; the same broad model family behind large language models &mdash; applied to sequences of radar/satellite frames to generate these short-horizon nowcasts. This design walkthrough builds that class of product: minute-level nowcasting as the headline feature, with a traditional multi-day forecast as a secondary, coarser-grained add-on.</p>
+
+        <h3>The engineering philosophy behind this problem</h3>
+        <p>Dark Sky's founding insight was that a small, focused team could out-execute much larger, generalized weather platforms specifically by concentrating all engineering effort on one narrow, hard problem &mdash; hyperlocal, minute-level precipitation timing &mdash; rather than spreading across the dozens of features a full weather platform typically ships. That focus is exactly what an interviewer is probing for here: it's tempting to sketch "a generic weather API with a cache in front of it," but the interesting, defensible design decisions in this problem are all about how you get a per-minute, per-exact-location precipitation answer to be fast, fresh, and cheap to serve to millions of overlapping users at once &mdash; not about caching a slow-changing city forecast.</p>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>This problem hinges entirely on data availability and freshness requirements that a generic "weather API" design would never need to ask about. Spend the first few minutes narrowing scope before drawing any boxes.</p>
+        <ol>
+          <li>What raw data sources are available &mdash; ground radar network, geostationary satellite imagery, or both &mdash; and at what native refresh cadence (e.g. every 2 minutes, every 5&ndash;10 minutes)?</li>
+          <li>How far out does the "nowcast" need to stay accurate &mdash; strictly the next 60&ndash;120 minutes, or do we also need to blend into a longer hourly/multi-day forecast?</li>
+          <li>What push-notification latency is acceptable between "the model detects an upcoming rain onset" and "the user's phone buzzes"?</li>
+          <li>Do we need global coverage from day one, or can we assume a rollout that's radar-dense in some regions (e.g. US, Western Europe) and sparse or absent elsewhere?</li>
+          <li>What's the expected concurrent user base, and how peaky is it &mdash; do we expect correlated spikes (an entire metro checking the app right before a storm)?</li>
+          <li>Do users need multiple saved locations (home, work, a trip destination), or just their current GPS position?</li>
+          <li>Is a live radar map overlay in scope, or only the numeric per-minute precipitation timeline?</li>
+          <li>What's the acceptable staleness bound before we fall back from a hyperlocal nowcast to a coarser traditional forecast?</li>
+          <li>Do we need historical "how much did it rain here yesterday" lookups, or is this purely forward-looking?</li>
+          <li>Is there a public/third-party API surface (like Dark Sky's own developer API), or is this strictly a first-party consumer app?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          State reasonable defaults out loud and keep moving: "I'll assume both radar and satellite feeds refresh every ~2 minutes, the nowcast horizon is 1&ndash;2 hours at minute granularity, coverage is dense in some regions and sparse in others, and tens of millions of daily active users are polling their forecast every few minutes while the app is open." This shows judgment, not indecision, and it's exactly the kind of assumption Dark Sky itself had to make about its own radar/satellite data providers.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Given a user's exact latitude/longitude, return a minute-level precipitation nowcast covering the next 1&ndash;2 hours.</li>
+          <li>Provide a secondary, coarser-grained hourly and multi-day forecast for the same location, for users planning further ahead.</li>
+          <li>Proactively push a notification to a user when precipitation is about to start or stop near a location they've subscribed to.</li>
+          <li>(Extended) Let a user view a live radar/satellite map overlay in addition to the numeric nowcast.</li>
+          <li>(Extended) Support multiple saved locations per user (home, work, a trip destination).</li>
+          <li>(Extended) Support a historical lookback ("how much did it rain here in the last 24 hours") for the user's location.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Very low-latency reads:</strong> the nowcast is checked constantly &mdash; on app open, on pull-to-refresh, and passively via widgets &mdash; so <code>getNowcast</code> must return in well under 100&ndash;200 ms.</li>
+          <li><strong>Freshness is critical:</strong> a nowcast is worthless if it's stale by more than a few minutes &mdash; unlike a city-level forecast that's tolerably stale for hours, a "rain starts in 8 minutes" claim that's based on 20-minute-old radar is actively misleading.</li>
+          <li><strong>Massive read fan-out efficiency:</strong> millions of users can be querying overlapping map regions simultaneously (an entire metro checking the app before the same storm), so the system must serve that fan-out from shared, precomputed state rather than redoing work per request.</li>
+          <li><strong>High availability</strong> on the read path &mdash; users check weather precisely when conditions are volatile, which is the worst possible time for the service to be down.</li>
+          <li><strong>Independent horizontal scalability</strong> of the ingestion/inference pipeline versus the read-serving tier, since the two have very different load profiles and failure modes.</li>
+          <li><strong>Graceful degradation:</strong> a region with no fresh radar-based nowcast should fall back to a coarser traditional forecast rather than returning an error.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>This design goes deep on radar/satellite ingestion, the nowcasting model's serving path, hyperlocal grid-cell caching, and alert fan-out. We explicitly call out &mdash; but don't build &mdash; long-range multi-week forecasting and the full internals of numerical-weather-prediction (NWP) climate modeling; those are noted as an external, upstream dependency (feeding the coarse secondary forecast) rather than designed here.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>This system has an unusual shape compared to most read-heavy services: the read side is enormous but each read is a tiny lookup, while the write/ingest side is comparatively low in request-rate but each write is a large binary imagery frame. Getting this asymmetry right is what drives the entire caching/precompute strategy below.</p>
+
+        <h3>Read Traffic &mdash; Nowcast Lookups</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          50 million daily active users (tens of millions, per scope), each opening the app &asymp;3&times;/day
+          <br>Each app open triggers &asymp;2 nowcast reads (initial load + one live refresh while watching the "rain in N minutes" countdown) &rarr; 6 reads/user/day
+          <br>Reads/day = 50,000,000 &times; 6 = 300,000,000
+          <br>Average read QPS = 300,000,000 &divide; 86,400 &asymp; 3,472 &rarr; round to ~3,500 reads/sec
+          <br>A widespread severe-weather event drives correlated checking across an entire metro &rarr; design for ~6&times; peak &asymp; 21,000 peak read QPS
+        </div>
+
+        <h3>Write / Ingest Traffic &mdash; Raw Radar &amp; Satellite Frames</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          &asymp;400 covered radar/satellite regions worldwide, each producing a new raw imagery frame every ~2 minutes (typical operational scan cadence)
+          <br>Ingest events/sec = 400 &divide; 120s &asymp; 3.3 frames/sec &mdash; a very low request rate compared to reads
+          <br>Each raw frame (reflectivity + IR channels) &asymp; 8 MB &rarr; ingest bandwidth &asymp; 3.3 &times; 8 MB &asymp; ~26 MB/sec sustained, bursty at scan boundaries
+        </div>
+        <p>The read path is ~1,000&times; higher in request rate but each request is a few hundred bytes of JSON; the write path is comparatively rare but each event is tens of thousands of times larger. That asymmetry is exactly why this can't be one shared write-through pipeline: raw imagery needs a high-throughput binary ingestion/object-store path, while the read side needs a low-latency small-object cache that can absorb a massive, overlapping fan-out of tiny lookups &mdash; which in turn is only possible if the expensive part (model inference) has already happened <em>before</em> any user request arrives.</p>
+
+        <h3>Grid-Cell Forecast Cache Sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          At ~0.001&deg; resolution (block-level): 1 cell &asymp; 111m (lat) &times; 85m (long) &asymp; 9,400 m&sup2; &asymp; 0.0036 sq mi
+          <br>For one radar-covered metro region of ~19,300 sq mi: cells/region &asymp; 19,300 &divide; 0.0036 &asymp; 5.3 million raw cells
+          <br>Across ~400 covered regions: raw grid &asymp; 400 &times; 5.3M &asymp; 2.1 billion candidate cells
+        </div>
+        <div class="callout">
+          <div class="callout-title">Sparsity caveat &mdash; only materialize what's populated or in-coverage</div>
+          Just as a ride-hailing app's geo-tile scheme doesn't allocate a physical shard for every ocean tile on Earth, most of that 2.1-billion-cell raw grid is unpopulated land, ocean, or simply outside any radar's effective range and needs no materialized forecast at all. Restricting precomputation to cells that are both populated <em>and</em> inside active radar/satellite coverage brings the real number down to roughly <strong>~150 million materialized cells</strong>. At &asymp;300 bytes/cell (a 120-entry per-minute timeline plus metadata), that's <strong>&asymp;45 GB</strong> &mdash; comfortably held in a sharded in-memory key-value cluster with room for replicas.
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Daily active users</td><td>~50 million</td></tr>
+          <tr><td>Nowcast reads/day</td><td>~300 million</td></tr>
+          <tr><td>Average / peak read QPS</td><td>~3,500 / ~21,000</td></tr>
+          <tr><td>Covered radar/satellite regions</td><td>~400</td></tr>
+          <tr><td>Raw imagery ingest rate</td><td>~3.3 frames/sec (~26 MB/sec)</td></tr>
+          <tr><td>Materialized grid cells (populated + in-coverage)</td><td>~150 million</td></tr>
+          <tr><td>Grid-cell forecast cache size</td><td>~45 GB</td></tr>
+          <tr><td>Model inference cycle</td><td>every ~2 minutes, matched to frame cadence</td></tr>
+          <tr><td>Nowcast horizon / granularity</td><td>next 120 minutes, per-minute</td></tr>
+        </table>
+        <p>The implied strategy: never run model inference synchronously inside a user's request. Run inference once per cycle per covered region, write the results into a hyperlocal grid-cell cache, and serve every one of the ~3,500&ndash;21,000 reads/sec entirely out of that cache. The read tier's job becomes "map a coordinate to a cell_id and do a KV lookup" &mdash; nothing more.</p>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Two APIs anchor this design: one for pulling a hyperlocal nowcast on demand, and one for subscribing a location to proactive rain alerts.</p>
+
+        <h3><code>getNowcast(lat, long)</code></h3>
+        <pre><code>GET /api/v1/nowcast?lat={lat}&amp;long={long}
+
+Response 200 OK:
+{
+  "location": { "lat": 37.7749, "long": -122.4194 },
+  "cell_id": "wthr_37774_-122419",
+  "generated_at": "2026-07-19T14:32:00Z",
+  "minute_forecast": [
+    { "minute_offset": 0,  "precip_probability": 0.05, "precip_type": "none" },
+    { "minute_offset": 1,  "precip_probability": 0.07, "precip_type": "none" },
+    { "minute_offset": 8,  "precip_probability": 0.61, "precip_type": "rain" },
+    { "minute_offset": 9,  "precip_probability": 0.84, "precip_type": "rain" }
+    /* ... up to minute_offset 119 ... */
+  ],
+  "hourly_forecast": [ /* coarser, secondary; sourced from the traditional NWP feed, see Feature-Specific Logic */ ],
+  "source": "nowcasting_model"
+}
+
+Errors: 400 invalid coordinates &middot; 404 no coverage for this location &middot; 429 rate-limited</code></pre>
+
+        <h3><code>subscribeToRainAlerts(user_id, lat, long)</code></h3>
+        <pre><code>POST /api/v1/alerts/subscribe
+
+Request body:
+{
+  "user_id": string,               // required
+  "lat": double,                   // required
+  "long": double,                  // required
+  "notify_on": ["rain_start", "rain_stop"]  // optional, default both
+}
+
+Response 201 Created:
+{ "subscription_id": "sub_88213", "cell_id": "wthr_37774_-122419", "status": "active" }
+
+Errors: 400 invalid coordinates &middot; 401 unauthenticated &middot; 429 rate-limited</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Notice that both APIs resolve a raw (lat, long) into a <code>cell_id</code> immediately. That single normalization step is what lets the read path avoid per-request model inference and lets the alert path avoid scanning every individual subscription &mdash; both of the system's hardest scaling problems collapse into "look something up by cell_id" once this mapping exists.
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+        <p>Two records anchor the schema: the precomputed per-cell forecast (the output of the nowcasting model, read on every <code>getNowcast</code> call) and a user's alert subscription (read whenever the model detects a precipitation change in a cell).</p>
+
+        <table>
+          <tr><th colspan="2">Table: grid_cell_forecast</th></tr>
+          <tr><td>cell_id (PK)</td><td>varchar(32)</td></tr>
+          <tr><td>lat_bucket</td><td>decimal(9,6)</td></tr>
+          <tr><td>long_bucket</td><td>decimal(9,6)</td></tr>
+          <tr><td>generated_at</td><td>datetime</td></tr>
+          <tr><td>model_version</td><td>varchar(16)</td></tr>
+          <tr><td>minute_forecast (per-minute precipitation probability/type, next 120 min)</td><td>array&lt;{minute_offset, precip_probability, precip_type}&gt;</td></tr>
+          <tr><td>hourly_forecast (coarser, secondary; sourced from traditional NWP feed)</td><td>array&lt;{hour_offset, precip_probability, temp}&gt;</td></tr>
+          <tr><td>source</td><td>enum(nowcasting_model, traditional_nwp_fallback)</td></tr>
+        </table>
+
+        <table>
+          <tr><th colspan="2">Table: alert_subscription</th></tr>
+          <tr><td>subscription_id (PK)</td><td>bigint</td></tr>
+          <tr><td>user_id (FK)</td><td>bigint</td></tr>
+          <tr><td>lat</td><td>decimal(9,6)</td></tr>
+          <tr><td>long</td><td>decimal(9,6)</td></tr>
+          <tr><td>cell_id (FK, indexed &mdash; the reverse-index key)</td><td>varchar(32)</td></tr>
+          <tr><td>notify_on</td><td>set(rain_start, rain_stop)</td></tr>
+          <tr><td>last_notified_at (nullable)</td><td>datetime</td></tr>
+          <tr><td>status</td><td>enum(active, paused)</td></tr>
+        </table>
+        <p><code>grid_cell_forecast</code> is written only by the Nowcasting Model Service (once per inference cycle) and read at very high QPS &mdash; a textbook fit for a sharded, replicated key-value store keyed by <code>cell_id</code>. <code>alert_subscription</code> is written rarely (on subscribe/unsubscribe) and must support an efficient "give me every subscription for cell X" query &mdash; which is exactly why <code>cell_id</code> carries a secondary index rather than being a free-text coordinate pair.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Raw radar and satellite feeds are continuously pulled by a Radar/Satellite Ingestion Service, which normalizes frames and hands sequences of them to a Nowcasting Model Service. That model runs inference once per cycle and writes results into a Grid-Cell Forecast Cache &mdash; the only thing the client-facing Read Tier ever touches. A Push Notification Engine watches the cache for precipitation-onset/cessation events and fans out to subscribers via a cell-to-subscriber reverse index. A Traditional NWP Feed supplies the coarser secondary hourly/multi-day forecast merged into the same API response.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 640" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-wthr-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-wthr-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="50" y="20" width="170" height="44" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="135" y="46" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Radar Network</text>
+
+            <rect x="270" y="20" width="170" height="44" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="355" y="46" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Satellite Feed</text>
+
+            <rect x="50" y="100" width="390" height="58" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="245" y="123" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Radar / Satellite Ingestion Service</text>
+            <text x="245" y="140" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">continuously pulls &amp; normalizes raw imagery frames</text>
+
+            <rect x="50" y="195" width="390" height="58" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="245" y="218" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Nowcasting Model Service</text>
+            <text x="245" y="235" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">transformer-based inference over recent frame sequence</text>
+
+            <rect x="50" y="290" width="390" height="58" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="245" y="313" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Grid-Cell Forecast Cache</text>
+            <text x="245" y="330" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">precomputed, ~0.001&deg; resolution, keyed by cell_id</text>
+
+            <rect x="50" y="385" width="390" height="58" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="245" y="408" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client-Facing API / Read Tier</text>
+            <text x="245" y="425" text-anchor="middle" fill="#cbd8ef" font-size="9">getNowcast &middot; subscribeToRainAlerts</text>
+
+            <rect x="50" y="480" width="170" height="46" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="135" y="507" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Mobile Clients</text>
+
+            <rect x="270" y="480" width="170" height="46" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="355" y="500" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Push Notification Engine</text>
+            <text x="355" y="514" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">cell &#8594; subscriber reverse index</text>
+
+            <rect x="270" y="555" width="170" height="46" rx="7" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="355" y="575" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-weight="600">Alert Subscription Store</text>
+            <text x="355" y="589" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">user_id, lat, long, cell_id</text>
+
+            <rect x="480" y="385" width="220" height="58" rx="8" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="590" y="408" text-anchor="middle" fill="var(--color-text-muted)" font-size="11" font-weight="600">Traditional NWP Feed</text>
+            <text x="590" y="424" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">coarse hourly / multi-day fallback</text>
+
+            <line x1="135" y1="64" x2="200" y2="98" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wthr-1)"></line>
+            <line x1="355" y1="64" x2="300" y2="98" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wthr-1)"></line>
+            <line x1="245" y1="158" x2="245" y2="193" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-wthr-1)"></line>
+            <line x1="245" y1="253" x2="245" y2="288" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-wthr-1)"></line>
+            <line x1="245" y1="348" x2="245" y2="383" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-wthr-1)"></line>
+            <line x1="150" y1="443" x2="140" y2="478" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wthr-1)"></line>
+            <line x1="130" y1="478" x2="140" y2="445" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-wthr-1m)"></line>
+
+            <line x1="440" y1="319" x2="360" y2="478" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrow-wthr-1m)"></line>
+            <line x1="355" y1="526" x2="355" y2="553" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-wthr-1)"></line>
+            <line x1="268" y1="500" x2="222" y2="500" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrow-wthr-1m)"></line>
+            <line x1="478" y1="414" x2="442" y2="414" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-wthr-1m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture: radar/satellite sources feed the Ingestion Service, which hands frame sequences to the Nowcasting Model Service; inference output is written to the Grid-Cell Forecast Cache, the only thing the Read Tier touches on the request path. The Push Notification Engine watches the cache and fans out via the cell-to-subscriber reverse index, while the Traditional NWP Feed supplies the coarser secondary forecast.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Inference happens once per cycle, not once per request:</strong> the Nowcasting Model Service never sits on the <code>getNowcast</code> request path &mdash; it only ever writes to the cache.</li>
+          <li><strong>The read tier is deliberately dumb:</strong> its only job is coordinate-to-cell resolution and a cache lookup, which is what lets it absorb tens of thousands of QPS cheaply.</li>
+          <li><strong>Ingestion and serving scale independently</strong> &mdash; a burst of new radar frames during a storm never directly load-spikes the read tier, and a read traffic spike never slows down ingestion.</li>
+          <li><strong>Everything not strictly needed to answer "what's the nowcast right now"</strong> (alerting, the coarse NWP blend) is a parallel branch off the cache, not a dependency of the core read path.</li>
+        </ul>
+
+        <h2 id="low-level-design">Low-Level Design</h2>
+        <p>The core request flow deliberately contains no model inference at all &mdash; that's the entire point of precomputing forecasts per grid cell ahead of demand.</p>
+
+        <h3>Core Nowcast Request Flow</h3>
+        <div class="diagram-box">
+          <svg viewBox="0 0 720 480" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-wthr-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-wthr-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="230" y="20" width="260" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="360" y="42" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">1. Client requests forecast</text>
+            <text x="360" y="57" text-anchor="middle" fill="#cbd8ef" font-size="9">GET /nowcast?lat, long</text>
+
+            <rect x="230" y="115" width="260" height="58" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="360" y="137" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">2. Grid-Cell Resolver</text>
+            <text x="360" y="153" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">maps (lat, long) &#8594; containing cell_id (~0.001&deg;)</text>
+
+            <rect x="230" y="218" width="260" height="58" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="360" y="240" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">3. Grid-Cell Forecast Cache</text>
+            <text x="360" y="256" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">read precomputed record &mdash; no per-request inference</text>
+
+            <rect x="230" y="321" width="260" height="58" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="360" y="343" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">4. Response</text>
+            <text x="360" y="359" text-anchor="middle" fill="#cbd8ef" font-size="8">per-minute timeline, next 1&ndash;2 hours</text>
+
+            <rect x="530" y="218" width="170" height="58" rx="8" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="615" y="238" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-weight="600">Nowcasting Model Service</text>
+            <text x="615" y="252" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">own inference cycle &mdash;</text>
+            <text x="615" y="264" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">never invoked per-request</text>
+
+            <line x1="360" y1="70" x2="360" y2="113" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wthr-2)"></line>
+            <line x1="360" y1="173" x2="360" y2="216" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wthr-2)"></line>
+            <line x1="360" y1="276" x2="360" y2="319" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wthr-2)"></line>
+            <line x1="528" y1="247" x2="492" y2="247" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrow-wthr-2m)"></line>
+            <text x="530" y="300" text-anchor="end" fill="var(--color-text-muted)" font-size="8">async writes every inference cycle</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Core nowcast request flow: the client's exact lat/long is mapped to a hyperlocal grid cell, the precomputed forecast for that cell is read straight from cache, and the response is returned &mdash; the Nowcasting Model Service sits entirely off this path, populating the cache asynchronously on its own inference cycle.</div>
+        </div>
+        <ol>
+          <li>The client requests a forecast for its exact latitude/longitude.</li>
+          <li>The Grid-Cell Resolver maps that coordinate into the containing hyperlocal grid cell (a deterministic bucketing function on lat/long at ~0.001&deg; resolution &mdash; no database round-trip needed).</li>
+          <li>The precomputed forecast for that cell is read straight from the Grid-Cell Forecast Cache, with absolutely no per-request model inference.</li>
+          <li>The response is a per-minute precipitation timeline for the next 1&ndash;2 hours, plus the coarser secondary hourly/multi-day forecast merged in from the traditional NWP feed.</li>
+        </ol>
+        <p>The only way this request flow stays cheap at tens of thousands of QPS is that step 3 is a pure cache read. If the mapping in step 2 ever fell through to invoking the model directly, read latency and cost would scale with request volume instead of with covered area &mdash; exactly the trap a generic "weather API with caching" design falls into when it treats the model as just another slow backend to cache around, rather than decoupling generation from serving entirely.</p>
+
+        <h2 id="deep-dive-nowcasting-model-radarsatellite-ingestion-and-short-horizon-precipitation-prediction">Deep Dive &mdash; Nowcasting Model: Radar/Satellite Ingestion and Short-Horizon Precipitation Prediction</h2>
+        <p>Raw radar reflectivity and satellite imagery are ingested on a continuous cadence (assumed ~2 minutes per covered region above). Each new frame is appended to a rolling sequence buffer per region; the Nowcasting Model Service consumes that sequence &mdash; not a single snapshot &mdash; because precipitation motion and evolution can only be inferred from how the imagery has changed over the last several frames.</p>
+        <p>Dark Sky's original model was a proprietary, purpose-built system; the broad successor approach used across the industry today (and in spiritual-successor products built by former Dark Sky engineers) treats this as a sequence-to-sequence prediction problem: a transformer-based neural network &mdash; the same broad architecture family behind large language models, here applied to sequences of radar/satellite frames instead of sequences of tokens &mdash; is trained to predict how precipitation fields will move and evolve over the next one to two hours. This is fundamentally more granular, in both space and time, than traditional numerical weather prediction (NWP), which solves physical fluid-dynamics equations on a coarser grid and a much coarser output cadence (hourly, at best).</p>
+        <table class="sortable">
+          <tr><th></th><th>Nowcasting model (this design)</th><th>Traditional NWP</th></tr>
+          <tr><td>Input</td><td>Sequences of live radar/satellite imagery</td><td>Atmospheric physics equations + sparse station/balloon/satellite observations</td></tr>
+          <tr><td>Output granularity</td><td>Per-minute, per ~0.001&deg; grid cell</td><td>Per-hour (or coarser), per much larger grid cell</td></tr>
+          <tr><td>Horizon</td><td>Next 1&ndash;2 hours (short-horizon "nowcast")</td><td>Hours to days ahead</td></tr>
+          <tr><td>Compute pattern</td><td>Frequent, low-latency inference on live data</td><td>Periodic, heavy batch simulation runs</td></tr>
+          <tr><td>Best use in this design</td><td>Headline hyperlocal nowcast feature</td><td>Secondary coarse hourly/multi-day forecast (see Feature-Specific Logic)</td></tr>
+        </table>
+        <div class="callout">
+          <div class="callout-title">Why not just use NWP everywhere?</div>
+          NWP is excellent at multi-day forecasting but its coarse spatial/temporal grid and multi-hour compute cycle make it structurally unable to answer "will it rain on my block in the next 15 minutes" &mdash; that gap is precisely the product opportunity Dark Sky identified and built its entire company around.
+        </div>
+
+        <h2 id="deep-dive-hyperlocal-grid-resolution-and-serving-architecture">Deep Dive &mdash; Hyperlocal Grid Resolution and Serving Architecture</h2>
+        <p>The coverage area is divided into a very fine grid &mdash; real hyperlocal weather products resolve down to roughly 0.001 degrees of latitude/longitude, i.e. block-level, not just city-level. Forecasts are precomputed per grid cell on every model-inference cycle rather than computed per user request, so that millions of overlapping user queries in the same city all hit the exact same, already-computed cache entry instead of triggering redundant inference.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-wthr-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="40" y="50" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+            <rect x="118" y="50" width="70" height="55" rx="4" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <rect x="196" y="50" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+            <rect x="274" y="50" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+
+            <rect x="40" y="113" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+            <rect x="118" y="113" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+            <rect x="196" y="113" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+            <rect x="274" y="113" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+
+            <rect x="40" y="176" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+            <rect x="118" y="176" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+            <rect x="196" y="176" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+            <rect x="274" y="176" width="70" height="55" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.2"></rect>
+
+            <circle cx="135" cy="65" r="4" fill="#ffffff" stroke="var(--color-primary-dark)" stroke-width="1"></circle>
+            <circle cx="155" cy="80" r="4" fill="#ffffff" stroke="var(--color-primary-dark)" stroke-width="1"></circle>
+            <circle cx="170" cy="60" r="4" fill="#ffffff" stroke="var(--color-primary-dark)" stroke-width="1"></circle>
+            <circle cx="145" cy="92" r="4" fill="#ffffff" stroke="var(--color-primary-dark)" stroke-width="1"></circle>
+            <text x="153" y="122" text-anchor="middle" fill="#ffffff" font-size="8">4 overlapping</text>
+            <text x="153" y="132" text-anchor="middle" fill="#ffffff" font-size="8">user queries</text>
+
+            <text x="192" y="250" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">4 cols &#215; 3 rows shown &mdash; a metro may span millions of ~0.001&deg; cells;</text>
+            <text x="192" y="263" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">only cells that are populated and in-coverage are materialized</text>
+
+            <line x1="190" y1="78" x2="345" y2="78" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wthr-3)"></line>
+
+            <rect x="350" y="30" width="330" height="150" rx="8" fill="var(--color-surface)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="365" y="52" fill="var(--color-primary)" font-size="10" font-weight="700">Shared Cache Entry</text>
+            <text x="365" y="72" fill="var(--color-text-muted)" font-size="9">cell_id: wthr_37774_-122419</text>
+            <text x="365" y="88" fill="var(--color-text-muted)" font-size="9">generated_at: 2026-07-19T14:32:00Z</text>
+            <text x="365" y="104" fill="var(--color-text-muted)" font-size="9">minute_forecast: [ 120 entries ]</text>
+            <text x="365" y="126" fill="var(--color-primary)" font-size="9" font-weight="600">Served to ALL queries mapping</text>
+            <text x="365" y="140" fill="var(--color-primary)" font-size="9" font-weight="600">into this one cell &mdash; one</text>
+            <text x="365" y="154" fill="var(--color-primary)" font-size="9" font-weight="600">inference result, unlimited reads</text>
+
+            <text x="192" y="310" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">Cache refreshed once per model inference cycle (~every 2 min), independent of read volume</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Hyperlocal grid serving: the highlighted cell shows four overlapping user queries all resolving to the exact same precomputed cache entry &mdash; one inference result serves an unbounded number of reads, which is what makes millions of simultaneous overlapping queries in one city cheap to serve.</div>
+        </div>
+        <p>This is the single most important serving-side decision in the whole design: precomputing per grid cell &mdash; rather than per user, per session, or per request &mdash; turns an otherwise unbounded read fan-out problem (millions of users, each theoretically needing "their own" forecast) into a bounded one (however many grid cells the coverage area contains, refreshed on a fixed cadence).</p>
+
+        <h2 id="deep-dive-push-notification-engine-for-precipitation-alerts">Deep Dive &mdash; Push Notification Engine for Precipitation Alerts</h2>
+        <p>Users subscribe a lat/long to rain alerts via <code>subscribeToRainAlerts</code>. When the nowcasting model detects an upcoming precipitation onset or cessation for a grid cell, the system must notify every subscription whose coordinates fall in that cell &mdash; without scanning every individual subscription in the system one at a time on every model update.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-wthr-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-wthr-4m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="230" y="15" width="260" height="55" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="360" y="38" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Nowcasting Model Service</text>
+            <text x="360" y="54" text-anchor="middle" fill="#cbd8ef" font-size="8">detects rain onset in cell wthr_xxx</text>
+
+            <rect x="230" y="110" width="260" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="360" y="132" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Cell &#8594; Subscriber Reverse Index</text>
+            <text x="360" y="150" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">wthr_xxx &#8594; [sub_101, sub_204, sub_355, ...]</text>
+            <text x="360" y="163" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">keyed by the same grid used for forecasting</text>
+
+            <rect x="230" y="220" width="260" height="55" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="360" y="252" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Push Notification Engine</text>
+
+            <rect x="60" y="310" width="120" height="42" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="120" y="335" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">Device: sub_101</text>
+            <rect x="300" y="310" width="120" height="42" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="360" y="335" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">Device: sub_204</text>
+            <rect x="540" y="310" width="120" height="42" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="600" y="335" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">Device: sub_355</text>
+
+            <rect x="530" y="110" width="180" height="95" rx="8" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="620" y="130" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-weight="700">Avoided approach</text>
+            <text x="620" y="148" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Scan every subscription row</text>
+            <text x="620" y="161" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">and compare coordinates one</text>
+            <text x="620" y="174" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">at a time &mdash; O(all subscriptions)</text>
+            <text x="620" y="187" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">per event &mdash; does not scale</text>
+
+            <line x1="360" y1="70" x2="360" y2="108" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wthr-4)"></line>
+            <line x1="360" y1="180" x2="360" y2="218" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-wthr-4)"></line>
+            <line x1="300" y1="275" x2="130" y2="308" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wthr-4)"></line>
+            <line x1="360" y1="275" x2="360" y2="308" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wthr-4)"></line>
+            <line x1="420" y1="275" x2="590" y2="308" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-wthr-4)"></line>
+            <line x1="490" y1="145" x2="528" y2="145" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-wthr-4m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 4. Push notification fan-out: a detected precipitation change in a grid cell triggers a single reverse-index lookup (cell_id &#8594; subscriber list), followed by a parallel fan-out to every affected device &mdash; never a full scan of every subscription in the system.</div>
+        </div>
+        <p>The reverse index (<code>cell_id &rarr; [subscription_id, ...]</code>) is the key data structure: it's built by indexing the <code>alert_subscription</code> table on the same <code>cell_id</code> the forecast cache already uses, so a rain-onset event for a cell resolves directly to "which subscriptions care about this" in one lookup, similar in spirit to a geospatial index but deliberately keyed by the identical grid used for forecasting &mdash; so the two systems (forecasting and alerting) always agree on which physical area a given cell covers.</p>
+
+        <h2 id="deep-dive-data-pipeline-batch-model-training-vs-real-time-inference-serving">Deep Dive &mdash; Data Pipeline: Batch Model Training vs. Real-Time Inference Serving</h2>
+        <p>The nowcasting model itself is trained offline in batch against historical radar/satellite imagery paired with ground-truth precipitation outcomes &mdash; a slow, resource-heavy process that may run for hours on accumulated historical data. The trained model is then served in a low-latency real-time inference path against live incoming imagery, on the ~2-minute cycle described above. These two paths must be fully decoupled: a slow retrain should never block or slow down live nowcast updates.</p>
+        <table class="sortable">
+          <tr><th></th><th>Batch Training</th><th>Real-Time Inference Serving</th></tr>
+          <tr><td>Cadence</td><td>Periodic (e.g. weekly/monthly retrains)</td><td>Continuous, every ~2 minutes</td></tr>
+          <tr><td>Input</td><td>Large historical archive of radar/satellite/ground-truth data</td><td>The latest live frame sequence per region</td></tr>
+          <tr><td>Compute profile</td><td>Heavy, long-running, can tolerate hours</td><td>Must complete well within one inference cycle</td></tr>
+          <tr><td>Output</td><td>A new model version (weights)</td><td>Fresh grid-cell forecasts written to the cache</td></tr>
+          <tr><td>Failure impact</td><td>A slow/failed retrain delays only the <em>next</em> model version</td><td>A slow/failed inference cycle directly risks nowcast staleness</td></tr>
+        </table>
+        <p>The freshness/staleness trade-off runs in both directions: retraining more often can improve the model's accuracy over time as it learns from more recent weather patterns, but retraining has no effect on how fresh any single nowcast is &mdash; that's governed entirely by how often inference re-runs against new imagery. Conversely, running inference more frequently than new imagery actually arrives buys nothing; the inference cadence should track the ingestion cadence, not the other way around. A new model version is rolled out to the serving path independently (e.g. shadow-scored against the current version before promotion), so a bad retrain never directly reaches users without a validation gate.</p>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <p>Both raw-imagery ingestion and the grid-cell forecast cache are partitioned geographically, so a region's ingest/inference/serving load is handled by servers physically and logically close to that region's radar coverage.</p>
+        <ul>
+          <li><strong>Ingestion partitioning:</strong> each covered radar/satellite region is assigned to an ingestion worker pool located near that region's data source, minimizing cross-continent transfer of large raw imagery frames before any processing happens.</li>
+          <li><strong>Cache partitioning:</strong> the grid-cell cache is sharded by <code>cell_id</code> prefix (which itself encodes a geographic bucket), so reads for a given metro area are served by a shard co-located with that metro's users and, ideally, its inference workers &mdash; keeping the whole pipeline for one region physically close together.</li>
+          <li><strong>Consistent hashing</strong> across cache shards avoids a full reshard whenever coverage expands into a new region, so onboarding a newly radar-covered area doesn't require rebalancing existing shards.</li>
+        </ul>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li>Grid-cell forecast caches are replicated per region so the loss of a single cache node doesn't blackout an entire metro area's nowcasts &mdash; a replica promotion takes over within the failure-detection window.</li>
+          <li>If fresh radar-based nowcast data isn't available for a region (ingestion outage, model service degraded, or the region simply has no radar coverage), the read tier gracefully degrades to the coarser traditional hourly/daily forecast rather than returning an error &mdash; the <code>source</code> field in the schema (<code>nowcasting_model</code> vs. <code>traditional_nwp_fallback</code>) makes this degradation explicit and observable.</li>
+          <li>The Nowcasting Model Service itself runs as a replicated pool of inference workers per region, so a single worker failure delays &mdash; but doesn't halt &mdash; that region's next inference cycle.</li>
+        </ul>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <p>The core "predict precipitation timing down to the minute at an exact point" feature is itself the headline feature-specific logic of this entire system &mdash; nearly every architectural decision above (grid-cell precomputation, the reverse index, the decoupled training/serving pipeline) exists in service of making that one feature fast, fresh, and cheap at scale.</p>
+        <p>The secondary, coarser multi-day forecast is handled with deliberately simpler logic: it's sourced from a traditional numerical-weather-prediction feed rather than the nowcasting model, since multi-day forecasts don't need minute-level precision and NWP is already well-suited to that longer horizon. This keeps the nowcasting model focused on the one hard, narrow problem it's actually good at, echoing Dark Sky's own founding philosophy of concentrating engineering effort on a single, well-scoped capability rather than spreading a single model thin across every weather-data feature.</p>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Location data handling:</strong> a user's precise lat/long (both for on-demand lookups and stored alert subscriptions) is sensitive personal data; store subscription coordinates only as precisely as needed (cell-level bucketing is often sufficient for alerting) and apply a clear retention policy &mdash; e.g. purge inactive subscriptions and raw request logs containing coordinates after a bounded window.</li>
+          <li><strong>Rate limiting on the public API:</strong> without limits, a bad actor could enumerate <code>getNowcast</code> across the entire hyperlocal grid to scrape the full precomputed dataset; enforce a per-API-key or per-device token-bucket quota and return HTTP 429 when exceeded.</li>
+          <li><strong>Alert subscription integrity:</strong> require authentication on <code>subscribeToRainAlerts</code> so an attacker can't silently subscribe (or unsubscribe) another user's device.</li>
+          <li><strong>Transport security:</strong> TLS everywhere, including on the push-delivery path to device push gateways.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Nowcast-read traffic is load-balanced separately from the heavier, more bursty radar-ingestion/inference workload, since the two have very different scaling profiles: reads are extremely high-QPS but each unit of work is trivial (a cache lookup), while ingestion/inference is comparatively low-QPS but each unit of work is compute- and bandwidth-heavy. Sharing one load-balancing tier between them would let a burst of incoming radar frames starve read-tier capacity, or vice versa. Start with simple round-robin across the read tier (cheap, drains a failed health-check node automatically); the ingestion/inference tier is better served by work assigned per covered region rather than generic round-robin, since a given inference worker needs the full recent frame history for its region.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Each region runs its own ingestion/inference pipeline aligned to that region's own radar/satellite data sources, since coverage quality and refresh cadence genuinely differ by geography (dense radar networks in some countries, satellite-only or sparse coverage in others).</li>
+          <li>A region with sparse or no radar coverage gracefully falls back to the coarser traditional forecast (see Replication and Fault Tolerance) rather than being denied service entirely &mdash; the product is simply less differentiated there until better data sources become available.</li>
+          <li>The client-facing read tier and grid-cell cache are deployed per region (Geo-DNS or anycast routes a user to the nearest one), so nowcast latency stays low regardless of which region a user is physically in.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Nowcast freshness/staleness per grid cell</strong> is the single most important health metric in this entire system &mdash; alert on any cell whose <code>generated_at</code> exceeds the expected inference cycle interval by more than a small margin, since a stale nowcast silently degrades the product's core value proposition without ever returning an error.</li>
+          <li><strong>Alert-delivery latency</strong> from the moment the model detects a precipitation onset/cessation event to the moment the push notification is actually delivered to the device &mdash; this end-to-end number is what determines whether "rain alerts" feel proactive or feel late.</li>
+          <li><strong>Model accuracy monitoring:</strong> continuously compare predicted precipitation timing/probability against observed ground-truth precipitation (from the same radar/satellite feeds, after the fact) to catch model drift before it erodes user trust.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation / Trade-off</th></tr>
+          <tr><td>Regions with sparse or no radar coverage fundamentally can't get true minute-level nowcasts</td><td>Graceful fallback to a coarser traditional forecast; be explicit in the API (<code>source</code> field) rather than pretending precision that doesn't exist</td></tr>
+          <tr><td>Inference compute cost scales with grid resolution</td><td>Direct precision-vs-cost trade-off &mdash; finer grids (more cells) cost more compute per cycle; choose resolution per region based on population density and coverage value, not one global fixed setting</td></tr>
+          <tr><td>Grid-cell cache node failure</td><td>Per-region replication with fast replica promotion</td></tr>
+          <tr><td>Nowcasting Model Service outage</td><td>Serve last-known-good cached forecasts briefly, then fall back to the traditional NWP feed if the outage outlasts the freshness budget</td></tr>
+          <tr><td>A retrain silently degrades model accuracy</td><td>Shadow-score new model versions against ground truth before promoting them to the live serving path</td></tr>
+          <tr><td>Correlated read spikes (an entire metro checking the app before one storm)</td><td>Grid-cell precomputation means the spike hits a small, already-computed set of cache entries, not the model</td></tr>
+        </table>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Core differentiator</td><td>Minute-level precipitation nowcast at an exact lat/long via radar/satellite + transformer-based ML, not station interpolation</td></tr>
+          <tr><td>Ingestion</td><td>Continuous per-region radar/satellite frame ingestion (~2-minute cadence)</td></tr>
+          <tr><td>Prediction</td><td>Transformer-based nowcasting model over recent frame sequences; traditional NWP feed for the coarser secondary forecast</td></tr>
+          <tr><td>Serving strategy</td><td>Precompute per grid cell every inference cycle; read tier only ever does coordinate&#8594;cell resolution + cache lookup</td></tr>
+          <tr><td>Grid resolution</td><td>~0.001&deg; (block-level), materialized only for populated + in-coverage cells</td></tr>
+          <tr><td>Alerting</td><td>Cell-to-subscriber reverse index; fan-out on detected precipitation change, not per-subscription scanning</td></tr>
+          <tr><td>Partitioning</td><td>Geographic, by cell_id prefix, with consistent hashing</td></tr>
+          <tr><td>Replication</td><td>Per-region replicated cache; graceful degradation to coarse forecast when fresh nowcast data is unavailable</td></tr>
+          <tr><td>Training vs. serving</td><td>Fully decoupled &mdash; batch offline training, real-time online inference serving</td></tr>
+          <tr><td>Most important health metric</td><td>Per-cell nowcast freshness/staleness</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>These are organized by theme &mdash; use them to rehearse, or expect a real interview to pick several as "and then what?" follow-ups.</p>
+
+        <h3>Scaling and Performance</h3>
+        <div class="qa-item">
+          <div class="qa-q">A major storm causes millions of users in the same metro to check the app within the same few minutes &mdash; walk through what happens.</div>
+          <div class="qa-a">Every one of those requests resolves to the same small set of grid cells covering that metro, and every one of them is served from the already-precomputed Grid-Cell Forecast Cache &mdash; the spike never reaches the Nowcasting Model Service at all, since inference already happened before any of these requests arrived.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you avoid running model inference separately for every single user request?</div>
+          <div class="qa-a">By precomputing a forecast per grid cell on a fixed inference cycle and having the read tier do nothing but a coordinate&#8594;cell_id mapping plus a cache lookup &mdash; the number of inference runs is bounded by covered area and cycle time, not by read volume.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you handle a sudden spike in radar/satellite ingest volume during an active severe-weather outbreak?</div>
+          <div class="qa-a">Ingestion is partitioned per region and scales independently of the read tier; a spike in one region's frame volume is absorbed by that region's ingestion workers without affecting other regions or read-serving capacity anywhere else.</div>
+        </div>
+
+        <h3>Correctness and Freshness</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you define "freshness" for a nowcast, and what happens when a region's data goes stale?</div>
+          <div class="qa-a">Freshness is measured as the age of a grid cell's <code>generated_at</code> timestamp relative to the expected inference cycle interval. Once a cell's data exceeds an acceptable staleness bound, the read tier marks that response's <code>source</code> as a fallback and serves the coarser traditional forecast instead of a misleadingly precise but outdated nowcast.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Two overlapping model inference cycles finish out of order &mdash; could a user ever see an older forecast overwrite a newer one?</div>
+          <div class="qa-a">Only if cache writes aren't guarded by the forecast's own <code>generated_at</code>/cycle timestamp; a correct implementation writes conditionally ("only overwrite if this result is newer than what's cached"), so an out-of-order write never regresses freshness.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you validate that the nowcasting model's predicted "rain starts in 8 minutes" is actually accurate?</div>
+          <div class="qa-a">Continuously compare each prediction against the same radar/satellite feed's own after-the-fact observed precipitation for that cell and time window, aggregating accuracy metrics (e.g. onset-timing error in minutes) per region and model version &mdash; this is the model accuracy monitoring described above.</div>
+        </div>
+
+        <h3>Product and API Design</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you support a user with multiple saved locations (home, work, etc.)?</div>
+          <div class="qa-a">Each saved location is simply its own independent <code>getNowcast</code> lookup and, optionally, its own <code>subscribeToRainAlerts</code> subscription &mdash; no change to the core design, since the system already treats every (lat, long) as an independent cell resolution.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you let the app show a live radar map overlay in addition to the numeric nowcast?</div>
+          <div class="qa-a">Serve the same underlying radar/satellite imagery frames the Ingestion Service already normalized &mdash; likely via a CDN-backed tile endpoint &mdash; as a separate read path from the numeric nowcast API, reusing the ingested data rather than re-deriving it.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Should <code>getNowcast</code> return a coarse fallback if a location has no radar-based nowcast available?</div>
+          <div class="qa-a">Yes &mdash; return the traditional NWP-derived forecast with <code>source: "traditional_nwp_fallback"</code> rather than a 404, so the app always has something reasonable to show, just at lower precision.</div>
+        </div>
+
+        <h3>Security and Privacy</h3>
+        <div class="qa-item">
+          <div class="qa-q">What privacy protections matter most for storing a user's precise lat/long for alerts?</div>
+          <div class="qa-a">Minimize retention (store only what's needed to resolve a cell_id and re-verify a subscription), avoid storing raw precise coordinates in long-lived logs, and give users a clear way to delete a subscription, which should also purge it from the cell-to-subscriber reverse index immediately.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you stop a competitor from scraping the entire hyperlocal grid via the public API?</div>
+          <div class="qa-a">Per-API-key/device token-bucket rate limiting on <code>getNowcast</code>, enforced at the gateway layer before requests reach the read tier, plus anomaly detection on unusually broad, systematic coordinate sweeps.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Should alert subscriptions store a raw device push token indefinitely?</div>
+          <div class="qa-a">No &mdash; push tokens rotate and go stale; store them with a freshness check on each notification attempt, and prune subscriptions whose token has been invalid beyond a reasonable grace period.</div>
+        </div>
+
+        <h3>Reliability and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">A single grid-cell cache node fails in the middle of a storm &mdash; what's the customer impact?</div>
+          <div class="qa-a">Replica promotion takes over that shard's cells within the failure-detection window; briefly, affected users may see a slightly older cached forecast or a short-lived fallback to the coarse forecast, but the system doesn't go fully down.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">The Nowcasting Model Service goes down entirely for 20 minutes &mdash; what happens to users during that window?</div>
+          <div class="qa-a">The cache still serves the last computed forecasts until they age past the staleness bound, at which point the read tier transitions those cells to the traditional NWP fallback &mdash; a strong answer quantifies exactly how many cycles of staleness the product tolerates before that switch happens.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you detect that a region's radar feed has silently gone stale (no failure, just no new frames)?</div>
+          <div class="qa-a">Monitor per-region ingestion frame-arrival cadence directly (not just service health/uptime) and alert when the time since the last received frame for a region exceeds its expected cadence &mdash; a "no news" gap is just as dangerous as an explicit error here.</div>
+        </div>
+
+        <h3>Extensions</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support historical "how much did it rain here yesterday" queries?</div>
+          <div class="qa-a">Archive completed grid-cell forecast records (or the raw observed radar data) into a separate historical store keyed by cell_id and time window, decoupled from the live cache that only ever needs to hold the current forecast per cell.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support a completely new metro region that just got radar coverage for the first time?</div>
+          <div class="qa-a">Onboard it as a new geographic partition: assign ingestion workers near the new radar source, add its cell_id range to the consistent-hashed cache ring, and flip its <code>source</code> from traditional-fallback to nowcasting-model once inference output for that region is validated.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you retrain the model to improve accuracy without disrupting live nowcasts?</div>
+          <div class="qa-a">Train and shadow-score the new model version entirely offline against historical and recent live data without it ever touching the production cache, then promote it as an atomic swap once it's validated &mdash; the real-time serving path never blocks on, or is exposed to, an in-progress retrain.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This is not a generic "weather API with a cache" problem &mdash; it's a precompute-and-serve problem built entirely around one hard capability: turning continuous radar/satellite imagery into a per-minute, per-exact-location precipitation timeline, in the mold of the real, historically notable Dark Sky product. Every major design decision traces back to that: precompute forecasts per hyperlocal grid cell so millions of overlapping queries share one inference result; keep ingestion/inference decoupled from the read-serving tier since their scaling profiles are completely different; keep batch model training decoupled from real-time inference serving so a slow retrain never risks live freshness; and use the same grid-cell key for both forecasting and alert fan-out so "who cares about this cell" is always a single lookup, never a full scan. Freshness &mdash; not raw accuracy alone &mdash; is the metric to protect above all others, since a stale hyperlocal nowcast is worse than an honest, coarser fallback forecast.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li><a href="https://en.wikipedia.org/wiki/Dark_Sky_(company)" target="_blank" rel="noopener">Wikipedia, "Dark Sky (company)"</a> &mdash; background on the original hyperlocal, minute-level precipitation forecasting product and its 2020 acquisition by Apple</li>
+          <li><a href="https://appleinsider.com/inside/dark-sky" target="_blank" rel="noopener">AppleInsider, "Dark Sky | Acquisition, API, Apple Weather"</a></li>
+          <li><a href="https://en.wikipedia.org/wiki/Weather_(Apple)" target="_blank" rel="noopener">Wikipedia, "Weather (Apple)"</a> &mdash; on Apple Weather/WeatherKit absorbing Dark Sky's Next Hour precipitation forecasting and hyperlocal (~0.001&deg;) resolution</li>
+          <li><a href="https://techcrunch.com/2026/02/23/ex-apple-team-launches-acme-weather-a-new-take-on-weather-forecasting/" target="_blank" rel="noopener">TechCrunch, "Ex-Apple team launches Acme Weather, a new take on weather forecasting"</a> &mdash; on former Dark Sky engineers building a spiritual successor</li>
+          <li><a href="https://arxiv.org/pdf/2504.19408v1" target="_blank" rel="noopener">"UNet with Axial Transformer: A Neural Weather Model for Precipitation Nowcasting"</a> and related transformer-based radar nowcasting research (e.g. Earthformer, Rainformer)</li>
+          <li>General background on numerical weather prediction (NWP) as the traditional, physics-simulation approach this design's nowcasting model is deliberately not trying to replace for longer-horizon forecasting</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="flickr.html"><span class="dir">Previous</span>Flickr</a>
+          <a class="next" href="whatsapp.html"><span class="dir">Next</span>WhatsApp</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

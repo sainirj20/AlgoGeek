@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saga Pattern | Software Architecture Patterns | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Software Architecture Patterns</a><span class="sep">/</span><span class="current">Saga Pattern</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Software Architecture Patterns overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#the-problem-traditional-transaction-models">The Problem: Traditional Transaction Models</a></li>
+        <li><a href="#the-saga-pattern-a-solution">The Saga Pattern: A Solution</a></li>
+        <li><a href="#the-architecture-choreography-vs-orchestration">The Architecture: Choreography vs. Orchestration</a></li>
+        <li><a href="#the-inner-workings">The Inner Workings</a></li>
+        <li><a href="#an-example-approving-an-order">An Example: Approving an Order</a></li>
+        <li><a href="#performance-implications">Performance Implications</a></li>
+        <li><a href="#system-design-examples">System Design Examples</a></li>
+        <li><a href="#conclusion">Conclusion</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SOFTWARE ARCHITECTURE PATTERNS</span>
+          <h1>Saga Pattern</h1>
+        </div>
+
+                <div class="toc-box">
+          <h2>Table of Contents</h2>
+          <ul class="toc-list">
+            <li><a href="#overview">Overview</a>
+            </li>
+            <li><a href="#the-problem-traditional-transaction-models">The Problem: Traditional Transaction Models</a>
+            </li>
+            <li><a href="#the-saga-pattern-a-solution">The Saga Pattern: A Solution</a>
+            </li>
+            <li><a href="#the-architecture-choreography-vs-orchestration">The Architecture: Choreography vs. Orchestration</a>
+            </li>
+            <li><a href="#the-inner-workings">The Inner Workings</a>
+            </li>
+            <li><a href="#an-example-approving-an-order">An Example: Approving an Order</a>
+            </li>
+            <li><a href="#performance-implications">Performance Implications</a>
+            </li>
+            <li><a href="#system-design-examples">System Design Examples</a>
+            </li>
+            <li><a href="#conclusion">Conclusion</a>
+            </li>
+            <li><a href="#common-interview-questions">Common Interview Questions</a>
+            </li>
+            <li><a href="#key-takeaways">Key Takeaways</a>
+            </li>
+          </ul>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Picture an online store where placing a single order actually touches three different systems: an order system, a payment system, and an inventory system. In a microservices architecture, each of these lives as its own service with its own separate database, and the Saga pattern is the standard way of keeping all of these independent pieces in agreement with each other even though no single database ties them together.</p>
+        <p>A saga, at its core, is simply a sequence of small, local transactions. Each local transaction runs inside one service and updates only that service's own database; when a step finishes successfully, it triggers the next step in the chain, and once every step has succeeded, the overall business transaction — placing the order — is considered complete. The name traces back to an old academic idea about long-running transactions, but the version used in microservices today is much simpler in spirit: break one big transaction into many small, safe steps, and have a clear plan for undoing things if one of those steps fails partway through. Data consistency across services is one of the very first hard problems any team runs into once a monolith is split apart, which is exactly why the Saga pattern is such a frequent interview topic.</p>
+
+        <h2 id="the-problem-traditional-transaction-models">The Problem: Traditional Transaction Models</h2>
+        <p>A traditional single-database application leans on ACID transactions — Atomicity, Consistency, Isolation, and Durability, a set of guarantees the database provides. Atomicity in particular means "all or nothing": either every change in the transaction is saved, or none of them are. If a bank transfer fails halfway through, the database automatically rolls everything back, so no money magically disappears or gets duplicated.</p>
+        <p>That guarantee works beautifully when everything lives in one database. But in microservices, each service typically owns its own database, and no other service is allowed to reach into it directly — the "database per service" pattern, adopted on purpose to keep services independent and loosely coupled, so a change in one service doesn't force changes in another.</p>
+        <p>The classic way to coordinate a transaction spanning multiple databases is the two-phase commit, or 2PC. In phase one, a coordinator asks every participating database "are you ready to commit?"; in phase two, if everyone said yes, the coordinator tells them all to actually commit — and if even one says no, everyone rolls back. The trouble is that 2PC does not fit microservices well: it requires every database to stay locked and waiting for the whole process, which hurts performance and availability; many modern databases, especially NoSQL ones, don't support it at all; and it creates tight coupling between services at exactly the moment the architecture is trying to make them independent. For these reasons, 2PC is generally considered impractical for real-world microservice systems.</p>
+
+        <h2 id="the-saga-pattern-a-solution">The Saga Pattern: A Solution</h2>
+        <p>The Saga pattern solves this by giving up instant, all-or-nothing consistency in exchange for <strong>eventual consistency</strong> — the system will become consistent, just not necessarily in the same instant. Instead of one big cross-service transaction, a saga is built from a chain of small local transactions, each owned entirely by one service. Each local transaction does two things: it updates its own database, and it announces that it's done, either by publishing an event or replying to whoever requested the work — and that announcement is what triggers the next local transaction in the chain to start.</p>
+        <p>The tricky part is what happens when something goes wrong partway through. Since there's no automatic database rollback spanning multiple services, the Saga pattern relies on <strong>compensating transactions</strong>: a compensating transaction is simply another local transaction whose job is to logically undo the effect of an earlier step. If a payment step fails after inventory was already reserved, for example, a compensating transaction would "un-reserve" that inventory. It's worth being clear that a compensating transaction doesn't always mean a perfect rewind of history — sometimes undoing something means issuing a refund or an apology email rather than truly erasing what happened, because the earlier step may already be visible to the outside world.</p>
+
+        <h2 id="the-architecture-choreography-vs-orchestration">The Architecture: Choreography vs. Orchestration</h2>
+        <p>There are two well-known ways to structure and coordinate a saga — choreography and orchestration. Both solve the same problem, but they organize "who is in charge" very differently.</p>
+        <p>In a <strong>choreography-based saga</strong>, there is no central controller. Each service listens for events published by other services, performs its own local transaction when it hears the right event, and then publishes its own event for the next service to react to — a bit like a group of dancers who all know the steps and react to each other's movements without a director standing in the middle. This keeps services loosely coupled and avoids a single point of failure, but as more services join the saga, it becomes progressively harder to see the "big picture" of the whole flow just by reading each service's code in isolation.</p>
+        <p>In an <strong>orchestration-based saga</strong>, one component — the orchestrator — knows the entire recipe for the transaction. It explicitly tells each service what to do next, waits for a reply, and decides whether to move forward or start running compensating transactions, much like a conductor directing an orchestra. This is easier to understand, test, and monitor, because the whole flow lives in one place — but the orchestrator itself can become a bottleneck or a single point of failure if it isn't built to be highly available.</p>
+
+        <div class="diagram-box">
+          <img src="../images/software-architecture/saga-choreography-vs-orchestration.png" alt="Choreography-based saga (left) vs. orchestration-based saga (right)">
+          <div class="diagram-caption">Choreography-based saga (left) vs. orchestration-based saga (right)</div>
+        </div>
+
+        <h2 id="the-inner-workings">The Inner Workings</h2>
+        <p>Under the hood, a saga runs like a relay race: step one starts, finishes, and hands off a baton — an event or a command — to step two, and so on, until the last step finishes or something breaks the chain.</p>
+        <p>Because a service must both update its own database and publish an event or message as part of the same piece of work, teams often need extra help making that reliable. If the database update succeeds but the event never actually gets published — say, the service crashes right after saving — the rest of the saga simply never hears about it. A common companion pattern here is the <strong>Transactional Outbox pattern</strong>, where the event to be published is saved in the same database transaction as the business data, and a separate process reliably delivers it afterward.</p>
+        <p>Two other technical details matter a great deal in practice. First, saga participants need to be <strong>idempotent</strong> — if the same message is accidentally processed twice, which can happen with retries, the result should be the same as processing it once, with no double charging and no double shipping. Second, because sagas don't have the "isolation" guarantee that ACID transactions have, two sagas running at the same time can sometimes interfere with each other's data; architects use techniques such as <strong>semantic locking</strong> — marking a record as "pending" so other sagas know to wait or react differently — to reduce this risk.</p>
+        <p>When a failure happens partway through, the system — whether it's an orchestrator or the next service in a choreography chain — triggers compensating transactions in reverse order, undoing the most recently completed step first, then the one before it, and so on, until the system is back to a safe, consistent state.</p>
+
+        <h2 id="an-example-approving-an-order">An Example: Approving an Order</h2>
+        <p>Consider a simple e-commerce scenario: a customer places an order, and the system must reserve their credit before approving it. Cleaned up into a step-by-step form, the choreography-based version looks like this:</p>
+        <pre><code>Choreography-based saga: approving an order
+
+1. OrderService.receive(POST /orders)
+     -> create Order { status: PENDING }
+
+2. OrderService.publish(OrderCreated)
+
+3. CustomerService.onEvent(OrderCreated)
+     -> reserveCredit(customerId, orderAmount)
+
+4. CustomerService.publish(CreditReserved)
+   -- or, if the reservation fails --
+   CustomerService.publish(CreditReservationFailed)
+
+5. OrderService.onEvent(CreditReserved)
+     -> Order.status = APPROVED
+   OrderService.onEvent(CreditReservationFailed)
+     -> Order.status = REJECTED</code></pre>
+        <p>The orchestration-based version achieves the same outcome, but a dedicated orchestrator drives every step instead of services reacting to each other's events directly:</p>
+        <pre><code>Orchestration-based saga: approving an order
+
+1. OrderService.receive(POST /orders)
+     -> start CreateOrderSaga (orchestrator)
+
+2. CreateOrderSaga.step()
+     -> create Order { status: PENDING }
+
+3. CreateOrderSaga.send(ReserveCredit -> CustomerService)
+
+4. CustomerService.reserveCredit(customerId, orderAmount)
+     -> reply(success | failure) to CreateOrderSaga
+
+5. CreateOrderSaga.onReply(success)
+     -> Order.status = APPROVED
+   CreateOrderSaga.onReply(failure)
+     -> compensate: CancelOrder</code></pre>
+        <p>Now stretch the same idea into a longer saga with three steps: Order &rarr; Inventory &rarr; Payment. If the "Make Payment" step fails, the system doesn't just stop — it walks the chain backward, running compensating transactions in reverse order:</p>
+        <pre><code>Longer saga: Order -> Inventory -> Payment
+
+Happy path:
+  1. Order.create()               succeeds
+  2. Inventory.reserveStock()     succeeds
+  3. Payment.makePayment()        succeeds
+  -> saga complete, order CONFIRMED
+
+Failure path (Payment fails):
+  1. Order.create()               succeeded earlier
+  2. Inventory.reserveStock()     succeeded earlier
+  3. Payment.makePayment()        FAILS
+  4. compensate: Inventory.revertInventory()   // put the stock back
+  5. compensate: Order.removeOrder()           // cancel the order
+  -> system returns to a clean, consistent state</code></pre>
+
+        <h2 id="performance-implications">Performance Implications</h2>
+        <p>Sagas trade instant consistency for better availability and independence between services, but this trade-off carries real performance and design costs. Because each step waits on a message or event from the previous step, a saga with many steps can take noticeably longer to fully complete than a single local database transaction would.</p>
+        <p>When something does fail, running the chain of compensating transactions adds even more latency, since the system has to "walk back" through several already-completed steps. For this reason, architects are usually advised not to make the client wait synchronously for a long saga to finish end-to-end; instead, the client is typically given an order ID immediately and can poll for status, receive a callback, or get a push notification once the saga eventually completes.</p>
+        <p>Observability becomes especially important with sagas: since a single business transaction is now spread across several services and messages, good logging, tracing, and correlation IDs — a shared identifier tying all the related messages together — are needed just to answer the simple question "did my saga finish, and if not, where did it get stuck?" Debugging complexity grows as the number of participants grows, which is one reason very long choreography chains are often refactored into an orchestrated design. And because sagas lack the isolation property of ACID transactions, extra countermeasures like semantic locking may be needed under high concurrency, adding a bit of overhead and design effort in exchange for correctness.</p>
+
+        <h2 id="system-design-examples">System Design Examples</h2>
+        <p>Sagas show up anywhere a single user action must coordinate several independent services, each with its own database:</p>
+        <ul>
+          <li><strong>E-commerce checkout</strong>: placing an order touches an Order Service, an Inventory Service (reserve stock), and a Payment Service (charge the card), with compensations like releasing stock or refunding a payment if a later step fails.</li>
+          <li><strong>Travel booking</strong>: booking a trip might need to reserve a flight, a hotel room, and a rental car from three completely different providers or services; if the hotel booking fails after the flight was reserved, the saga compensates by cancelling the flight reservation.</li>
+          <li><strong>Banking money transfer between banks</strong>: withdrawing from one account and depositing into another, possibly at a different bank or service, needs a saga-like flow with a compensating "refund" step if the deposit side fails.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <img src="../images/software-architecture/saga-trip-booking-example.png" alt="Orchestration-based saga for a trip-booking system, including the compensation (failure) path">
+          <div class="diagram-caption">Orchestration-based saga for a trip-booking system, including the compensation (failure) path</div>
+        </div>
+
+        <h2 id="conclusion">Conclusion</h2>
+        <div class="callout">
+          <div class="callout-title">Choreography vs. orchestration is a real trade-off</div>
+          Choreography keeps services decoupled and avoids a central point of failure, but gets harder to follow as more services join the saga. Orchestration gives a clear, centralized view of the whole process and is easier to test and monitor, but concentrates responsibility — and risk — into a single orchestrator component that must itself be built for high availability.
+        </div>
+        <p>The Saga pattern lets microservices keep their independent databases while still coordinating multi-step business transactions safely. It replaces the all-or-nothing rollback of ACID transactions with a deliberate sequence of local transactions plus compensating transactions that undo earlier work when something fails. Either way you coordinate it, adopting sagas means accepting eventual consistency, planning carefully for failure with idempotent and well-tested compensating transactions, and investing in good observability so that when something does go wrong, the team can actually see what happened and why.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">Why can't we just use two-phase commit (2PC) across microservices instead of the Saga pattern?</div>
+          <div class="qa-a">2PC requires every participating database to stay locked and waiting through both phases of the commit, which hurts performance and availability, and many modern databases — especially NoSQL ones — don't support it at all. It also tightly couples services together at exactly the point where microservices are trying to stay independent. The Saga pattern avoids this by using a chain of local transactions with eventual consistency instead of a synchronous, cross-service lock-and-commit protocol.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What is a compensating transaction, and how is it different from a normal database rollback?</div>
+          <div class="qa-a">A compensating transaction is a separate local transaction whose job is to logically undo the effect of an earlier, already-committed step — for example, un-reserving inventory after a payment fails. Unlike a database rollback, it isn't automatic and doesn't always perfectly erase history; sometimes "undoing" a step means issuing a refund or an apology email rather than truly reversing it, since the earlier step's effects may already be visible outside the system.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What is the difference between choreography-based and orchestration-based sagas, and what are the trade-offs?</div>
+          <div class="qa-a">In choreography, there's no central controller — each service reacts to events from others and publishes its own events, keeping things loosely coupled but harder to follow as more services join. In orchestration, a single orchestrator component knows the whole recipe, tells each service what to do, and decides when to run compensations — easier to understand and monitor, but the orchestrator itself can become a bottleneck or single point of failure if not built for high availability.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why do saga participants need to be idempotent, and how does the Transactional Outbox pattern relate to sagas?</div>
+          <div class="qa-a">Messages in a saga can be redelivered due to retries, so a participant must produce the same result whether it processes a given message once or multiple times — otherwise a retry could cause double charging or double shipping. The Transactional Outbox pattern helps sagas stay reliable in a different way: it saves the event to be published in the same database transaction as the business data, so a crash right after saving can't cause the update to succeed while the triggering event silently gets lost.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you design a saga for a trip-booking system with a flight, hotel, and rental car, including the failure path?</div>
+          <div class="qa-a">Each booking — flight, hotel, rental car — is a local transaction against its own provider or service, chained together (typically via an orchestrator, given the number of participants) so that each step only proceeds once the previous one confirms success. If a later step fails, such as the hotel booking, the saga runs compensating transactions in reverse order — for example, cancelling the already-reserved flight — so the customer isn't left holding a booking for only part of their trip.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The Saga pattern coordinates a business transaction across services that each own their own database by chaining together small local transactions, each triggering the next via an event or command. It trades ACID's instant, all-or-nothing consistency for eventual consistency, using compensating transactions to undo earlier steps in reverse order when something fails. Choreography keeps the design decoupled but harder to follow at scale; orchestration keeps the flow centralized and easier to monitor but concentrates risk in the orchestrator. Either approach demands idempotent participants, careful handling of the update-and-publish step (often via a Transactional Outbox), and strong observability to trace a transaction spread across many services.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="sidecar-pattern.html"><span class="dir">Previous</span>Sidecar Pattern</a>
+          <a class="next" href="event-driven-architecture-pattern.html"><span class="dir">Next</span>Event-Driven Architecture</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

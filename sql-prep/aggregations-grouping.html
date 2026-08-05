@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aggregations &amp; Grouping | SQL Prep | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">SQL Prep</a><span class="sep">/</span><span class="current">Aggregations &amp; Grouping</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to SQL Prep overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#group-by-basics">GROUP BY Basics</a></li>
+        <li><a href="#having-vs-where">HAVING vs. WHERE</a></li>
+        <li><a href="#aggregate-functions">Aggregate Functions</a></li>
+        <li><a href="#grouping-sets-rollup-and-cube">GROUPING SETS, ROLLUP, and CUBE</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SQL PREP</span>
+          <h1>Aggregations &amp; Grouping</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Aggregation questions test whether you can collapse many rows into summary statistics correctly — and, critically, whether you know exactly when a filter belongs before or after that collapse. The <code>WHERE</code> vs. <code>HAVING</code> distinction trips up more candidates than any other single SQL concept, so expect it to come up directly or indirectly in almost every SQL interview.</p>
+
+        <h2 id="group-by-basics">GROUP BY Basics</h2>
+        <p><code>GROUP BY</code> collapses rows that share the same value(s) in the grouping column(s) into a single output row per group, and every column in the <code>SELECT</code> list must either be part of the <code>GROUP BY</code> or wrapped in an aggregate function (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>, etc.) — otherwise the database wouldn't know which of the many collapsed rows' values to show.</p>
+        <pre><code>SELECT department, COUNT(*) AS headcount, AVG(salary) AS avg_salary
+FROM employees
+GROUP BY department;
+</code></pre>
+
+        <h2 id="having-vs-where">HAVING vs. WHERE</h2>
+        <table>
+          <tr><th>Aspect</th><th><code>WHERE</code></th><th><code>HAVING</code></th></tr>
+          <tr><td>Applied to</td><td>Individual rows, before grouping</td><td>Groups, after aggregation</td></tr>
+          <tr><td>Can reference aggregates?</td><td>No — aggregates don't exist yet at this stage</td><td>Yes — that's its entire purpose</td></tr>
+          <tr><td>Logical order</td><td>Runs before <code>GROUP BY</code></td><td>Runs after <code>GROUP BY</code>, before <code>SELECT</code>/<code>ORDER BY</code></td></tr>
+          <tr><td>Performance</td><td>Reduces rows early — generally cheaper</td><td>Filters after the (potentially expensive) aggregation has already run</td></tr>
+        </table>
+        <pre><code>-- WHERE narrows rows BEFORE grouping (only active employees are aggregated)
+-- HAVING narrows groups AFTER aggregation (only departments averaging &gt; 80k)
+SELECT department, AVG(salary) AS avg_salary
+FROM employees
+WHERE status = 'ACTIVE'
+GROUP BY department
+HAVING AVG(salary) &gt; 80000
+ORDER BY avg_salary DESC;
+</code></pre>
+        <div class="callout">
+          <div class="callout-title">Rule of thumb</div>
+          If the condition can be evaluated on a single row without knowing about any other row, it belongs in <code>WHERE</code> (cheaper — filters before aggregation). If it depends on an aggregate result (a count, a sum, an average of the group), it must go in <code>HAVING</code>.
+        </div>
+
+        <h2 id="aggregate-functions">Aggregate Functions</h2>
+        <table>
+          <tr><th>Function</th><th>Behavior</th></tr>
+          <tr><td><code>COUNT(*)</code></td><td>Counts all rows, including those with <code>NULL</code> columns</td></tr>
+          <tr><td><code>COUNT(column)</code></td><td>Counts only rows where <code>column</code> is non-<code>NULL</code></td></tr>
+          <tr><td><code>SUM(column)</code></td><td>Sums non-<code>NULL</code> values; returns <code>NULL</code> (not 0) if every value is <code>NULL</code> or the group is empty</td></tr>
+          <tr><td><code>AVG(column)</code></td><td>Mean of non-<code>NULL</code> values — <code>NULL</code>s are excluded from both the sum and the divisor count</td></tr>
+          <tr><td><code>MIN</code> / <code>MAX</code></td><td>Smallest/largest non-<code>NULL</code> value; works on numeric, string, and date types</td></tr>
+        </table>
+
+        <h2 id="grouping-sets-rollup-and-cube">GROUPING SETS, ROLLUP, and CUBE</h2>
+        <p>These extensions let a single query produce multiple levels of subtotal in one pass, instead of running several <code>GROUP BY</code> queries and <code>UNION</code>-ing them together:</p>
+        <ul>
+          <li><strong><code>GROUPING SETS</code></strong> — explicitly lists which combinations of columns to group by, including an empty set <code>()</code> for a grand total.</li>
+          <li><strong><code>ROLLUP</code></strong> — produces a hierarchical set of subtotals for an ordered list of columns (e.g. by region, then region+city, then a grand total) — assumes a hierarchy between the columns.</li>
+          <li><strong><code>CUBE</code></strong> — produces subtotals for <em>every possible combination</em> of the given columns (the full power set), useful for cross-tab style reports where no hierarchy is assumed.</li>
+        </ul>
+        <pre><code>-- ROLLUP: subtotal per region, then per region+quarter, then grand total
+SELECT region, quarter, SUM(revenue) AS revenue
+FROM sales
+GROUP BY ROLLUP (region, quarter);
+
+-- Equivalent GROUPING SETS spelled out explicitly
+SELECT region, quarter, SUM(revenue) AS revenue
+FROM sales
+GROUP BY GROUPING SETS ((region, quarter), (region), ());
+</code></pre>
+
+        <div class="formula-box">
+          <span class="formula-label">GROUP BY complexity</span>
+          Sort-based aggregation: O(n log n) &nbsp;|&nbsp; Hash-based aggregation: O(n) average case (hash table keyed by group)
+          <br>Most modern query optimizers pick hash aggregation when the number of distinct groups fits comfortably in memory, falling back to sort-based (or disk-spilling hash) aggregation for very high-cardinality GROUP BY columns.
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">Why can't you filter on an aggregate function using <code>WHERE</code>?</div>
+          <div class="qa-a">Because of logical query processing order: <code>WHERE</code> executes before <code>GROUP BY</code>/aggregation, so aggregate values like <code>COUNT(*)</code> or <code>SUM(x)</code> simply don't exist yet at that stage. <code>HAVING</code> runs after grouping specifically so it can filter on aggregate results.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why does <code>COUNT(*)</code> sometimes return a different value than <code>COUNT(some_column)</code>?</div>
+          <div class="qa-a"><code>COUNT(*)</code> counts every row in the group regardless of column contents. <code>COUNT(column)</code> only counts rows where that specific column is non-<code>NULL</code>. If some rows have a <code>NULL</code> in that column, <code>COUNT(column)</code> will be lower than <code>COUNT(*)</code>.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">If a department has no employees matching a filter, does it still show a row with <code>SUM = 0</code>?</div>
+          <div class="qa-a">No — if the filter (in <code>WHERE</code>) eliminates all rows for that department before grouping, the department never appears in the result at all, since <code>GROUP BY</code> only produces rows for groups that have at least one contributing row. <code>SUM</code> returns <code>NULL</code>, not 0, only when a group exists but every value being summed is <code>NULL</code>.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the practical difference between <code>ROLLUP</code> and <code>CUBE</code>?</div>
+          <div class="qa-a"><code>ROLLUP(a, b, c)</code> assumes a hierarchy and produces subtotals for <code>(a,b,c)</code>, <code>(a,b)</code>, <code>(a)</code>, and <code>()</code> — a fixed drill-down path. <code>CUBE(a, b, c)</code> produces subtotals for every combination, including <code>(a,c)</code> and <code>(b,c)</code>, which <code>ROLLUP</code> would skip — useful when you need a full cross-tabulation rather than a single hierarchical drill-down.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Can you use both <code>WHERE</code> and <code>HAVING</code> in the same query?</div>
+          <div class="qa-a">Yes, and it's common: <code>WHERE</code> filters individual rows before aggregation (cheaper, reduces the dataset early), and <code>HAVING</code> then filters the resulting groups based on aggregate conditions. Doing the row-level filtering in <code>WHERE</code> instead of duplicating it as a non-aggregate condition in <code>HAVING</code> is both clearer and more efficient.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          <code>WHERE</code> filters rows before grouping; <code>HAVING</code> filters groups after aggregation and is the only place you can reference an aggregate condition. <code>COUNT(*)</code> counts rows, <code>COUNT(column)</code> counts non-<code>NULL</code> values. <code>ROLLUP</code>/<code>CUBE</code>/<code>GROUPING SETS</code> compute multiple subtotal levels in a single pass instead of stacking several queries.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="fundamentals-joins.html"><span class="dir">Previous</span>SQL Fundamentals &amp; Joins</a>
+          <a class="next" href="window-functions.html"><span class="dir">Next</span>Window Functions</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

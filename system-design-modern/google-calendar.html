@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing Google Calendar | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Google Calendar</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design">Low-Level Design</a></li>
+        <li><a href="#deep-dive-recurrence-engine-rrule-expansion-and-exception-handling">Deep Dive &mdash; Recurrence Engine: RRULE Expansion and Exception Handling</a></li>
+        <li><a href="#deep-dive-invitations-rsvp-and-freebusy-conflict-detection">Deep Dive &mdash; Invitations, RSVP, and Free/Busy Conflict Detection</a></li>
+        <li><a href="#deep-dive-reminders-and-notification-scheduling">Deep Dive &mdash; Reminders and Notification Scheduling</a></li>
+        <li><a href="#deep-dive-multi-device-sync">Deep Dive &mdash; Multi-Device Sync</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing Google Calendar</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a calendar/scheduling service comparable to Google Calendar or Outlook Calendar: requirements and capacity estimation, API &amp; data model, high- and low-level design, a deep dive into RRULE-based recurrence expansion and exception handling, invitation/RSVP and strongly-consistent free/busy conflict detection, reminder scheduling, multi-device delta sync, partitioning, replication, security, and a bank of follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a calendar and scheduling service comparable to Google Calendar. The service must support one-off and recurring events, let an event owner invite multiple attendees and track their RSVP responses, deliver reminders across multiple channels (push, email, in-app) ahead of an event's start time, and keep a user's calendar in near-real-time sync across every device they use.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It looks like a straightforward CRUD app on the surface ("just store events in a table"), which is exactly why it rewards candidates who dig into the harder sub-problems hiding underneath: how do you store a recurring event without materializing an unbounded number of future rows, how do you keep a free/busy conflict check correct when the rest of the system is eventually consistent, and how do you propagate a change to every one of a user's devices without re-sending the whole calendar every time.</p>
+
+        <h3>Core capabilities in scope</h3>
+        <ul>
+          <li>Create, update, and delete one-off and recurring events.</li>
+          <li>Invite attendees and track per-attendee RSVP state (accepted / declined / tentative / pending).</li>
+          <li>Schedule and deliver reminders across push, email, and in-app channels.</li>
+          <li>Keep a user's calendar in sync across every device within a few seconds of a change.</li>
+          <li>(Extended) Free/busy lookups across a set of attendees, e.g. to power a "find a time" scheduling assistant.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Always narrow the problem before designing. A strong candidate spends the first few minutes pinning down scope rather than silently assuming defaults.</p>
+        <ol>
+          <li>What recurrence-rule complexity do we need to support &mdash; simple daily/weekly/monthly patterns, or arbitrary RFC 5545 rules like &ldquo;the second-to-last Friday of every quarter&rdquo;?</li>
+          <li>Do we need cross-calendar free/busy lookups for a scheduling-assistant style &ldquo;find a time that works for everyone&rdquo; feature, or just a simple conflict check for a single proposed slot?</li>
+          <li>How should timezones be handled &mdash; does every attendee see the same wall-clock time, or does each attendee see the meeting converted into their own local timezone?</li>
+          <li>Do we need to support offline editing (create/edit an event with no network connection, then sync later), or can we assume the client is always online?</li>
+          <li>What's the expected scale &mdash; how many active users, and roughly how many events does a typical user create or modify per day?</li>
+          <li>Do we need multi-calendar support per user (personal, work, shared team calendars), and if so, how many calendars does a typical user have?</li>
+          <li>Is video-conferencing integration (auto-generating a meeting link) in scope, or just a pluggable hook we call out but don't build?</li>
+          <li>What reminder channels must we support, and can users configure lead time per reminder (e.g. 10 minutes vs. 1 day before)?</li>
+          <li>Do we need to support room/resource booking (conference rooms, equipment) as first-class invitees, not just people?</li>
+          <li>Should the system support a public, read-only &ldquo;share my calendar&rdquo; view for external, unauthenticated viewers?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't wait for every answer before moving on &mdash; state a reasonable assumption out loud (&ldquo;I'll assume RFC 5545-style recurrence, per-attendee local-timezone rendering, and 500 million active users&rdquo;) and keep going. Interviewers are grading judgment under ambiguity, not your ability to extract every requirement up front.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Users can create, update, and delete one-off calendar events.</li>
+          <li>Users can create recurring events using standard recurrence patterns, and edit or cancel a single occurrence without affecting the rest of the series (exceptions).</li>
+          <li>Event owners can invite one or more attendees; invitees can respond accepted/declined/tentative, and organizers can see the aggregate RSVP state.</li>
+          <li>Users can configure one or more reminders per event, delivered across push, email, and in-app channels.</li>
+          <li>Changes made on one device propagate to all of a user's other signed-in devices within a few seconds.</li>
+          <li>(Extended) Users can query free/busy time across a set of attendees before proposing a meeting time.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Strong consistency for double-booking/conflict-sensitive operations:</strong> free/busy checks and room/resource booking must never let two conflicting confirmations both succeed.</li>
+          <li><strong>Eventual consistency is acceptable for calendar views and sync propagation within seconds:</strong> a newly created event becoming visible on a second device a few seconds later, not milliseconds later, is entirely fine.</li>
+          <li><strong>High availability for read-heavy calendar viewing:</strong> viewing your calendar should degrade to slightly-stale cached data rather than error out during a partial outage.</li>
+          <li><strong>Durability:</strong> a confirmed event, RSVP, or reminder must survive server and datacenter failures.</li>
+          <li><strong>Horizontal scalability:</strong> the write path (event mutations) and read path (calendar views, free/busy) must scale independently, since their volumes and latency targets differ sharply.</li>
+          <li><strong>Timely reminder delivery:</strong> reminders should fire within roughly &plusmn;1 minute of the scheduled time even under load, since a late reminder is functionally a missed one.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>This design goes deep on the event/recurrence/invitation/reminder/sync core, and also covers partitioning, replication, and security. We explicitly call out &mdash; but don't build &mdash; full video-conferencing integration (auto-generating and joining a meeting link) or a full natural-language scheduling assistant (&ldquo;find 30 minutes next week that works for everyone&rdquo;) beyond the free/busy primitive such an assistant would be built on; both are large sub-systems of their own.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly, then derive numbers &mdash; interviewers care about the method, not decimal precision. This system is read-skewed like most calendar/scheduling products: far more calendar views and free/busy checks happen than event writes, and on top of that, reminder deliveries burst around common meeting-start times (the top of the hour, the half-hour).</p>
+
+        <h3>Assumptions used for the math below</h3>
+        <table>
+          <tr><th>Assumption</th><th>Value</th></tr>
+          <tr><td>Active users</td><td>500,000,000</td></tr>
+          <tr><td>Event writes (create/update/delete) per user per day</td><td>&asymp;2</td></tr>
+          <tr><td>Read operations per user per day (calendar views, free/busy checks, refreshes)</td><td>&asymp;40</td></tr>
+          <tr><td>Scheduled reminders per user per day</td><td>&asymp;3</td></tr>
+          <tr><td>Peak-to-average traffic multiplier</td><td>&asymp;3&times;</td></tr>
+        </table>
+
+        <h3>Write QPS (event mutations)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          writes/day = 500,000,000 users &times; 2 = 1,000,000,000 writes/day
+          <br>avg write QPS = 1,000,000,000 &divide; 86,400 &asymp; 11,600 writes/sec
+          <br>peak write QPS (&asymp;3&times; average, e.g. Monday-morning scheduling rush) &asymp; 35,000 writes/sec
+        </div>
+
+        <h3>Read QPS (calendar views &amp; free/busy checks)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          reads/day = 500,000,000 users &times; 40 = 20,000,000,000 reads/day
+          <br>avg read QPS = 20,000,000,000 &divide; 86,400 &asymp; 231,000 reads/sec
+          <br>peak read QPS (&asymp;3&times; average, business-hours skew) &asymp; 700,000 reads/sec
+          <br>&#8776; a 20:1 read/write ratio &mdash; a calendar is viewed far more often than it's edited, which is the single fact that most justifies aggressive read-side caching below.
+        </div>
+
+        <h3>Reminder fan-out at peak (the top of every hour)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          reminders/day = 500,000,000 users &times; 3 = 1,500,000,000 scheduled reminders/day
+          <br>smoothed baseline rate = 1,500,000,000 &divide; 86,400 &asymp; 17,400 reminder fires/sec if perfectly uniform
+          <br>meetings disproportionately start on the hour/half-hour, so assume &asymp;30% of all reminders cluster into the 24 &ldquo;top of the hour&rdquo; windows (a &asymp;5-minute burst each)
+          <br>reminders per burst window = 0.30 &times; 1,500,000,000 &divide; 24 &asymp; 18.75 million
+          <br>sustained delivery rate during that window &asymp; 18,750,000 &divide; 300 sec &asymp; 62,500 dispatches/sec &mdash; roughly a 3&ndash;4&times; spike over the smoothed baseline
+        </div>
+        <div class="callout">
+          <div class="callout-title">Why this matters for the design</div>
+          The reminder system can't be sized for the smoothed daily average &mdash; it needs headroom for a recurring, predictable multi-fold spike every single hour, which is exactly why reminder scheduling is decoupled from delivery (see the Reminders deep dive below): the scheduling side stays cheap and steady, while the delivery side needs to absorb bursty fan-out with retry/backoff per channel.
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Write QPS (avg / peak)</td><td>~11,600 / ~35,000</td></tr>
+          <tr><td>Read QPS (avg / peak)</td><td>~231,000 / ~700,000</td></tr>
+          <tr><td>Read/write ratio</td><td>~20:1</td></tr>
+          <tr><td>Reminders scheduled / day</td><td>~1.5 billion</td></tr>
+          <tr><td>Reminder dispatch rate at top-of-hour peak</td><td>~62,500/sec</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Sketch the handful of APIs that matter most for the interview &mdash; depth over breadth. The three below are the core primitives; everything else in the design (calendar CRUD, sharing) is a fairly standard REST resource on top of them.</p>
+        <pre><code>createEvent(calendar_id, title, start, end, timezone, rrule, attendees[])
+  -&gt; { event_id, status }
+
+respondToInvite(event_id, user_id, response)
+  // response: accepted | declined | tentative
+  -&gt; { event_id, user_id, response, responded_at }
+
+getFreeBusy(user_ids[], time_range)
+  -&gt; { user_id: [ { start, end, status: busy|tentative }, ... ], ... }</code></pre>
+
+        <h3>Parameter notes &mdash; <code>getFreeBusy</code></h3>
+        <table>
+          <tr><th>Param</th><th>Type</th><th>Description</th></tr>
+          <tr><td>user_ids[]</td><td>array&lt;string&gt;</td><td>the attendees/resources whose availability is being checked</td></tr>
+          <tr><td>time_range</td><td>{start, end}</td><td>the candidate window to check for overlap</td></tr>
+        </table>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Note what <code>getFreeBusy</code> deliberately does <em>not</em> return: event titles, descriptions, or attendee lists &mdash; just a busy/tentative/free flag per person per time slot. That's both a performance win (small payload) and a privacy requirement (see Security, Privacy and Permissions below).
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+        <p>The two records below are the heart of the system: the event itself (whose recurrence, if any, is expressed as a compact rule rather than a list of instances), and the per-attendee RSVP record that tracks invitation state independently of the event.</p>
+
+        <table>
+          <tr><th colspan="2">Table: event</th></tr>
+          <tr><td>event_id (PK)</td><td>varchar(32) / UUID</td></tr>
+          <tr><td>calendar_id (FK)</td><td>varchar(32)</td></tr>
+          <tr><td>title</td><td>varchar(256)</td></tr>
+          <tr><td>start</td><td>datetime &mdash; canonical UTC instant</td></tr>
+          <tr><td>end</td><td>datetime &mdash; canonical UTC instant</td></tr>
+          <tr><td>rrule (nullable)</td><td>varchar(512) &mdash; RFC 5545 recurrence rule</td></tr>
+          <tr><td>timezone</td><td>varchar(64) &mdash; creating timezone, e.g. America/Los_Angeles</td></tr>
+          <tr><td>status</td><td>enum(confirmed, tentative, cancelled)</td></tr>
+          <tr><td>owner_id</td><td>bigint</td></tr>
+          <tr><td>version</td><td>bigint &mdash; bumped on every edit; keys reminder cancellation/rescheduling</td></tr>
+        </table>
+
+        <table>
+          <tr><th colspan="2">Table: attendee (RSVP record)</th></tr>
+          <tr><td>event_id + user_id (composite PK)</td><td>varchar(32) + bigint</td></tr>
+          <tr><td>response</td><td>enum(pending, accepted, declined, tentative)</td></tr>
+          <tr><td>responded_at (nullable)</td><td>datetime</td></tr>
+          <tr><td>is_organizer</td><td>boolean</td></tr>
+        </table>
+
+        <p>Per-instance exceptions (a single occurrence of a recurring event that's been individually edited or cancelled) are stored as small override rows keyed by <code>(event_id, original_instance_date)</code>, layered on top of the master <code>event</code> row rather than forking it &mdash; see the Recurrence Engine deep dive below.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Client apps (web, mobile, desktop) talk to a single API gateway, which fans out to six focused services: a <strong>Calendar Service</strong> (calendars and sharing permissions), an <strong>Event Service</strong> (event CRUD, including persisting the RRULE master record), a <strong>Recurrence Service</strong> (expands RRULEs into concrete instances), an <strong>Invitation Service</strong> (attendees and RSVP state), a <strong>Notification Service</strong> (reminders across push/email/in-app), and a <strong>Sync Service</strong> (propagates changes to devices via delta tokens). All six persist through to a shared, strongly-consistent event store.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-gcal-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-gcal-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="290" y="15" width="180" height="40" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="380" y="33" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client Apps</text>
+            <text x="380" y="48" text-anchor="middle" fill="#cbd8ef" font-size="9">web &middot; mobile &middot; desktop</text>
+
+            <rect x="300" y="75" width="160" height="42" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="380" y="93" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">API Gateway</text>
+            <text x="380" y="108" text-anchor="middle" fill="#cbd8ef" font-size="8.5">authN/Z &middot; rate limit</text>
+
+            <rect x="20" y="145" width="115" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="77.5" y="168" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Calendar</text>
+            <text x="77.5" y="180" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Service</text>
+            <text x="77.5" y="196" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">calendars &amp; sharing</text>
+
+            <rect x="143" y="145" width="115" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="200.5" y="168" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Event</text>
+            <text x="200.5" y="180" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Service</text>
+            <text x="200.5" y="196" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">event CRUD</text>
+
+            <rect x="266" y="145" width="115" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="323.5" y="168" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Recurrence</text>
+            <text x="323.5" y="180" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Service</text>
+            <text x="323.5" y="196" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">RRULE expansion</text>
+
+            <rect x="389" y="145" width="115" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="446.5" y="168" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Invitation</text>
+            <text x="446.5" y="180" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Service</text>
+            <text x="446.5" y="196" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">attendees / RSVP</text>
+
+            <rect x="512" y="145" width="115" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="569.5" y="168" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Notification</text>
+            <text x="569.5" y="180" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Service</text>
+            <text x="569.5" y="196" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">reminders</text>
+
+            <rect x="635" y="145" width="115" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="692.5" y="168" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Sync</text>
+            <text x="692.5" y="180" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Service</text>
+            <text x="692.5" y="196" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">delta sync tokens</text>
+
+            <rect x="20" y="250" width="730" height="55" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="385" y="272" text-anchor="middle" fill="#6b4a10" font-size="11.5" font-weight="700">Strongly-Consistent Event Store</text>
+            <text x="385" y="288" text-anchor="middle" fill="#6b4a10" font-size="9">events &middot; RRULE masters &middot; attendee/RSVP state (Spanner-like global replication)</text>
+
+            <rect x="270" y="345" width="220" height="50" rx="7" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3"></rect>
+            <text x="380" y="366" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-weight="600">Notification Channels</text>
+            <text x="380" y="381" text-anchor="middle" fill="var(--color-text-muted)" font-size="8.5">push &middot; email &middot; in-app</text>
+
+            <rect x="515" y="345" width="220" height="50" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="625" y="366" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Client Devices</text>
+            <text x="625" y="381" text-anchor="middle" fill="var(--color-text-muted)" font-size="8.5">each holds a local sync token</text>
+
+            <line x1="380" y1="55" x2="380" y2="75" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-gcal-1)"></line>
+
+            <line x1="350" y1="117" x2="90" y2="145" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+            <line x1="365" y1="117" x2="220" y2="145" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+            <line x1="378" y1="117" x2="330" y2="145" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+            <line x1="382" y1="117" x2="440" y2="145" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+            <line x1="395" y1="117" x2="555" y2="145" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+            <line x1="410" y1="117" x2="680" y2="145" stroke="var(--color-primary)" stroke-width="1.1" marker-end="url(#arrow-gcal-1)"></line>
+
+            <line x1="77.5" y1="210" x2="77.5" y2="250" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+            <line x1="200.5" y1="210" x2="200.5" y2="250" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+            <line x1="323.5" y1="210" x2="323.5" y2="250" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+            <line x1="446.5" y1="210" x2="446.5" y2="250" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+            <line x1="569.5" y1="210" x2="569.5" y2="250" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+            <line x1="692.5" y1="210" x2="692.5" y2="250" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-gcal-1)"></line>
+
+            <line x1="569.5" y1="210" x2="400" y2="345" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-gcal-1m)"></line>
+            <line x1="692.5" y1="210" x2="640" y2="345" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-gcal-1m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; client apps talk to a single API gateway, which fans out to six focused services (Calendar, Event, Recurrence, Invitation, Notification, Sync), all of which persist through to a shared, strongly-consistent event store. Notification Service and Sync Service additionally fan out asynchronously to delivery channels and client devices, respectively.</div>
+        </div>
+
+        <h3>Key design principles reflected in the diagram</h3>
+        <ul>
+          <li><strong>One shared, strongly-consistent event store underneath everything</strong> &mdash; individual services are stateless orchestration/business-logic layers on top of a single source of truth, which is what makes the strong-consistency guarantee for free/busy checks tractable.</li>
+          <li><strong>Recurrence expansion is a service of its own,</strong> not baked into Event Service, so the (potentially expensive, lazily-computed) instance expansion can be cached, scaled, and reasoned about independently of simple event CRUD.</li>
+          <li><strong>Everything that isn't strictly on the critical path of &ldquo;did the write succeed&rdquo;</strong> &mdash; reminder delivery, device sync &mdash; is pushed to asynchronous fan-out after the fact.</li>
+        </ul>
+
+        <h2 id="low-level-design">Low-Level Design</h2>
+        <p>Walk through the core write path: creating a recurring event with attendees. This is the flow that touches the most services and best demonstrates why the RRULE-not-instances storage decision matters.</p>
+        <ol>
+          <li>Client submits an event with an RRULE (title, start/end, timezone, recurrence rule, attendee list).</li>
+          <li>Event Service persists the master rule &mdash; not every future instance &mdash; as a single row in the event store.</li>
+          <li>Recurrence Service expands only the near-term window of instances, computed lazily on demand/read (e.g. the next 90 days), rather than eagerly materializing the whole series.</li>
+          <li>Invitation Service notifies attendees and records pending RSVPs for each of them.</li>
+          <li>Sync Service bumps every affected device's delta-sync token, so each device knows there's something new to pull on its next poll/reconnect.</li>
+        </ol>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-gcal-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+              <marker id="arrow-gcal-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="15" y="35" width="130" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="80" y="60" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Client submits</text>
+            <text x="80" y="73" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">event + RRULE</text>
+            <text x="80" y="90" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">title, start/end, attendees[]</text>
+
+            <rect x="165" y="35" width="130" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="230" y="55" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Event Service</text>
+            <text x="230" y="70" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">persists master rule</text>
+            <text x="230" y="87" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">not every instance</text>
+
+            <rect x="315" y="35" width="130" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="380" y="55" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Recurrence Service</text>
+            <text x="380" y="70" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">expands near-term</text>
+            <text x="380" y="87" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">on demand / on read</text>
+
+            <rect x="465" y="35" width="130" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="530" y="55" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Invitation Service</text>
+            <text x="530" y="70" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">notifies attendees</text>
+            <text x="530" y="87" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">records pending RSVPs</text>
+
+            <rect x="615" y="35" width="130" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="680" y="55" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Sync Service</text>
+            <text x="680" y="70" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">bumps device tokens</text>
+            <text x="680" y="87" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">every affected device</text>
+
+            <line x1="145" y1="70" x2="163" y2="70" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-gcal-2)"></line>
+            <line x1="295" y1="70" x2="313" y2="70" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-gcal-2)"></line>
+            <line x1="445" y1="70" x2="463" y2="70" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-gcal-2)"></line>
+            <line x1="595" y1="70" x2="613" y2="70" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-gcal-2)"></line>
+
+            <rect x="255" y="165" width="250" height="50" rx="7" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3"></rect>
+            <text x="380" y="186" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5" font-weight="600">Expanded Instance Cache</text>
+            <text x="380" y="201" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">near-term window only, computed lazily</text>
+
+            <line x1="380" y1="105" x2="380" y2="165" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-gcal-2m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 2. Low-level flow for creating a recurring event with attendees. The master RRULE is the only thing durably persisted at creation time; the Recurrence Service materializes instances into a near-term cache only once a client actually asks to view that range.</div>
+        </div>
+        <p>Only step 2 (persisting the master rule) must be strongly consistent &mdash; a lost or duplicated master row is a correctness bug. Steps 3&ndash;5 (expansion, notification, sync) can all be eventually consistent and retried independently without endangering the source of truth.</p>
+
+        <h2 id="deep-dive-recurrence-engine-rrule-expansion-and-exception-handling">Deep Dive &mdash; Recurrence Engine: RRULE Expansion and Exception Handling</h2>
+        <p>The single most important modeling decision in this system: store the compact iCalendar RFC 5545 RRULE (e.g. &ldquo;every first Monday of the month&rdquo; &rarr; <code>FREQ=MONTHLY;BYDAY=1MO</code>) rather than materializing every future instance up front. An open-ended series (&ldquo;every Monday, forever&rdquo;) has no finite instance count, so eager materialization is either impossible or wastefully unbounded &mdash; and even a bounded series would bloat the event store with rows nobody has asked to view yet.</p>
+        <p>Instances are expanded lazily, only for the date range a client is actually viewing (e.g. the next 90 days), and the result is cached. Per-instance exceptions let a single occurrence of a recurring series be modified or cancelled &mdash; rescheduled to a different time, given a different title, or simply removed &mdash; without forking the underlying rule: the Recurrence Service checks for an exception override keyed by <code>(event_id, original_instance_date)</code> before applying the rule, and serves the override in place of the rule-generated instance for that date only.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-gcal-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-gcal-3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="15" width="220" height="55" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="380" y="37" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Master Event (RRULE)</text>
+            <text x="380" y="54" text-anchor="middle" fill="#cbd8ef" font-size="8.5">FREQ=MONTHLY;BYDAY=1MO</text>
+
+            <rect x="25" y="140" width="130" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="90" y="163" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Mon, Jan 5</text>
+            <text x="90" y="178" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">expanded instance</text>
+
+            <rect x="170" y="140" width="130" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="235" y="163" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Mon, Feb 2</text>
+            <text x="235" y="178" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">expanded instance</text>
+
+            <rect x="315" y="140" width="130" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="2"></rect>
+            <text x="380" y="163" text-anchor="middle" fill="#6b4a10" font-size="9.5" font-weight="700">Mon, Mar 2</text>
+            <text x="380" y="178" text-anchor="middle" fill="#6b4a10" font-size="8">EXCEPTION: rescheduled</text>
+
+            <rect x="460" y="140" width="130" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="525" y="163" text-anchor="middle" fill="var(--color-primary)" font-size="9.5" font-weight="600">Mon, Apr 6</text>
+            <text x="525" y="178" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">expanded instance</text>
+
+            <rect x="605" y="140" width="130" height="55" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3"></rect>
+            <text x="670" y="163" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5" font-weight="600">&hellip; future</text>
+            <text x="670" y="178" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">generated on demand</text>
+
+            <line x1="330" y1="70" x2="90" y2="140" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-gcal-3)"></line>
+            <line x1="355" y1="70" x2="235" y2="140" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-gcal-3)"></line>
+            <line x1="380" y1="70" x2="380" y2="140" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-gcal-3)"></line>
+            <line x1="405" y1="70" x2="525" y2="140" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-gcal-3)"></line>
+            <line x1="430" y1="70" x2="670" y2="140" stroke="var(--color-primary)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-gcal-3)"></line>
+
+            <rect x="270" y="230" width="220" height="50" rx="7" fill="none" stroke="var(--color-formula-border)" stroke-width="1.5" stroke-dasharray="4,3"></rect>
+            <text x="380" y="251" text-anchor="middle" fill="#6b4a10" font-size="9.5" font-weight="600">Exception override</text>
+            <text x="380" y="266" text-anchor="middle" fill="#6b4a10" font-size="8">this occurrence only &mdash; series RRULE untouched</text>
+
+            <line x1="380" y1="195" x2="380" y2="230" stroke="var(--color-formula-border)" stroke-width="1.4" stroke-dasharray="4,3" marker-end="url(#arrow-gcal-3m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 3. Lazy RRULE expansion for &ldquo;first Monday of every month,&rdquo; with a single-instance exception. March's occurrence was individually rescheduled without forking the underlying recurrence rule; the rest of the series expands normally, and far-future instances aren't generated until someone actually views that range.</div>
+        </div>
+
+        <h3>&ldquo;This and all following&rdquo; edits</h3>
+        <p>A common follow-up: how do you handle editing a series from a given occurrence forward? Split the series at the edit point &mdash; the original RRULE gets an <code>UNTIL</code> bound at the last unaffected occurrence, and a new master event (with its own RRULE, starting from the edited occurrence) is created for the remainder. Exceptions before the split point stay attached to the original master; none after it carry over.</p>
+
+        <h2 id="deep-dive-invitations-rsvp-and-freebusy-conflict-detection">Deep Dive &mdash; Invitations, RSVP, and Free/Busy Conflict Detection</h2>
+        <p>The attendee list is stored per event, one row per invitee, with a pending/accepted/declined/tentative status. This is deliberately a separate table from the event itself, since RSVP state changes far more often (and independently) than the event's own title/time/location.</p>
+        <table>
+          <tr><th>RSVP state</th><th>Meaning</th></tr>
+          <tr><td>pending</td><td>Invitation sent, attendee hasn't responded yet (the default on creation)</td></tr>
+          <tr><td>accepted</td><td>Attendee has confirmed &mdash; counts as &ldquo;busy&rdquo; for that attendee's free/busy queries</td></tr>
+          <tr><td>tentative</td><td>Attendee might attend &mdash; counts as &ldquo;tentative&rdquo;, a softer signal than a hard conflict</td></tr>
+          <tr><td>declined</td><td>Attendee will not attend &mdash; does not block that attendee's free/busy time</td></tr>
+        </table>
+        <p>A free/busy query fans out across every invited (or queried) user's calendar to check for overlapping <em>accepted</em> events before confirming a new meeting time. This is one of the few operations in the whole system that needs <strong>strong, not eventual, consistency</strong>: two attendees seeing conflicting availability &mdash; one told a slot is free while it's actually already booked &mdash; is a correctness bug, not a UX nuance, since it can result in an actual double-booking of a person or a room.</p>
+        <div class="callout">
+          <div class="callout-title">Why this is the deliberate exception, not the norm</div>
+          Everywhere else in this design (calendar views, notifications, cross-device sync) explicitly favors eventual consistency and read-side caching for scale. Free/busy conflict detection is carved out as the one path that reads from the strongly-consistent event store directly, bypassing any stale cache, precisely because the cost of being wrong here (a double-booked room, two people shown the same slot as available) is much higher than the cost of a slightly slower read.
+        </div>
+
+        <h2 id="deep-dive-reminders-and-notification-scheduling">Deep Dive &mdash; Reminders and Notification Scheduling</h2>
+        <p>Reminders are long-lived scheduled jobs that may fire minutes, hours, or days after an event is created &mdash; a reminder set at event-creation time for &ldquo;10 minutes before&rdquo; a meeting three weeks out has to correctly survive three weeks of quiet before it does anything. Each reminder job is keyed by <strong>event ID and version</strong>, so an edited or deleted event cancels or reschedules its pending reminder rather than firing stale: if the meeting moves, the old reminder (keyed to the old version) is invalidated, and a new one is scheduled against the new version/time.</p>
+        <p>Delivery is multi-channel &mdash; push, email, in-app &mdash; with <strong>scheduling decoupled from delivery</strong>. The scheduling side just needs to reliably wake up at (or shortly before) the right time and hand off a delivery request; a failed push notification can retry or fall back to email independently, without re-running the scheduling logic or risking a duplicate/missed fire on the other channels.</p>
+        <table>
+          <tr><th>Aspect</th><th>Design choice</th></tr>
+          <tr><td>Scheduling</td><td>Delayed-job / timer-wheel style queue, keyed by (event_id, version, fire_time)</td></tr>
+          <tr><td>Cancellation on edit</td><td>Version bump invalidates the old job; a new job is enqueued if the reminder still applies</td></tr>
+          <tr><td>Delivery</td><td>Per-channel workers (push / email / in-app), each with independent retry and backoff</td></tr>
+          <tr><td>Peak load</td><td>Provision delivery workers for the top-of-hour burst (see Capacity Estimation), not the smoothed daily average</td></tr>
+        </table>
+
+        <h2 id="deep-dive-multi-device-sync">Deep Dive &mdash; Multi-Device Sync</h2>
+        <p>Each client tracks a <strong>sync token</strong> representing the last change it has seen. On reconnect or poll, the client sends its token, and the Sync Service returns only the delta of changes since then &mdash; not the whole calendar. This is bandwidth-efficient (a device with a small, recent delta doesn't re-download an entire calendar just to pick up one new event) and naturally supports eventual consistency across many devices, since each device catches up independently and at its own pace.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-gcal-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-gcal-4m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="25" width="190" height="60" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="115" y="50" text-anchor="middle" fill="var(--color-primary)" font-size="10.5" font-weight="600">Device A</text>
+            <text x="115" y="66" text-anchor="middle" fill="var(--color-text-muted)" font-size="8.5">local sync_token = T5</text>
+
+            <rect x="20" y="270" width="190" height="60" rx="7" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="115" y="295" text-anchor="middle" fill="var(--color-primary)" font-size="10.5" font-weight="600">Device B</text>
+            <text x="115" y="311" text-anchor="middle" fill="var(--color-text-muted)" font-size="8.5">local sync_token = T12</text>
+
+            <rect x="320" y="145" width="200" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="420" y="173" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Sync Service</text>
+            <text x="420" y="189" text-anchor="middle" fill="#cbd8ef" font-size="8.5">diff since token &rarr; delta</text>
+
+            <rect x="600" y="145" width="140" height="70" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="670" y="173" text-anchor="middle" fill="#6b4a10" font-size="10.5" font-weight="600">Change Log</text>
+            <text x="670" y="189" text-anchor="middle" fill="#6b4a10" font-size="8.5">(event store)</text>
+
+            <line x1="210" y1="55" x2="318" y2="160" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-gcal-4)"></line>
+            <text x="225" y="100" font-size="8" fill="var(--color-text-muted)">GET /sync?token=T5</text>
+
+            <line x1="318" y1="180" x2="210" y2="75" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-gcal-4m)"></line>
+            <text x="215" y="130" font-size="8" fill="var(--color-text-muted)">delta + next_token=T9</text>
+
+            <line x1="210" y1="295" x2="318" y2="205" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-gcal-4)"></line>
+            <text x="220" y="265" font-size="8" fill="var(--color-text-muted)">GET /sync?token=T12</text>
+
+            <line x1="318" y1="200" x2="210" y2="285" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-gcal-4m)"></line>
+            <text x="210" y="240" font-size="8" fill="var(--color-text-muted)">delta + next_token=T15</text>
+
+            <line x1="520" y1="170" x2="598" y2="170" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-gcal-4)"></line>
+            <text x="525" y="163" font-size="8" fill="var(--color-text-muted)">changes since token?</text>
+
+            <line x1="598" y1="195" x2="520" y2="195" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-gcal-4m)"></line>
+            <text x="525" y="210" font-size="8" fill="var(--color-text-muted)">change list</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Delta sync: each device sends only its last-seen token; the Sync Service diffs against the durable change log and returns just what changed, plus a new token for the device to persist for its next poll.</div>
+        </div>
+        <p>Cross-region replication of the underlying event store (conceptually similar to Google Spanner) pairs naturally with this scheme: a device's sync request can be served from whichever region is closest, since the delta comparison only needs a consistent view of &ldquo;what changed since token X,&rdquo; not a global lock, keeping global sync fast without sacrificing correctness on the (separately strongly-consistent) free/busy path.</p>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <ul>
+          <li><strong>Shard the event store by calendar_id/user_id</strong> so one user's calendar reads and writes stay co-located on the same shard &mdash; the overwhelming majority of queries (&ldquo;show me my calendar,&rdquo; &ldquo;create an event on my calendar&rdquo;) never need to fan out across shards.</li>
+          <li><strong>Keep the RRULE master record small and separate</strong> from the potentially large, lazily-generated expanded-instance cache &mdash; the master table stays compact and cheap to scan/back up, while the instance cache can be treated as a disposable, rebuildable derived artifact sized only for the windows users actually view.</li>
+          <li>Free/busy queries that span many users' shards (e.g. a 50-person meeting invite) are parallelized fan-out reads across those shards rather than sequential per-user round-trips.</li>
+        </ul>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li><strong>A globally-replicated, strongly-consistent store</strong> (conceptually similar to Google Spanner) for the event and invitation data that genuinely needs it &mdash; the master RRULE rows, attendee/RSVP state, and anything the free/busy path reads.</li>
+          <li><strong>Eventually-consistent, cheaply-replicated caches</strong> for calendar-view rendering &mdash; the expanded-instance cache and read replicas used for &ldquo;show me my week&rdquo; style queries, which can tolerate a few seconds of staleness.</li>
+          <li>Each shard/replica set survives a single node or availability-zone failure without data loss, and read replicas absorb the ~20:1 read skew so redirect-style read traffic never has to hit the strongly-consistent primary.</li>
+        </ul>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <ul>
+          <li><strong>Timezone-safe storage:</strong> always store the canonical UTC instant for an event's start/end, plus the creating timezone, and re-render in each viewer's local timezone at read time. Never store a &ldquo;naive&rdquo; local time without a timezone attached &mdash; it's ambiguous the moment it crosses a device in a different timezone.</li>
+          <li><strong>Daylight-saving-time transitions</strong> are a classic correctness trap for recurring events: a weekly 9am meeting stored purely as &ldquo;9am, repeat weekly&rdquo; without timezone-aware recurrence math can silently drift by an hour across a DST boundary. This must be explicitly tested &mdash; recurrence expansion needs to re-derive the correct UTC instant for each occurrence from the rule + timezone, not just add a fixed interval to the previous occurrence's UTC timestamp.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Per-calendar sharing permissions:</strong> owner / editor / viewer / free-busy-only, enforced by the Calendar Service on every read and write.</li>
+          <li><strong>Free/busy queries must reveal &ldquo;busy&rdquo; without leaking private details:</strong> a caller with only free-busy-only visibility into someone's calendar should see a busy/tentative/free flag for a slot, never that event's title, description, or attendee list &mdash; this is enforced at the query layer (see the <code>getFreeBusy</code> API above), not left to client-side filtering.</li>
+          <li><strong>Invitation spoofing/abuse:</strong> only an event's organizer (or someone with editor permission on that calendar) can add or remove attendees; RSVP responses are authenticated per-user, not per-link.</li>
+          <li><strong>Transport security:</strong> TLS everywhere; reminder payloads sent over push/email should avoid including sensitive event details for calendars marked private, falling back to a generic &ldquo;you have an upcoming event&rdquo; notification where appropriate.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Load-balance read-heavy calendar-view traffic separately from write-path event/invitation traffic, since their scaling needs differ sharply (roughly 20:1 read/write, per the capacity estimation above). A shared load balancer tier that can't distinguish the two risks over-provisioning for the wrong bottleneck &mdash; e.g. scaling out read replicas when the actual pressure is on write-path contention for a single hot calendar, or vice versa. Route free/busy and calendar-view reads to a read-optimized fleet (backed by caches/replicas), and route event/invitation mutations to a write-optimized fleet with a direct path to the strongly-consistent store.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li><strong>Regional read replicas for calendar viewing</strong> &mdash; a user's calendar view is served from the region closest to them, tolerating a few seconds of replication lag.</li>
+          <li><strong>A globally consistent core for scheduling/conflict-detection operations</strong> that cannot tolerate stale free/busy data &mdash; these specific reads/writes go to the strongly-consistent store regardless of which region initiated them, accepting the latency cost as the price of correctness for this one operation class.</li>
+          <li>Reminder scheduling and delivery can run per-region (a reminder fires close to where its recipient's device actually is), rolling up only lightweight coordination (e.g. dedup on cross-region device moves) globally.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Reminder-delivery success rate per channel</strong> (push / email / in-app) &mdash; a silent drop in one channel's delivery rate is exactly the kind of regression that otherwise only surfaces as user complaints days later.</li>
+          <li><strong>Sync-lag distribution across devices</strong> &mdash; track percentiles (p50/p99/p999), not just the mean, since a small subset of devices silently falling behind (e.g. a buggy client version) is precisely what an average would hide.</li>
+          <li><strong>Free/busy query latency</strong> &mdash; this sits on the critical path of scheduling UX (users are actively waiting to see if a proposed time works), so it deserves its own SLO distinct from ordinary calendar-view read latency.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Unbounded expansion of a far-future or infinitely-recurring event</td><td>Cap/lazily-window the expansion to the range a client actually views; never eagerly materialize an open-ended series</td></tr>
+          <tr><td>Reminder delivery burst at the top of every hour</td><td>Provision delivery workers for peak (see Capacity Estimation), decouple scheduling from delivery, per-channel retry/backoff</td></tr>
+          <tr><td>Free/busy fan-out across many attendees' shards</td><td>Parallelized, sharded reads rather than sequential per-user round-trips; cache near-term busy bitmaps</td></tr>
+          <tr><td>A single hot shared calendar (e.g. company holidays) with millions of subscribers</td><td>Fan-out-on-read via delta sync per subscriber rather than fan-out-on-write to every subscriber on every edit</td></tr>
+          <tr><td>Strong-consistency requirement for free/busy vs. eventual-consistency-everywhere-else design</td><td>Deliberate, explicitly-called-out exception &mdash; free/busy and room booking read/write the strongly-consistent store directly; nothing else in the design needs to</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor availability and partition tolerance (AP) for calendar viewing, reminders, and sync &mdash; a slightly stale calendar view or a reminder that fires a few seconds late from a retried delivery is far better than an outage. Favor consistency (C) specifically for free/busy conflict detection and room/resource booking &mdash; the system must never let two conflicting bookings both succeed, even at the cost of a brief read/write against a less-available, strongly-consistent store.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Recurrence storage</td><td>Compact RFC 5545 RRULE on the master event row; lazy, windowed expansion; per-instance exception overrides</td></tr>
+          <tr><td>Consistency model</td><td>Strong consistency for free/busy &amp; room booking; eventual consistency for views, sync, and notifications</td></tr>
+          <tr><td>Core services</td><td>Calendar, Event, Recurrence, Invitation, Notification, Sync &mdash; all backed by one shared event store</td></tr>
+          <tr><td>Primary datastore</td><td>Globally-replicated, strongly-consistent store (Spanner-like) for events/RSVP; eventually-consistent caches for views</td></tr>
+          <tr><td>Partitioning</td><td>Shard by calendar_id/user_id; keep RRULE masters separate from the expanded-instance cache</td></tr>
+          <tr><td>Reminders</td><td>Scheduling decoupled from delivery; jobs keyed by (event_id, version); per-channel retry</td></tr>
+          <tr><td>Sync</td><td>Per-device delta/change-token polling, not full-calendar re-fetch</td></tr>
+          <tr><td>Security</td><td>Per-calendar owner/editor/viewer/free-busy-only permissions; free/busy reveals busy/free only, never event details</td></tr>
+          <tr><td>Multi-region</td><td>Regional read replicas for viewing; globally-consistent core for scheduling/conflict-detection</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Beyond the core design, interviewers love to pressure-test one component at a time. These are organized by theme &mdash; rehearse them, or expect a real interview to pick a handful as &ldquo;and then what?&rdquo; follow-ups.</p>
+
+        <h3>Scaling and Performance</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you avoid pre-generating years of future instances for a recurring event that repeats forever (e.g. &ldquo;every Monday, no end date&rdquo;)?</div>
+          <div class="qa-a">Store only the compact RRULE + start date on the master event row; expand instances lazily, only for the date range a client is actually viewing (e.g. the next 90 days), and cache that expansion. An infinite RRULE never needs to be materialized in full &mdash; only as far out as anyone has actually looked.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A single popular shared calendar (e.g. a company holiday calendar) is subscribed to by 50 million users &mdash; how do you avoid a thundering herd on every edit?</div>
+          <div class="qa-a">Treat it as fan-out-on-read rather than fan-out-on-write past some subscriber-count threshold: a delta-sync token per subscriber lets each device pull the small diff on its own schedule, instead of the edit re-pushing to 50 million inboxes at once.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Free/busy lookups fan out across every invited user's calendar &mdash; how do you keep that from becoming a sequence of slow, one-at-a-time round-trips for a 50-person meeting invite?</div>
+          <div class="qa-a">Parallelize the per-user free-busy reads as a single fan-out query against a store sharded by user_id/calendar_id, and cache each user's near-term busy-block bitmap so repeated scheduling-assistant queries hit a warm cache rather than the source of truth every time.</div>
+        </div>
+
+        <h3>Correctness and Consistency</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why is free/busy conflict detection called out as needing strong consistency when almost everything else in the system is eventually consistent?</div>
+          <div class="qa-a">Because two attendees seeing different answers to &ldquo;is 2pm free?&rdquo; is a correctness bug, not a UX nuisance &mdash; it can double-book a room or a person. Calendar views, reminders, and sync are all fine as eventually consistent, since a few seconds of staleness there is harmless.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A user edits a single occurrence of a recurring series (e.g. moves next Tuesday's meeting to Wednesday) &mdash; how do you make sure the rest of the series is untouched?</div>
+          <div class="qa-a">Store the edit as a per-instance exception record keyed by the master event's id and the original instance's date, rather than forking the RRULE. The Recurrence Service checks for an exception before applying the rule, and serves the override instead of the rule-generated instance for that one date only.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Two organizers both try to book the same conference room for overlapping times at nearly the same moment &mdash; how do you prevent double-booking?</div>
+          <div class="qa-a">Model the room as an attendee whose calendar is conflict-checked under the same strongly-consistent path as a person's free/busy check; use a conditional write / compare-and-swap on the room's booking record so only one of the two concurrent requests wins, and the loser gets a clear conflict error instead of silently overwriting the booking.</div>
+        </div>
+
+        <h3>Recurrence and Data Modeling</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why store the RRULE instead of pre-computing and storing every future occurrence at creation time?</div>
+          <div class="qa-a">An open-ended recurring event has no finite occurrence count, so pre-materializing is either impossible or wastefully unbounded. Storing the compact rule and expanding lazily keeps the master record small and makes an edit to the rule (e.g. changing the time for all future occurrences) a single-row update instead of a mass rewrite.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you handle a &ldquo;this and all following events&rdquo; edit to a recurring series?</div>
+          <div class="qa-a">Split the series at the edit point: the original RRULE gets an UNTIL bound at the last unaffected occurrence, and a brand-new master event (with its own RRULE, starting from the edited occurrence) is created for the remainder. Existing exceptions before the split point stay with the original master; none after it carry over.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support a recurrence rule as complex as &ldquo;the last weekday of every quarter&rdquo;?</div>
+          <div class="qa-a">RFC 5545's RRULE grammar already expresses this (FREQ=MONTHLY;INTERVAL=3;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1) &mdash; the Recurrence Service just needs a general rule evaluator rather than a hardcoded daily/weekly/monthly switch; the storage model itself doesn't change.</div>
+        </div>
+
+        <h3>Product and API Design</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you design <code>getFreeBusy</code> to scale to a 500-person &ldquo;all-hands&rdquo; scheduling query?</div>
+          <div class="qa-a">Accept a list of user/resource ids and a time range, fan out internally to parallel sharded reads, and return an aggregated busy/tentative/free bitmap per person rather than raw event details &mdash; which also avoids a privacy leak, since the caller only needs busy/free, not what the meeting is.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A user wants to see just the next 3 upcoming reminders across every device they own &mdash; how would you expose that?</div>
+          <div class="qa-a">A read-only query against the Notification Service keyed by user_id, sorted by scheduled fire time, independent of which device will ultimately render the push/email/in-app notification &mdash; reminders are owned by the event and its version, not by a specific device.</div>
+        </div>
+
+        <h3>Security and Privacy</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you let a free/busy query reveal &ldquo;busy&rdquo; without leaking the private event's title or attendee list to someone who only has free/busy visibility?</div>
+          <div class="qa-a">Model permission as a graduated scope per calendar (owner/editor/viewer/free-busy-only), and have the query layer return only a boolean busy/tentative/free flag &mdash; never the underlying event row &mdash; to callers below full visibility, enforced server-side, not just hidden in the client UI.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">An attendee is removed from a meeting after accepting &mdash; what happens to their already-scheduled reminder?</div>
+          <div class="qa-a">The event's version is bumped on the attendee-list change; the Notification Service's reminder job is keyed by (event_id, version), so the stale version's pending job is cancelled rather than fired, and no new reminder is scheduled for the removed attendee.</div>
+        </div>
+
+        <h3>Reliability and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">The Sync Service is down for 10 minutes &mdash; what's the customer-visible impact?</div>
+          <div class="qa-a">None immediately for most users &mdash; devices keep serving their last-synced local state and retry with their existing sync token once the service recovers. The impact is a bounded staleness window, not data loss, since the change log lives in the durable event store, not in the Sync Service itself.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you detect a slowly-growing sync-lag problem before users notice stale calendars?</div>
+          <div class="qa-a">Track the distribution of &ldquo;time since last successful sync&rdquo; per device as a first-class metric, and alert on the p99/p999 tail growing rather than only the mean, since a small subset of devices silently falling behind (e.g. a buggy client version) is exactly what an average would hide.</div>
+        </div>
+
+        <h3>Extensions</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support a shared team calendar with dozens of editors?</div>
+          <div class="qa-a">The Calendar Service's sharing-permission model already generalizes from one owner to a set of editors per calendar_id; the main new concern is a higher write-contention rate on that calendar's data, which the sharding-by-calendar_id scheme already isolates from other users' unrelated calendars.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support a &ldquo;find a time&rdquo; scheduling assistant that suggests open slots across several attendees?</div>
+          <div class="qa-a">Layer it on top of the existing <code>getFreeBusy</code> primitive: fetch each candidate attendee's busy/free bitmap for the requested window, intersect the free slots, and rank by heuristics like time-of-day preference or meeting-length fit. This was explicitly called out as extended/out-of-scope for deep design, but the free/busy primitive is exactly the building block it would need.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Always start with requirements and capacity estimation &mdash; the ~20:1 read/write ratio and the reminder fan-out spike at the top of every hour should visibly drive every downstream decision (aggressive read caching, decoupled reminder scheduling/delivery). The single most important modeling decision is storing the compact RRULE instead of materializing instances, expanding lazily and layering per-instance exceptions on top without forking the series. The single most important consistency decision is the deliberate, narrow carve-out of strong consistency for free/busy and room-booking conflict detection, while everything else &mdash; calendar views, reminders, cross-device sync &mdash; leans eventually consistent for availability and scale. State that trade-off explicitly and out loud in an interview; it's exactly the kind of nuanced call that separates a strong answer from a generic one.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>IETF, <a href="https://www.rfc-editor.org/rfc/rfc5545" target="_blank" rel="noopener">RFC 5545 &mdash; &ldquo;Internet Calendaring and Scheduling Core Object Specification (iCalendar)&rdquo;</a> (defines the RRULE recurrence-rule grammar)</li>
+          <li>Google for Developers, <a href="https://developers.google.com/workspace/calendar/api/guides/sync" target="_blank" rel="noopener">&ldquo;Synchronize resources efficiently&rdquo;</a> (Google Calendar API's incremental/delta sync-token guide)</li>
+          <li>James C. Corbett et al., <a href="https://research.google/pubs/spanner-googles-globally-distributed-database-2/" target="_blank" rel="noopener">&ldquo;Spanner: Google's Globally-Distributed Database&rdquo;</a>, OSDI 2012 (globally-replicated, strongly-consistent store background)</li>
+          <li>Werner Vogels, &ldquo;Eventually Consistent,&rdquo; ACM Queue, Vol. 6, No. 6 (2008) &mdash; general eventual-consistency background for the read/view/sync paths of this design</li>
+          <li>Community write-ups comparing recurring-event modeling approaches (RRULE expansion, exception handling) across Google Calendar, Outlook, and CalDAV-based implementations</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="amazon-shopping.html"><span class="dir">Previous</span>Amazon Shopping</a>
+          <a class="next" href="google-docs.html"><span class="dir">Next</span>Google Docs</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

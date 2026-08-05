@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coordination, Consensus &amp; Compute Orchestration | System Design — Building Units | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Building Units</a><span class="sep">/</span><span class="current">Coordination, Consensus &amp; Compute Orchestration</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Building Units overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#apache-zookeeper">Apache ZooKeeper</a></li>
+        <li><a href="#etcd">etcd</a></li>
+        <li><a href="#consul">Consul (HashiCorp)</a></li>
+        <li><a href="#consensus-algorithms-paxos-raft">Consensus Algorithms (Conceptual): Paxos and Raft</a></li>
+        <li><a href="#containers-and-containerization">Containers (Docker / Containerization)</a></li>
+        <li><a href="#container-orchestration-kubernetes">Container Orchestration: Kubernetes</a></li>
+        <li><a href="#serverless-faas">Serverless / Function-as-a-Service (e.g., AWS Lambda)</a></li>
+        <li><a href="#service-discovery">Service Discovery (General Concept)</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN — BUILDING UNITS</span>
+          <h1>Coordination, Consensus &amp; Compute Orchestration</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Every distributed system eventually needs a small set of nodes to agree on something critical — who is the leader, who holds the lock, what the current configuration is — and to run the actual compute workload somewhere reliable. This page covers both halves of that problem: the coordination layer (ZooKeeper, etcd, Consul, and the consensus math underneath them) that distributed systems build leader election, locking, and service discovery on top of, and the compute orchestration layer (containers, Kubernetes, serverless) that decides where and how application code actually runs. They're related because the orchestration layer is usually itself built on top of the coordination layer — Kubernetes' entire control plane, for instance, is a thin shell around etcd.</p>
+
+        <h3 id="apache-zookeeper">Apache ZooKeeper</h3>
+        <p>Apache ZooKeeper is a centralized, highly available coordination service that gives other distributed systems a small set of reliable primitives — a hierarchical namespace, atomic reads/writes, and change notifications — on top of which they build leader election, distributed locks, configuration management, and service discovery. Rather than every service reinventing these primitives from scratch and getting the edge cases wrong, they delegate correctness to a purpose-built ensemble.</p>
+        <p>Internally, ZooKeeper models data as a filesystem-like tree of <strong>znodes</strong>. Persistent znodes survive client disconnects; ephemeral znodes disappear automatically the instant the creating client's session ends, which is the key primitive for liveness detection; and sequential znodes get a ZooKeeper-assigned monotonic counter appended to their name, giving a global ordering across concurrent creators. Clients register <strong>watches</strong> to receive a one-time notification when a znode changes. Underneath it all, <strong>ZAB</strong> (ZooKeeper Atomic Broadcast) — a Paxos-like consensus protocol — runs across an odd-sized ensemble (3, 5, or 7 nodes): the ensemble elects a leader, and a write commits once a quorum of followers acknowledge it. Common coordination recipes, often implemented via Apache Curator, follow directly from these primitives: leader election and locks use ephemeral-sequential znodes where the lowest sequence number wins, configuration management watches a znode for pushed updates, and service discovery relies on ephemeral registration znodes that vanish automatically when an instance dies.</p>
+        <p><strong>Popular tools:</strong> Apache Kafka (pre-KRaft), Apache HBase, Apache Mesos, SolrCloud, Hadoop YARN (ResourceManager HA), older Apache Pulsar deployments.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Reach for ZooKeeper when a dependency you already operate requires it (HBase, older Kafka clusters, Solr, Mesos, Pulsar), or when you need a proven, off-the-shelf lock/leader-election primitive for a JVM-heavy stack. For <strong>new</strong> systems, most teams now reach for etcd or embed Raft directly — Kafka 4.0 (March 2025) fully removed ZooKeeper support in favor of its own embedded Raft quorum (KRaft), requiring migration via 3.9 first, with reported wins in setup time, infra cost, and partition scalability. ZooKeeper isn't disappearing, though — it still underpins HBase, Solr, Mesos, and YARN HA, and it remains the canonical teaching example of leader election and distributed locks via ephemeral+sequential znodes.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Extremely mature and battle-tested</li><li>Simple, well-understood mental model (znodes + watches)</li><li>Strong consistency guarantees via ZAB</li><li>Huge ecosystem of proven recipes via Curator</li></ul></td>
+            <td><ul><li>Yet another JVM cluster to operate and tune</li><li>Disk/GC sensitivity can trigger false failure detection</li><li>Write throughput bottlenecked through a single leader</li><li>Increasingly displaced by embedded Raft (e.g. Kafka KRaft)</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="etcd">etcd</h3>
+        <p>etcd is a distributed, strongly consistent key-value store purpose-built to hold small amounts of critical coordination and configuration data reliably — most famously as the backbone of Kubernetes cluster state. Unlike ZooKeeper's hierarchical znode tree, etcd exposes a flat keyspace, but the consensus story is conceptually similar: a small, odd-sized cluster (typically 3 or 5 members) replicates a log via <strong>Raft</strong>, with a single leader accepting writes and replicating them to followers; a write commits only once a majority quorum has persisted it, giving linearizable consistency and tolerance of minority-node failures.</p>
+        <p>Two features make etcd particularly well suited to being a control-plane store. <strong>MVCC</strong> means every write creates a new, immutable revision, which is what lets etcd offer reliable, gap-free <strong>watch</strong> streams rather than best-effort notifications. And <strong>leases</strong> provide a TTL mechanism — a client attaches a lease to a set of keys and must keep sending keep-alives, or those keys are automatically deleted — etcd's analogue of ZooKeeper's ephemeral znodes, and the foundation for locks built on top of etcd. In Kubernetes specifically, only the <strong>kube-apiserver</strong> talks to etcd directly: every other control-plane component goes through the API server, which persists all cluster object state in etcd, uses etcd's watch API to drive its reconciliation loops, and uses leases for TTL-based objects like node heartbeats and leader-election locks — etcd is explicitly the cluster's single source of truth.</p>
+        <p><strong>Popular tools:</strong> Kubernetes (flagship user), CoreDNS, Rook, M3DB, Cloud Foundry components.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Reach for etcd when you need a small, strongly consistent store for critical metadata or coordination state — building Kubernetes-adjacent tooling such as operators and custom controllers, or wanting Raft-based consistency with a much lighter operational footprint than a full ZooKeeper ensemble. It's not a good fit as a general-purpose application database or for large-value/high-throughput data.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Simple, fast, and strongly consistent (Raft)</li><li>Small operational footprint versus a ZooKeeper ensemble</li><li>Proven at massive scale (Kubernetes)</li><li>Reliable, gap-free watch streams via MVCC</li></ul></td>
+            <td><ul><li>Not designed for large values or high-volume data</li><li>Write throughput bounded by Raft quorum + single leader</li><li>High sensitivity to disk/network latency between members</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="consul">Consul (HashiCorp)</h3>
+        <p>Consul is a service networking platform that bundles service discovery, health checking, a key-value store, and, in its modern form, a full service mesh into one system. Where ZooKeeper and etcd hand you low-level coordination primitives and leave discovery and health-checking to be built on top, Consul ships those capabilities natively. Its architecture is two-tiered: a small quorum of server agents holds Raft-replicated state (the service catalog, KV store, ACLs), while lightweight client agents run on every host. Cluster membership and failure detection are handled cheaply by a gossip protocol (Serf/SWIM) rather than by the Raft layer itself, organized as a LAN gossip pool per datacenter plus a WAN pool connecting servers across federated datacenters — which is what gives Consul native multi-datacenter support out of the box.</p>
+        <p>Health checking (script, HTTP, TCP, gRPC, or TTL-based) is a first-class concept that automatically filters unhealthy instances out of discovery results, and Consul Connect layers on mTLS service identity, automatic Envoy sidecar injection, and authorization "intentions," turning Consul into a full service-mesh control plane rather than just a registry. Compared to ZooKeeper and etcd, Consul is the only one of the three with native service discovery, native health checking, and native multi-datacenter replication built in — the other two require you to build those capabilities yourself on top of their primitives.</p>
+        <p><strong>Popular tools:</strong> HashiCorp Consul (open source and Enterprise), Consul Connect with Envoy sidecars; frequently paired with Nomad or run alongside Kubernetes in mixed VM/container estates.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Reach for Consul on heterogeneous infrastructure that mixes VMs, bare metal, and containers together; when you need health-aware discovery without hand-rolling it; when multi-datacenter service discovery is a hard requirement; or when you want a service mesh without committing to Istio or Kubernetes-native tooling.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Native service discovery and health checking out of the box</li><li>Strong multi-datacenter story (LAN + WAN gossip pools)</li><li>Doubles as a full service-mesh control plane (Consul Connect)</li><li>Works across mixed VM/container/bare-metal estates</li></ul></td>
+            <td><ul><li>Heavier to operate than etcd if you only need a KV store</li><li>Largely redundant if you're 100% Kubernetes-native</li><li>Two-tier server/client architecture adds operational surface</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="consensus-algorithms-paxos-raft">Consensus Algorithms (Conceptual): Paxos and Raft</h3>
+        <p>Paxos and Raft are the mathematical foundations that let a cluster of nodes agree on a single value or decision — who is leader, who holds a lock — even as individual machines crash or the network partitions, as long as a majority of nodes (a quorum) can still communicate. Every coordination system covered on this page rests on one of these algorithms under the hood: ZooKeeper's ZAB, etcd's and Consul's Raft implementations, and Kafka's KRaft are all descendants of this same idea.</p>
+        <p><strong>Paxos</strong> works by having nodes propose values tagged with increasing proposal numbers through a two-phase protocol — Prepare/Promise, then Accept/Accepted — and once a majority of nodes accepts a value, it is permanently chosen. It's provably correct, but notoriously difficult to reason about in practice: the original papers describe only a single-decision protocol, leaving "Multi-Paxos" — the version needed to agree on a continuous sequence of decisions — underspecified, which has led to many subtly different real-world implementations. <strong>Raft</strong> was designed explicitly to fix that understandability problem: it decomposes the same problem into three separate concerns — leader election (via randomized timeouts and per-term majority votes), log replication (a single leader drives replication, and an entry is committed once a majority of nodes persist it), and a set of safety rules that prevent split-brain or data loss across leader changes. Because there is always exactly one leader driving replication at a time, Raft is much simpler to implement correctly, which is exactly why etcd, Consul, and Kafka's KRaft all chose it.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="22" font-size="13" font-weight="700" fill="#0f2545">Raft: Leader Election and Log Replication</text>
+            <line x1="360" y1="32" x2="360" y2="245" stroke="#e2e8f0"/>
+
+            <text x="180" y="46" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1d4ed8">1. Leader Election (per term)</text>
+            <rect x="20" y="65" width="90" height="40" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="65" y="89" text-anchor="middle" font-size="10.5" fill="#1d4ed8">Follower</text>
+            <rect x="135" y="65" width="90" height="40" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="180" y="89" text-anchor="middle" font-size="10.5" fill="#6b4a10">Candidate</text>
+            <rect x="250" y="65" width="90" height="40" rx="6" fill="#0f2545"/>
+            <text x="295" y="89" text-anchor="middle" font-size="10.5" fill="#fff">Leader</text>
+
+            <line x1="110" y1="85" x2="135" y2="85" stroke="#334155" marker-end="url(#rf1)"/>
+            <text x="122" y="75" text-anchor="middle" font-size="8.5" fill="#5a6472">timeout</text>
+            <line x1="225" y1="85" x2="250" y2="85" stroke="#334155" marker-end="url(#rf1)"/>
+            <text x="237" y="75" text-anchor="middle" font-size="8.5" fill="#5a6472">majority votes</text>
+
+            <path d="M295,105 C295,140 65,140 65,105" fill="none" stroke="#94a3b8" stroke-dasharray="4 3" marker-end="url(#rf1)"/>
+            <text x="180" y="155" text-anchor="middle" font-size="8.5" fill="#5a6472">higher term seen &#8594; step down to follower</text>
+
+            <text x="180" y="185" text-anchor="middle" font-size="9" fill="#5a6472">randomized election timeout;</text>
+            <text x="180" y="198" text-anchor="middle" font-size="9" fill="#5a6472">each new election increments the term</text>
+            <text x="180" y="211" text-anchor="middle" font-size="9" fill="#5a6472">so nodes never disagree on "which vote"</text>
+
+            <text x="530" y="46" text-anchor="middle" font-size="11.5" font-weight="700" fill="#166534">2. Log Replication</text>
+            <rect x="390" y="90" width="90" height="40" rx="6" fill="#0f2545"/>
+            <text x="435" y="114" text-anchor="middle" font-size="10.5" fill="#fff">Leader</text>
+            <rect x="540" y="60" width="100" height="36" rx="6" fill="#f0fdf4" stroke="#166534"/>
+            <text x="590" y="82" text-anchor="middle" font-size="10" fill="#166534">Follower A</text>
+            <rect x="540" y="124" width="100" height="36" rx="6" fill="#f0fdf4" stroke="#166534"/>
+            <text x="590" y="146" text-anchor="middle" font-size="10" fill="#166534">Follower B</text>
+
+            <line x1="480" y1="100" x2="540" y2="78" stroke="#334155" marker-end="url(#rf1)"/>
+            <line x1="480" y1="118" x2="540" y2="140" stroke="#334155" marker-end="url(#rf1)"/>
+            <text x="512" y="95" text-anchor="middle" font-size="8" fill="#5a6472">AppendEntries</text>
+
+            <rect x="440" y="185" width="180" height="30" rx="5" fill="#f0fdf4" stroke="#166534"/>
+            <text x="530" y="204" text-anchor="middle" font-size="9.5" fill="#166534">Committed: majority persisted</text>
+            <text x="530" y="230" text-anchor="middle" font-size="9" fill="#5a6472">(here: leader + 1 follower = quorum of 3)</text>
+
+            <defs><marker id="rf1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Raft splits consensus into leader election (a candidate wins with a majority of votes) and log replication (an entry is committed once a majority of nodes persist it).</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> ZooKeeper's ZAB (Paxos-derived); etcd and Consul (Raft); Kafka KRaft (Raft); CockroachDB, Google Spanner, YugabyteDB (Paxos/Raft-based strong consistency).</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Reach for this framing whenever evaluating why a coordination system — ZooKeeper, etcd, Consul, Kafka KRaft — is sized and architected the way it is. A write is only durable once a majority of nodes hold it; that single fact is what prevents split-brain and lets the system keep making progress while tolerating minority failures. An N-node cluster tolerates &#8970;(N&#8722;1)/2&#8971; failures while still making progress — 3 nodes tolerate 1, 5 tolerate 2 — which is exactly why production deployments are always sized 3, 5, or 7.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Formally proven correctness under crash/partition failures</li><li>Raft's decomposition makes it tractable to implement correctly</li><li>Well-understood failure math simplifies capacity planning</li><li>Widely implemented and battle-tested (ZAB, Raft, KRaft)</li></ul></td>
+            <td><ul><li>Paxos alone is notoriously hard to reason about and extend safely</li><li>Single-leader designs still bottleneck writes through one node per term</li><li>Requires an odd-sized majority-quorum cluster, adding fixed overhead</li><li>A building block, not a product — doesn't solve discovery/health-checking itself</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="containers-and-containerization">Containers (Docker / Containerization)</h3>
+        <p>A container packages an application together with all of its dependencies into a portable, consistent runtime unit — virtualizing at the operating-system level rather than the hardware level the way a VM does. Because containers share the host's kernel, they start in a fraction of a second and carry a much smaller footprint than a full virtual machine, at the cost of a weaker isolation boundary than hardware virtualization provides.</p>
+        <p>Two Linux kernel features do the actual isolation work: <strong>namespaces</strong> control what a process can see — its own view of PIDs, network interfaces, mounts, and hostname — while <strong>cgroups</strong> limit and account for how much CPU, memory, and I/O it can consume. On top of that, union/overlay filesystems let a container image be built as a stack of read-only layers, with a thin writable layer added only at runtime, which is why images share layers efficiently and containers start almost instantly. Docker's own architecture reflects a clean separation of concerns: the <code>dockerd</code> daemon talks to <code>containerd</code> for container lifecycle management, which in turn delegates to <code>runc</code>, an OCI-compliant low-level runtime, to actually create the isolated process. An <strong>image</strong> is an immutable blueprint; a <strong>container</strong> is simply a running (or stopped) instance of that image with its own isolated process, network, and filesystem view.</p>
+        <p><strong>Popular tools:</strong> Docker, containerd, runc, Podman; the OCI (Open Container Initiative) standardizes image and runtime formats across all of them.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Reach for containers when packaging and deploying microservices, running high-density workloads on shared hardware, or building CI/CD pipelines that need consistent dev/prod parity. Avoid them for mutually untrusted multi-tenant workloads (prefer VMs or microVMs) or anything requiring a different kernel/OS than the host.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Sub-second startup versus tens of seconds for a VM boot</li><li>Much smaller footprint than a full VM</li><li>Portable, consistent behavior across dev/staging/prod</li><li>High density — many containers per host</li></ul></td>
+            <td><ul><li>Weaker isolation boundary than VMs (shared kernel)</li><li>Not suitable for workloads needing a different kernel/OS</li><li>Not a hard multi-tenant security boundary on its own</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="container-orchestration-kubernetes">Container Orchestration: Kubernetes</h3>
+        <p>Kubernetes automates the deployment, scaling, networking, and self-healing of containerized applications across a cluster of machines, turning a one-time instruction like "run three copies of this service, exposed this way" into an ongoing, self-correcting reality rather than a fact that only holds true the moment it's applied. It does this through a small set of core objects: a <strong>Pod</strong> is the smallest deployable unit — one or more containers that share a network namespace and storage; a <strong>Node</strong> is a worker machine running the kubelet agent, a container runtime, and kube-proxy; a <strong>Deployment</strong> declares desired state and manages the underlying ReplicaSets, including rolling updates; and a <strong>Service</strong> provides a stable virtual IP and DNS name in front of a constantly changing set of pod IPs.</p>
+        <p>The control plane is what makes this self-healing possible. <strong>kube-apiserver</strong> is the front door and the only component that talks to etcd directly; <strong>etcd</strong> is the cluster's consistent state store; <strong>kube-scheduler</strong> decides where new pods should run; and <strong>kube-controller-manager</strong> runs the reconciliation loops that continuously compare desired state against observed state and correct any drift — restarting crashed containers, rescheduling pods off unreachable nodes, replacing pods that fail liveness or readiness probes. Scaling operates at three levels: the Horizontal Pod Autoscaler adjusts replica count from observed metrics, the Vertical Pod Autoscaler tunes a pod's resource requests/limits, and Cluster Autoscaler (or Karpenter) adjusts the number of underlying nodes. The whole system is declarative and API-driven, and it's designed to be extended — Custom Resource Definitions plus the Operator pattern let teams teach Kubernetes to manage entirely new kinds of application-specific state using the same reconciliation model.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="22" font-size="13" font-weight="700" fill="#0f2545">Kubernetes Control Plane &amp; Worker Node Topology</text>
+
+            <rect x="30" y="50" width="640" height="140" rx="8" fill="none" stroke="#94a3b8" stroke-dasharray="5 3"/>
+            <text x="45" y="68" font-size="10.5" font-weight="700" fill="#5a6472">CONTROL PLANE</text>
+
+            <rect x="55" y="80" width="140" height="40" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="125" y="104" text-anchor="middle" font-size="10" fill="#1d4ed8">kube-scheduler</text>
+
+            <rect x="280" y="80" width="140" height="40" rx="6" fill="#0f2545"/>
+            <text x="350" y="104" text-anchor="middle" font-size="10" fill="#fff">kube-apiserver</text>
+
+            <rect x="505" y="80" width="140" height="40" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="575" y="99" text-anchor="middle" font-size="9" fill="#1d4ed8">kube-controller-</text>
+            <text x="575" y="111" text-anchor="middle" font-size="9" fill="#1d4ed8">manager</text>
+
+            <rect x="315" y="135" width="70" height="34" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="350" y="157" text-anchor="middle" font-size="10.5" font-weight="700" fill="#6b4a10">etcd</text>
+
+            <line x1="195" y1="100" x2="280" y2="100" stroke="#334155" marker-end="url(#k1)"/>
+            <line x1="505" y1="100" x2="420" y2="100" stroke="#334155" marker-end="url(#k1)"/>
+            <line x1="350" y1="120" x2="350" y2="135" stroke="#334155" marker-end="url(#k1)"/>
+
+            <text x="350" y="182" text-anchor="middle" font-size="8.5" fill="#5a6472">kube-apiserver is the only control-plane component that talks to etcd directly</text>
+
+            <rect x="60" y="215" width="280" height="105" rx="8" fill="#fff" stroke="#94a3b8"/>
+            <text x="200" y="233" text-anchor="middle" font-size="11" font-weight="700" fill="#0f2545">Worker Node 1</text>
+            <rect x="80" y="245" width="240" height="26" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="200" y="262" text-anchor="middle" font-size="9" fill="#1d4ed8">kubelet + kube-proxy</text>
+            <rect x="90" y="282" width="60" height="26" rx="4" fill="#f0fdf4" stroke="#166534"/><text x="120" y="299" text-anchor="middle" font-size="9" fill="#166534">Pod</text>
+            <rect x="165" y="282" width="60" height="26" rx="4" fill="#f0fdf4" stroke="#166534"/><text x="195" y="299" text-anchor="middle" font-size="9" fill="#166534">Pod</text>
+            <rect x="240" y="282" width="60" height="26" rx="4" fill="#f0fdf4" stroke="#166534"/><text x="270" y="299" text-anchor="middle" font-size="9" fill="#166534">Pod</text>
+
+            <rect x="380" y="215" width="280" height="105" rx="8" fill="#fff" stroke="#94a3b8"/>
+            <text x="520" y="233" text-anchor="middle" font-size="11" font-weight="700" fill="#0f2545">Worker Node 2</text>
+            <rect x="400" y="245" width="240" height="26" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="520" y="262" text-anchor="middle" font-size="9" fill="#1d4ed8">kubelet + kube-proxy</text>
+            <rect x="410" y="282" width="60" height="26" rx="4" fill="#f0fdf4" stroke="#166534"/><text x="440" y="299" text-anchor="middle" font-size="9" fill="#166534">Pod</text>
+            <rect x="485" y="282" width="60" height="26" rx="4" fill="#f0fdf4" stroke="#166534"/><text x="515" y="299" text-anchor="middle" font-size="9" fill="#166534">Pod</text>
+            <rect x="560" y="282" width="60" height="26" rx="4" fill="#f0fdf4" stroke="#166534"/><text x="590" y="299" text-anchor="middle" font-size="9" fill="#166534">Pod</text>
+
+            <line x1="280" y1="120" x2="200" y2="215" stroke="#334155" marker-end="url(#k1)"/>
+            <line x1="420" y1="120" x2="520" y2="215" stroke="#334155" marker-end="url(#k1)"/>
+            <text x="220" y="175" text-anchor="middle" font-size="8" fill="#5a6472">watch /</text>
+            <text x="220" y="186" text-anchor="middle" font-size="8" fill="#5a6472">reconcile</text>
+            <text x="480" y="175" text-anchor="middle" font-size="8" fill="#5a6472">watch /</text>
+            <text x="480" y="186" text-anchor="middle" font-size="8" fill="#5a6472">reconcile</text>
+
+            <defs><marker id="k1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Only kube-apiserver talks to etcd; the scheduler and controller-manager reconcile through it, and worker-node kubelets are watched and reconciled against desired state.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> Kubernetes (CNCF); managed offerings (EKS, GKE, AKS); ecosystem (Helm, Istio/Linkerd, Prometheus, ArgoCD/Flux).</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Reach for Kubernetes when running many microservices that need consistent deployment, scaling, and networking across a fleet, when multi-cloud or hybrid-cloud portability matters, or when variable-load workloads benefit from automated scaling. It's probably overkill for a single small application or a team without the operational bandwidth to run a cluster.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Strong self-healing and automated scaling out of the box</li><li>Huge ecosystem (Helm, service meshes, GitOps tooling)</li><li>Cloud-portable across on-prem and every major provider</li><li>Extensible via CRDs and the Operator pattern</li></ul></td>
+            <td><ul><li>Significant operational complexity</li><li>Steep learning curve for teams new to it</li><li>Overkill for small or simple workloads</li><li>etcd/control-plane availability becomes a hard dependency for the whole cluster</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="serverless-faas">Serverless / Function-as-a-Service (e.g., AWS Lambda)</h3>
+        <p>Serverless (Function-as-a-Service) compute deploys individual functions rather than servers or containers — the cloud provider handles provisioning, scaling, patching, and availability, and billing is per-invocation and per-unit of execution time rather than for idle capacity. Functions are invoked in response to events: an HTTP request through an API gateway, a file landing in object storage, a message arriving on a queue, a database change stream, or a schedule. AWS Lambda, the archetypal example, runs each function inside a lightweight, secure microVM (Firecracker), and scales near-automatically to handle concurrent events.</p>
+        <p>The defining operational wrinkle is the <strong>cold start</strong> — the delay needed to initialize a fresh execution environment before a function can run, typically 200–500ms for lightweight runtimes but potentially multiple seconds for heavier runtimes like Java or for functions attached to a VPC. Providers mitigate this with Provisioned Concurrency (paying to keep a pool of instances warm) or snapshot-restore mechanisms like AWS SnapStart. Functions are also stateless between invocations and bound by hard execution-time limits (15 minutes on Lambda), which shapes the kind of workload they're suited for. Economically, serverless is not simply "cheaper" — it inverts at high sustained load: serverless wins clearly at roughly a 10% duty cycle or below, containers become the cheaper option above roughly 50% duty cycle, and at steady, high traffic some analyses show serverless costing tens of times more than an equivalent always-on container.</p>
+        <p><strong>Popular tools:</strong> AWS Lambda, Azure Functions, Google Cloud Functions/Cloud Run (container-based hybrid), Cloudflare Workers (near-zero cold start), Knative.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Reach for serverless for sporadic, unpredictable, or bursty traffic; event-driven glue logic (processing an upload, reacting to a queue message); rapid prototyping; or scheduled, brief cron-style jobs. Reconsider it for long-running processes, high and sustained predictable traffic, or anything needing guaranteed sub-50ms latency on every call — many real architectures land on a hybrid split, serverless for sporadic paths and containers for the always-on core.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Zero idle cost — pay only for actual invocations/duration</li><li>No server management at all</li><li>Near-instant automatic scaling for bursty workloads</li><li>Tight native integration with cloud event sources</li></ul></td>
+            <td><ul><li>Cold-start latency variability, worse for heavy runtimes/VPC functions</li><li>Hard execution-time ceilings (e.g. 15 min on Lambda)</li><li>Statelessness between invocations complicates some workloads</li><li>Cost can invert and become far more expensive at high sustained duty cycles</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="service-discovery">Service Discovery (General Concept)</h3>
+        <p>Service discovery is the mechanism by which services find the current network location of the other services they depend on, in an environment where instances are constantly starting, stopping, scaling, and moving — a static config file or hardcoded IP simply doesn't survive contact with that kind of environment. The core piece of infrastructure is a <strong>service registry</strong> — ZooKeeper, etcd, Consul, or a purpose-built registry like Netflix Eureka — that tracks which instances are currently available. Getting instances into that registry happens one of two ways: <strong>self-registration</strong>, where an instance registers and deregisters itself, typically backed by a heartbeat or TTL, or <strong>third-party registration</strong>, where an external registrar or health-checker updates the registry on the instance's behalf.</p>
+        <p>How a caller then uses that registry splits into two patterns. In <strong>client-side discovery</strong>, the calling client queries the registry directly and picks an instance itself — the classic example is Netflix Eureka paired with the Ribbon client-side load balancer — which saves a network hop and gives the client full visibility, at the cost of needing that discovery logic embedded in every service and every language in use. In <strong>server-side discovery</strong>, the client simply calls a stable endpoint, and a load balancer or proxy queries the registry and routes the request on the client's behalf — AWS ALB, or Kubernetes Services backed by kube-proxy, CoreDNS, and etcd, are the canonical examples — which keeps clients simple and uniform across languages, at the cost of an extra network hop and another piece of infrastructure that itself needs to be highly available.</p>
+        <p><strong>Popular tools:</strong> ZooKeeper, etcd, Consul, Netflix Eureka; Kubernetes Services/CoreDNS/kube-proxy; AWS Cloud Map, ECS Service Discovery; Istio/Envoy, Consul Connect.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Client-side discovery fits polyglot-but-standardized stacks already invested in a client library ecosystem, or latency-critical paths that can't afford an extra hop. Server-side discovery fits container/orchestration platforms by default — on Kubernetes you get it for free via Services and DNS. Any system built on dynamic, elastic infrastructure needs some form of service discovery; the only real question is which pattern.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Client-side: one fewer network hop, full client-side visibility</li><li>Server-side: simple, "dumb" clients uniform across every language</li><li>Both patterns eliminate hardcoded/static endpoints entirely</li><li>Integrates naturally with health checking for automatic failover</li></ul></td>
+            <td><ul><li>Client-side: discovery logic must be duplicated across every service/language</li><li>Server-side: adds an extra hop plus another HA-critical piece of infrastructure</li><li>The registry itself becomes a critical dependency requiring its own availability story</li><li>Stale registry entries can route traffic to dead instances if health checks lag</li></ul></td>
+          </tr>
+        </table>
+
+        <div class="page-nav">
+          <a class="prev" href="message-queues.html"><span class="dir">Previous</span>Messaging &amp; Streaming</a>
+          <a class="next" href="search-indexing.html"><span class="dir">Next</span>Search &amp; Indexing</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

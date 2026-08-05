@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CricInfo / CricBuzz | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">CricInfo / CricBuzz</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-scope">Problem Statement &amp; Scope</a></li>
+        <li><a href="#functional-requirements">Functional Requirements</a></li>
+        <li><a href="#non-functional-requirements">Non-Functional Requirements</a></li>
+        <li><a href="#assumptions-and-constraints">Assumptions &amp; Constraints</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#api-design">API Design</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design">Low-Level Design</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-sharding">Data Sharding</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging &amp; Analytics</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing CricInfo / CricBuzz</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a live sports score platform in the style of Cricbuzz, ESPN Cricinfo, or Yahoo Sports: requirements and capacity estimation (including the cache-offload math that is the heart of this design), API design, high-level architecture, low-level domain and service classes, database schema, matchId-based sharding and the "hot match" problem, feature-specific logic (delta computation, Varnish request-coalescing, circuit breaking, token-bucket rate limiting, WebSocket binding and failover), replication and fault tolerance, monitoring/logging/analytics/notifications, and a bank of follow-up interview questions with full answers.</em></p>
+
+        <h2 id="problem-statement-and-scope">Problem Statement &amp; Scope</h2>
+        <p>Design a live sports score platform &mdash; think Cricbuzz, ESPN Cricinfo, or Yahoo Sports &mdash; that ingests live match data (cricket, hockey, and other sports) from external feeds and fans it out at scale to three very different classes of consumers: mobile/app users, browser users, and third-party servers that resell or embed the data (e.g. Dream11 pulling live scores to settle fantasy contests, news sites embedding a live scorecard widget).</p>
+        <p>The product has two faces. First, <strong>a live score &amp; commentary product</strong> &mdash; ball-by-ball commentary, real-time scorecards, notifications for key events (wicket, century, match start/end), and search over historical matches. Second, <strong>a public/partner data API</strong> &mdash; third parties pay (or are metered) for programmatic access to the same live data, with SLAs, rate limits, and API keys.</p>
+        <div class="callout">
+          <div class="callout-title">Why this is a hard/interesting problem</div>
+          It is a <strong>read-heavy, write-light</strong> system taken to an extreme: during a marquee match (e.g. India vs Pakistan), millions of clients poll/subscribe to a handful of "hot keys" (one per live match), while the actual source-of-truth update rate is one event every 30&ndash;90 seconds (a ball, a goal, a substitution). The whole design is about <strong>fanning out a trickle of writes to a firehose of reads</strong> without melting the origin. It also combines request/response REST APIs, long-lived WebSocket connections at scale, cache-stampede protection, and multi-tenant rate limiting/billing in one system &mdash; a good vehicle to demonstrate breadth in an interview. And traffic is extremely spiky and predictable-yet-unpredictable: known in advance (match schedule) but the actual QPS curve depends on match context &mdash; a last-over run chase generates 10x the baseline QPS of the same match's 10th over.
+        </div>
+
+        <h3>In scope</h3>
+        <ul>
+          <li>Live score ingestion from external feeds</li>
+          <li>Ball-by-ball (or event-by-event) commentary</li>
+          <li>Real-time push (WebSocket) and pull (REST/AJAX) delivery</li>
+          <li>Third-party partner API with rate limiting and billing metering</li>
+          <li>Search/browse of historical matches</li>
+          <li>Key-event notifications (wickets, milestones, match start/end)</li>
+          <li>Capacity planning, HLD/LLD, schema, sharding, fault tolerance, observability</li>
+        </ul>
+
+        <h3>Out of scope</h3>
+        <p>Called out explicitly to the interviewer, then set aside:</p>
+        <ul>
+          <li>Live video streaming</li>
+          <li>In-app payments / fantasy scoring engine itself (Dream11 is a <em>consumer</em> of this system, not part of it)</li>
+          <li>User-generated content (comments/forums) moderation</li>
+          <li>Ad serving logic</li>
+        </ul>
+
+        <h2 id="functional-requirements">Functional Requirements</h2>
+        <table>
+          <tr><th>#</th><th>Requirement</th><th>Notes</th></tr>
+          <tr><td>FR1</td><td>Real-time score updates per match</td><td>Current score, overs/balls, wickets, run rate, required run rate, etc.</td></tr>
+          <tr><td>FR2</td><td>Ball-by-ball (or event-by-event) commentary</td><td>Chronological feed, must support incremental fetch ("give me everything since ball #X")</td></tr>
+          <tr><td>FR3</td><td>Public/partner REST API</td><td>Third parties (Dream11, news sites) consume live + historical data programmatically via API keys</td></tr>
+          <tr><td>FR4</td><td>Multi-sport support</td><td>Cricket, hockey, (extensible to football/tennis/etc.) &mdash; each sport has its own scoring model and its own Core API</td></tr>
+          <tr><td>FR5</td><td>Handle massive traffic spikes for marquee live events</td><td>e.g., India vs Pakistan World Cup match &mdash; system must gracefully absorb 100x-of-average QPS without falling over</td></tr>
+          <tr><td>FR6</td><td>Search/browse past matches</td><td>By team, tournament, date range, player, venue</td></tr>
+          <tr><td>FR7</td><td>Notifications for key events</td><td>Wickets, milestones (50/100), match start/end, in-app push + partner webhooks</td></tr>
+          <tr><td>FR8</td><td>Match metadata &amp; scorecards</td><td>Squads, playing XI, venue, toss, full scorecard (batting/bowling figures)</td></tr>
+          <tr><td>FR9</td><td>Multi-format/multi-channel delivery</td><td>Mobile app (push via WebSocket), browser (AJAX polling fallback), third-party server (REST)</td></tr>
+        </table>
+
+        <h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+        <table>
+          <tr><th>#</th><th>Requirement</th><th>Target / Notes</th></tr>
+          <tr><td>NFR1</td><td>Low latency / near real-time</td><td>2&ndash;3 second end-to-end propagation delay from "ball bowled" to "client sees update" is <strong>explicitly acceptable</strong> &mdash; this relaxation is what makes caching + polling intervals viable</td></tr>
+          <tr><td>NFR2</td><td>High availability during live events</td><td>This is the worst possible time to be down &mdash; target 99.95%+ availability during live windows; graceful degradation &gt; hard failure</td></tr>
+          <tr><td>NFR3</td><td>Horizontal scalability</td><td>Every tier (Product API, Core API, WebSocket handlers) must scale out statelessly; Core API scales independently per sport</td></tr>
+          <tr><td>NFR4</td><td>Eventual consistency acceptable</td><td>Score display does not need linearizability &mdash; a 1&ndash;2 second stale read is fine; strong consistency only matters at the ingestion/source-of-truth layer</td></tr>
+          <tr><td>NFR5</td><td>Strong rate limiting / fair use for 3rd parties</td><td>Prevent a single partner from starving shared capacity; tie limits to billing tier</td></tr>
+          <tr><td>NFR6</td><td>Security</td><td>SSL everywhere, authentication (user login for personalization), authorization (role-based &mdash; e.g. partner vs. admin vs. end user), API-key based partner auth</td></tr>
+          <tr><td>NFR7</td><td>Observability</td><td>Full metrics/logging/tracing across gateway, Product API, cache layer, Core API, WebSocket layer &mdash; you cannot debug a cache-stampede incident without this</td></tr>
+          <tr><td>NFR8</td><td>Durability of historical data</td><td>Once a match is over, its scorecard/commentary is a permanent historical record (retained for years)</td></tr>
+          <tr><td>NFR9</td><td>Cost efficiency at the Core API tier</td><td>Because Core API is the expensive/slow tier, the entire caching chain exists to keep Core API traffic near-flat regardless of read volume</td></tr>
+        </table>
+
+        <h2 id="assumptions-and-constraints">Assumptions &amp; Constraints</h2>
+        <h3>Explicit assumptions (given)</h3>
+        <ul>
+          <li>A propagation delay of <strong>2&ndash;3 seconds</strong> from real-world event to client display is acceptable. This is the foundational assumption that justifies polling intervals, 1-second Redis TTLs, and eventual consistency throughout the design.</li>
+          <li><strong>Rate limiting must exist</strong> for third-party API consumers, tied to an <code>api_dev_key</code>, to prevent abuse and to support metered billing.</li>
+        </ul>
+        <h3>Additional reasonable assumptions made for this design</h3>
+        <ul>
+          <li>No user-generated content (comments, forum posts, chat) is in scope &mdash; no moderation pipeline needed.</li>
+          <li>The <strong>External Score Updater is the single source of truth</strong> for live data; the rest of the system (Product API, caches, WebSocket layer) is purely a distribution/fan-out mechanism and never originates score data.</li>
+          <li>Core APIs are <strong>polyglot and independently deployable per sport</strong> (cricket-core-api, hockey-core-api, &hellip;) &mdash; different sports have different scoring rules/state machines, and isolating them limits blast radius (an incident in hockey scoring logic can't take down cricket).</li>
+          <li>Historical match data is retained for a minimum of <strong>5 years</strong> for search/analytics purposes (regulatory/product decision, tunable).</li>
+          <li>A "live match" universe at any instant is bounded (tens, not millions) &mdash; even during the busiest global sports day, the number of concurrently live matches across all supported sports is on the order of 10&ndash;50; it's the <strong>reader fan-out per match</strong>, not the number of matches, that creates scale pressure.</li>
+          <li>Mobile/app clients can hold persistent WebSocket connections; a meaningful fraction of browser clients cannot (proxies, corporate firewalls, older browsers) and fall back to AJAX polling.</li>
+          <li>Third-party servers never hold WebSocket state with us &mdash; they always pull via REST (simpler integration contract for partners).</li>
+        </ul>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>Always state assumptions explicitly, then derive numbers &mdash; interviewers care about the method, not decimal precision. This section walks through traffic estimation, the cache-offload math that is the core engineering insight of the whole design, storage estimation, WebSocket fan-out bandwidth, and instance sizing.</p>
+
+        <h3>Traffic estimation</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Global DAU = 50,000,000 (given assumption for a large cricket-focused product)
+          <br>Concurrent viewers during a marquee live match = 2.5M &ndash; 5M (5&ndash;10% of DAU tune in concurrently during e.g. India vs Pakistan)
+          <br>Peak Product API QPS = <strong>5,000 req/sec</strong> (given &mdash; driven by AJAX-polling browser clients + partner polling + app clients doing periodic REST fetches; not all 5M viewers are on WebSocket, see WebSocket fan-out below)
+          <br>Core API QPS target = <strong>1&ndash;2 req/sec</strong> per live data point &mdash; a result of the caching chain, <em>not</em> an input; this is the number the whole design engineers towards
+        </div>
+
+        <h3>Cache offload math (the heart of the design)</h3>
+        <div class="callout">
+          <div class="callout-title">Why this is the heart of the design</div>
+          Every other component in this architecture &mdash; Redis, Varnish, the circuit breaker, even the decision to split Core API per sport &mdash; exists to protect or extend one single ratio: turning 5,000+ reads/sec at the edge into ~1&ndash;2 writes/sec of actual load on the source-of-truth tier. Get this math right and almost everything downstream (instance counts, fault-tolerance strategy, even the choice of NoSQL replica sizing) falls out of it directly.
+        </div>
+        <p>Given: Redis cache TTL = <strong>1 second</strong>, incoming Product API read rate = <strong>5,000 req/sec</strong> for a single match's score key.</p>
+        <div class="formula-box">
+          <span class="formula-label">Within any 1-second TTL window</span>
+          1st request &rarr; cache miss &rarr; fetch from Core API, populate cache (1 request reaches Core API)
+          <br>Remaining requests in that same window &rarr; cache hit, served from Redis (4,999 requests absorbed)
+          <br>Offload ratio = 4,999 / 5,000 = 99.98%
+          <br>Core API load = 5,000 req/sec &times; (1 &minus; 0.9998) &asymp; 1 req/sec (matches the 1&ndash;2 req/sec target)
+        </div>
+        <p>This is why the TTL is tuned to 1 second: it is short enough that data staleness (max 1s) fits comfortably inside the 2&ndash;3 second acceptable-delay budget, yet long enough that it collapses 5,000 reads/sec down to ~1 read/sec against the expensive Core API tier.</p>
+        <div class="callout">
+          <div class="callout-title">The catch &mdash; and why Varnish exists</div>
+          At the exact instant the 1-second key expires, if all 5,000 concurrent requests happen to arrive within the same few-millisecond window (very likely under sustained high QPS), naively <em>all 5,000</em> would see a cache miss simultaneously and stampede the Core API &mdash; a classic <strong>thundering herd</strong>. Varnish's request-coalescing sits directly in front of Core API specifically to convert "5,000 simultaneous misses" back down to <strong>1 actual upstream call</strong>, with the other 4,999 callers blocked/parked and served the same response once it returns.
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Combined effect</span>
+          Steady state (mid-TTL-window): ~1 req/sec reaches Core API (Redis absorbs the rest)
+          <br>Worst case (TTL-expiry stampede): ~1 req reaches Core API per expiry event (Varnish collapses the burst)
+          <br>&rarr; Core API sees a near-constant ~1&ndash;2 req/sec regardless of front-end QPS, by design.
+        </div>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ci-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+              <marker id="arrow-ci-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <text x="20" y="20" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.03em">STEADY STATE &mdash; WITHIN A SINGLE 1-SECOND TTL WINDOW</text>
+
+            <rect x="20" y="35" width="210" height="60" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="125" y="60" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">5,000 req/sec</text>
+            <text x="125" y="78" text-anchor="middle" fill="#cbd8ef" font-size="9">Product API reads (one match's score key)</text>
+
+            <rect x="360" y="35" width="200" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="460" y="63" text-anchor="middle" fill="var(--color-primary)" font-size="13" font-weight="600">Redis Cache</text>
+            <text x="460" y="80" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">1s TTL</text>
+
+            <line x1="230" y1="55" x2="358" y2="55" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-ci-2)"></line>
+            <text x="294" y="48" text-anchor="middle" fill="var(--color-text)" font-size="8">requests arrive</text>
+
+            <line x1="358" y1="80" x2="230" y2="80" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ci-2)"></line>
+            <text x="294" y="100" text-anchor="middle" fill="var(--color-text)" font-size="8">4,999 hits/sec served from cache (99.98%)</text>
+
+            <rect x="360" y="150" width="200" height="55" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="460" y="172" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">Core API</text>
+            <text x="460" y="189" text-anchor="middle" fill="#cbd8ef" font-size="9">per sport</text>
+
+            <line x1="460" y1="97" x2="460" y2="148" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-ci-2)"></line>
+            <text x="570" y="125" text-anchor="middle" fill="var(--color-text)" font-size="8">1 req/sec &mdash;</text>
+            <text x="570" y="137" text-anchor="middle" fill="var(--color-text)" font-size="8">cache miss populates cache</text>
+
+            <line x1="10" y1="225" x2="690" y2="225" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="6,4"></line>
+            <text x="350" y="219" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">&mdash; TTL boundary crossed &mdash;</text>
+
+            <text x="20" y="250" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.03em">WORST CASE &mdash; THE INSTANT THE TTL KEY EXPIRES (THUNDERING HERD)</text>
+
+            <rect x="20" y="265" width="270" height="65" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="155" y="290" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">5,000 concurrent requests</text>
+            <text x="155" y="308" text-anchor="middle" fill="#cbd8ef" font-size="8">arrive within the same few ms &mdash; key just expired</text>
+
+            <rect x="380" y="265" width="200" height="65" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="480" y="292" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Varnish</text>
+            <text x="480" y="309" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">request coalescing</text>
+
+            <line x1="290" y1="290" x2="378" y2="290" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-ci-2)"></line>
+            <text x="334" y="283" text-anchor="middle" fill="var(--color-text)" font-size="8">all miss at once</text>
+
+            <line x1="378" y1="315" x2="290" y2="315" stroke="var(--color-text-muted)" stroke-width="1.4" stroke-dasharray="4,3" marker-end="url(#arrow-ci-2m)"></line>
+            <text x="334" y="335" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">single response fanned back to all 5,000</text>
+            <text x="334" y="346" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(4,999 parked/queued)</text>
+
+            <rect x="380" y="385" width="200" height="55" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="480" y="407" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">Core API</text>
+            <text x="480" y="424" text-anchor="middle" fill="#cbd8ef" font-size="9">exactly 1 upstream call</text>
+
+            <line x1="480" y1="332" x2="480" y2="383" stroke="var(--color-accent-dark)" stroke-width="1.8" marker-end="url(#arrow-ci-2)"></line>
+            <text x="590" y="360" text-anchor="middle" fill="var(--color-text)" font-size="8">N &rarr; 1</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. Cache-offload math end to end: Redis absorbs steady-state reads at a 99.98% hit ratio, and at the instant a key expires, Varnish's request-coalescing collapses the resulting stampede of simultaneous misses into exactly one upstream Core API call.</div>
+        </div>
+
+        <h3>Storage estimation (match/ball-event data, 5-year retention)</h3>
+        <p>Assumptions: average <strong>~500 discrete events per match</strong> (blended across T20 ~240 balls, ODI ~600 balls, Test ~2,000+ balls, plus hockey-style event streams), each raw event &asymp; <strong>200 bytes</strong> (compact structured payload: over, ball, runs, wicket flag, players, timestamp). Commentary text adds roughly one entry per event, ~150&ndash;300 bytes each.</p>
+        <div class="formula-box">
+          <span class="formula-label">Per match (raw)</span>
+          Raw ball/event data: 500 events &times; 200 bytes = 100,000 bytes (~100 KB)
+          <br>Commentary text: 500 entries &times; 250 bytes (avg) = 125,000 bytes (~125 KB)
+          <br>Scorecard / snapshot / metadata overhead (est.) = ~50 KB
+          <br>Total per match (raw) &asymp; 275 KB
+        </div>
+        <p>Match volume: across all supported sports and leagues worldwide (international fixtures, domestic T20/ODI leagues, county cricket, hockey pro leagues, etc.) assume an average of <strong>~200 matches/day</strong> globally.</p>
+        <div class="formula-box">
+          <span class="formula-label">5-year footprint</span>
+          Matches over 5 years = 200 matches/day &times; 365 days &times; 5 years = 365,000 matches
+          <br>Raw storage = 365,000 matches &times; 275 KB &asymp; 100 GB
+          <br>With 3&times; replication factor (NoSQL, cross-AZ) = 100 GB &times; 3 &asymp; 300 GB
+          <br>With index overhead (~30%) &asymp; <strong>390 GB total footprint over 5 years</strong>
+        </div>
+        <p><strong>Takeaway:</strong> the historical dataset is not the hard problem in this system (it's a manageable few hundred GB) &mdash; the hard problem is the <em>read amplification</em> on live matches, which storage size alone doesn't capture.</p>
+
+        <h3>WebSocket fan-out bandwidth estimation</h3>
+        <p>During a marquee match with 2.5M&ndash;5M concurrent viewers, assume the following split across delivery channels:</p>
+        <table>
+          <tr><th>Channel</th><th>Share</th><th>Concurrent count (at 5M peak)</th></tr>
+          <tr><td>Mobile/app via WebSocket</td><td>60%</td><td>3,000,000</td></tr>
+          <tr><td>Browser via AJAX polling (fallback)</td><td>30%</td><td>1,500,000</td></tr>
+          <tr><td>Third-party servers via REST (not persistent)</td><td>10%</td><td>~500,000 effective pull rate, folded into Product API QPS</td></tr>
+        </table>
+        <div class="formula-box">
+          <span class="formula-label">Bandwidth</span>
+          WebSocket push payload size (delta update, JSON) &asymp; 500 bytes
+          <br>Push frequency per connection (matches 2&ndash;3s delay budget, throttled to real event cadence) &asymp; 1 update / 2.5 sec average
+          <br>Aggregate egress bandwidth = 3,000,000 sockets &times; 500 bytes / 2.5 sec = 3,000,000 &times; 200 bytes/sec = 600,000,000 bytes/sec
+          <br>= 600 MB/sec &asymp; <strong>4.8 Gbps sustained egress</strong> across the WebSocket handler fleet
+        </div>
+        <p><strong>Handler fleet sizing:</strong> assuming each WebSocket handler node comfortably holds <strong>50,000</strong> tuned persistent connections (typical ceiling for an event-loop based server, e.g. Netty/Node, with OS ulimit tuning):</p>
+        <div class="formula-box">
+          <span class="formula-label">Fleet size</span>
+          Nodes needed = 3,000,000 / 50,000 = 60 nodes
+          <br>+ redundancy (N+2 / rolling deploys, failover headroom) &rArr; ~65&ndash;70 nodes
+        </div>
+
+        <h3>Instance sizing for Product API / Core API</h3>
+        <div class="formula-box">
+          <span class="formula-label">Product API</span>
+          Peak load = 5,000 req/sec
+          <br>Per-instance capacity = ~500 req/sec (simple cache-fronted read, JSON serialize, auth check)
+          <br>Base instances needed = 5,000 / 500 = 10
+          <br>With 2x headroom (burst/failover) = ~20 instances (per region)
+          <br>Across 3 active regions = <strong>~60 instances globally</strong>
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Core API (per sport)</span>
+          Concurrent live matches (worst case, global) &asymp; 20&ndash;50 across all sports
+          <br>Load per match (post-cache-offload) &asymp; 1&ndash;2 req/sec
+          <br>Total Core API load &asymp; 20&ndash;50 &times; 2 = 40&ndash;100 req/sec (aggregate, all sports)
+          <br>Per-instance capacity (heavier compute) &asymp; 100 req/sec
+          <br>Instances needed per sport (HA minimum = 3) &rArr; e.g. cricket-core-api: 3&ndash;4 nodes, hockey-core-api: 2&ndash;3 nodes, etc.
+        </div>
+        <p>The contrast is the entire point of the design: <strong>Product API needs ~60 lightweight instances to survive 5,000 req/sec</strong>, while <strong>Core API needs only a handful of instances per sport</strong> because the caching chain has already absorbed 99.98%+ of the traffic before it gets there.</p>
+
+        <h2 id="api-design">API Design</h2>
+        <p>All endpoints are behind the <strong>API Gateway</strong> (SSL termination, auth, rate limiting). Two audiences: first-party frontend (Product API) and third-party partners (public REST API, versioned and rate-limited separately).</p>
+
+        <h3><code>GET /v1/matches/{matchId}/score</code> &mdash; GetLiveScore(matchId)</h3>
+        <pre><code>GET /v1/matches/12345/score HTTP/1.1
+Host: api.cricinfo.com
+Authorization: Bearer &lt;user_or_partner_token&gt;</code></pre>
+        <pre><code>{
+  "matchId": "12345",
+  "sport": "cricket",
+  "status": "LIVE",
+  "version": 4821,
+  "innings": 2,
+  "battingTeam": "IND",
+  "score": { "runs": 187, "wickets": 4, "overs": 32.4 },
+  "runRate": 5.72,
+  "requiredRunRate": 6.10,
+  "lastUpdated": "2026-07-17T14:32:07Z",
+  "cacheAge_ms": 340
+}</code></pre>
+
+        <h3><code>GET /v1/matches/{matchId}/commentary?since_ball={n}</code> &mdash; GetCommentary(matchId, since_ball)</h3>
+        <p>Supports incremental fetch &mdash; client passes the last ball index it has, server returns only the delta.</p>
+        <pre><code>GET /v1/matches/12345/commentary?since_ball=194 HTTP/1.1</code></pre>
+        <pre><code>{
+  "matchId": "12345",
+  "latestBall": 196,
+  "entries": [
+    { "ball": "32.5", "event": "FOUR", "text": "Kohli finds the gap through covers.", "runs": 4 },
+    { "ball": "32.6", "event": "WICKET", "text": "Bowled! Clean bowled, off stump cartwheels.", "wicketType": "bowled" }
+  ]
+}</code></pre>
+
+        <h3><code>WS /v1/matches/{matchId}/subscribe</code> &mdash; SubscribeMatch(matchId) [WebSocket]</h3>
+        <p>Client opens a persistent connection through the WebSocket Handler pool (registered via WebSocket Manager). Server pushes deltas as they occur (subject to the 2&ndash;3s aggregation window).</p>
+        <pre><code>--&gt; (client) CONNECT /v1/matches/12345/subscribe [Upgrade: websocket]
+&lt;-- (server) { "type": "ACK", "matchId": "12345", "connectionId": "wsh-07:conn-88231" }
+&lt;-- (server, pushed) { "type": "SCORE_DELTA", "version": 4822, "diff": { "runs": +4, "overs": "32.5" } }
+&lt;-- (server, pushed) { "type": "EVENT", "eventType": "WICKET", "ball": "32.6", "text": "Bowled!" }</code></pre>
+
+        <h3><code>GET /v1/partner/search</code> &mdash; SearchMatches(&hellip;) [Third-party / partner API]</h3>
+        <pre><code>GET /v1/partner/search?sport=cricket&amp;team=IND&amp;from=2026-01-01&amp;to=2026-07-17&amp;status=COMPLETED
+X-Api-Key: dk_live_9f8a7b6c5d4e</code></pre>
+        <p>Response (with rate-limit headers echoed on every partner response):</p>
+        <pre><code>HTTP/1.1 200 OK
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 743
+X-RateLimit-Reset: 1752762000
+Content-Type: application/json
+
+{
+  "matches": [
+    { "matchId": "12200", "teams": ["IND", "AUS"], "result": "IND won by 6 wickets", "date": "2026-06-30" },
+    { "matchId": "12180", "teams": ["IND", "ENG"], "result": "ENG won by 12 runs", "date": "2026-06-18" }
+  ],
+  "page": 1,
+  "totalPages": 4
+}</code></pre>
+        <p>When a partner exceeds its bucket:</p>
+        <pre><code>HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1752762000
+Retry-After: 47</code></pre>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <h3>Narrative walkthrough</h3>
+        <p>Three client types enter the system: <strong>mobile/app users</strong> and <strong>browser clients</strong> (using AJAX polling as a fallback when WebSockets aren't viable) hit the <strong>API Gateway</strong>, and <strong>third-party servers</strong> (Dream11, news sites) hit the same gateway via a public REST surface with an API key.</p>
+        <p>The <strong>API Gateway</strong> is the single front door and is responsible for: SSL termination, authentication (user login sessions), authorization (role-based &mdash; end user vs. partner vs. admin), offloading static content to a <strong>CDN</strong>, rate limiting and billing metering for third-party API keys, and circuit breaking at the edge.</p>
+        <p>Behind the gateway there are two API tiers. <strong>Product API</strong> faces all frontend/user traffic directly, built for very high QPS (5,000 req/sec at peak during a big live match); it is thin &mdash; parse request, check the cache, serialize response. <strong>Core API</strong> is heavier, slower, and split per sport (cricket-core-api, hockey-core-api, &hellip;), each independently deployable/scalable. It does the real domain logic: assembling scorecards, computing run rates, resolving match state. It's engineered to receive only <strong>1&ndash;2 req/sec per data point</strong>, thanks to everything sitting in front of it.</p>
+        <p>Between Product API and Core API sits the <strong>caching chain</strong>, the core of the design. First, <strong>Redis cache</strong> (1-second TTL) absorbs 4,999 of every 5,000 reads. The Product API also continuously pushes delta updates into this same Redis layer as new data arrives ("push delta changes") so that the "get updates" read path always finds fresh-enough data without hitting Core API. A reporting/logging sink taps off this Product API cache layer for analytics. Second, <strong>Varnish</strong> sits directly in front of Core API. When the Redis key expires, it collapses many simultaneous identical requests into a single upstream Core API call and fans the one response back out to all waiters (request coalescing), preventing a thundering herd at the exact TTL-expiry instant. Third, a <strong>circuit breaker</strong> (Hystrix-style) sits before Varnish/Core API. If Core APIs are stuck or overloaded (e.g. several simultaneous live games spiking aggregate load), the breaker trips open, stops sending requests downstream, and the system fails fast / serves the last known-good cached value instead of queuing requests against a struggling backend.</p>
+        <p>Core API reads/writes the <strong>NoSQL database</strong>, which is also the landing zone for the <strong>External Score Updater</strong> &mdash; an ingestion component that receives automated live updates from stadium data feeds or screen-reader/OCR pipelines, normalizes them into generalized raw data (score, commentary, event), and pushes them into the NoSQL DB / Core API layer. This is the <strong>single source of truth</strong> for live data; everything above it is a distribution mechanism.</p>
+        <p>On the real-time push side, a pool of <strong>WebSocket Handlers</strong> maintains persistent connections to mobile/app and browser clients. Because handler nodes are stateless and horizontally scaled, a <strong>WebSocket Manager</strong> coordinates the pool and maintains a <strong>Redis mapping/binding table</strong> (which user &rarr; which handler instance/connection), since any given user's live socket could be sitting on any node at any time. When new data lands, it flows API Gateway &rarr; WebSocket Handlers &rarr; the specific bound connections for interested users. Browser clients that cannot hold a WebSocket (proxy/firewall constrained) fall back to AJAX polling through the ordinary API Gateway &rarr; Product API path. Third-party servers never hold sockets &mdash; they always use plain REST through the gateway.</p>
+
+        <h3>Labeled component reference</h3>
+        <table>
+          <tr><th>#</th><th>Component</th><th>Responsibility</th></tr>
+          <tr><td>1</td><td>Mobile/App Client</td><td>End-user client, holds persistent WebSocket</td></tr>
+          <tr><td>2</td><td>Browser Client</td><td>End-user client, WebSocket or AJAX-poll fallback</td></tr>
+          <tr><td>3</td><td>Third-Party Server</td><td>Partner (Dream11, news sites), REST-only, API-key authenticated</td></tr>
+          <tr><td>4</td><td>API Gateway</td><td>SSL, auth (authn/authz), CDN offload, rate limiting/billing, circuit breaking at the edge</td></tr>
+          <tr><td>5</td><td>CDN</td><td>Serves static assets offloaded by the gateway</td></tr>
+          <tr><td>6</td><td>Product API</td><td>High-QPS, user/frontend-facing read API</td></tr>
+          <tr><td>7</td><td>Redis Cache (1s TTL)</td><td>Absorbs read traffic; Product API pushes delta updates here</td></tr>
+          <tr><td>8</td><td>Reporting/Logging Sink</td><td>Taps Product API cache layer for analytics/audit</td></tr>
+          <tr><td>9</td><td>Circuit Breaker</td><td>Trips when Core API is unhealthy/overloaded; fails fast / serves stale</td></tr>
+          <tr><td>10</td><td>Varnish (request coalescing)</td><td>Collapses concurrent identical misses into one Core API call</td></tr>
+          <tr><td>11</td><td>Core API (per sport)</td><td>Cricket Core API, Hockey Core API, &hellip; &mdash; heavier domain logic, independently scaled</td></tr>
+          <tr><td>12</td><td>NoSQL DB</td><td>Durable store for matches, scores, commentary, teams, players</td></tr>
+          <tr><td>13</td><td>External Score Updater</td><td>Ingests stadium feeds / OCR/screen-reader data, writes raw normalized events</td></tr>
+          <tr><td>14</td><td>WebSocket Handlers (pool)</td><td>Hold persistent connections, push updates to bound clients</td></tr>
+          <tr><td>15</td><td>WebSocket Manager</td><td>Coordinates handler pool; owns the user&rarr;handler binding logic</td></tr>
+          <tr><td>16</td><td>Redis Binding Table</td><td>user &rarr; handler/connection mapping, read/written by WebSocket Manager</td></tr>
+        </table>
+
+        <h3>Architecture overview</h3>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 720" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ci-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ci-1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+              <marker id="arrow-ci-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="10" y="15" width="225" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="122" y="37" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Mobile / App Client</text>
+            <text x="122" y="52" text-anchor="middle" fill="#cbd8ef" font-size="9">persistent WebSocket</text>
+
+            <rect x="258" y="15" width="225" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="37" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Browser Client</text>
+            <text x="370" y="52" text-anchor="middle" fill="#cbd8ef" font-size="9">WebSocket or AJAX-poll fallback</text>
+
+            <rect x="505" y="15" width="225" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="617" y="37" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Third-Party Server</text>
+            <text x="617" y="52" text-anchor="middle" fill="#cbd8ef" font-size="9">REST + API key (Dream11, news)</text>
+
+            <line x1="122" y1="65" x2="300" y2="93" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ci-1)"></line>
+            <line x1="370" y1="65" x2="370" y2="93" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ci-1)"></line>
+            <line x1="617" y1="65" x2="440" y2="93" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ci-1)"></line>
+
+            <rect x="270" y="95" width="200" height="55" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="117" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">API Gateway</text>
+            <text x="370" y="133" text-anchor="middle" fill="#cbd8ef" font-size="9">SSL/AuthN&amp;Z/RateLimit/CDN offload/Circuit-break</text>
+
+            <rect x="620" y="95" width="110" height="55" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="675" y="119" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">CDN</text>
+            <text x="675" y="135" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">static offload</text>
+            <line x1="470" y1="122" x2="618" y2="122" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ci-1m)"></line>
+
+            <rect x="10" y="175" width="430" height="525" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="22" y="195" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.03em">SCORE READ / DISTRIBUTION PATH</text>
+
+            <rect x="460" y="175" width="270" height="525" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="472" y="195" fill="var(--color-text-muted)" font-size="11" font-weight="700" letter-spacing="0.03em">REAL-TIME PUSH PATH</text>
+
+            <line x1="320" y1="150" x2="130" y2="203" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ci-1)"></line>
+            <line x1="420" y1="150" x2="595" y2="203" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ci-1)"></line>
+
+            <rect x="30" y="205" width="190" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="125" y="227" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Product API</text>
+            <text x="125" y="242" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">high-QPS, thin, cache-fronted</text>
+
+            <rect x="30" y="275" width="190" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="125" y="298" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Redis Cache</text>
+            <text x="125" y="313" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">1s TTL &mdash; delta pushes + reads</text>
+
+            <rect x="240" y="275" width="180" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="330" y="298" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Reporting / Logging Sink</text>
+            <text x="330" y="313" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">taps cache layer for analytics</text>
+            <line x1="220" y1="305" x2="240" y2="305" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ci-1m)"></line>
+
+            <rect x="30" y="355" width="190" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="125" y="377" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Circuit Breaker</text>
+            <text x="125" y="392" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">trips on Core API distress</text>
+
+            <rect x="30" y="425" width="190" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="125" y="447" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Varnish</text>
+            <text x="125" y="462" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">request coalescing</text>
+
+            <text x="125" y="490" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">Core API, split per sport</text>
+            <rect x="30" y="495" width="90" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="75" y="518" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Cricket</text>
+            <text x="75" y="532" text-anchor="middle" fill="#cbd8ef" font-size="8">Core API</text>
+            <rect x="130" y="495" width="90" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="175" y="518" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Hockey</text>
+            <text x="175" y="532" text-anchor="middle" fill="#cbd8ef" font-size="8">Core API</text>
+
+            <rect x="30" y="570" width="190" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="125" y="592" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">NoSQL DB</text>
+            <text x="125" y="607" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">matches / scores / commentary / teams / players</text>
+
+            <rect x="240" y="570" width="180" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="330" y="590" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">External Score Updater</text>
+            <text x="330" y="605" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">stadium feeds / OCR ingestion</text>
+
+            <line x1="125" y1="255" x2="125" y2="273" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-ci-1b)"></line>
+            <line x1="125" y1="335" x2="125" y2="353" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-ci-1b)"></line>
+            <text x="230" y="348" fill="var(--color-text-muted)" font-size="8">cache miss / TTL expiry</text>
+            <line x1="125" y1="405" x2="125" y2="423" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-ci-1b)"></line>
+            <line x1="100" y1="475" x2="78" y2="493" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ci-1b)"></line>
+            <line x1="150" y1="475" x2="172" y2="493" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ci-1b)"></line>
+            <line x1="75" y1="550" x2="90" y2="568" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ci-1b)"></line>
+            <line x1="175" y1="550" x2="160" y2="568" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ci-1b)"></line>
+            <line x1="240" y1="597" x2="220" y2="597" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-ci-1b)"></line>
+
+            <rect x="480" y="205" width="230" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="595" y="228" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">WebSocket Handlers (pool)</text>
+            <text x="595" y="244" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">persistent conns, stateless nodes</text>
+
+            <rect x="480" y="295" width="230" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="595" y="317" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">WebSocket Manager</text>
+            <text x="595" y="332" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">owns user&harr;handler binding logic</text>
+
+            <rect x="480" y="380" width="230" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="595" y="402" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Redis Binding Table</text>
+            <text x="595" y="417" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">userId &rarr; handler / connectionId</text>
+
+            <line x1="595" y1="265" x2="595" y2="293" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-ci-1b)" marker-start="url(#arrow-ci-1b)"></line>
+            <line x1="595" y1="350" x2="595" y2="378" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-ci-1b)"></line>
+
+            <line x1="220" y1="308" x2="480" y2="322" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ci-1m)"></line>
+            <text x="345" y="270" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">delta also routed to WS subscribers</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Overall architecture: three client types enter through a single API Gateway, which routes into the score read/distribution path (Product API &rarr; Redis &rarr; Circuit Breaker &rarr; Varnish &rarr; per-sport Core API &rarr; NoSQL, fed by the External Score Updater) and the real-time push path (WebSocket Handlers coordinated by a WebSocket Manager against a Redis binding table).</div>
+        </div>
+
+        <h2 id="low-level-design">Low-Level Design</h2>
+        <h3>Core domain classes</h3>
+        <pre><code>class Match {
+  matchId: string
+  sport: enum { CRICKET, HOCKEY, ... }
+  status: enum { SCHEDULED, LIVE, COMPLETED, ABANDONED }
+  teams: [TeamRef, TeamRef]
+  venue: string
+  startTime: timestamp
+  innings: List&lt;Innings&gt;   // cricket-specific; generalized as List&lt;Period&gt; for other sports
+  currentVersion: long     // monotonically increasing, used for delta/since_version fetches
+}
+
+class Innings {
+  inningsNumber: int
+  battingTeam: TeamRef
+  score: ScoreSnapshot
+  balls: List&lt;BallEvent&gt;
+}
+
+class BallEvent {
+  over: int
+  ballInOver: int
+  runs: int
+  extras: Extras
+  wicket: WicketInfo?     // null if no wicket
+  batsmanId: string
+  bowlerId: string
+  timestamp: timestamp
+  sequenceId: long        // strictly increasing, used as "since_ball"
+}
+
+class ScoreSnapshot {
+  runs: int
+  wickets: int
+  overs: float
+  runRate: float
+  requiredRunRate: float?
+  version: long
+}
+
+class CommentaryEntry {
+  matchId: string
+  sequenceId: long
+  ball: string            // e.g. "32.5"
+  eventType: enum { NORMAL, FOUR, SIX, WICKET, MILESTONE, MATCH_START, MATCH_END }
+  text: string
+  timestamp: timestamp
+}</code></pre>
+
+        <h3>Service / infra classes</h3>
+        <pre><code>// Ingests the normalized feed from stadium/OCR sources; single writer path to NoSQL + cache
+class ScoreIngestionService {
+  onRawEvent(feedSourceId: string, rawEvent: RawFeedPayload): void
+  normalize(rawEvent: RawFeedPayload): BallEvent
+  reconcile(existing: BallEvent, incoming: BallEvent): BallEvent   // conflict resolution across redundant feeds
+  persist(matchId: string, event: BallEvent): void                // writes NoSQL, bumps Match.currentVersion
+  publishDelta(matchId: string, event: BallEvent): void            // hands off to DeltaCacheUpdater
+}
+
+// Computes and pushes incremental diffs into Redis rather than re-fetching whole documents
+class DeltaCacheUpdater {
+  computeDelta(previous: ScoreSnapshot, current: ScoreSnapshot): Delta
+  applyDelta(matchId: string, delta: Delta): void      // Redis: merge into match:{matchId}:score
+  pushToSubscribers(matchId: string, delta: Delta): void  // hands off to WebSocketConnectionRegistry
+}
+
+// Hystrix-style breaker guarding Core API
+class CircuitBreakerPolicy {
+  state: enum { CLOSED, OPEN, HALF_OPEN }
+  failureThreshold: int
+  resetTimeoutMs: int
+  recordSuccess(): void
+  recordFailure(): void
+  allowRequest(): boolean   // false when OPEN -&gt; caller falls back to stale cache
+  attemptReset(): void      // transitions OPEN -&gt; HALF_OPEN after timeout
+}
+
+// Owns the user &lt;-&gt; WebSocket handler node binding (backed by Redis binding table)
+class WebSocketConnectionRegistry {
+  bind(userId: string, handlerId: string, connectionId: string): void
+  unbind(userId: string): void
+  lookup(userId: string): HandlerBinding?
+  routeMessage(userId: string, payload: object): void   // finds handler node, forwards via internal RPC
+  onHandlerNodeDown(handlerId: string): void             // triggers rebind/reconnect for affected users
+}
+
+// Token-bucket limiter keyed by partner api_dev_key
+class RateLimiter {
+  capacity: int             // bucket size, e.g. 1000
+  refillRatePerSec: float
+  tryAcquire(apiDevKey: string, cost: int = 1): boolean
+  remaining(apiDevKey: string): int
+  resetTimestamp(apiDevKey: string): long
+}</code></pre>
+
+        <h3>End-to-end sequence: "external update arrives &rarr; propagated to a live client"</h3>
+        <ol>
+          <li>Stadium feed / OCR screen-reader emits a raw event ("wicket, over 32.6") &rarr; <strong>External Score Updater</strong> receives it on one of possibly multiple redundant feed connections.</li>
+          <li>External Score Updater normalizes the payload and hands it to <strong>ScoreIngestionService.onRawEvent()</strong>. If a second, independent feed reports the same ball with conflicting details, <code>reconcile()</code> applies a resolution policy (e.g. majority-feed-agreement, or "official data provider" feed wins) before persisting.</li>
+          <li><code>ScoreIngestionService.persist()</code> writes the new BallEvent + updated ScoreSnapshot to the <strong>NoSQL DB</strong>, bumping <code>Match.currentVersion</code>.</li>
+          <li><code>ScoreIngestionService.publishDelta()</code> invokes <strong>DeltaCacheUpdater</strong>, which computes the diff versus the last known snapshot and calls <code>applyDelta()</code> to merge it into the <strong>Redis cache</strong> key <code>match:{matchId}:score</code> (this is the "push delta changes" sub-flow feeding the Product API cache layer). The <strong>reporting/logging sink</strong> also receives a copy of this delta for analytics.</li>
+          <li><code>DeltaCacheUpdater.pushToSubscribers()</code> calls into <strong>WebSocketConnectionRegistry</strong>, which looks up the Redis binding table to find, for every user subscribed to this matchId, which <strong>WebSocket Handler</strong> node currently owns their connection.</li>
+          <li>The registry routes the payload to each relevant handler node (internal RPC/pub-sub); each <strong>WebSocket Handler</strong> writes the delta frame to its locally-held socket(s) for the bound users.</li>
+          <li>In parallel, any browser/partner client doing a pull (<code>GET /score</code> or <code>GET /commentary?since_ball=</code>) hits the <strong>API Gateway &rarr; Product API &rarr; Redis cache</strong>; since the cache was just updated in step 4, the very next poll (within the 2&ndash;3s acceptable delay window) returns the fresh delta with no Core API involvement at all. Only if the Redis key had already expired (TTL boundary) does the read path fall through <strong>Circuit Breaker &rarr; Varnish &rarr; Core API &rarr; NoSQL</strong>, and Varnish ensures that even a stampede of simultaneous pulls at that instant results in exactly one Core API call.</li>
+        </ol>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 600" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ci-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ci-4m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="10" y="15" width="135" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="77" y="34" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">External</text>
+            <text x="77" y="47" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Score Updater</text>
+
+            <rect x="155" y="15" width="135" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="222" y="34" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Ingestion +</text>
+            <text x="222" y="47" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">NoSQL DB</text>
+
+            <rect x="300" y="15" width="135" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="367" y="34" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Redis Cache</text>
+            <text x="367" y="47" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">(DeltaCacheUpdater)</text>
+
+            <rect x="445" y="15" width="135" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="512" y="34" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">WebSocket</text>
+            <text x="512" y="47" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Handler</text>
+
+            <rect x="590" y="15" width="135" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="657" y="40" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Client (WS)</text>
+
+            <line x1="77" y1="60" x2="77" y2="540" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+            <line x1="222" y1="60" x2="222" y2="540" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+            <line x1="367" y1="60" x2="367" y2="540" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+            <line x1="512" y1="60" x2="512" y2="540" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+            <line x1="657" y1="60" x2="657" y2="540" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+
+            <line x1="77" y1="95" x2="222" y2="95" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ci-4)"></line>
+            <text x="150" y="88" text-anchor="middle" fill="var(--color-text)" font-size="8">1. raw event (wicket, over 32.6)</text>
+
+            <text x="222" y="130" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">2. normalize + reconcile() + persist()</text>
+            <text x="222" y="142" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">bump Match.currentVersion</text>
+
+            <line x1="222" y1="165" x2="367" y2="165" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ci-4)"></line>
+            <text x="295" y="158" text-anchor="middle" fill="var(--color-text)" font-size="8">3. publishDelta() &rarr; computeDelta + applyDelta</text>
+
+            <line x1="367" y1="210" x2="512" y2="210" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ci-4)"></line>
+            <text x="440" y="203" text-anchor="middle" fill="var(--color-text)" font-size="8">4. pushToSubscribers() &rarr; binding table lookup</text>
+
+            <line x1="512" y1="255" x2="657" y2="255" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ci-4)"></line>
+            <text x="585" y="248" text-anchor="middle" fill="var(--color-text)" font-size="8">5. delta frame written to bound socket</text>
+
+            <rect x="580" y="300" width="150" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="655" y="320" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Poll / Partner Client</text>
+            <text x="655" y="333" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">GET /score (REST)</text>
+            <text x="655" y="346" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">via Product API</text>
+
+            <line x1="367" y1="330" x2="580" y2="325" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-ci-4m)"></line>
+            <text x="470" y="390" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">6. parallel: next poll within 2&ndash;3s window returns the</text>
+            <text x="470" y="402" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">same fresh delta straight from Redis, no Core API call</text>
+
+            <line x1="367" y1="450" x2="222" y2="450" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-ci-4m)"></line>
+            <text x="295" y="443" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">7. on TTL-expiry only: Circuit Breaker &rarr;</text>
+            <text x="295" y="475" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">Varnish &rarr; Core API &rarr; NoSQL (Varnish</text>
+            <text x="295" y="487" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">collapses any stampede to exactly 1 call)</text>
+
+            <text x="370" y="525" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">A dropped socket never loses an event: reconnect + since_version catch-up is always available.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. End-to-end sequence: an external score update lands in NoSQL and Redis, then fans out over WebSocket to subscribed clients, while pull/poll clients in parallel get the same fresh delta from Redis (or, only at TTL-expiry, via the Circuit Breaker &rarr; Varnish &rarr; Core API fallback path).</div>
+        </div>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <h3>NoSQL collections (MongoDB/Cassandra-style documents)</h3>
+        <p><code>matches</code></p>
+        <table>
+          <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+          <tr><td>matchId</td><td>string (PK)</td><td>UUID or short code</td></tr>
+          <tr><td>sport</td><td>string</td><td>cricket, hockey, &hellip;</td></tr>
+          <tr><td>status</td><td>string</td><td>SCHEDULED, LIVE, COMPLETED, ABANDONED</td></tr>
+          <tr><td>teams</td><td>array[TeamRef]</td><td>denormalized team name/short-code for read speed</td></tr>
+          <tr><td>venue</td><td>string</td><td></td></tr>
+          <tr><td>startTime</td><td>datetime</td><td></td></tr>
+          <tr><td>tournament</td><td>string</td><td>e.g. "World Cup 2026"</td></tr>
+          <tr><td>currentVersion</td><td>long</td><td>monotonically increasing, used for delta sync</td></tr>
+          <tr><td>result</td><td>string</td><td>populated once COMPLETED</td></tr>
+          <tr><td>createdAt / updatedAt</td><td>datetime</td><td></td></tr>
+        </table>
+        <p>Indexes: <code>{ sport: 1, status: 1, startTime: -1 }</code> (live-match dashboards), <code>{ matchId: 1 }</code> (PK, sharding key), <code>{ "teams.teamId": 1, startTime: -1 }</code> (search by team).</p>
+
+        <p><code>scores</code> (current + historical snapshots, one doc per match, versioned sub-array)</p>
+        <table>
+          <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+          <tr><td>matchId</td><td>string (PK / shard key)</td><td></td></tr>
+          <tr><td>innings</td><td>array[Innings]</td><td>each with battingTeam, runs, wickets, overs, balls[]</td></tr>
+          <tr><td>latestSnapshot</td><td>ScoreSnapshot</td><td>denormalized "current state" for O(1) fetch</td></tr>
+          <tr><td>version</td><td>long</td><td>matches matches.currentVersion</td></tr>
+        </table>
+        <p>Indexes: <code>{ matchId: 1 }</code> (PK/shard key), <code>{ matchId: 1, version: -1 }</code> (delta queries).</p>
+
+        <p><code>commentary</code></p>
+        <table>
+          <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+          <tr><td>matchId</td><td>string (shard key)</td><td></td></tr>
+          <tr><td>sequenceId</td><td>long</td><td>strictly increasing per match, used as since_ball cursor</td></tr>
+          <tr><td>ball</td><td>string</td><td>e.g. "32.5"</td></tr>
+          <tr><td>eventType</td><td>string</td><td>NORMAL, FOUR, SIX, WICKET, MILESTONE, &hellip;</td></tr>
+          <tr><td>text</td><td>string</td><td></td></tr>
+          <tr><td>timestamp</td><td>datetime</td><td></td></tr>
+        </table>
+        <p>Indexes: <code>{ matchId: 1, sequenceId: 1 }</code> (compound, supports range scan for incremental fetch).</p>
+
+        <p><code>teams</code></p>
+        <table>
+          <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+          <tr><td>teamId</td><td>string (PK)</td><td></td></tr>
+          <tr><td>name, shortCode, country</td><td>string</td><td></td></tr>
+          <tr><td>players</td><td>array[playerId]</td><td>roster reference</td></tr>
+        </table>
+
+        <p><code>players</code></p>
+        <table>
+          <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+          <tr><td>playerId</td><td>string (PK)</td><td></td></tr>
+          <tr><td>name, role (batsman/bowler/all-rounder/keeper), country</td><td>string</td><td></td></tr>
+          <tr><td>careerStats</td><td>object</td><td>aggregated, updated post-match by an offline job</td></tr>
+        </table>
+        <p>General index strategy: every hot-path query is answerable by matchId (+ optional sequenceId/version range), which is exactly the sharding key (see Data Sharding, below) &mdash; this keeps all live-match reads single-partition.</p>
+
+        <h3>Redis key schema</h3>
+        <table>
+          <tr><th>Key pattern</th><th>Value</th><th>TTL</th><th>Purpose</th></tr>
+          <tr><td>match:{matchId}:score</td><td>serialized ScoreSnapshot (JSON/msgpack)</td><td>1s</td><td>Primary hot-path cache, refreshed via delta pushes</td></tr>
+          <tr><td>match:{matchId}:commentary:latest</td><td>last N CommentaryEntry</td><td>1s</td><td>Fast "recent commentary" reads</td></tr>
+          <tr><td>match:{matchId}:version</td><td>long</td><td>1s</td><td>Cheap version check for since_version clients</td></tr>
+          <tr><td>ws:user:{userId}:handlerId</td><td>handler node id + connectionId</td><td>session-lived (no TTL, explicitly unbound on disconnect)</td><td>WebSocket binding table used by WebSocket Manager</td></tr>
+          <tr><td>ws:handler:{handlerId}:heartbeat</td><td>timestamp</td><td>15s (renewed on heartbeat)</td><td>Detects dead handler nodes for failover/rebind</td></tr>
+          <tr><td>ratelimit:{apiDevKey}:bucket</td><td>token count</td><td>rolling (refilled per policy)</td><td>Token-bucket state for partner rate limiting</td></tr>
+          <tr><td>partner:{apiDevKey}:usage:{date}</td><td>request count</td><td>24h+</td><td>Billing/metering counter</td></tr>
+        </table>
+
+        <h2 id="data-sharding">Data Sharding</h2>
+        <p><strong>Primary sharding key: <code>matchId</code></strong>, using consistent hashing across NoSQL partitions/replica sets. Rationale:</p>
+        <ul>
+          <li>Every hot-path query (GetLiveScore, GetCommentary) is scoped to a single matchId. Sharding on it guarantees that all reads/writes for a given match are served by a single partition/replica set &mdash; no cross-shard fan-out on the critical path.</li>
+          <li>Consistent hashing means adding/removing shards only reshuffles a small fraction of matches, not the whole keyspace.</li>
+        </ul>
+
+        <h3>The "hot match" problem</h3>
+        <p>Consistent hashing distributes matches roughly evenly, but it does <em>not</em> equalize <strong>load per match</strong>. A World Cup final or India-vs-Pakistan match can generate orders of magnitude more read traffic than a routine domestic fixture on the same shard. Mitigations:</p>
+        <ul>
+          <li><strong>Dedicated capacity / read-replica fan-out:</strong> identify marquee matches ahead of time (known schedule) and pre-provision extra read replicas for that specific match's partition, with the Product API's read path load-balancing across replicas.</li>
+          <li><strong>Cache absorbs the read skew first:</strong> because Redis + Varnish already knock 5,000 req/sec down to ~1&ndash;2 req/sec before it reaches the NoSQL-backed Core API, the hot-match problem is mostly solved <em>above</em> the database tier &mdash; the DB shard mainly needs to survive the ingestion writes and the low-rate Core API reads, not the raw 5,000 req/sec.</li>
+          <li><strong>Manual/automatic shard rebalancing:</strong> if a hot match is detected co-located with another busy match on the same physical shard, migrate one to a dedicated shard for the duration of the game.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ci-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+              <marker id="arrow-ci-5m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <circle cx="170" cy="220" r="130" fill="none" stroke="var(--color-border)" stroke-width="2"></circle>
+            <text x="170" y="70" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-style="italic">consistent hash ring</text>
+
+            <circle cx="170" cy="90" r="8" fill="var(--color-accent-light)" stroke="var(--color-accent)"></circle>
+            <text x="192" y="94" fill="var(--color-text-muted)" font-size="9">Match A</text>
+
+            <circle cx="290" cy="180" r="8" fill="var(--color-accent-light)" stroke="var(--color-accent)"></circle>
+            <text x="305" y="184" fill="var(--color-text-muted)" font-size="9">Match B</text>
+
+            <circle cx="255" cy="320" r="9" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></circle>
+            <text x="270" y="345" fill="var(--color-primary)" font-size="9" font-weight="700">Hot Match</text>
+            <text x="270" y="357" fill="var(--color-primary)" font-size="8">(IND v PAK)</text>
+
+            <circle cx="90" cy="310" r="8" fill="var(--color-accent-light)" stroke="var(--color-accent)"></circle>
+            <text x="30" y="335" fill="var(--color-text-muted)" font-size="9">Match D</text>
+
+            <circle cx="60" cy="150" r="8" fill="var(--color-accent-light)" stroke="var(--color-accent)"></circle>
+            <text x="10" y="140" fill="var(--color-text-muted)" font-size="9">Match E</text>
+
+            <line x1="264" y1="325" x2="380" y2="270" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-ci-5)"></line>
+
+            <rect x="385" y="240" width="160" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="465" y="262" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Shard 2</text>
+            <text x="465" y="278" text-anchor="middle" fill="#cbd8ef" font-size="8">owns the hot match's partition</text>
+
+            <line x1="545" y1="250" x2="580" y2="130" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ci-5)"></line>
+            <line x1="545" y1="267" x2="580" y2="267" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ci-5)"></line>
+            <line x1="545" y1="285" x2="580" y2="400" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-ci-5)"></line>
+
+            <rect x="580" y="105" width="115" height="45" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="637" y="132" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Read Replica 1</text>
+
+            <rect x="580" y="245" width="115" height="45" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="637" y="272" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Read Replica 2</text>
+
+            <rect x="580" y="375" width="115" height="45" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="637" y="402" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Read Replica 3</text>
+
+            <text x="637" y="90" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">dedicated read-replica fan-out</text>
+
+            <rect x="385" y="330" width="160" height="50" rx="6" fill="none" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="465" y="350" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-weight="600">Shard 5</text>
+            <text x="465" y="365" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">routine matches, no dedicated replicas</text>
+            <line x1="90" y1="318" x2="385" y2="358" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-ci-5m)"></line>
+
+            <text x="350" y="435" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">Consistent hashing spreads matches evenly by count, but a marquee match still needs dedicated fan-out for read load.</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Sharding on matchId via consistent hashing spreads match documents evenly across shards, but a marquee "hot match" still needs pre-provisioned, dedicated read-replica fan-out layered on top, since load-per-match is not equalized by the hash function alone.</div>
+        </div>
+
+        <h3>Functional/vertical sharding of Core API per sport</h3>
+        <p>cricket-core-api, hockey-core-api, etc. are independently deployed and scaled services &mdash; this is sharding along a functional axis rather than a data-key axis. Benefits: independent scaling (cricket gets 10x the traffic of hockey &mdash; provision accordingly), independent deploys/rollbacks (a bad hockey release can't take down cricket), and independent data models (cricket's innings/overs model is structurally different from hockey's period/goal model), while all sports still funnel through the same Redis/Varnish/circuit-breaker chain and the same NoSQL cluster (logically partitioned by sport + matchId).</p>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <h3>Delta computation algorithm</h3>
+        <p>Goal: clients should never have to re-fetch a whole match document; they should be able to ask "give me everything since version X / since ball Y."</p>
+        <pre><code>function computeDelta(previousSnapshot, currentSnapshot):
+  delta = {}
+  for field in [runs, wickets, overs, runRate, requiredRunRate]:
+    if currentSnapshot[field] != previousSnapshot[field]:
+      delta[field] = currentSnapshot[field]   // only changed fields included
+  delta.version = currentSnapshot.version     // always bump version
+  delta.newEvents = eventsSince(previousSnapshot.version)  // new BallEvents/CommentaryEntries
+  return delta</code></pre>
+        <ul>
+          <li>Every Match/ScoreSnapshot carries a monotonically increasing version. Clients (and internal cache layers) can always ask <code>since_version=N</code> or <code>since_ball=N</code> and get exactly the missing slice &mdash; this is what makes both the WebSocket push path and the REST polling path efficient and idempotent (a client that misses one push can always catch up via a <code>since_version</code> REST call).</li>
+          <li>Deltas, not full snapshots, are what gets written into Redis (<code>applyDelta</code> merges into the existing hash rather than overwriting), which is cheaper both to compute and to transmit over the WebSocket fan-out.</li>
+        </ul>
+
+        <h3>Varnish request-coalescing mechanics</h3>
+        <ul>
+          <li>Varnish maintains, per cache key (e.g. matchId), a notion of "request currently in flight to origin."</li>
+          <li>When request #1 arrives for a key with no valid cached value, Varnish marks that key as "fetching" and issues exactly one upstream call to Core API.</li>
+          <li>Requests #2 through #N for the <em>same key</em>, arriving while #1 is still in flight, are parked/queued by Varnish rather than each issuing their own upstream call.</li>
+          <li>When the origin response returns, Varnish populates its own short-lived cache and replies to all N parked requests with that single response simultaneously.</li>
+          <li>Net effect: <strong>N concurrent requests &rarr; 1 upstream call</strong>, precisely the protection needed at the moment the Redis TTL boundary is crossed, when otherwise all 5,000 req/sec would hit Core API at once.</li>
+        </ul>
+
+        <h3>Circuit breaker state machine</h3>
+        <ul>
+          <li><strong>CLOSED:</strong> normal operation, requests flow through to Varnish/Core API; failures are counted in a rolling window.</li>
+          <li><strong>OPEN:</strong> tripped &mdash; failure rate (or timeout rate) exceeded threshold (e.g. multiple concurrently live games overwhelming Core API). All requests are <strong>failed fast</strong> without touching Core API; the caller (Product API) instead <strong>serves the last known-good value from Redis/local cache</strong>, even if past its normal TTL, rather than serving an error.</li>
+          <li><strong>HALF_OPEN:</strong> after <code>resetTimeoutMs</code>, the breaker allows a small number of trial requests through. If they succeed, transition back to CLOSED; if they fail, go back to OPEN and restart the timeout.</li>
+          <li>This is orthogonal to Varnish: Varnish protects against a stampede on <strong>one key</strong> at TTL expiry; the circuit breaker protects against <strong>sustained Core API distress across many keys/matches</strong> (e.g. an under-provisioned Core API pod during 3 simultaneous marquee matches).</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ci-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="40" y="50" width="200" height="80" rx="10" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="140" y="85" text-anchor="middle" fill="var(--color-primary)" font-size="15" font-weight="700">CLOSED</text>
+            <text x="140" y="105" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">normal operation; failures</text>
+            <text x="140" y="118" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">counted in rolling window</text>
+
+            <rect x="460" y="50" width="200" height="80" rx="10" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="560" y="85" text-anchor="middle" fill="var(--color-primary)" font-size="15" font-weight="700">OPEN</text>
+            <text x="560" y="105" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">fails fast; serves last</text>
+            <text x="560" y="118" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">known-good stale cache</text>
+
+            <rect x="250" y="290" width="200" height="80" rx="10" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="325" text-anchor="middle" fill="var(--color-primary)" font-size="15" font-weight="700">HALF_OPEN</text>
+            <text x="350" y="345" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">allows a small number of</text>
+            <text x="350" y="358" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">trial requests through</text>
+
+            <line x1="240" y1="90" x2="460" y2="90" stroke="var(--color-accent-dark)" stroke-width="1.8" marker-end="url(#arrow-ci-3)"></line>
+            <text x="350" y="80" text-anchor="middle" fill="var(--color-text)" font-size="9">failure rate &gt; threshold</text>
+
+            <line x1="500" y1="130" x2="410" y2="288" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-ci-3)"></line>
+            <text x="500" y="210" text-anchor="middle" fill="var(--color-text)" font-size="9">resetTimeoutMs</text>
+            <text x="500" y="222" text-anchor="middle" fill="var(--color-text)" font-size="9">elapses</text>
+
+            <line x1="290" y1="288" x2="185" y2="132" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-ci-3)"></line>
+            <text x="215" y="210" text-anchor="middle" fill="var(--color-text)" font-size="9">trial requests</text>
+            <text x="215" y="222" text-anchor="middle" fill="var(--color-text)" font-size="9">succeed</text>
+
+            <path d="M 452,315 C 590,315 620,190 545,128" fill="none" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ci-3)"></path>
+            <text x="610" y="240" text-anchor="middle" fill="var(--color-text)" font-size="9">trial requests</text>
+            <text x="610" y="252" text-anchor="middle" fill="var(--color-text)" font-size="9">fail &rarr; back to OPEN</text>
+
+            <text x="350" y="400" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">Orthogonal to Varnish: this protects against sustained Core API distress across many keys, not a single-key stampede.</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Circuit breaker state machine: CLOSED transitions to OPEN once the failure rate exceeds threshold; OPEN transitions to HALF_OPEN after resetTimeoutMs; HALF_OPEN returns to CLOSED on successful trial requests or back to OPEN on failed ones.</div>
+        </div>
+
+        <h3>Token-bucket rate limiting per <code>api_dev_key</code> (with billing metering)</h3>
+        <pre><code>class TokenBucket {
+  capacity: int              // e.g. 1000 tokens
+  tokens: float
+  refillRatePerSec: float    // e.g. 16.6/sec =&gt; ~1000/min
+  lastRefillTs: timestamp
+
+  tryAcquire(cost=1):
+    now = currentTime()
+    elapsed = now - lastRefillTs
+    tokens = min(capacity, tokens + elapsed * refillRatePerSec)
+    lastRefillTs = now
+    if tokens &gt;= cost:
+      tokens -= cost
+      return true    // allowed; X-RateLimit-Remaining = floor(tokens)
+    return false      // 429, Retry-After = ceil((cost - tokens) / refillRatePerSec)
+}</code></pre>
+        <ul>
+          <li>Bucket state lives in Redis (<code>ratelimit:{apiDevKey}:bucket</code>), shared across all API Gateway nodes so the limit is enforced globally per key, not per node.</li>
+          <li>Every accepted request also increments a <strong>billing/usage counter</strong> (<code>partner:{apiDevKey}:usage:{date}</code>) independent of the rate-limit bucket itself &mdash; rate limiting protects capacity in real time; the usage counter feeds the monthly billing pipeline. Different partner tiers (free, paid, enterprise) simply get different capacity/refillRatePerSec configs.</li>
+        </ul>
+
+        <h3>WebSocket-to-user binding, reconnection &amp; handler-node failover</h3>
+        <ul>
+          <li>On connect, <strong>WebSocket Manager</strong> assigns the client to a handler node (e.g. least-connections load balancing) and writes <code>ws:user:{userId}:handlerId &rarr; {handlerId, connectionId}</code> into the Redis binding table.</li>
+          <li>To push a message to a user, any producer (DeltaCacheUpdater) asks the registry to <code>lookup(userId)</code>, gets the owning handler node, and forwards the payload to that node over internal RPC/pub-sub &mdash; the producer never needs to know which physical node holds the socket.</li>
+          <li><strong>Handler node death:</strong> each handler renews a heartbeat key (<code>ws:handler:{handlerId}:heartbeat</code>, short TTL). If the WebSocket Manager detects a missed heartbeat, it treats all bindings pointing at that handler as stale, proactively invalidates them, and the affected clients' next reconnect attempt (client-side exponential backoff, standard practice) gets rebound to a healthy node &mdash; old socket is simply gone, client library reconnects and resubscribes to its matchId, and catches up via <code>since_version</code> so no events are silently lost even though a few seconds of push delivery were interrupted.</li>
+          <li>Idempotent resubscription plus the version-based delta protocol means a dropped connection never causes a <strong>missed</strong> event &mdash; only a bounded delay in delivery, which is within the accepted 2&ndash;3s tolerance if reconnection is fast, or a slightly longer but self-healing gap otherwise.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ci-6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ci-6b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="260" y="15" width="180" height="50" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="350" y="37" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Delta from</text>
+            <text x="350" y="52" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">DeltaCacheUpdater</text>
+
+            <line x1="350" y1="65" x2="350" y2="93" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ci-6)"></line>
+
+            <rect x="40" y="170" width="180" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="130" y="194" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Redis Binding Table</text>
+            <text x="130" y="210" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">userId &rarr; handlerId, connectionId</text>
+
+            <rect x="260" y="95" width="180" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="119" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">WebSocket Manager</text>
+            <text x="350" y="135" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">routeMessage(userId, payload)</text>
+
+            <line x1="260" y1="140" x2="220" y2="190" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-ci-6b)" marker-start="url(#arrow-ci-6b)"></line>
+            <text x="200" y="165" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">lookup / write</text>
+
+            <rect x="530" y="60" width="150" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="605" y="84" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Handler 1</text>
+            <text x="605" y="99" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">bound sockets</text>
+
+            <rect x="530" y="170" width="150" height="60" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="2"></rect>
+            <text x="605" y="194" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Handler 2</text>
+            <text x="605" y="209" text-anchor="middle" fill="#cbd8ef" font-size="8">owns userId=84213</text>
+
+            <rect x="530" y="280" width="150" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="605" y="304" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Handler 3</text>
+            <text x="605" y="319" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">bound sockets</text>
+
+            <line x1="440" y1="115" x2="528" y2="95" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3"></line>
+            <line x1="440" y1="140" x2="528" y2="290" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3"></line>
+            <line x1="440" y1="125" x2="528" y2="200" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-ci-6b)"></line>
+            <text x="480" y="160" text-anchor="middle" fill="var(--color-primary)" font-size="8" font-weight="600">routed to</text>
+            <text x="480" y="172" text-anchor="middle" fill="var(--color-primary)" font-size="8" font-weight="600">owning node</text>
+
+            <circle cx="695" cy="200" r="10" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></circle>
+            <text x="695" y="230" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">client 84213</text>
+
+            <text x="350" y="385" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">routeMessage(userId) &rarr; binding-table lookup finds Handler 2 &rarr; delta forwarded via internal RPC &rarr; written to the bound socket</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. WebSocket fan-out and binding: incoming deltas hit the WebSocket Manager, which consults the Redis binding table to resolve userId &rarr; owning handler node, then forwards the payload to only that node for delivery to the bound socket.</div>
+        </div>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <table>
+          <tr><th>Layer</th><th>Strategy</th></tr>
+          <tr><td>NoSQL DB</td><td>Multi-replica-set per shard (e.g. 3 replicas), with cross-region replication for disaster recovery; writes go to primary, reads can be served from local-region secondaries for global latency</td></tr>
+          <tr><td>Redis cache</td><td>Redis Sentinel (small deployments) or Redis Cluster (sharded, HA) &mdash; automatic primary failover so a single node loss doesn't blank the cache and cause a Core API stampede</td></tr>
+          <tr><td>External Score Updater</td><td>Redundant, independent feeds (multiple stadium data providers and/or multiple OCR/screen-reader instances per match) with a reconciliation step (<code>ScoreIngestionService.reconcile()</code>) so there is no single point of failure on live-data ingestion; if one feed drops, others continue, and reconciliation resolves any conflicting reports</td></tr>
+          <tr><td>Core API</td><td>Per-sport isolation limits blast radius &mdash; an outage/bug in hockey-core-api cannot affect cricket-core-api; each sport's Core API is deployed/scaled/rolled-back independently</td></tr>
+          <tr><td>Circuit breaker + stale cache</td><td>Graceful degradation path: when the breaker is OPEN, the system serves the last known-good cached score rather than erroring &mdash; users see slightly stale (but not wrong or absent) data during a backend incident</td></tr>
+          <tr><td>WebSocket handler pool</td><td>Stateless nodes behind a load balancer; heartbeat-based failure detection drives fast rebinding; N+2 capacity headroom absorbs node loss without dropping below required capacity</td></tr>
+          <tr><td>API Gateway</td><td>Deployed redundantly across AZs/regions; itself stateless aside from short-lived rate-limit/session lookups delegated to Redis</td></tr>
+          <tr><td>Cross-region</td><td>Active-active for read paths (Product API + cache local to each region); ingestion (External Score Updater &rarr; NoSQL primary) can be active-passive per match region with async replication to other regions</td></tr>
+        </table>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging &amp; Analytics</h2>
+        <h3>Key metrics / dashboards</h3>
+        <table>
+          <tr><th>Metric</th><th>Why it matters</th></tr>
+          <tr><td>QPS per tier (Gateway, Product API, Core API)</td><td>Confirms the caching chain is doing its job &mdash; Core API QPS should stay flat (~1&ndash;2/sec/match) even as Product API QPS spikes to thousands</td></tr>
+          <tr><td>Redis cache hit ratio</td><td>Should sit at/near 99.98% during live events; a drop signals TTL misconfiguration or a cache outage</td></tr>
+          <tr><td>Core API p50/p95/p99 latency</td><td>Early warning for circuit breaker trips; heavier tier, most latency-sensitive to protect</td></tr>
+          <tr><td>Circuit breaker trip count / state transitions</td><td>Direct signal of backend distress; alert on any OPEN transition during a live match</td></tr>
+          <tr><td>Varnish coalescing ratio (requests-in : upstream-calls-out)</td><td>Confirms stampede protection is effective at TTL boundaries</td></tr>
+          <tr><td>Active WebSocket connections (global, per region, per handler node)</td><td>Capacity planning and node-health signal</td></tr>
+          <tr><td>Per-match concurrent viewers</td><td>Business + capacity metric &mdash; feeds pre-provisioning decisions for upcoming marquee matches</td></tr>
+          <tr><td>Rate-limit rejection rate per partner</td><td>Distinguishes "partner is abusive" from "partner needs a higher tier"</td></tr>
+        </table>
+
+        <h3>Logging &amp; audit</h3>
+        <ul>
+          <li>Structured logs (JSON) at every tier, correlated by a request/trace ID that flows from Gateway through Product/Core API.</li>
+          <li><strong>Dedicated audit trail for third-party billing/rate-limit enforcement</strong>: every accepted/rejected partner request logged with apiDevKey, timestamp, endpoint, and outcome &mdash; this is the system of record for monthly invoicing and dispute resolution, kept separate from general app logs and retained longer.</li>
+          <li>The <strong>reporting/logging sink</strong> tapping the Product API cache layer (per the architecture) feeds both real-time dashboards and the offline analytics pipeline below.</li>
+        </ul>
+
+        <h3>Analytics pipeline</h3>
+        <pre><code>Client clickstream / API access logs -&gt; Kafka -&gt; Spark (streaming + batch) -&gt; {
+  most-viewed matches (real-time leaderboard),
+  per-user engagement / session analytics,
+  partner usage trends (for account management / upsell),
+  historical match popularity (feeds future capacity pre-provisioning)
+}</code></pre>
+
+        <h3>Notification channel design</h3>
+        <table>
+          <tr><th>Channel</th><th>Use case</th><th>Mechanism</th></tr>
+          <tr><td>Push notifications (FCM/APNs)</td><td>Wickets, milestones (50/100), match start/end for mobile app users</td><td>Triggered by eventType in the delta stream (WICKET, MILESTONE, MATCH_START, MATCH_END) fanned out to a push-notification service subscribed to the same delta bus</td></tr>
+          <tr><td>Webhook callbacks</td><td>3rd-party partners wanting server-to-server push instead of polling</td><td>Partner registers a callback URL; system POSTs the same delta payload with retry/backoff and signature verification</td></tr>
+          <tr><td>Email/SMS digest</td><td>Opt-in daily/weekly summaries, not real-time</td><td>Batch job over completed matches, independent of the live low-latency path</td></tr>
+        </table>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <p>Interviewers commonly push into these areas after the base design. Grouped below by theme so you can rehearse how you'd actually talk through each one out loud.</p>
+
+        <h3>Ingestion, Caching &amp; Consistency</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">What happens if the External Score Updater receives conflicting data from two independent feeds (e.g., stadium feed says "4 runs", OCR feed says "6 runs")?</div>
+          <div class="qa-a"><code>ScoreIngestionService.reconcile()</code> needs an explicit conflict-resolution policy &mdash; e.g., trust a designated "official" feed over a screen-reader/OCR feed, require N-of-M feed agreement before committing, or hold the ambiguous ball briefly (within the 2&ndash;3s budget) pending a second corroborating source, and log all conflicts for offline review.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you guarantee no missed ball events if a WebSocket handler crashes mid-match?</div>
+          <div class="qa-a">Because every event carries a monotonically increasing version/sequenceId, no delivery mechanism needs to be lossless &mdash; a client detects a gap on reconnect and calls <code>GetCommentary(matchId, since_ball=lastSeen)</code> to backfill. The push channel is a latency optimization, not the source of truth.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is the Redis TTL exactly 1 second &mdash; why not 5 or 0.1?</div>
+          <div class="qa-a">It's a trade-off between staleness and Core API offload: 1s keeps staleness well inside the accepted 2&ndash;3s end-to-end delay while still collapsing 5,000 req/sec down to ~1 req/sec. A much shorter TTL raises Core API load roughly proportionally; a much longer TTL risks visibly stale scores during high-drama moments (e.g. a wicket).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How is Varnish different from the Redis cache &mdash; why do you need both?</div>
+          <div class="qa-a">Redis is the primary data cache with delta-aware updates and a 1s TTL, absorbing steady-state read volume. Varnish is a request-coalescing layer that only matters at the <em>instant</em> a Redis key expires, converting a burst of simultaneous cache-misses into one upstream call &mdash; it protects against a temporal stampede that Redis's TTL alone can't prevent.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What consistency guarantee do you actually provide, and is it good enough?</div>
+          <div class="qa-a">Eventual consistency with a bounded staleness window (~1&ndash;3s) at the read/cache layer; the NoSQL write path itself should be strongly consistent per-match (single primary per shard) so the source of truth is never ambiguous &mdash; only the cached <em>view</em> of it is eventually consistent.</div>
+        </div>
+
+        <h3>Scaling, Sharding &amp; Ops</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you handle a hot/viral match generating 10x the expected traffic (e.g., an unexpectedly close finish)?</div>
+          <div class="qa-a">Pre-provisioned capacity is based on schedule, but real load can spike organically. Mitigate with auto-scaling on Product API/WebSocket handler pools keyed off real-time QPS metrics, dedicated read-replica fan-out for the specific hot matchId shard, and leaning harder on the Redis+Varnish chain since Core API load stays flat regardless of front-end QPS by design.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent a third party like Dream11 from scraping/overloading the system beyond their rate limit using multiple API keys?</div>
+          <div class="qa-a">Rate limiting alone isn't sufficient; pair it with partner-level anomaly detection (unusual key-creation velocity, correlated IP ranges), contractual API terms, and optionally IP/ASN-based secondary throttling in the gateway independent of the per-key token bucket.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you shard/scale the commentary collection differently from the score collection?</div>
+          <div class="qa-a">Both can share matchId as the shard key, but commentary has a much higher per-match document count (append-heavy, hundreds of entries); consider a wide-column/append-optimized store (Cassandra-style) for commentary specifically, while score snapshots (small, frequently overwritten) fit a simpler document/KV model.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you test/validate the circuit breaker and Varnish coalescing actually work under load?</div>
+          <div class="qa-a">Chaos/load testing: inject synthetic Core API latency/failure and confirm the breaker trips within the configured failure-rate window and that stale-cache fallback serves correctly; separately, fire N concurrent identical requests at a cold cache key and assert exactly one upstream Core API call is observed (Varnish log/metric assertion).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why split Core API per sport instead of one generic Core API with a sport-agnostic schema?</div>
+          <div class="qa-a">Different sports have fundamentally different state machines (overs/innings/wickets vs. periods/goals/penalties) &mdash; forcing a single generic schema either over-generalizes (losing domain-specific query efficiency) or leaks sport-specific fields everywhere; per-sport services also isolate failure domains and allow independent release cadences (cricket ships far more frequently given its traffic dominance).</div>
+        </div>
+
+        <h3>Extensions &amp; Edge Cases</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support live video + score overlay?</div>
+          <div class="qa-a">Treat video as an orthogonal delivery pipeline (CDN-backed HLS/DASH streaming) and use the existing delta/version stream to drive a synchronized overlay client-side; the harder problem becomes clock-syncing the video stream's timestamp to the score-event timestamp so the overlay doesn't precede or lag the visible action.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you roll out a schema change to the Match document without downtime, given live matches are in progress?</div>
+          <div class="qa-a">Use additive, backward-compatible schema changes (new optional fields) during live windows; version the document schema (schemaVersion field) and handle multiple versions in the read path; avoid destructive migrations while any match referencing the old shape is still LIVE.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's your disaster-recovery story if an entire region goes down mid-match?</div>
+          <div class="qa-a">Cross-region replica sets allow another region's Core API + NoSQL replica to take over as primary; WebSocket clients in the failed region reconnect (client-side retry) and get rebound via the WebSocket Manager to a healthy region's handler pool; some in-flight pushes are lost but recoverable via since_version catch-up.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you decide which matches get "dedicated capacity" ahead of time, and what if an unscheduled match becomes unexpectedly popular?</div>
+          <div class="qa-a">Use historical viewership data + team/tournament prestige signals (e.g. India vs Pakistan, World Cup final) to pre-provision; combine with real-time auto-scaling triggers (QPS/connection-count thresholds) to catch surprise breakouts (e.g. an unheralded match going into a viral last-ball finish) that weren't predicted in advance.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support "second screen" use cases &mdash; e.g., a user watching TV wants ball-by-ball push perfectly synced to broadcast?</div>
+          <div class="qa-a">This tightens the acceptable delay assumption significantly (broadcast delay is often ~5&ndash;10s itself, but sync mismatch between the app and the TV feed is jarring); would likely need a configurable low-latency mode with a shorter effective cache TTL and a more aggressive WebSocket push cadence for that specific use case, at the cost of higher Core API traffic for those sessions.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This system is fundamentally about fanning a trickle of writes (~1 ball every 30&ndash;90 seconds) out to a firehose of reads (5,000+ req/sec, millions of concurrent viewers) without ever letting that fan-out reach the expensive source-of-truth tier. The cache-offload math &mdash; Redis's 1-second TTL absorbing 99.98% of reads, with Varnish's request-coalescing collapsing the remaining TTL-expiry stampede down to exactly one upstream call &mdash; is the single idea that makes the whole design work, and it is why Core API needs only a handful of instances per sport while Product API needs dozens. The circuit breaker is a second, orthogonal safety net: where Varnish protects one key at one instant, the breaker protects the whole Core API tier across sustained distress, falling back to stale-but-available data rather than an error. Shard by matchId via consistent hashing because every hot-path query is single-match scoped, but remember that hashing balances match <em>count</em>, not match <em>load</em> &mdash; a marquee fixture still needs dedicated read-replica fan-out layered on top. Split Core API per sport to isolate blast radius and allow independent scaling and release cadence. And because every event carries a monotonically increasing version/sequenceId, no delivery path &mdash; WebSocket push, AJAX poll, or partner REST pull &mdash; needs to be lossless; a client can always catch up with a since_version fetch, which is what turns "acceptable 2&ndash;3 second staleness" into a design that tolerates dropped connections, handler-node failures, and even TTL-boundary stampedes without ever losing an event.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Wikipedia, <a href="https://en.wikipedia.org/wiki/Thundering_herd_problem" target="_blank" rel="noopener">"Thundering herd problem"</a> &mdash; background on the cache-stampede failure mode that Varnish's request-coalescing is designed to prevent</li>
+          <li>Varnish Software, <a href="https://docs.varnish-software.com/tutorials/handling-flash-traffic/" target="_blank" rel="noopener">"Handling flash traffic / request coalescing"</a> tutorial documentation</li>
+          <li>Martin Fowler, <a href="https://martinfowler.com/bliki/CircuitBreaker.html" target="_blank" rel="noopener">"CircuitBreaker"</a> &mdash; the canonical write-up of the CLOSED/OPEN/HALF_OPEN pattern this design's breaker implements</li>
+          <li>Netflix, <a href="https://github.com/Netflix/Hystrix/wiki" target="_blank" rel="noopener">Hystrix wiki (archived)</a> &mdash; reference implementation of a production-grade Hystrix-style circuit breaker</li>
+          <li>MongoDB Manual, <a href="https://www.mongodb.com/docs/manual/sharding/" target="_blank" rel="noopener">"Sharding"</a> &mdash; shard-key selection trade-offs referenced in the Data Sharding section</li>
+          <li>Apache Cassandra documentation, <a href="https://cassandra.apache.org/doc/latest/cassandra/architecture/dynamo.html" target="_blank" rel="noopener">"Data distribution and replication"</a> &mdash; consistent hashing and wide-column store background</li>
+          <li>Wikipedia, <a href="https://en.wikipedia.org/wiki/Token_bucket" target="_blank" rel="noopener">"Token bucket"</a> &mdash; the rate-limiting algorithm underlying the per-partner RateLimiter</li>
+          <li>Discord Engineering Blog, <a href="https://discord.com/blog/how-discord-scaled-elixir-to-5-000-000-concurrent-users" target="_blank" rel="noopener">"How Discord Scaled Elixir to 5,000,000 Concurrent Users"</a> &mdash; a real-world case study in WebSocket connection-fleet scaling comparable to the handler-pool sizing discussed in Capacity Estimation</li>
+          <li>Netty Project, <a href="https://netty.io" target="_blank" rel="noopener">netty.io</a> &mdash; the event-loop I/O framework referenced for per-node WebSocket connection ceilings</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="whatsapp.html"><span class="dir">Previous</span>WhatsApp</a>
+          <a class="next" href="bookmyshow.html"><span class="dir">Next</span>BookMyShow</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

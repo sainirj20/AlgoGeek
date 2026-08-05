@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transactions &amp; Concurrency | JPA / Hibernate | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">JPA / Hibernate</a><span class="sep">/</span><span class="current">Transactions &amp; Concurrency</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to JPA / Hibernate overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#acid-properties-briefly">ACID Properties, Briefly</a></li>
+        <li><a href="#transaction-boundaries-with-transactional">Transaction Boundaries with @Transactional</a></li>
+        <li><a href="#isolation-levels">Isolation Levels</a></li>
+        <li><a href="#optimistic-locking-with-version">Optimistic Locking with @Version</a></li>
+        <li><a href="#optimistic-vs-pessimistic-locking">Optimistic vs. Pessimistic Locking</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">JPA / HIBERNATE</span>
+          <h1>Transactions &amp; Concurrency</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>A transaction is the unit of work that gives you ACID guarantees: a group of reads and writes that either all succeed together or all fail together, in isolation from other concurrent work, and durably once committed. In a Spring/JPA application, that unit of work is almost always demarcated with <code>@Transactional</code>. Getting the transaction boundary right &mdash; where it starts, where it ends, what happens on an exception &mdash; is one of the most common sources of subtle production bugs: partial writes, stale reads, lazy-initialization exceptions, and silent data corruption under concurrent updates all trace back to a misunderstood or misplaced transaction boundary.</p>
+
+        <h2 id="acid-properties-briefly">ACID Properties, Briefly</h2>
+        <p>The four guarantees a transaction is supposed to provide:</p>
+        <ul>
+          <li><strong>Atomicity</strong> &mdash; all the operations in the transaction succeed, or none of them do; there is no partially-applied state.</li>
+          <li><strong>Consistency</strong> &mdash; a transaction moves the database from one valid state to another valid state, respecting constraints, cascades, and invariants.</li>
+          <li><strong>Isolation</strong> &mdash; concurrent transactions do not see each other's uncommitted changes; the degree of isolation is tunable and trades correctness for throughput.</li>
+          <li><strong>Durability</strong> &mdash; once a transaction commits, its effects survive a subsequent crash (the database has persisted it to durable storage, typically via a write-ahead log).</li>
+        </ul>
+
+        <h2 id="transaction-boundaries-with-transactional">Transaction Boundaries with @Transactional</h2>
+        <p>Wrap a multi-step operation in a single transaction so that a failure partway through rolls back everything already done, instead of leaving the entity in a half-updated state. Consider publishing a blog post &mdash; changing its status and stamping a publish time should either both happen or neither happen:</p>
+        <pre><code>@Transactional
+public void publish(Long postId) {
+    Post post = postRepository.findById(postId)
+            .orElseThrow(() -&gt; new PostNotFoundException(postId));
+    post.setStatus(PostStatus.PUBLISHED);
+    post.setPublishedAt(Instant.now());
+    // no explicit save() needed - the managed entity is dirty-checked
+    // and flushed automatically when the transaction commits
+}</code></pre>
+        <p>Because <code>post</code> is a managed entity inside the persistence context, Hibernate's dirty-checking mechanism detects the field changes and issues the <code>UPDATE</code> automatically at flush/commit time &mdash; there's no need to call <code>save()</code> again.</p>
+        <p><strong>Propagation.</strong> The default propagation, <code>REQUIRED</code>, joins an existing transaction if one is already active, or starts a new one if not &mdash; this is what you want for the vast majority of methods, since it keeps everything in one atomic unit. <code>REQUIRES_NEW</code> suspends any current transaction and always starts a brand-new one; it's used sparingly, for cases like audit logging or notification records that must commit independently of the outer transaction's outcome (so they persist even if the caller later rolls back).</p>
+        <p><strong>Rollback rules.</strong> By default, Spring only rolls back a transaction on an unchecked exception (a <code>RuntimeException</code> or <code>Error</code>); a checked exception thrown from a <code>@Transactional</code> method does <em>not</em> trigger a rollback unless you explicitly say so with <code>@Transactional(rollbackFor = SomeCheckedException.class)</code>. This surprises a lot of developers who assume "any exception rolls back the transaction."</p>
+
+        <h2 id="isolation-levels">Isolation Levels</h2>
+        <p>The SQL standard defines four isolation levels, each preventing progressively more of the anomalies that can occur when transactions run concurrently:</p>
+        <ul>
+          <li><strong>READ_UNCOMMITTED</strong> &mdash; the weakest level; allows dirty reads (seeing another transaction's uncommitted changes), non-repeatable reads, and phantom reads. Rarely used in practice.</li>
+          <li><strong>READ_COMMITTED</strong> &mdash; prevents dirty reads (you only ever see committed data), but a row you read twice in the same transaction can change between reads (non-repeatable read), and a range query can return different rows on a second execution (phantom read).</li>
+          <li><strong>REPEATABLE_READ</strong> &mdash; prevents dirty reads and non-repeatable reads (a row you've already read is guaranteed to look the same for the rest of the transaction), but phantom reads &mdash; new rows appearing in a repeated range query &mdash; can still occur (behavior here varies by database vendor).</li>
+          <li><strong>SERIALIZABLE</strong> &mdash; the strictest level; transactions behave as if executed one at a time, one after another. Prevents dirty, non-repeatable, and phantom reads, at the cost of the most contention and the lowest throughput.</li>
+        </ul>
+        <p>Most relational databases (PostgreSQL, Oracle, SQL Server) default to <code>READ_COMMITTED</code>. It's a pragmatic middle ground: good throughput, no dirty reads, but you can still be surprised by non-repeatable or phantom reads if your logic assumes a fully static snapshot. Stricter isolation levels buy you stronger correctness guarantees but reduce concurrency and throughput, since the database has to hold more locks or do more conflict detection &mdash; so isolation level should be chosen deliberately, not left as an afterthought.</p>
+
+        <h2 id="optimistic-locking-with-version">Optimistic Locking with @Version</h2>
+        <p>Isolation levels control what a transaction can <em>see</em>; they don't by themselves stop two concurrent transactions from both reading the same row and then both writing conflicting updates ("lost update"). That's what row-level concurrency control is for, and the mechanism used day to day in most applications is <strong>optimistic locking</strong> via <code>@Version</code>:</p>
+        <pre><code>@Entity
+public class Post {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+
+    @Enumerated(EnumType.STRING)
+    private PostStatus status;
+
+    @Version
+    private int version;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Author author;
+
+    // getters and setters omitted
+}</code></pre>
+        <p>The mechanism is simple but effective: every time Hibernate updates a versioned entity, it includes the current version in the <code>WHERE</code> clause and increments it in the <code>SET</code> clause &mdash; effectively <code>UPDATE post SET title = ?, version = version + 1 WHERE id = ? AND version = ?</code>. If another transaction already updated the row and bumped its version in the meantime, this <code>WHERE</code> clause matches zero rows. Hibernate detects the row-count mismatch and throws <code>OptimisticLockException</code> (wrapped as <code>ObjectOptimisticLockingFailureException</code> in Spring Data), rather than silently overwriting someone else's change.</p>
+        <p>At the service layer, that exception is typically caught and translated into a client-facing "someone else already updated this" error rather than a raw 500:</p>
+        <pre><code>@Transactional
+public void updateTitle(Long postId, String newTitle, int expectedVersion) {
+    try {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -&gt; new PostNotFoundException(postId));
+        post.setTitle(newTitle);
+    } catch (ObjectOptimisticLockingFailureException ex) {
+        throw new StaleUpdateException(
+                "This post was modified by someone else. Please reload and retry.");
+    }
+}</code></pre>
+        <p>Note that the <code>OptimisticLockException</code> is typically only raised at flush/commit time (when the <code>UPDATE</code> actually runs), so in practice you often need to catch it around the transactional boundary itself, or let it propagate and handle it in a controller-level exception handler.</p>
+
+        <h2 id="optimistic-vs-pessimistic-locking">Optimistic vs. Pessimistic Locking</h2>
+        <p>Optimistic locking assumes conflicts are rare: it lets every transaction proceed as if it has exclusive access, and only detects a conflict at write time via the version check. There's no database lock held while the user is "thinking" between reading and writing &mdash; which matters a lot in a web application, where a row might be read on one request and updated several seconds (or minutes) later on another request. That's why optimistic locking is the default choice for most web applications: contention is typically low, and holding a database lock across an HTTP request's think-time would be a serious scalability problem.</p>
+        <p>Pessimistic locking takes the opposite approach: it acquires a database-level lock up front and holds it until the transaction ends, guaranteeing no other transaction can read (for update) or write the row in the meantime:</p>
+        <pre><code>@Lock(LockModeType.PESSIMISTIC_WRITE)
+@Query("select p from Post p where p.id = :id")
+Optional&lt;Post&gt; findByIdForUpdate(@Param("id") Long id);</code></pre>
+        <p>This issues a <code>SELECT ... FOR UPDATE</code> under the hood, blocking other transactions that try to acquire a conflicting lock on the same row until the current transaction commits or rolls back. That guarantees there's no conflict to detect after the fact &mdash; but it comes at the cost of higher contention: other transactions queue up and wait, and a long-running transaction holding the lock can become a throughput bottleneck or even a source of deadlocks. Pessimistic locking suits high-contention scenarios where you'd rather block than retry &mdash; the classic example is decrementing inventory count, where many concurrent requests are racing for the same limited stock and an optimistic retry storm would be worse than a short wait.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">What does @Version do and how does optimistic locking work under the hood?</div>
+          <div class="qa-a"><code>@Version</code> marks a field that Hibernate uses as a concurrency token. Every <code>UPDATE</code> to that entity includes the current version value in the <code>WHERE</code> clause and increments it in the <code>SET</code> clause. If a concurrent transaction already changed the row (and bumped the version), the <code>WHERE</code> clause matches zero rows, and Hibernate throws an <code>OptimisticLockException</code> instead of silently applying a stale write.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between optimistic and pessimistic locking, and when would you choose each?</div>
+          <div class="qa-a">Optimistic locking detects conflicts after the fact using a version check, with no lock held between read and write &mdash; good for low-contention scenarios like typical web app edits. Pessimistic locking (<code>SELECT ... FOR UPDATE</code>) acquires a database lock up front and blocks other transactions until it's released, guaranteeing no conflict at the cost of throughput &mdash; good for high-contention scenarios like <ul><li>inventory/stock decrement</li><li>seat or slot reservation</li><li>any "first writer wins, everyone else must wait" workflow</li></ul></div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">By default, does a checked exception thrown inside a @Transactional method roll back the transaction?</div>
+          <div class="qa-a">No. Spring's default rollback policy only rolls back on unchecked exceptions (<code>RuntimeException</code> and <code>Error</code>). A checked exception commits the transaction as-is unless you specify <code>@Transactional(rollbackFor = MyCheckedException.class)</code> to opt it in.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What isolation level do most relational databases default to, and what anomaly does it still allow?</div>
+          <div class="qa-a">Most databases (PostgreSQL, Oracle, SQL Server) default to <code>READ_COMMITTED</code>. It prevents dirty reads, but still allows non-repeatable reads (a row you read twice in the same transaction can change between reads) and phantom reads (a repeated range query can return a different set of rows).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is REQUIRES_NEW sometimes needed instead of the default REQUIRED propagation?</div>
+          <div class="qa-a">The default <code>REQUIRED</code> joins the caller's transaction, so if the caller's transaction later rolls back, everything done inside the method rolls back too. <code>REQUIRES_NEW</code> suspends the caller's transaction and starts an independent one, so work like audit logging or sending a notification record can commit on its own regardless of whether the outer business transaction ultimately succeeds or fails.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>A transaction gives you Atomicity, Consistency, Isolation, and Durability; <code>@Transactional</code> is how you draw that boundary in Spring.</li>
+          <li>By default, only unchecked exceptions trigger a rollback &mdash; checked exceptions need <code>rollbackFor</code> to be included.</li>
+          <li><code>READ_COMMITTED</code> is the common default isolation level; it stops dirty reads but not non-repeatable or phantom reads.</li>
+          <li><code>@Version</code>-based optimistic locking detects lost updates via a <code>WHERE id = ? AND version = ?</code> check and throws <code>OptimisticLockException</code> on conflict &mdash; it's the right default for low-contention web workloads.</li>
+          <li>Pessimistic locking (<code>SELECT ... FOR UPDATE</code>) trades throughput for a hard guarantee of no conflict, and fits high-contention resources like inventory counts.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="performance-caching.html"><span class="dir">Previous</span>Performance &amp; Caching</a>
+          <a class="next" href="interview-questions.html"><span class="dir">Next</span>Interview Questions</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

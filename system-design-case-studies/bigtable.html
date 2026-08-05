@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Bigtable | System Design — Case Studies | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Case Studies</a><span class="sep">/</span><span class="current">Google Bigtable</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Case Studies overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#1-internal-architecture-deep-dive">1. Internal Architecture Deep Dive</a></li>
+        <li><a href="#2-system-design-view-end-to-end-request-walkthrough">2. System Design View: End-to-End Request Walkthrough</a></li>
+        <li><a href="#3-the-math">3. The Math</a></li>
+        <li><a href="#cap-theorem-placement-and-the-consistency-model">CAP Theorem Placement and the Consistency Model</a></li>
+        <li><a href="#real-world-usage">Real-World Usage</a></li>
+        <li><a href="#trade-offs-and-limitations">Trade-offs and Limitations</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Google Bigtable</h1>
+        </div>
+
+        <p><em>A system-design deep dive and interview study guide: internal architecture first, then math, diagrams, real-world usage, trade-offs, and follow-up interview questions.</em></p>
+
+        <h2 id="overview">Overview</h2>
+        <p>Bigtable is Google's internal distributed storage system for structured data: a <strong>sparse, distributed, persistent, multi-dimensional sorted map</strong>, indexed by <strong>(row key, column key, timestamp)</strong>, where every value is just an uninterpreted byte string. Google built it in 2004–2006 because no off-the-shelf database (relational or otherwise) could scale to <strong>petabytes of data across thousands of commodity machines</strong> while serving workloads as different as batch web-crawl storage (Google's search index) and latency-sensitive, real-time serving (Gmail, Google Analytics, Google Maps) — all from one system with a single simple API. It was described in the 2006 OSDI (Operating Systems Design and Implementation, a top systems conference) paper <em>"Bigtable: A Distributed Storage System for Structured Data"</em> by Chang, Dean, Ghemawat, Hsieh, Wallach, Burrows, Chandra, Fikes, and Gruber — a paper that went on to directly inspire Apache HBase, Apache Cassandra, and much of the modern "wide-column NoSQL" category. This deep dive goes straight into the internals before pulling back to the higher-level system-design view.</p>
+
+        <h2 id="1-internal-architecture-deep-dive">1. Internal Architecture Deep Dive</h2>
+
+        <h3>1.1 The data model, in detail</h3>
+        <p><strong>The formal model.</strong> Bigtable's map looks like this: <code>(row:string, column:string, time:int64) &rarr; string</code>. A <strong>table</strong> is a sorted map. Rows are sorted <strong>lexicographically (byte-wise dictionary order)</strong> by row key, and this ordering is the single most important structural fact about Bigtable — nearly everything else (tablets, locality, hotspotting, range scans) follows from it.</p>
+        <p><strong>Column families and qualifiers.</strong> Columns are grouped into <strong>column families</strong> — the unit of access control and the unit that must be declared up front (schema). A specific column is addressed as <code>family:qualifier</code> — e.g., family <code>anchor</code>, qualifier <code>cnnsi.com</code>. The <strong>qualifier</strong> is free-form and can be created on the fly by clients without changing the table schema; only the family needs to pre-exist. This is what makes Bigtable "sparse": a row can have thousands of families/qualifiers defined across the table, but any individual row only stores the cells it actually has values for — unused columns consume zero space in that row.</p>
+        <p><strong>Versions and garbage collection.</strong> Each cell (the intersection of a row and a fully-qualified column) can hold <strong>multiple versions</strong>, indexed by a 64-bit <strong>timestamp</strong> (microseconds since epoch by convention, though the field is just an int64 and applications can assign their own meaning to it, e.g., a monotonic sequence number). Versions of a cell are stored in <strong>decreasing timestamp order</strong>, so the newest version is always read first. Per-column-family garbage-collection settings let you keep only the last <em>N</em> versions, or only versions younger than some age, so old data is reclaimed automatically (during compaction — see 1.5).</p>
+
+        <p><strong>Worked example — "Webtable" (storing crawled web pages), straight from the original paper:</strong></p>
+        <table>
+          <tr><th>Row key (reversed URL)</th><th>contents:</th><th>anchor:cnnsi.com</th><th>anchor:my.look.ca</th></tr>
+          <tr><td><code>com.cnn.www</code></td><td><code>t3</code>: "&lt;html&gt;...CNN..." <code>t5</code>: "&lt;html&gt;...(older)" <code>t6</code>: "&lt;html&gt;...(older)"</td><td><code>t9</code>: "CNN"</td><td><code>t8</code>: "CNN.com"</td></tr>
+        </table>
+
+        <p>Key things this example illustrates:</p>
+        <ul>
+          <li>The row key is <code>com.cnn.www</code> — the URL <code>www.cnn.com</code> written with its domain components reversed. This groups all pages from the same site (and subdomains) into physically adjacent rows, because lexicographic order will place <code>com.cnn.www/sports</code>, <code>com.cnn.www/world</code>, etc. right next to <code>com.cnn.www</code> in row-key space. That locality makes host-scoped analysis and compression far more efficient (see locality groups and compression, 1.7).</li>
+          <li><code>contents:</code> is a column family with an implicit, empty qualifier, holding multiple timestamped versions of the page's HTML — one per crawl.</li>
+          <li><code>anchor:</code> is a column family where each distinct linking site becomes its own qualifier (<code>anchor:cnnsi.com</code>, <code>anchor:my.look.ca</code>, ...) — this is the "sparse, dynamic columns" pattern: there could be millions of possible qualifiers under <code>anchor:</code>, but a given row only stores the ones that actually apply to it.</li>
+          <li>A client library call to write this looks like <code>RowMutation r1(T, "com.cnn.www"); r1.Set("anchor:www.c-span.org", "CNN"); r1.Delete("anchor:www.abc.com"); Apply(&amp;op, &amp;r1);</code> — Bigtable supports <strong>atomic single-row read-modify-write transactions</strong>, but (importantly, revisited in section 7) <strong>no general multi-row transactions</strong>.</li>
+        </ul>
+
+        <p><strong>Why row-key design is the single most important schema decision (hotspotting).</strong> Because rows are stored in sorted order and partitioned into contiguous tablets (1.3) purely by row-key ranges, the row key controls two things that pull in opposite directions:</p>
+        <ol>
+          <li><strong>Locality for reads</strong> — rows you'll frequently query together should be adjacent in key space (e.g., reverse-domain URLs, or <code>LOCATION#TIMESTAMP</code> for time-series so a location's whole history is one contiguous range).</li>
+          <li><strong>Load spread for writes</strong> — if many clients are all writing rows whose keys share the same (lexicographically early) prefix at the same time — e.g., a literal, monotonically increasing timestamp, or a sequential auto-increment ID, used as the leading part of the key — then <em>all</em> of that traffic lands on whatever single tablet (and therefore single tablet server) currently owns that narrow slice of key space. That single machine becomes a bottleneck no matter how big the rest of the cluster is. This failure mode is called <strong>hotspotting</strong>.</li>
+        </ol>
+        <p>Classic fixes: reverse or hash the monotonic component, salt the key with a bucket prefix, or <strong>promote</strong> a high-cardinality field (e.g., a user ID or a device ID) to the front of the key so writes fan out across the whole key space, e.g. <code>WashingtonDC#201803061617</code> instead of <code>201803061617#WashingtonDC</code> when you have many locations reporting on the same clock tick — this keeps each location's history contiguous <em>and</em> spreads simultaneous writes from many locations across many tablets.</p>
+
+        <h3>1.2 Building blocks</h3>
+        <p>Bigtable is not a single monolithic program; it's built out of, and depends on, several other pieces of Google infrastructure.</p>
+        <p><strong>GFS / Colossus (the storage layer).</strong> In the original 2006 design, Bigtable stores everything — SSTable files and commit logs — on the <strong>Google File System (GFS)</strong>, Google's own distributed, replicated file system. Today, production Google/Cloud Bigtable stores data on <strong>Colossus</strong>, GFS's successor, a more scalable, higher-durability distributed file system. Either way, the critical property Bigtable's architecture depends on is: <em>tablet servers do not own or locally store their data</em> — they hold <strong>pointers</strong> into files that live in this separate, independently replicated storage layer. That single fact is why tablet reassignment, recovery, and splitting are all cheap metadata operations rather than data-copy operations (more in 1.6).</p>
+        <p><strong>Chubby (the distributed lock service).</strong> Chubby is a highly-available, coarse-grained distributed lock service built on the Paxos consensus algorithm. A Chubby <em>cell</em> normally runs <strong>five replicas</strong>, one elected master that actively serves requests; the service stays live as long as a majority of replicas can talk to each other. Clients see a small filesystem-like namespace of directories and files, each of which can be locked, and clients can register callbacks for change/expiration notifications. Bigtable leans on Chubby for several genuinely different jobs, all called out explicitly in the original paper:</p>
+        <ol>
+          <li><strong>Leader election</strong> — ensuring there is at most one active Bigtable master at a time (the master grabs a uniquely named Chubby lock at startup; if it ever loses that lock, e.g., due to a Chubby session expiry, it kills itself).</li>
+          <li><strong>Bootstrapping tablet location</strong> — storing the single file that points at the location of the root tablet (the top of the 3-level lookup hierarchy — 1.3).</li>
+          <li><strong>Discovering tablet servers, and detecting tablet-server deaths</strong> — each tablet server, on startup, creates and grabs an exclusive lock on a uniquely-named file in a known Chubby directory; the master watches that directory to learn who's alive, and a tablet server that loses its lock (e.g., because of a network partition) immediately stops serving its tablets.</li>
+          <li><strong>Storing schema information</strong> — the column-family metadata for every table.</li>
+          <li><strong>Storing access control lists (ACLs)</strong> — who's allowed to read/write/administer each table.</li>
+        </ol>
+        <p>Because so much control-plane state lives in Chubby, <strong>an extended Chubby outage makes Bigtable data unavailable</strong> — the paper reports measuring this directly across 14 production Bigtable clusters spanning 11 Chubby cells: the average fraction of Bigtable server-hours affected by Chubby unavailability was <strong>0.0047%</strong>, with the single worst-affected cluster at <strong>0.0326%</strong>. This dependency is one of Bigtable's most-cited architectural trade-offs (see section 7).</p>
+        <p><strong>SSTable file format.</strong> The SSTable ("Sorted String Table") is the on-disk building block for everything Bigtable persists. An SSTable provides a <strong>persistent, ordered, immutable map from string keys to string values</strong>. Internally, an SSTable is a <strong>sequence of fixed-size blocks (64 KB by default, configurable)</strong>, plus a <strong>block index stored at the end of the file</strong>; when an SSTable is opened, only that (small) block index is loaded into memory. A key lookup then costs exactly <strong>one disk seek</strong>: binary-search the in-memory block index to find the one block that could contain the key, then issue a single read for that block from GFS/Colossus (or serve it straight from an in-memory block cache if it was recently read). SSTables can also be loaded entirely into memory for locality groups marked "in-memory" (1.7). Because SSTables are immutable, concurrent reads never need locking, and background housekeeping (compaction) can build new SSTables without disturbing readers of the old ones.</p>
+
+        <h3>1.3 Tablet location: the three-level hierarchy</h3>
+        <p>A table isn't one giant file — it is dynamically partitioned by row-key ranges into <strong>tablets</strong>, each by default <strong>~100–200 MB</strong>, and a <strong>tablet is the unit of distribution and load balancing</strong>: at any moment exactly one tablet server serves a given tablet. Finding "which tablet server currently owns the tablet that contains row X" is the single most important lookup in the whole system, and Bigtable solves it with a <strong>three-level hierarchy, explicitly analogous to a B+-tree</strong>: Level 0 is a single file in Chubby that contains the location of the Root Tablet; Level 1 is the Root Tablet itself (just the first tablet of a special METADATA table, and it is <strong>never split</strong>, which is what guarantees the hierarchy never grows past 3 levels), which points to the locations of all other METADATA tablets; Level 2 is the rest of the METADATA tablets, where each row stores the location of one user tablet, keyed by (table identifier, tablet's end row); Level 3 is the actual user tablets holding application data.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/bigtable-fig2.png" alt="Three-level tablet location hierarchy: a Chubby file points to the Root tablet, which points to METADATA tablets, which point to user tablets">
+          <div class="diagram-caption">Figure 2. Three-level tablet location hierarchy: a Chubby file points to the Root tablet, which points to METADATA tablets, which point to user tablets.</div>
+        </div>
+
+        <p><strong>How a client locates a tablet, precisely:</strong></p>
+        <ol>
+          <li>The client library keeps a <strong>cache</strong> of tablet locations it has previously resolved. Most lookups are served straight from this cache with <strong>zero network round trips</strong>.</li>
+          <li>On a cache <strong>miss</strong> (client has never seen this row-key range) or a cache <strong>staleness</strong> (the tablet has since moved and the client discovers this only when its cached tablet server rejects the request), the client walks <strong>up</strong> the hierarchy: read the well-known <strong>Chubby file</strong> to get the identity/location of the <strong>root tablet</strong>; read the <strong>root tablet</strong> to find which <strong>METADATA tablet</strong> is responsible for the target row range; read that <strong>METADATA tablet</strong> to get the <strong>precise location</strong> (which tablet server) of the actual <strong>user tablet</strong>; contact that tablet server directly for the real read/write.</li>
+          <li><strong>Cost:</strong> if the client's cache is completely empty, this location algorithm costs <strong>3 network round trips</strong>, one of which is the Chubby read. If the cache is merely <em>stale</em> (wrong, not empty), it can cost up to <strong>6 round trips</strong>, because a stale entry is only discovered when it's actually tried and rejected — the client then has to re-resolve up the chain. The client also <strong>prefetches</strong> metadata for more than one tablet whenever it reads from the METADATA table, amortizing this cost across many subsequent lookups. Because tablet locations are cached in memory, <strong>no GFS/Colossus accesses are needed just to resolve a location</strong> — only Chubby and/or METADATA-tablet reads.</li>
+          <li><strong>Why only 3 levels are enough:</strong> worked out precisely in the Math section (3.2) — with 128 MB METADATA tablets and ~1 KB per METADATA row, this scheme addresses <strong>2<sup>34</sup> tablets</strong>, i.e. up to <strong>2<sup>61</sup> bytes (~2 exabytes)</strong> of user data, which is why a flat 2-level (Chubby &rarr; user tablets) scheme was unnecessary and a 3-level scheme was judged more than sufficient rather than adding a 4th level.</li>
+        </ol>
+
+        <h3>1.4 Tablet serving: memtable, SSTables, commit log</h3>
+        <p>Each tablet, at any moment, is owned by exactly one <strong>tablet server</strong>. The persistent state that makes up a tablet is: a <strong>commit log</strong> (a redo/write-ahead log) and a set of <strong>SSTables</strong>, both living in GFS/Colossus; plus one <strong>memtable</strong> that lives only in the tablet server's RAM.</p>
+        <p><strong>Write path, step by step:</strong></p>
+        <ol>
+          <li>Client sends a mutation (or batch of mutations) directly to the tablet server that owns the target row (located per 1.3).</li>
+          <li>The tablet server checks the request is <strong>well-formed</strong> and that the sender is <strong>authorized</strong> (permissions come from the ACL stored in Chubby).</li>
+          <li>The mutation is <strong>appended to the commit log</strong>. Bigtable uses a <strong>single commit log per tablet server</strong> (not one log per tablet) specifically to avoid opening a huge number of small, concurrently-written files in GFS, which performs poorly; mutations for different tablets served by the same tablet server are co-mingled in one physical log file. (This complicates tablet-server failover — see below — but is a deliberate, worthwhile performance trade-off.)</li>
+          <li>Only <strong>after</strong> the write is durably committed to the log does its content get inserted into the <strong>memtable</strong> — an in-memory, sorted buffer of the most recent mutations. To reduce read/write contention, each memtable row is <strong>copy-on-write</strong>, so reads and writes can proceed in parallel.</li>
+          <li>The write is acknowledged back to the client.</li>
+        </ol>
+        <p><strong>Read path, step by step:</strong></p>
+        <ol>
+          <li>Client sends a read request (a lookup or a range scan) directly to the owning tablet server.</li>
+          <li>The server checks well-formedness/authorization.</li>
+          <li>The read is executed against a <strong>merged view</strong> of the memtable <strong>and</strong> the sequence of on-disk SSTables that make up the tablet — conceptually a k-way merge over already-sorted structures (this is exactly the read side of a <strong>Log-Structured Merge tree</strong>, which Bigtable's memtable+SSTable design is explicitly analogous to). To avoid touching every SSTable on every read, the server consults <strong>Bloom filters</strong> first to skip SSTables that provably don't contain the key (1.7), and serves recently-read blocks from an in-memory <strong>block cache</strong> rather than re-reading them from GFS/Colossus.</li>
+        </ol>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/bigtable-fig3.png" alt="Inside a tablet: writes go to the commit log and memtable; the memtable flushes into SSTables, which are later merged by compaction">
+          <div class="diagram-caption">Figure 3. Inside a tablet: writes go to the commit log and memtable; the memtable flushes into SSTables, which are later merged by compaction.</div>
+        </div>
+
+        <p><strong>Recovery</strong> (what happens when a tablet is (re)assigned to a — possibly new — tablet server): the new server reads the tablet's metadata from the METADATA table, which lists the SSTables that comprise the tablet plus a set of <strong>redo points</strong> — pointers into whichever commit log(s) may contain not-yet-flushed mutations for this tablet. It loads the SSTables' block indexes into memory and <strong>replays</strong> (reconstructs) the memtable by applying every logged mutation committed since the redo point. Because commit logs are shared across many tablets on the old server, the new server would otherwise have to read the <em>entire</em> shared log file just to find its tablet's entries; Bigtable avoids this by having recovering servers <strong>sort the co-mingled commit-log entries by (table, row, log sequence number)</strong>, after which all mutations for one tablet become contiguous and can be read with a single efficient sequential pass.</p>
+
+        <h3>1.5 Compaction: minor, merging, and major</h3>
+        <p>As writes accumulate, the memtable grows, and every SSTable a tablet accumulates is one more structure a read has to merge. Three related background housekeeping processes keep this bounded:</p>
+        <ul>
+          <li><strong>Minor compaction.</strong> When the memtable hits a size threshold, it is frozen, a fresh (empty) memtable is created to absorb new writes, and the frozen memtable is written out as a brand-new SSTable in GFS/Colossus. This (a) shrinks the tablet server's memory footprint and (b) shrinks how much of the commit log has to be replayed if this server crashes, since everything already flushed to an SSTable no longer needs to be replayed from the log. Reads and writes continue uninterrupted while this happens.</li>
+          <li><strong>Merging compaction.</strong> Every minor compaction produces one more SSTable, and if left unchecked a read would eventually have to merge an unbounded number of them. To bound this, a background merging compaction periodically reads a handful of existing SSTables <strong>plus</strong> the current memtable and rewrites them into <strong>one new, larger SSTable</strong>; the inputs can then be discarded.</li>
+          <li><strong>Major compaction.</strong> A major compaction is a merging compaction that rewrites <strong>all</strong> of a tablet's SSTables into <strong>exactly one</strong> SSTable — and it is the only one of the three that actually removes <strong>deletion markers ("tombstones")</strong>. Non-major compactions can produce SSTables that contain special deletion entries which merely <em>suppress</em> (hide, at read time) older, still-present data sitting in older SSTables — the bytes for deleted/overwritten data are <strong>not actually reclaimed</strong> until a major compaction runs. Bigtable periodically major-compacts every tablet specifically so that (a) disk space used by deleted data is reclaimed, and (b) deleted data actually, physically disappears from the system in a bounded, predictable time — which matters a great deal for any service with a legal or compliance requirement that "deleted" really means deleted. (Google Cloud's managed Bigtable runs compactions automatically and transparently; a full compaction cycle over a table typically completes on the order of about a week.)</li>
+        </ul>
+
+        <h3>1.6 Tablet splitting and load balancing (the master)</h3>
+        <p>The Bigtable implementation has three major components: a <strong>client library</strong>, exactly <strong>one active master server</strong>, and <strong>many tablet servers</strong> (which can be added/removed dynamically to handle changing load). Critically, <strong>the master is not on the read/write data path</strong> — clients talk to tablet servers directly for reads and writes; the master only handles the <strong>control plane</strong>:</p>
+        <ul>
+          <li>Assigning tablets to tablet servers.</li>
+          <li>Detecting tablet servers being added or dying (via the Chubby lock-file mechanism from 1.2): the master periodically polls each tablet server's lock status, and if a server has lost its lock (or is unresponsive), the master itself tries to acquire that server's lock; on success it deletes the server's Chubby file (permanently barring that server from ever serving again without restarting) and reassigns its tablets to other servers.</li>
+          <li><strong>Balancing load</strong>, and <strong>splitting</strong> tablets that have grown past the size threshold (~100–200 MB) or that are getting disproportionate traffic, and <strong>merging</strong> together tablets that have shrunk or gone cold.</li>
+          <li>Garbage-collecting obsolete files in GFS/Colossus.</li>
+          <li>Handling schema changes: table creation, column-family creation, etc.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/bigtable-fig1.png" alt="The Bigtable stack: Chubby handles locking and master election, the Master assigns tablets, Tablet Servers serve reads/writes, and GFS/Colossus stores the underlying files">
+          <div class="diagram-caption">Figure 1. The Bigtable stack: Chubby handles locking and master election, the Master assigns tablets, Tablet Servers serve reads/writes, and GFS/Colossus stores the underlying files.</div>
+        </div>
+
+        <p>Because tablet servers never own the underlying bytes — only pointers to SSTables/logs living in GFS/Colossus — <strong>splitting and reassignment are metadata operations, not data-copy operations</strong>: splitting a tablet just means writing a new METADATA row describing the split point and updating pointers; moving a tablet to a different server means updating which server's pointer table refers to which SSTables. This is why Bigtable can rebalance a live cluster in seconds rather than the minutes/hours a "physically copy the data" approach would need, and why recovering from a single tablet-server failure is fast (only metadata, not multi-hundred-MB of data, has to move).</p>
+
+        <h3>1.7 Locality groups, compression, and Bloom filters</h3>
+        <p><strong>Locality groups.</strong> Clients can group several column families that are typically accessed together into one <strong>locality group</strong>; Bigtable then generates a <strong>separate SSTable per locality group, per tablet</strong>. E.g., in Webtable, page <strong>metadata</strong> (language, checksums) can be one locality group while the <strong>page contents</strong> are a different one — an application that only wants metadata never has to read through the (much larger) page bodies. A locality group can also be declared <strong>in-memory</strong>: its SSTables are lazily loaded into the tablet server's RAM, and once loaded, reads of that data never touch disk at all — useful for small, hot metadata (Bigtable uses this internally for the <code>location</code> column family of its own METADATA table).</p>
+        <p><strong>Compression.</strong> Clients control, per locality group, whether SSTables are compressed and with what codec; the chosen compression is applied per SSTable <strong>block</strong> (the same 64 KB blocks used for the block index, size is configurable). Historically, many Bigtable applications used a two-pass scheme: a first pass finds long, repeated strings across a large window using a Bentley–McIlroy-style algorithm (Google's internal "BMDiff"), and a second, fast pass compresses the result with a Lempel-Ziv-family compressor Google called "Zippy" — later open-sourced as <strong>Snappy</strong>. Compression works especially well precisely <em>because</em> of the row-key locality discussed in 1.1: similar rows/columns/versions end up physically adjacent, giving the compressor long, easy-to-find repeats (e.g., successive crawled versions of the same web page, or many pages from the same site).</p>
+        <p><strong>Bloom filters</strong> (named for Burton Bloom). Because a read may in principle need to check every SSTable that makes up a tablet, and most of those SSTables won't be resident in memory, an uncontrolled read could cost one disk seek per SSTable. Bigtable lets clients ask for a <strong>Bloom filter</strong> to be built for the SSTables of a given locality group; a Bloom filter answers "might this SSTable contain data for this row/column?" with no false negatives but a small, tunable false-positive rate, using only a small, memory-resident bit array. This "reduces the number of disk seeks required for read operations" (the paper's own words), and, notably, means <strong>most lookups for a row or column that doesn't exist never touch disk at all</strong> — the Bloom filter says "definitely not present" and the SSTable is skipped entirely. (Worked false-positive-rate math in section 3.3.)</p>
+
+        <h2 id="2-system-design-view-end-to-end-request-walkthrough">2. System Design View: End-to-End Request Walkthrough</h2>
+
+        <h3>2.1 Client read of a single row, cold cache</h3>
+        <ol>
+          <li>Application calls the Bigtable client library: <code>Get(table, row_key)</code>.</li>
+          <li>Client library checks its <strong>local tablet-location cache</strong>. Assume it's empty (first request ever, or after a long idle period).</li>
+          <li>Client reads the well-known file in <strong>Chubby</strong> to learn the location of the <strong>root tablet</strong>. <em>(round trip 1, includes a Chubby RPC — remote procedure call)</em></li>
+          <li>Client contacts the tablet server holding the <strong>root tablet</strong> (which is really just the first, never-split tablet of the METADATA table) and asks which METADATA tablet covers this table/row range. <em>(round trip 2)</em></li>
+          <li>Client contacts the tablet server holding that <strong>METADATA tablet</strong>, and reads the row describing the target <strong>user tablet</strong> — this row's value is essentially "table T, row range [start,end) is served by tablet server S." <em>(round trip 3)</em></li>
+          <li>Client <strong>caches</strong> this location, then sends the actual <code>Get</code> request directly to tablet server <strong>S</strong>. <em>(round trip 4 — the real data request; not counted in the paper's "3 round trips," which refers only to the location-resolution phase)</em></li>
+          <li>Tablet server S checks the request is well-formed and the caller is authorized (permissions were themselves loaded from Chubby-stored ACLs when the tablet was loaded).</li>
+          <li>Tablet server S consults the <strong>Bloom filter(s)</strong> for the relevant locality group's SSTables to see which SSTables could possibly contain this row/column; SSTables the filter rules out are skipped entirely.</li>
+          <li>For each remaining candidate source (the in-memory <strong>memtable</strong>, plus any SSTables not ruled out), the server binary-searches each SSTable's in-memory <strong>block index</strong>, does at most one disk seek per SSTable into GFS/Colossus (or hits the block cache), and merges the results — taking the newest timestamped version per the requested read policy.</li>
+          <li>Result is returned to the client. On any <strong>subsequent</strong> read in the same row range, steps 3–5 are skipped entirely because of the cache — this is why the hierarchy's "3 round trips" only happens on a cold or stale cache.</li>
+        </ol>
+
+        <h3>2.2 Client write to a single row</h3>
+        <ol>
+          <li>Application calls <code>Set</code>/<code>RowMutation.Apply(...)</code> on the client library.</li>
+          <li>Client library resolves the owning tablet server exactly as in steps 2–6 above (cached after the first time).</li>
+          <li>Request arrives at tablet server S; S validates well-formedness and checks the ACL (again, sourced from Chubby).</li>
+          <li>S <strong>appends the mutation to its commit log</strong> (one shared log per tablet server, in GFS/Colossus) and waits for that append to be durably acknowledged by the storage layer.</li>
+          <li>Only once the log append is durable does S insert the mutation into its in-memory <strong>memtable</strong> (copy-on-write per row, so this doesn't block concurrent reads).</li>
+          <li>S acknowledges the write back to the client. The write is now durable (survives a tablet-server crash, because it's in the replicated commit log) even though it may not be reflected in an SSTable yet.</li>
+          <li><strong>Later, asynchronously:</strong> if the memtable has grown past its size threshold, a <strong>minor compaction</strong> freezes it and flushes it to a new SSTable in GFS/Colossus; independently, background <strong>merging</strong> and periodic <strong>major compactions</strong> keep the SSTable count bounded and reclaim space from deletions (1.5). None of this blocks the client — it already got its acknowledgment in step 6.</li>
+          <li><strong>Meanwhile, out of band:</strong> the Bigtable <strong>master</strong> is not involved in any of steps 1–7 at all. It only gets involved if S's tablet grows too large and needs to be <strong>split</strong> (S writes a new METADATA entry marking the split and the master updates assignment/load-balancing state) or if S dies (Chubby lock loss &rarr; master detects it &rarr; master reassigns S's tablets to other servers, which then replay the shared commit log as described in 1.4's recovery section).</li>
+        </ol>
+
+        <h2 id="3-the-math">3. The Math</h2>
+
+        <h3>3.1 How many tablets does a 1 PB table need?</h3>
+        <p>Default tablet size is <strong>~100–200 MB</strong>. Taking 1 PB (petabyte) = 10<sup>15</sup> bytes = 10<sup>9</sup> MB (since 1 MB = 10<sup>6</sup> bytes):</p>
+        <div class="formula-box">
+          <span class="formula-label">Tablets needed for 1 PB</span>
+          At 100 MB/tablet: 10<sup>9</sup> MB &divide; 100 MB &asymp; <strong>10,000,000 tablets</strong> (10 million).
+          <br>At 200 MB/tablet: 10<sup>9</sup> MB &divide; 200 MB &asymp; <strong>5,000,000 tablets</strong> (5 million).
+          <br>So a 1 PB table needs on the order of <strong>5–10 million tablets</strong>.
+        </div>
+        <p>Since each tablet server manages some number of tablets (in practice the paper's benchmark clusters ran with anywhere from tens to 500+ tablet servers, each typically handling dozens to low hundreds of tablets at a time), a table this size implies a cluster with anywhere from hundreds to low thousands of tablet servers, depending on how many tablets each server is configured to hold and how "hot" the data is.</p>
+
+        <h3>3.2 Addressing capacity of the three-level tablet-location hierarchy</h3>
+        <p>Straight from the paper's own numbers: each <strong>METADATA row</strong> occupies <strong>~1 KB</strong> in memory, and <strong>METADATA tablets</strong> are capped at <strong>128 MB</strong> (a stricter cap than the general 100–200 MB default, chosen deliberately to keep the hierarchy fast).</p>
+        <div class="formula-box">
+          <span class="formula-label">Three-level addressing capacity</span>
+          Rows per METADATA tablet = 128 MB &divide; 1 KB = (128 &times; 1024 KB) &divide; 1 KB = 131,072 = <strong>2<sup>17</sup></strong> pointers per METADATA tablet.
+          <br>The root tablet is itself just one (never-split) METADATA tablet, so it too can hold references to 2<sup>17</sup> METADATA tablets.
+          <br>Total addressable user tablets = 2<sup>17</sup> &times; 2<sup>17</sup> = <strong>2<sup>34</sup> tablets</strong> (&asymp; 17.2 billion tablets) — exactly the figure the paper states.
+          <br>Total addressable bytes, assuming each of those user tablets holds the (128 MB) upper bound used in this derivation: 2<sup>34</sup> tablets &times; 2<sup>27</sup> bytes/tablet (128 MB) = <strong>2<sup>61</sup> bytes &asymp; 2.3 &times; 10<sup>18</sup> bytes &asymp; 2.3 exabytes (EB)</strong>.
+        </div>
+        <p>That is why two levels (Chubby file straight to user tablets) would not have been enough at Google's scale, but three levels — with no fourth level ever needed — comfortably covers even exabyte-scale tables, which is also consistent with the (much later) public figure that production Bigtable now manages <strong>over 10 exabytes</strong> of data in aggregate across all tables/clusters.</p>
+
+        <h3>3.3 Bloom filter false-positive math</h3>
+        <div class="formula-box">
+          <span class="formula-label">False-positive probability</span>
+          A Bloom filter of <strong>m</strong> bits, using <strong>k</strong> independent hash functions, storing <strong>n</strong> keys, has false-positive probability approximately: p &asymp; (1 &minus; e<sup>&minus;k&middot;n/m</sup>)<sup>k</sup>
+          <br>For a fixed <strong>m/n</strong> (bits per key), the false-positive rate is minimized at: k<sub>opt</sub> = (m/n) &middot; ln(2) &rarr; p<sub>min</sub> = (1/2)<sup>k</sup>
+        </div>
+        <p>Two commonly-quoted, easy-to-remember operating points (solving the above for bits/key at the optimal k):</p>
+        <ul>
+          <li>Target <strong>p = 1%</strong> &rarr; need <strong>&asymp; 9.6 bits per key</strong>.</li>
+          <li>Target <strong>p = 0.1%</strong> &rarr; need <strong>&asymp; 14.4 bits per key</strong>.</li>
+        </ul>
+        <div class="formula-box">
+          <span class="formula-label">Worked example</span>
+          Suppose one tablet's SSTable holds <strong>10 million</strong> distinct row/column keys (n = 10<sup>7</sup>) and we want a <strong>1%</strong> false-positive rate. Memory needed &asymp; 10<sup>7</sup> &times; 9.6 bits = 9.6 &times; 10<sup>7</sup> bits &asymp; <strong>12 MB</strong> of Bloom-filter memory.
+          <br>That 12 MB sits in the tablet server's RAM and lets it skip disk seeks into an SSTable that might be gigabytes on disk — for a random-read workload against, say, 5 SSTables per tablet, this can turn "5 disk seeks per read" into "~1 disk seek per read plus 4 cheap in-memory Bloom-filter checks," which is exactly the effect the original paper is describing when it says Bloom filters "reduce the number of disk seeks."
+        </div>
+
+        <h3>3.4 Compression's effect on read latency (illustrative)</h3>
+        <p>Compression trades <strong>CPU time</strong> for <strong>I/O time and bytes transferred</strong>.</p>
+        <div class="formula-box">
+          <span class="formula-label">Illustrative compression ratio</span>
+          If a 64 KB on-disk block represents, say, 3&times; compressed data (a 3:1 ratio — plausible for text-like or repetitive row data, per 1.7), then: bytes actually read off disk/Colossus and sent over the network = 64 KB instead of ~192 KB logical — roughly a <strong>66% reduction</strong> in I/O and network bytes for that block.
+          <br>Cost added: one CPU-side decompression pass over 64 KB, which on modern hardware for a fast codec (Snappy-class) typically costs low single-digit microseconds to a fraction of a millisecond — negligible next to a disk seek (historically ~milliseconds) or even a network hop across a WAN.
+        </div>
+        <p>Net effect: for <strong>random point reads</strong>, the win is modest (you still pay a seek, just for fewer bytes); for <strong>sequential reads and scans</strong>, where you're pulling and decompressing many blocks in a row, the aggregate I/O savings dominate and materially reduce end-to-end latency and increase throughput — consistent with the paper's own benchmark showing scans and sequential reads far outperforming random reads per tablet server (real-world numbers in section 6). <em>(These per-block numbers are an illustrative estimate to build intuition, not a number quoted directly in the paper or Google's docs; the paper does document that compression is automatic/configurable and beneficial precisely when similar data is stored near itself.)</em></p>
+
+        <h2 id="cap-theorem-placement-and-the-consistency-model">CAP Theorem Placement and the Consistency Model</h2>
+        <p>Within any <strong>single Bigtable cluster</strong>, Bigtable behaves as a <strong>CP system</strong> under the CAP theorem (Consistency + Partition tolerance, at the cost of Availability during a partition): every row is served by <strong>exactly one</strong> tablet server at a time (enforced via the Chubby lock mechanism), so a read or write against a given row always sees a single, authoritative, <strong>strongly consistent</strong> copy — there is no quorum read/write, no version reconciliation, and no eventual-consistency window <em>within a single cluster</em>. If that one tablet server (or its Chubby lock, or its region of the control plane) becomes unreachable, Bigtable will refuse requests for that row range rather than risk serving stale or conflicting data from two places at once — that's the "sacrifice availability" side of CP. In practice, Google's private, well-engineered network keeps true network partitions rare, so this theoretical CP trade-off rarely shows up as user-visible unavailability — but the Chubby-outage numbers in section 1.2 (0.0047% / 0.0326% of server-hours) are exactly this trade-off made concrete.</p>
+        <p>The <strong>atomicity unit is the single row</strong>: single-row read-modify-write sequences are atomic ("single-row transactions"), but Bigtable explicitly does <strong>not</strong> support general transactions across multiple rows (it only offers an interface to <em>batch</em> writes across rows for network efficiency — that batch is not atomic as a whole).</p>
+        <p>Modern <strong>Google Cloud Bigtable</strong> keeps this same strong, single-cluster consistency model, but adds optional <strong>cross-region replication</strong> by attaching additional clusters to one Bigtable <em>instance</em>. A replicated (multi-cluster) instance is, <strong>by default, eventually consistent</strong> across clusters — but can be configured, depending on your app profile's routing policy and workload, to provide <strong>read-your-writes consistency</strong> or even <strong>full strong consistency</strong> across clusters for specific access patterns.</p>
+
+        <h2 id="real-world-usage">Real-World Usage</h2>
+        <p><strong>Inside Google (the original system).</strong> At the time of the 2006 paper, Bigtable was already used by <strong>more than sixty Google products and projects</strong>, including Google Analytics, Google Finance, Orkut, Personalized Search, Writely (which became Google Docs), Google Earth, and the storage layer under Google's own web-search index. Other well-documented internal users over the years include Gmail, Google Maps, Google Books search, Blogger.com, Google Code hosting, and YouTube (which used it for things like user-activity storage, metrics, and analytics/reporting dashboards).</p>
+        <p><strong>Google Cloud Bigtable</strong> made a public version of the same underlying system generally available on <strong>May 6, 2015</strong>, explicitly marketed as "the same database that powers Google Search, Gmail and Analytics." As of public figures from 2024, Bigtable (across Google's internal and external usage) manages <strong>over 10 exabytes of data</strong> and serves <strong>more than 7 billion requests per second</strong>.</p>
+        <p><strong>Open-source counterparts.</strong> <strong>Apache HBase</strong> was built directly on the architecture described in the Bigtable paper — it layers the same data model (table &rarr; column family &rarr; qualifier &rarr; timestamped versions) on top of <strong>HDFS</strong> (Hadoop Distributed File System, playing GFS's role) and <strong>Apache ZooKeeper</strong> (playing Chubby's role, also Paxos/ZAB-based coordination). <strong>Apache Cassandra</strong> is also frequently cited as "Bigtable's data model plus Dynamo's partitioning and replication," though its architecture (masterless, gossip-based, tunable quorum consistency) diverges more from Bigtable than HBase's does. Google Cloud Bigtable itself ships an <strong>HBase-API-compatible client</strong>, explicitly to make migration from self-managed HBase clusters straightforward, and later added a Cassandra-compatible API path as well.</p>
+
+        <h2 id="trade-offs-and-limitations">Trade-offs and Limitations</h2>
+        <ul>
+          <li><strong>Chubby is a systemic dependency, not just "a nice-to-have."</strong> Leader election, tablet-server liveness detection, the bootstrap pointer to the root tablet, table schema, and ACLs all live in Chubby. The paper's own measurement — 0.0047% average / 0.0326% worst-case server-hours affected across 14 clusters — shows this is a real, if usually small, systemic risk rather than a purely theoretical one. (Note, importantly: the <strong>master</strong> being down does <em>not</em> stop reads/writes — only tablet reassignment and schema changes stall — so "Chubby unavailable" and "master unavailable" are two related but distinct failure modes, and the data path is more resilient than the control path.)</li>
+          <li><strong>Hotspotting from poor row-key design.</strong> Because tablets are contiguous row-key ranges and a tablet is served by one machine, any workload whose row keys share a narrow, sequential prefix at write time (raw timestamps, sequential IDs) can pin all its traffic onto a single tablet server, capping throughput regardless of cluster size. This is a <strong>schema design problem</strong>, not a bug, but it is the single most common real-world Bigtable/Cloud Bigtable performance issue, and fixing it after the fact generally requires a full table redesign/rewrite (row keys are effectively immutable once data is loaded at scale).</li>
+          <li><strong>No multi-row / multi-table ACID transactions.</strong> Only single-row read-modify-write sequences are atomic. Any invariant that spans multiple rows (e.g., "debit account A and credit account B atomically") is not natively supported and must be built in the application layer (idempotent retries, compensating writes, or moving that specific workload to a system with multi-row transactions, such as Cloud Spanner or a relational database).</li>
+          <li><strong>No secondary indexes or joins in the traditional sense</strong> (classic Bigtable/HBase model): access is fundamentally by row key (point lookup) or row-key range (scan); any other query pattern (e.g., "find all rows where column X = value") requires either a full scan, an application-maintained secondary index table, or (in modern Cloud Bigtable) newer features like SQL support/materialized views layered on top — but the underlying storage engine is still single-key-path.</li>
+          <li><strong>Schema changes are operationally heavier than in many NoSQL systems</strong>: while adding a new column <em>qualifier</em> is free and instantaneous (it's just a new sparse key), decisions like row-key structure and column-family/locality-group boundaries are effectively fixed at write time for existing data.</li>
+          <li><strong>Single point of "interest," not literally single point of failure, for the control plane</strong>: Chubby itself is a 5-replica, Paxos-based majority system (so it individually tolerates minority failures), and the master is designed to fail over quickly (a new master just re-acquires the Chubby lock and rebuilds in-memory state by scanning tablet-server state); but the <em>design pattern</em> — one active master, one lock service the whole system's bootstrap and liveness detection depends on — is exactly the kind of centralized control-plane dependency system-design interviews like to probe.</li>
+        </ul>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">What is Bigtable, in one sentence, and how is it different from a relational database?</div>
+          <div class="qa-a">It's a sparse, distributed, persistent, multi-dimensional sorted map keyed by (row, column family:qualifier, timestamp) &rarr; byte string; unlike a relational database it has no fixed schema for columns (only families are declared), no SQL joins/multi-row transactions in the base model, and it scales horizontally by splitting the row-key space into independently-served tablets.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Walk through the (row, column, timestamp) &rarr; value model with a concrete example.</div>
+          <div class="qa-a">In "Webtable," row key <code>com.cnn.www</code> (reversed URL) has a <code>contents:</code> family holding several timestamped HTML snapshots and an <code>anchor:</code> family where each qualifier (e.g. <code>anchor:cnnsi.com</code>) is a distinct site linking to the page, each also versioned by crawl time.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why store multiple versions per cell, and how are old versions cleaned up?</div>
+          <div class="qa-a">Versions give you an automatic history/audit trail (e.g., successive crawls of a page) without extra schema work. They're stored newest-first, and per-column-family garbage-collection settings (keep last N versions, or versions younger than age T) prune old ones — physically reclaimed only when a compaction (specifically major compaction) runs.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is a tablet the "unit" of?</div>
+          <div class="qa-a">The unit of data distribution and load balancing — a contiguous range of rows, ~100–200 MB by default, served by exactly one tablet server at a time; splitting/merging/reassigning tablets is how Bigtable scales and rebalances.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is row-key design so critical, and what's a concrete bad-vs-good example?</div>
+          <div class="qa-a">Rows are stored in lexicographic key order and partitioned into tablets by key range, so a monotonic prefix (like a raw timestamp) concentrates all near-simultaneous writes on one tablet/tablet server (hotspotting). Fix: reverse/salt/hash the monotonic part, or put a high-cardinality field first (e.g., <code>LOCATION#TIMESTAMP</code> instead of <code>TIMESTAMP#LOCATION</code>).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is Chubby and what does Bigtable specifically use it for?</div>
+          <div class="qa-a">A Paxos-based distributed lock service (5 replicas, majority-live). Bigtable uses it for: (1) master leader election, (2) the bootstrap file pointing to the root tablet, (3) discovering/tracking tablet-server liveness via lock files, (4) storing table/column-family schema, and (5) storing ACLs.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if Chubby goes down for an extended period — is that a design flaw?</div>
+          <div class="qa-a">Bigtable data becomes unavailable, because liveness detection, leader election, and the bootstrap pointer all depend on it; the paper measured this at ~0.0047% of server-hours on average (worst cluster 0.0326%). It's a deliberate trade-off (simplicity + strong guarantees from a well-tested lock service) rather than an oversight, and Chubby itself tolerates minority failures via Paxos.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Walk through, step by step, what happens when a client with a completely cold cache reads one row.</div>
+          <div class="qa-a">(1) Read the Chubby bootstrap file for the root tablet's location. (2) Contact the root tablet (first METADATA tablet) to find the right METADATA tablet for this row range. (3) Contact that METADATA tablet to get the actual user tablet's server. (4) Cache that location, then send the real Get request to that tablet server, which merges memtable + SSTables (using Bloom filters and a block cache) to answer.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How many round trips does tablet-location resolution take, best and worst case?</div>
+          <div class="qa-a">3 round trips (including one Chubby read) with a completely empty cache; up to 6 if the cache is stale, because stale entries are only detected when a request against them fails, forcing re-resolution. A fully warm/correct cache costs 0 extra round trips.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Explain the write path inside a tablet server.</div>
+          <div class="qa-a">Validate well-formedness/authorization &rarr; append the mutation to the tablet server's (shared, per-server) commit log in GFS/Colossus and wait for durability &rarr; insert into the in-memory memtable (copy-on-write per row) &rarr; acknowledge to the client. SSTable creation happens later, asynchronously, via minor compaction.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Explain the read path — how are memtable and multiple SSTables reconciled?</div>
+          <div class="qa-a">A read is served as a merge over the memtable and every SSTable comprising the tablet, similar to the read side of an LSM-tree; Bloom filters let the server skip SSTables that provably don't contain the key, and a block cache avoids re-fetching recently-read 64 KB blocks from storage; the newest timestamped version found wins (subject to the read's own version-count/timerange filters).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Minor vs. merging vs. major compaction — what's the difference, and why does deletion need major compaction specifically?</div>
+          <div class="qa-a">Minor: flush a full memtable to a new SSTable. Merging: periodically combine several SSTables (+ memtable) into one, bounding how many structures a read must merge. Major: a merging compaction that rewrites <em>all</em> SSTables of a tablet into exactly one, and is the only kind that actually drops deletion "tombstones" and reclaims space, since intermediate compactions only suppress old data at read time rather than physically removing it.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does Bigtable rebalance/split tablets so quickly, without visibly disrupting service?</div>
+          <div class="qa-a">Because tablet servers never locally own the underlying bytes — they hold pointers into SSTables/commit logs stored in GFS/Colossus — splitting or moving a tablet is a metadata update (new METADATA rows/pointers), not a data copy; the new owning server just needs to load index/metadata and start serving.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's a locality group and when would you use one?</div>
+          <div class="qa-a">A user-declared grouping of column families that are typically accessed together; Bigtable stores each locality group as its own SSTable per tablet, so scans of one locality group never have to read through unrelated (and possibly much larger) column data — e.g., separating page metadata from full page contents in Webtable. Locality groups can also be marked in-memory for hot, small data.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Bloom filter math — for 10 million keys in an SSTable and a 1% target false-positive rate, roughly how much memory is needed?</div>
+          <div class="qa-a">Using ~9.6 bits/key at the optimal number of hash functions: 10<sup>7</sup> &times; 9.6 bits &asymp; 9.6&times;10<sup>7</sup> bits &asymp; <strong>12 MB</strong>. That's a very small in-memory footprint to avoid a disk seek into a potentially multi-gigabyte SSTable on most reads for keys that aren't actually present.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Derive how many tablets the 3-level location hierarchy can address.</div>
+          <div class="qa-a">With 128 MB METADATA tablets and ~1 KB/row, each METADATA tablet holds 128MB/1KB = 2<sup>17</sup> pointers; the root tablet is one such (never-split) METADATA tablet, so it points to 2<sup>17</sup> METADATA tablets, each of which points to 2<sup>17</sup> user tablets: total = 2<sup>17</sup> &times; 2<sup>17</sup> = <strong>2<sup>34</sup> tablets</strong>, i.e. up to <strong>2<sup>61</sup> bytes (~2.3 EB)</strong> at 128 MB/tablet.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">For a 1 PB table with the default 100–200 MB tablet size, roughly how many tablets are needed?</div>
+          <div class="qa-a">1 PB = 10<sup>9</sup> MB; at 100 MB/tablet that's ~10 million tablets, at 200 MB/tablet ~5 million tablets — so on the order of 5–10 million tablets, implying (depending on tablets/server) a cluster of hundreds to low thousands of tablet servers.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Where does Bigtable sit on the CAP theorem, and does that change with replication?</div>
+          <div class="qa-a">A single-cluster Bigtable instance is a CP system — strongly consistent per row, and it will refuse service to a row range rather than risk inconsistency if its owning tablet server/Chubby lock is unreachable. Multi-cluster (cross-region) replicated instances default to eventual consistency across clusters, but can be tuned (via app profile routing) to read-your-writes or strong consistency for specific workloads.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Given no multi-row transactions, how would you implement a "transfer points from user A to user B" feature?</div>
+          <div class="qa-a">Options: (a) redesign so both balances live in the <em>same row</em> (different columns), making the update a single-row atomic read-modify-write; (b) implement an application-level saga/compensating-transaction pattern with idempotent retries and a durable "pending transfer" log row; (c) if true cross-row/cross-table ACID transactions are a hard requirement, use a different backing store (e.g., Cloud Spanner) for that workload instead of forcing it onto Bigtable.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does (Cloud) Bigtable compare operationally to self-managed Apache HBase?</div>
+          <div class="qa-a">They share the same data model and core architecture (tablet servers, compactions, LSM-style storage), but Cloud Bigtable replaces HDFS with Colossus and ZooKeeper's coordination role with Google's internal infra, and is fully managed — no cluster ops, transparent upgrades/restarts, resizing without downtime, and automatic replication setup — whereas self-managed HBase requires operating HDFS and ZooKeeper yourself and, per Google's own documentation, has a design bottleneck that caps performance past a certain cluster size in ways Bigtable does not.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Bigtable is Google's CP, single-cluster-consistent, wide-column store: a sparse (row, column family:qualifier, timestamp) &rarr; byte-string sorted map, partitioned into ~100–200 MB tablets that are the unit of distribution, splitting, and load balancing, all orchestrated by a single master that stays off the read/write data path. Chubby (Paxos-based locking, 5 replicas) handles master election, tablet-server liveness, the bootstrap pointer, schema, and ACLs; GFS/Colossus stores the actual SSTable files and commit logs, which is why splitting and reassignment are cheap metadata operations rather than data copies. A three-level, B+-tree-like hierarchy (Chubby file &rarr; root tablet &rarr; METADATA tablets &rarr; user tablets) resolves any row's owning tablet server in 3 round trips cold (up to 6 if stale), and comfortably addresses 2<sup>34</sup> tablets (~2.3 exabytes) at the paper's own sizing. Inside a tablet, writes land in a shared per-server commit log then an in-memory memtable, and reads merge the memtable with on-disk SSTables — an LSM-tree pattern kept efficient by Bloom filters (skip SSTables that can't contain a key, ~9.6 bits/key at a 1% false-positive rate), a block cache, and locality groups/compression (BMDiff+Zippy/Snappy) that exploit row-key locality. Minor/merging/major compaction keep SSTable counts bounded, and only major compaction physically reclaims deleted data. Row-key design is the single most consequential schema decision, since poor key choice (e.g., a raw leading timestamp) causes hotspotting on one tablet server no matter how large the cluster is. Within one cluster Bigtable is strongly consistent per row (a CP system that sacrifices availability under partition), though Cloud Bigtable's multi-cluster replication defaults to eventual consistency across regions and can be tuned tighter. The recurring trade-offs — Chubby as a systemic dependency, hotspotting risk, no multi-row transactions, and no native secondary indexes — are the direct, deliberate cost of a design that scales to petabytes across thousands of commodity machines behind one simple API, and that directly inspired HBase, Cassandra, and the wider wide-column NoSQL category.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Chang, Dean, Ghemawat, Hsieh, Wallach, Burrows, Chandra, Fikes, Gruber (2006) — <a href="https://research.google.com/archive/bigtable-osdi06.pdf" target="_blank" rel="noopener">"Bigtable: A Distributed Storage System for Structured Data"</a> (OSDI '06 paper; mirror: <a href="https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf" target="_blank" rel="noopener">static.googleusercontent.com copy</a>)</li>
+          <li>USENIX — <a href="https://www.usenix.org/conference/osdi-06/bigtable-distributed-storage-system-structured-data" target="_blank" rel="noopener">OSDI '06 conference page for the paper</a></li>
+          <li>Google Research — <a href="https://research.google/pubs/bigtable-a-distributed-storage-system-for-structured-data/" target="_blank" rel="noopener">publication page</a></li>
+          <li>Google Cloud — <a href="https://docs.cloud.google.com/bigtable/docs/overview" target="_blank" rel="noopener">"Bigtable overview"</a> (architecture, tablets, load balancing, consistency model, compression, durability)</li>
+          <li>Google Cloud Platform Blog — <a href="https://cloudplatform.googleblog.com/2015/05/introducing-Google-Cloud-Bigtable.html" target="_blank" rel="noopener">"Announcing Google Cloud Bigtable"</a> (May 6, 2015 GA announcement)</li>
+          <li>Google Cloud Blog — <a href="https://cloud.google.com/blog/products/databases/bigtable-enhancements-at-next24" target="_blank" rel="noopener">"Celebrating 20 years of Bigtable with exciting announcements at Next"</a> (2024 usage figures: 10+ exabytes, 7B+ requests/sec)</li>
+          <li>Wikipedia — <a href="https://en.wikipedia.org/wiki/Bigtable" target="_blank" rel="noopener">"Bigtable"</a> (history, BMDiff/Zippy/Snappy compression detail, HBase/Cassandra lineage)</li>
+          <li>Bloom filter false-positive rate derivation and bits-per-key figures — <a href="https://arpitbhayani.me/blogs/bloom-filters/" target="_blank" rel="noopener">arpitbhayani.me/blogs/bloom-filters</a> and <a href="https://pages.cs.wisc.edu/~cao/papers/summary-cache/node8.html" target="_blank" rel="noopener">pages.cs.wisc.edu — summary-cache notes</a></li>
+          <li>CAP theorem classification discussion for Bigtable — <a href="https://www.splunk.com/en_us/blog/learn/cap-theorem.html" target="_blank" rel="noopener">Splunk — "Learn About CAP Theorem"</a> and <a href="https://www.quora.com/Where-is-Google-BigTable-placed-in-terms-of-the-CAP-theorem" target="_blank" rel="noopener">Quora — "Where is Google BigTable placed in terms of the CAP theorem?"</a></li>
+          <li>Apache HBase project (open-source Bigtable-model implementation on HDFS/ZooKeeper) — <a href="https://hbase.apache.org/" target="_blank" rel="noopener">hbase.apache.org</a></li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="kafka.html"><span class="dir">Previous</span>Apache Kafka</a>
+          <a class="next" href="google-file-system.html"><span class="dir">Next</span>Google File System</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

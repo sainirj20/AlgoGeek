@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facebook / Twitter Feed | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Facebook / Twitter Feed</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-scope">Problem Statement &amp; Scope</a></li>
+        <li><a href="#functional-requirements">Functional Requirements</a></li>
+        <li><a href="#non-functional-requirements">Non-Functional Requirements</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-apis-illustrative">System APIs (Illustrative)</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#detailed-design-social-graph">Detailed Design &mdash; Social Graph</a></li>
+        <li><a href="#detailed-design-posttweet-write-path">Detailed Design &mdash; Post/Tweet Write Path</a></li>
+        <li><a href="#detailed-design-timeline-news-feed-generation">Detailed Design &mdash; Timeline / News-Feed Generation</a></li>
+        <li><a href="#detailed-design-comments-and-likes">Detailed Design &mdash; Comments &amp; Likes</a></li>
+        <li><a href="#detailed-design-search">Detailed Design &mdash; Search</a></li>
+        <li><a href="#detailed-design-trending-topics">Detailed Design &mdash; Trending Topics</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-sharding">Data Sharding</a></li>
+        <li><a href="#caching">Caching</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging &amp; Analytics</a></li>
+        <li><a href="#key-trade-offs-and-alternatives-considered">Key Trade-offs &amp; Alternatives Considered</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing Twitter / Facebook &mdash; Social Feed</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for the "design Twitter" / "design Facebook News Feed" question &mdash; a hybrid of Twitter-like microblogging and Facebook-like social networking. Covers requirements and the three-classes-of-users framing, capacity estimation, the directional-follow vs. bidirectional-friend social graph, the post write path, the three timeline-generation strategies and the hybrid fan-out production systems converge on, comments/likes/search/trending, database schema and Snowflake-style sharding, caching, replication, load balancing, monitoring, key trade-offs, and a full set of follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement-and-scope">Problem Statement &amp; Scope</h2>
+        <p>Design a social feed platform &mdash; Twitter-like microblogging plus Facebook-like social networking &mdash; where users publish short posts (text/photo/video/link), follow or friend other users, and see a ranked, near-real-time timeline of posts from the people they follow, plus search over posts and a live "trending" surface. Deliberately keeping both models in view matters: Twitter's directional <strong>follow</strong> and Facebook's bidirectional <strong>friend</strong> are different enough in semantics and storage shape that conflating them is a common interview mistake, and the comparison itself (Section 7) is one of the more instructive parts of this design.</p>
+        <div class="callout">
+          <div class="callout-title">Interview framing</div>
+          This question is really four sub-problems that interviewers probe independently: (1) the social graph, (2) the write path for a post, (3) timeline/news-feed generation &mdash; the single hardest part, because of the "celebrity problem" &mdash; and (4) search + trending, which are read-heavy, near-real-time analytics problems layered on top of the same underlying data. Naming these four out loud early is a strong signal that you understand the shape of the problem before writing a single box on the whiteboard.
+        </div>
+
+        <h3>In Scope</h3>
+        <ul>
+          <li>Post / tweet: text, image, video, link &mdash; with hashtags and @mentions.</li>
+          <li>Like, comment, share/retweet.</li>
+          <li>Follow (Twitter-style, directional) and Friend (Facebook-style, bidirectional) relationships.</li>
+          <li>Home timeline generation &mdash; own feed, ranked by recency/relevance.</li>
+          <li>Activity log (who liked/commented on my posts).</li>
+          <li>Search for posts.</li>
+          <li>Trending topics / hashtags.</li>
+        </ul>
+
+        <h3>Out of Scope (Mention to the Interviewer, Don't Over-Invest)</h3>
+        <ul>
+          <li>Direct/private messaging &mdash; that's the companion WhatsApp/Messenger design.</li>
+          <li>Stories/ephemeral content, ads ranking, groups/pages &mdash; call these out as extensions if time permits, but don't design them unless asked.</li>
+        </ul>
+
+        <h2 id="functional-requirements">Functional Requirements</h2>
+        <p>Distilled to the capabilities an interviewer expects a candidate to enumerate before any architecture is drawn: what a user can do, and what the system must compute and surface back to them.</p>
+        <ol>
+          <li>Users can create a post/tweet containing text (with a length cap), photo, video, or link.</li>
+          <li>Users can follow other users (Twitter model &mdash; directional, no approval needed) or add friends (Facebook model &mdash; bidirectional, requires mutual acceptance).</li>
+          <li>Users can like, comment on, and share/retweet a post.</li>
+          <li>The system generates and displays a user's home timeline: the top posts from everyone they follow/friend, merged and ranked, mostly by recency.</li>
+          <li>Users can view their own or another user's profile timeline (posts they authored).</li>
+          <li>Users get an activity log of engagement on their own posts (likes, comments).</li>
+          <li>Users can search for posts (by keyword/hashtag).</li>
+          <li>The system surfaces trending topics/hashtags updated in near real time.</li>
+        </ol>
+
+        <h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+        <p>These constraints are what push the design toward the specific architecture in the rest of this page &mdash; in particular, the read:write ratio derived in the next section is the single number that most explains why fan-out, caching, and denormalized counters all show up later.</p>
+        <ul>
+          <li><strong>Read-heavy:</strong> the read:write ratio is extremely high (reads can outnumber writes by 100&ndash;1000&times;) &mdash; nearly every design decision below optimizes reads at some cost to writes.</li>
+          <li><strong>High availability over strict consistency:</strong> if a user doesn't see a brand-new post for a few seconds, that's acceptable (eventual consistency); the timeline must always load.</li>
+          <li><strong>Low-latency timeline generation:</strong> a common target is &asymp;200 ms to generate/serve a home timeline page.</li>
+          <li><strong>Horizontally scalable:</strong> must scale to hundreds of millions of users and tens of thousands of writes/sec at peak.</li>
+          <li><strong>Near-real-time trending:</strong> a genuinely new trend should surface within a couple of minutes, not hours.</li>
+        </ul>
+
+        <h3>Three Classes of Users (State This Explicitly &mdash; It Drives the Whole Timeline Design)</h3>
+        <p>Almost every hard decision in Sections 9 and 14 traces back to treating users as one undifferentiated mass instead of three distinct populations with different design implications. Third-party analytics trackers have separately put average social-platform engagement rates at well under 1% of impressions and average daily time-on-platform at around half an hour &mdash; a useful reminder that "read-heavy" does not mean "every post gets read by every follower," which is exactly why the passive-user category below is worth designing for explicitly rather than assumed away.</p>
+        <table>
+          <tr><th>User type</th><th>Characteristics</th><th>Design implication</th></tr>
+          <tr><td>Active</td><td>Logs in daily, posts and reads often</td><td>Worth pre-computing (fanning out) their timeline on every write, since they'll read it soon</td></tr>
+          <tr><td>Passive</td><td>Hasn't logged in for days; may have stopped caring about some follows</td><td>Don't waste fan-out writes keeping a stale timeline warm; regenerate on demand instead</td></tr>
+          <tr><td>Famous / celebrity</td><td>Millions of followers (e.g., a celebrity account)</td><td>Fanning out on every post would mean millions of writes per post &mdash; the "celebrity problem" (see Timeline / News-Feed Generation); handle these specially</td></tr>
+        </table>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>Numbers below are illustrative interview-scale assumptions &mdash; a widely used baseline for this exact question &mdash; state your own assumptions out loud and derive from them; the method matters far more than matching any real company's actual traffic.</p>
+
+        <h3>Base Assumptions</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumptions</span>
+          Total registered users = 1 billion
+          <br>Daily active users (DAU) = 200 million
+          <br>New posts/tweets per day = 100 million
+          <br>Avg follows per user = 200
+          <br>Avg favorites/likes per user = 5 / day
+        </div>
+        <div class="callout">
+          <div class="callout-title">Reality check: how big are the real platforms?</div>
+          The 1B-user / 200M-DAU baseline above is a deliberately round, interview-friendly assumption, not a specific real company's reported number &mdash; say so plainly if asked. For calibration: Meta has publicly reported Facebook alone at roughly 2.1 billion daily active users and just over 3 billion monthly active users as of early 2025, an order of magnitude above the DAU figure used here; X/Twitter, by contrast, operates at a scale much closer to the 200M-DAU figure this design's baseline represents. The arithmetic method below &mdash; not the specific inputs &mdash; is what an interviewer is actually grading.
+        </div>
+
+        <h3>Write &amp; Read Throughput</h3>
+        <div class="formula-box">
+          <span class="formula-label">Writes</span>
+          Writes/sec (avg) = 100M &divide; 86,400s &asymp; 1,160 posts/sec
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Reads</span>
+          Assume each DAU visits their own timeline 2&times;/day and 5 other profiles/day, seeing &asymp;20 posts per page view:
+          <br>Total post-views/day = 200M &times; ((2 + 5) &times; 20) &asymp; 28 billion views/day
+          <br>Reads/sec (avg) = 28B &divide; 86,400s &asymp; 325,000 reads/sec
+          <br>&rArr; read:write ratio &asymp; 280:1 &mdash; confirms this is a read-heavy system.
+          <br>At peak (assume 3&ndash;5&times; average), expect a few thousand writes/sec and &asymp;1M reads/sec.
+        </div>
+
+        <h3>Storage</h3>
+        <div class="formula-box">
+          <span class="formula-label">Post text</span>
+          Post text: 140&ndash;280 chars &times; 2 bytes + &asymp;30 bytes metadata (id/timestamp/user) &asymp; 280&ndash;310 bytes
+          <br>Text storage/day = 100M &times; &asymp;300 bytes &asymp; 30 GB/day
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Media</span>
+          Assume 1-in-5 posts has a photo (&asymp;200 KB) and 1-in-10 has a video (&asymp;2 MB):
+          <br>Media storage/day = (100M/5 &times; 200 KB) + (100M/10 &times; 2 MB) &asymp; 24 TB/day (raw, before compression)
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Social graph</span>
+          Social graph: 200M users &times; 200 follows &times; &asymp;16 bytes/edge (two 8-byte IDs) &asymp; 640 GB total
+          <br>(small relative to post/media storage &mdash; the graph fits comfortably in memory-tier stores)
+        </div>
+
+        <h3>Bandwidth</h3>
+        <div class="formula-box">
+          <span class="formula-label">Ingress (writes)</span>
+          Media dominates &rarr; 24 TB &divide; 86,400s &asymp; 290 MB/s
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Egress (reads)</span>
+          Every viewed post's text is shown; assume users watch every 5th photo and every 3rd video they scroll past:
+          <br>Text: (28B &times; 300 bytes) &divide; 86,400s &asymp; 97 MB/s
+          <br>Photos: (28B/5 &times; 200 KB) &divide; 86,400s &asymp; 13 GB/s
+          <br>Video: (28B/10/3 &times; 2 MB) &divide; 86,400s &asymp; 22 GB/s
+          <br>Total egress &asymp; 35 GB/s
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Posts / day</td><td>100 million (&asymp;1,160/sec avg)</td></tr>
+          <tr><td>Timeline views / day</td><td>28 billion (&asymp;325K/sec avg)</td></tr>
+          <tr><td>Read : write ratio</td><td>&asymp;280 : 1</td></tr>
+          <tr><td>Text storage / day</td><td>&asymp;30 GB</td></tr>
+          <tr><td>Media storage / day</td><td>&asymp;24 TB (raw)</td></tr>
+          <tr><td>Social graph size (edges)</td><td>&asymp;40 billion edges, &asymp;640 GB</td></tr>
+          <tr><td>Peak egress bandwidth</td><td>&asymp;35 GB/s</td></tr>
+        </table>
+
+        <h2 id="system-apis-illustrative">System APIs (Illustrative)</h2>
+        <p>A pragmatic, function-call-shaped API surface rather than a strict REST resource model &mdash; the point in an interview is to enumerate the operations and their key parameters, not to bikeshed HTTP verbs. Notice that <code>follow()</code> and <code>sendFriendRequest()</code> exist side by side: that dual surface is the API-level reflection of the hybrid Twitter/Facebook relationship model kept visible throughout this design.</p>
+        <pre><code>post(auth_token, text, media_ids[], location?, tagged_user_ids[])
+  -&gt; { post_id, url }
+  // ML content-filter and URL-safety checks run inline/async (see Post/Tweet Write Path)
+
+follow(auth_token, target_user_id)
+  // Twitter-style, one-directional, no approval needed
+
+sendFriendRequest(auth_token, target_user_id)
+  // Facebook-style, needs a matching acceptFriendRequest(auth_token, request_id)
+
+getHomeTimeline(auth_token, cursor, page_size)
+  -&gt; [ {post}, ... ], next_cursor
+
+getUserTimeline(auth_token, user_id, cursor, page_size)
+  -&gt; [ {post}, ... ]
+
+like(auth_token, post_id) / unlike(auth_token, post_id)
+
+comment(auth_token, post_id, parent_comment_id?, text)
+  -&gt; { comment_id }
+
+search(query, filters?, cursor)
+  -&gt; [ {post}, ... ]
+
+getTrending(location?)
+  -&gt; [ {topic, volume, rank}, ... ]</code></pre>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>The system decomposes into a client-facing gateway, a handful of read/write services owning distinct data (users, graph, posts, media), and a cluster of read-optimized services (timeline, search, trending) that exist purely to make the 280:1 read:write ratio survivable. The full component responsibilities and the architecture diagram below are the reference point for every detailed-design section that follows.</p>
+
+        <h3>Core Components</h3>
+        <p>Each row below is a separately deployable, independently scalable service &mdash; deliberately so, since their read/write ratios, storage engines, and failure modes all differ enough that bundling them would force a lowest-common-denominator design.</p>
+        <table>
+          <tr><th>Component</th><th>Responsibility</th></tr>
+          <tr><td>API Gateway (Adapter)</td><td>TLS, authN/Z, rate limiting, routing, load balancing &mdash; and an adapter role: for composite screens like the home page it fans out to several backend services (timeline + user + trending), consolidates the responses, and returns one payload.</td></tr>
+          <tr><td>User Service</td><td>Source of truth for profile data. Relational DB (MySQL/Postgres): profile fields are standard, change rarely, benefit from ACID + relational joins for analytics, and don't need the write-throughput tricks the post/timeline path needs.</td></tr>
+          <tr><td>Social Graph Service</td><td>Stores and serves follow/friend edges; answers "who does X follow", "who follows X", and mutual-friend/second-degree queries used for suggestions.</td></tr>
+          <tr><td>Post/Tweet Write Service</td><td>Accepts new posts; calls the Content-Safety/Filter service (ML-based abuse/hate-speech/curse-word detection) before accepting; if media is present, generates a media UID and forwards to the Media Service; if a URL is present, calls the URL Service; persists the post.</td></tr>
+          <tr><td>Media Service</td><td>Stores/serves images &amp; video (transcoding, thumbnails), fronted by a CDN &mdash; shared with the companion WhatsApp design's Media Service pattern.</td></tr>
+          <tr><td>URL Service</td><td>Expands/validates links: checks for phishing/malware, generates a thumbnail preview, and can shorten the URL.</td></tr>
+          <tr><td>Timeline / News-Feed Service</td><td>Maintains each active/famous user's pre-computed home timeline as an in-memory sorted structure (Redis) &mdash; the fan-out engine described in Timeline / News-Feed Generation below.</td></tr>
+          <tr><td>Analytics / Graph-Optimization Service</td><td>Consumes engagement events (Kafka) to (a) update an "interested-followers" graph &mdash; which of A's followers actually engage with A's posts, so fan-out can prioritize them &mdash; and (b) flag passive/dormant followers so we don't keep wastefully updating their pre-computed timeline.</td></tr>
+          <tr><td>Search Service</td><td>Inverted index over post text/hashtags for keyword search + ranking (see Search below).</td></tr>
+          <tr><td>Trending Service</td><td>Streaming aggregation over posts/hashtags/search queries in sliding time windows to surface current hot topics (see Trending Topics below).</td></tr>
+          <tr><td>Notification Service</td><td>Push/in-app notifications for likes, comments, mentions, new followers.</td></tr>
+        </table>
+
+        <h3>Architecture Overview</h3>
+        <p>Clients talk only to the API Gateway/Adapter, which handles cross-cutting concerns and, for composite screens, fans out to multiple backend services and merges their responses into one payload. Below that sit the six primary domain services in parallel, with the Post/Tweet Write Service publishing a single post event onto a shared event stream (Kafka) that the Timeline, Search, and Notification paths all consume asynchronously &mdash; and with the Analytics/Graph-Optimization Service feeding a slower, ongoing signal back into the Social Graph and Timeline services.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 390" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow-fb-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path>
+              </marker>
+            </defs>
+            <rect x="290" y="10" width="120" height="32" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="350" y="30" text-anchor="middle" font-size="10.5" fill="var(--color-primary)" font-family="var(--font-sans)">Client (Web / Mobile)</text>
+
+            <rect x="220" y="62" width="260" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="350" y="79" text-anchor="middle" font-size="11" fill="#fff" font-family="var(--font-sans)" font-weight="600">API Gateway / Adapter</text>
+            <text x="350" y="94" text-anchor="middle" font-size="8" fill="#cbd8ef" font-family="var(--font-sans)">TLS &#183; authN/Z &#183; LB &#183; fan-out+merge</text>
+
+            <rect x="10" y="130" width="105" height="60" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="62.5" y="157" text-anchor="middle" font-size="9.3" fill="var(--color-primary)" font-family="var(--font-sans)">User Service</text>
+            <text x="62.5" y="171" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-family="var(--font-sans)">(MySQL)</text>
+
+            <rect x="124" y="130" width="105" height="60" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="176.5" y="155" text-anchor="middle" font-size="9.3" fill="var(--color-primary)" font-family="var(--font-sans)">Social Graph</text>
+            <text x="176.5" y="167" text-anchor="middle" font-size="9.3" fill="var(--color-primary)" font-family="var(--font-sans)">Service</text>
+
+            <rect x="238" y="130" width="105" height="60" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="290.5" y="155" text-anchor="middle" font-size="9" fill="var(--color-primary)" font-family="var(--font-sans)">Post/Tweet</text>
+            <text x="290.5" y="167" text-anchor="middle" font-size="9" fill="var(--color-primary)" font-family="var(--font-sans)">Write Service</text>
+
+            <rect x="352" y="130" width="105" height="60" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="404.5" y="150" text-anchor="middle" font-size="8.6" fill="var(--color-primary)" font-family="var(--font-sans)">Timeline / News-</text>
+            <text x="404.5" y="161" text-anchor="middle" font-size="8.6" fill="var(--color-primary)" font-family="var(--font-sans)">Feed Service</text>
+            <text x="404.5" y="175" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-family="var(--font-sans)">(Redis)</text>
+
+            <rect x="466" y="130" width="105" height="60" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="518.5" y="155" text-anchor="middle" font-size="9.3" fill="var(--color-primary)" font-family="var(--font-sans)">Search Service</text>
+            <text x="518.5" y="169" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-family="var(--font-sans)">(inverted index)</text>
+
+            <rect x="580" y="130" width="105" height="60" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="632.5" y="155" text-anchor="middle" font-size="9.3" fill="var(--color-primary)" font-family="var(--font-sans)">Trending Service</text>
+            <text x="632.5" y="169" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-family="var(--font-sans)">(streaming)</text>
+
+            <rect x="318" y="199" width="64" height="22" rx="4" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)"></rect>
+            <text x="350" y="213" text-anchor="middle" font-size="7.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">Kafka events</text>
+
+            <rect x="238" y="235" width="105" height="55" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="290.5" y="258" text-anchor="middle" font-size="9.3" fill="var(--color-primary)" font-family="var(--font-sans)">Media Service</text>
+            <text x="290.5" y="271" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-family="var(--font-sans)">(store + CDN)</text>
+
+            <rect x="580" y="235" width="105" height="55" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="632.5" y="255" text-anchor="middle" font-size="8.6" fill="var(--color-primary)" font-family="var(--font-sans)">Notification</text>
+            <text x="632.5" y="266" text-anchor="middle" font-size="8.6" fill="var(--color-primary)" font-family="var(--font-sans)">Service</text>
+            <text x="632.5" y="279" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-family="var(--font-sans)">(push / in-app)</text>
+
+            <rect x="124" y="310" width="219" height="55" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="233.5" y="333" text-anchor="middle" font-size="9.3" fill="var(--color-primary)" font-family="var(--font-sans)">Analytics / Graph-Optimization Svc</text>
+            <text x="233.5" y="347" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-family="var(--font-sans)">(Kafka consumers &mdash; interested-followers graph)</text>
+
+            <line x1="350" y1="42" x2="350" y2="61" stroke="var(--color-accent)" stroke-width="1.6" marker-end="url(#arrow-fb-1)"></line>
+            <line x1="350" y1="102" x2="65" y2="129" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-1)"></line>
+            <line x1="350" y1="102" x2="178" y2="129" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-1)"></line>
+            <line x1="350" y1="102" x2="291" y2="129" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-1)"></line>
+            <line x1="350" y1="102" x2="404" y2="129" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-1)"></line>
+            <line x1="350" y1="102" x2="518" y2="129" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-1)"></line>
+            <line x1="350" y1="102" x2="631" y2="129" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-1)"></line>
+
+            <line x1="270" y1="190" x2="270" y2="234" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-1)"></line>
+            <line x1="312" y1="190" x2="330" y2="198" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-1)"></line>
+            <text x="330" y="192" font-size="7.2" fill="var(--color-text-muted)" font-family="var(--font-sans)">post event</text>
+
+            <line x1="368" y1="199" x2="404" y2="191" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-fb-1)"></line>
+            <line x1="382" y1="207" x2="466" y2="191" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-fb-1)"></line>
+            <text x="405" y="205" font-size="7" fill="var(--color-text-muted)" font-family="var(--font-sans)">index update</text>
+            <line x1="382" y1="216" x2="632" y2="234" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-fb-1)"></line>
+            <text x="465" y="229" font-size="7" fill="var(--color-text-muted)" font-family="var(--font-sans)">mentions / new-post events</text>
+
+            <line x1="176.5" y1="309" x2="176.5" y2="191" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-fb-1)"></line>
+            <text x="182" y="255" font-size="7" fill="var(--color-text-muted)" font-family="var(--font-sans)">interested-followers signal</text>
+
+            <line x1="343" y1="315" x2="403" y2="191" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-fb-1)"></line>
+            <text x="358" y="270" font-size="7" fill="var(--color-text-muted)" font-family="var(--font-sans)">prioritize / prune</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture: the API Gateway/Adapter fronts six domain services (User, Social Graph, Post/Tweet Write, Timeline/News-Feed, Search, Trending); the Post/Tweet Write Service publishes post events to Kafka, which drives fan-out, search indexing, and notifications asynchronously, while the Analytics/Graph-Optimization Service feeds an ongoing interested-followers signal back into the Social Graph and Timeline services.</div>
+        </div>
+        <div class="callout">
+          <div class="callout-title">Real system: Twitter's fanout service and Manhattan</div>
+          Twitter's own production timeline pipeline is a well-documented real-world version of exactly this design. Tweets are stored in <strong>Manhattan</strong>, Twitter's internally-built, multi-tenant distributed key-value store (sharded by tweet id, among other keys), and a dedicated Fanout Service shards each author's follower list across many workers and pushes new tweet ids into per-follower, Redis-backed timeline structures. One often-cited real figure: fan-out has been reported to amplify an average ingestion rate in the low thousands of tweets/sec into on the order of hundreds of thousands of timeline writes/sec once distributed across all followers &mdash; a concrete illustration of exactly the write-amplification trade-off this design accepts deliberately in exchange for O(1) timeline reads (see Timeline / News-Feed Generation below).
+        </div>
+
+        <h2 id="detailed-design-social-graph">Detailed Design &mdash; Social Graph</h2>
+        <p>Every timeline generation starts with the same question &mdash; "who does this user follow/friend?" &mdash; which makes the social graph the single most-queried piece of data in the whole system even though it changes far less often than posts do. The follow-vs-friend distinction below isn't cosmetic: it changes the storage shape, the query pattern, and even the notification behavior of the whole platform.</p>
+
+        <h3>Directional (Follow) vs. Bidirectional (Friend)</h3>
+        <p>Twitter's follow model and Facebook's friend model solve the same underlying problem &mdash; "whose posts should I see?" &mdash; with fundamentally different edge semantics, and a design that supports both needs to keep them as genuinely separate relationship types rather than forcing one to imitate the other.</p>
+        <table>
+          <tr><th>Model</th><th>Semantics</th><th>Storage shape</th></tr>
+          <tr><td>Follow (Twitter)</td><td>One-directional; A follows B without B's consent; unfollow is unilateral</td><td>Two lookups needed: "who does A follow" and "who follows A" &mdash; usually stored as two adjacency tables/indexes (or one table indexed both ways) for O(1) access in either direction</td></tr>
+          <tr><td>Friend (Facebook)</td><td>Bidirectional; requires a request + acceptance; either side can remove</td><td>A single symmetric edge (store once, query with an OR on either column, or write two rows for simpler indexing); a pending-request state machine sits in front of it</td></tr>
+        </table>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow-fb-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path>
+              </marker>
+            </defs>
+            <line x1="360" y1="15" x2="360" y2="245" stroke="var(--color-border)" stroke-width="1" stroke-dasharray="3,3"></line>
+
+            <text x="180" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="var(--color-primary)" font-family="var(--font-sans)">Follow (Twitter) &mdash; directional</text>
+            <circle cx="100" cy="120" r="28" fill="var(--color-accent-light)" stroke="var(--color-accent)"></circle>
+            <text x="100" y="125" text-anchor="middle" font-size="13" fill="var(--color-primary)" font-family="var(--font-sans)">A</text>
+            <circle cx="260" cy="120" r="28" fill="var(--color-accent-light)" stroke="var(--color-accent)"></circle>
+            <text x="260" y="125" text-anchor="middle" font-size="13" fill="var(--color-primary)" font-family="var(--font-sans)">B</text>
+            <line x1="129" y1="120" x2="231" y2="120" stroke="var(--color-accent)" stroke-width="1.6" marker-end="url(#arrow-fb-2)"></line>
+            <text x="180" y="110" text-anchor="middle" font-size="8.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">A follows B</text>
+            <text x="180" y="178" text-anchor="middle" font-size="8.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">No consent needed.</text>
+            <text x="180" y="192" text-anchor="middle" font-size="8.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">B need not follow back.</text>
+            <text x="180" y="206" text-anchor="middle" font-size="8.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">Unfollow is unilateral.</text>
+            <text x="180" y="228" text-anchor="middle" font-size="7.6" fill="var(--color-text-muted)" font-family="var(--font-sans)">Two lookups: "who does A follow" /</text>
+            <text x="180" y="240" text-anchor="middle" font-size="7.6" fill="var(--color-text-muted)" font-family="var(--font-sans)">"who follows A"</text>
+
+            <text x="540" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="var(--color-primary)" font-family="var(--font-sans)">Friend (Facebook) &mdash; bidirectional</text>
+            <circle cx="460" cy="120" r="28" fill="var(--color-accent-light)" stroke="var(--color-accent)"></circle>
+            <text x="460" y="125" text-anchor="middle" font-size="13" fill="var(--color-primary)" font-family="var(--font-sans)">A</text>
+            <circle cx="620" cy="120" r="28" fill="var(--color-accent-light)" stroke="var(--color-accent)"></circle>
+            <text x="620" y="125" text-anchor="middle" font-size="13" fill="var(--color-primary)" font-family="var(--font-sans)">B</text>
+            <line x1="489" y1="120" x2="591" y2="120" stroke="var(--color-accent)" stroke-width="1.6" marker-start="url(#arrow-fb-2)" marker-end="url(#arrow-fb-2)"></line>
+            <text x="540" y="110" text-anchor="middle" font-size="8.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">A and B are friends</text>
+            <text x="540" y="178" text-anchor="middle" font-size="8.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">Requires request + acceptance.</text>
+            <text x="540" y="192" text-anchor="middle" font-size="8.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">Symmetric edge; pending-request</text>
+            <text x="540" y="206" text-anchor="middle" font-size="8.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">state machine sits in front.</text>
+            <text x="540" y="228" text-anchor="middle" font-size="7.6" fill="var(--color-text-muted)" font-family="var(--font-sans)">Stored once (or two rows for indexing);</text>
+            <text x="540" y="240" text-anchor="middle" font-size="7.6" fill="var(--color-text-muted)" font-family="var(--font-sans)">either side removes it unilaterally.</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Follow (Twitter) is a one-directional edge requiring two separate adjacency lookups; Friend (Facebook) is a single symmetric edge gated by a request/acceptance state machine, removable unilaterally by either side.</div>
+        </div>
+
+        <h3>Why This Belongs in Its Own Service</h3>
+        <p>The graph is queried constantly (every timeline generation starts with "who does this user follow") but changes far less often than posts do, and it's small relative to post volume &mdash; so it is optimized for fast, in-memory adjacency lookups (a graph DB or a heavily-cached relational table), independent of the write-heavy post path.</p>
+
+        <h3>"Interested Followers" Optimization</h3>
+        <p>Not every follower of a famous account actually looks at that account's posts. The Analytics service mines engagement (opens, likes, dwell time) to maintain a weighted "who's actually interested in A's posts" view. This feeds two things: (1) fan-out can prioritize pushing to interested/active followers first and lazily backfill the rest, and (2) passive followers can be pruned from expensive pre-computation entirely, re-deriving their view on demand instead.</p>
+        <div class="callout">
+          <div class="callout-title">Real system: Facebook's TAO</div>
+          Facebook's actual production equivalent of a "Social Graph Service" is a real, well-documented system called <strong>TAO</strong> ("The Associations and Objects"). TAO models the graph as typed objects (nodes &mdash; users, posts, comments, pages) and typed, directed associations (edges) between them, each carrying a time field so results can be ordered by recency &mdash; exactly the kind of adjacency-plus-recency query a news feed needs constantly. It's a two-layer system: a MySQL-backed storage layer for durability, fronted by a large distributed caching tier that is what applications actually talk to; the dataset is partitioned into hundreds of thousands of shards, and the system has been reported to serve on the order of a billion-plus read requests per second against a comparatively tiny fraction of that in writes &mdash; a real-world illustration of exactly the read-heavy, cache-in-front-of-a-relational-store pattern this design uses for its own Social Graph Service.
+        </div>
+
+        <h2 id="detailed-design-posttweet-write-path">Detailed Design &mdash; Post/Tweet Write Path</h2>
+        <p>The write path is intentionally kept thin: heavy or slow work (media transcoding, link scanning, ML content classification) is delegated to specialized collaborating services rather than done inline in a monolithic write handler, and the only thing on the post row itself is a small media reference or URL reference, never raw bytes.</p>
+        <ol>
+          <li>Client calls <code>post()</code> with text/media/links; API Gateway authenticates and routes to the Post/Tweet Write Service.</li>
+          <li>Write service calls the Content-Safety/Filter service, which runs ML classifiers for hate speech, harassment, spam, and other policy violations, plus any explicit user-configured restrictions (e.g., blocked words) &mdash; a violation short-circuits the post before it's stored.</li>
+          <li>If the post has image/video attachments, the write service generates a unique media UID and hands the bytes to the Media Service, which stores/transcodes and returns a reference; only the UID is stored on the post row (keeps the hot post-write path small).</li>
+          <li>If the post contains a URL, the write service calls the URL Service to check for phishing/malware, generate a thumbnail preview, and optionally shorten the link.</li>
+          <li>Tagged users/@mentions are resolved and stored so they can be notified and so the post shows up correctly on tagged users' profiles.</li>
+          <li>The post is persisted (see Database Schema) and an event is published (Kafka) that triggers fan-out (see Timeline / News-Feed Generation) and search-index update (see Search).</li>
+        </ol>
+
+        <h2 id="detailed-design-timeline-news-feed-generation">Detailed Design &mdash; Timeline / News-Feed Generation</h2>
+        <p>This is the single hardest part of the whole design, because the same read-time contract ("show me the top posts from everyone I follow, fast") has to hold whether the people you follow post once a year or are a celebrity account posting to tens of millions of followers at once. Getting this wrong in either direction &mdash; too much precompute or too much live merging &mdash; is what makes or breaks the design at scale.</p>
+
+        <h3>The Three Strategies</h3>
+        <p>There are exactly three ways to answer "what should be in my home timeline right now", and each makes a different trade between write cost and read cost.</p>
+        <table>
+          <tr><th>Strategy</th><th>How it works</th><th>Pros</th><th>Cons</th></tr>
+          <tr><td>Fan-out on write (push)</td><td>When A posts, immediately write the post (or its id) into the pre-computed timeline of every one of A's followers</td><td>Reads are O(1) &mdash; just read your own pre-built timeline; ideal for the 280:1 read:write ratio here</td><td>A post from a user with millions of followers means millions of writes for one post &mdash; the celebrity problem</td></tr>
+          <tr><td>Fan-out on read (pull)</td><td>Timeline is computed at read time: fetch recent posts from every followed user and merge/sort on the fly</td><td>No wasted writes for accounts nobody reads; trivially handles huge follower counts</td><td>Every timeline read now fans out to hundreds of followed users' post stores &mdash; far too slow at 325K reads/sec</td></tr>
+          <tr><td>Hybrid (used in practice)</td><td>Push for regular accounts (below a follower-count threshold, e.g., &asymp;10K); pull-and-merge only for celebrity accounts above that threshold</td><td>Gets O(1) reads for the common case and bounds celebrity write amplification</td><td>More moving parts: read path must merge two sources (pre-computed timeline + live celebrity posts)</td></tr>
+        </table>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow-fb-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path>
+              </marker>
+            </defs>
+            <line x1="10" y1="152" x2="690" y2="152" stroke="var(--color-border)" stroke-width="1" stroke-dasharray="3,3"></line>
+            <line x1="10" y1="305" x2="690" y2="305" stroke="var(--color-border)" stroke-width="1" stroke-dasharray="3,3"></line>
+
+            <text x="350" y="28" text-anchor="middle" font-size="12" font-weight="600" fill="var(--color-primary)" font-family="var(--font-sans)">1. Fan-out on Write (Push)</text>
+            <circle cx="80" cy="95" r="24" fill="var(--color-accent-light)" stroke="var(--color-accent)"></circle>
+            <text x="80" y="100" text-anchor="middle" font-size="11" fill="var(--color-primary)" font-family="var(--font-sans)">A</text>
+            <rect x="280" y="42" width="180" height="26" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="370" y="59" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">F1 timeline: [ post, ... ]</text>
+            <rect x="280" y="82" width="180" height="26" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="370" y="99" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">F2 timeline: [ post, ... ]</text>
+            <rect x="280" y="122" width="180" height="26" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="370" y="139" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">F3 timeline: [ post, ... ]</text>
+            <line x1="104" y1="90" x2="278" y2="58" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-3)"></line>
+            <line x1="104" y1="95" x2="278" y2="95" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-3)"></line>
+            <line x1="104" y1="100" x2="278" y2="133" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-3)"></line>
+            <text x="190" y="72" text-anchor="middle" font-size="7.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">push at write time</text>
+            <text x="350" y="146" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-family="var(--font-sans)">O(1) reads &mdash; O(followers) writes per post</text>
+
+            <text x="350" y="180" text-anchor="middle" font-size="12" font-weight="600" fill="var(--color-primary)" font-family="var(--font-sans)">2. Fan-out on Read (Pull)</text>
+            <rect x="60" y="200" width="170" height="26" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="145" y="217" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">Author 1 posts</text>
+            <rect x="60" y="235" width="170" height="26" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="145" y="252" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">Author 2 posts</text>
+            <rect x="60" y="270" width="170" height="26" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="145" y="287" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">Author 3 posts</text>
+            <circle cx="610" cy="248" r="24" fill="var(--color-accent-light)" stroke="var(--color-accent)"></circle>
+            <text x="610" y="253" text-anchor="middle" font-size="11" fill="var(--color-primary)" font-family="var(--font-sans)">R</text>
+            <line x1="232" y1="213" x2="584" y2="243" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-3)"></line>
+            <line x1="232" y1="248" x2="584" y2="248" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-3)"></line>
+            <line x1="232" y1="283" x2="584" y2="253" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-3)"></line>
+            <text x="410" y="240" text-anchor="middle" font-size="7.5" fill="var(--color-text-muted)" font-family="var(--font-sans)">fetch + merge at read time</text>
+            <text x="350" y="300" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-family="var(--font-sans)">No wasted writes &mdash; but too slow at 325K reads/sec live</text>
+
+            <text x="350" y="332" text-anchor="middle" font-size="12" font-weight="600" fill="var(--color-primary)" font-family="var(--font-sans)">3. Hybrid (Push + Pull) &mdash; bounds the celebrity problem</text>
+            <rect x="30" y="352" width="150" height="28" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="105" y="370" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">Regular author</text>
+            <rect x="255" y="352" width="180" height="28" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="345" y="370" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">Follower's Redis timeline</text>
+            <line x1="182" y1="366" x2="253" y2="366" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-3)"></line>
+
+            <rect x="30" y="398" width="150" height="28" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="105" y="416" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">Celebrity author</text>
+            <rect x="255" y="398" width="180" height="28" rx="4" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="345" y="416" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">Own post store (not pushed)</text>
+            <line x1="182" y1="412" x2="253" y2="412" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-3)"></line>
+
+            <rect x="500" y="375" width="170" height="46" rx="5" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)"></rect>
+            <text x="585" y="393" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">getHomeTimeline():</text>
+            <text x="585" y="405" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">merge push + pull</text>
+            <text x="585" y="416" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">by recency/rank</text>
+            <line x1="435" y1="366" x2="498" y2="388" stroke="var(--color-accent)" stroke-width="1.3" marker-end="url(#arrow-fb-3)"></line>
+            <line x1="435" y1="412" x2="498" y2="400" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-fb-3)"></line>
+            <text x="465" y="408" text-anchor="middle" font-size="6.6" fill="var(--color-text-muted)" font-family="var(--font-sans)">pulled at read</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. The same authored post reaching a follower's timeline under all three strategies: push gives O(1) reads at the cost of unbounded per-post writes for celebrities; pull avoids wasted writes but is too slow live; the hybrid pushes for the long tail and only pulls-and-merges for accounts above the celebrity threshold, bounding write cost regardless of any single account's audience size.</div>
+        </div>
+
+        <h3>Hybrid Fan-out &mdash; Step by Step</h3>
+        <p>The hybrid approach is not just "push for most, pull for a few" as a static rule &mdash; it's a runtime decision made per post, keyed off the author's current follower count, and the two paths reconverge only at read time.</p>
+        <ol>
+          <li>A post event lands on a queue (Kafka).</li>
+          <li>A fan-out consumer checks the author's follower count against a celebrity threshold.</li>
+          <li>Regular author: the consumer pushes the new post id into every follower's pre-computed timeline &mdash; a Redis sorted structure keyed by follower id, holding roughly the most recent 800&ndash;1,000 post ids (older ones are trimmed, since nobody scrolls that far back).</li>
+          <li>Celebrity author: the post is written once to the author's own post store and NOT pushed to millions of followers; it's picked up at read time instead (step 5).</li>
+          <li>On <code>getHomeTimeline()</code>: read the caller's pre-computed timeline from Redis, then separately fetch recent posts from any celebrities the caller follows, merge the two lists by recency/rank, and return a page.</li>
+        </ol>
+        <p>This hybrid approach &mdash; push for the long tail, pull for the short list of huge accounts &mdash; is what large-scale feed systems converge on, because it's the only way to keep the write path bounded regardless of how large any single account's audience gets.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow-fb-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path>
+              </marker>
+            </defs>
+            <rect x="270" y="15" width="160" height="36" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="350" y="37" text-anchor="middle" font-size="9.5" fill="var(--color-primary)" font-family="var(--font-sans)">1. Post event</text>
+
+            <rect x="250" y="80" width="200" height="40" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="350" y="104" text-anchor="middle" font-size="9.5" fill="var(--color-primary)" font-family="var(--font-sans)">2. Lands on queue (Kafka)</text>
+
+            <rect x="170" y="150" width="360" height="50" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="350" y="172" text-anchor="middle" font-size="9.5" fill="#fff" font-family="var(--font-sans)">3. Fan-out consumer checks author's</text>
+            <text x="350" y="186" text-anchor="middle" font-size="9.5" fill="#fff" font-family="var(--font-sans)">follower count vs. celebrity threshold</text>
+
+            <rect x="40" y="235" width="290" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="185" y="255" text-anchor="middle" font-size="8.6" fill="var(--color-primary)" font-family="var(--font-sans)">Regular author: push post id into</text>
+            <text x="185" y="268" text-anchor="middle" font-size="8.6" fill="var(--color-primary)" font-family="var(--font-sans)">every follower's Redis sorted timeline</text>
+            <text x="185" y="281" text-anchor="middle" font-size="8.6" fill="var(--color-primary)" font-family="var(--font-sans)">(&asymp;800&ndash;1,000 most recent ids kept)</text>
+
+            <rect x="370" y="235" width="290" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="515" y="252" text-anchor="middle" font-size="8.6" fill="var(--color-primary)" font-family="var(--font-sans)">Celebrity author: post written once to</text>
+            <text x="515" y="265" text-anchor="middle" font-size="8.6" fill="var(--color-primary)" font-family="var(--font-sans)">own post store &mdash; NOT pushed to</text>
+            <text x="515" y="278" text-anchor="middle" font-size="8.6" fill="var(--color-primary)" font-family="var(--font-sans)">millions of followers</text>
+
+            <rect x="65" y="325" width="240" height="42" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)"></rect>
+            <text x="185" y="343" text-anchor="middle" font-size="8.4" fill="var(--color-primary)" font-family="var(--font-sans)">Follower's pre-computed</text>
+            <text x="185" y="356" text-anchor="middle" font-size="8.4" fill="var(--color-primary)" font-family="var(--font-sans)">timeline (Redis)</text>
+
+            <rect x="395" y="325" width="240" height="42" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)"></rect>
+            <text x="515" y="343" text-anchor="middle" font-size="8.4" fill="var(--color-primary)" font-family="var(--font-sans)">Picked up lazily</text>
+            <text x="515" y="356" text-anchor="middle" font-size="8.4" fill="var(--color-primary)" font-family="var(--font-sans)">at read time</text>
+
+            <rect x="150" y="400" width="400" height="46" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="350" y="418" text-anchor="middle" font-size="8.8" fill="#fff" font-family="var(--font-sans)">5. getHomeTimeline(): merge pre-computed timeline +</text>
+            <text x="350" y="432" text-anchor="middle" font-size="8.8" fill="#fff" font-family="var(--font-sans)">recent celebrity posts by recency/rank &rarr; return page</text>
+
+            <line x1="350" y1="51" x2="350" y2="79" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-fb-4)"></line>
+            <line x1="350" y1="120" x2="350" y2="149" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-fb-4)"></line>
+            <line x1="300" y1="200" x2="200" y2="234" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-fb-4)"></line>
+            <line x1="400" y1="200" x2="480" y2="234" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-fb-4)"></line>
+            <line x1="185" y1="295" x2="185" y2="324" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-fb-4)"></line>
+            <line x1="515" y1="295" x2="515" y2="324" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-fb-4)"></line>
+            <line x1="220" y1="367" x2="290" y2="399" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-fb-4)"></line>
+            <line x1="480" y1="367" x2="420" y2="399" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-fb-4)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 4. Hybrid fan-out step by step: a post event on Kafka is consumed once, branches on the author's follower count, pushes regular-author posts straight into followers' Redis timelines while leaving celebrity posts unpushed in the author's own store, then reconverges only inside getHomeTimeline(), which merges both sources by recency/rank before returning a page.</div>
+        </div>
+
+        <h3>Which Users Get Pre-computed at All</h3>
+        <p>Recall the three user classes from Non-Functional Requirements above: pre-compute and keep warm for active and famous* users (*famous authors are excluded from being fan-out targets, but as viewers they still get a pre-computed timeline for the people <em>they</em> follow); for passive users, skip pre-computation and fall back to generating their timeline on demand the rare time they log back in &mdash; no sense keeping a timeline warm for someone who isn't reading it.</p>
+
+        <h3>Ranking</h3>
+        <p>The simplest version sorts purely by recency. A ranked feed additionally scores each candidate post (recency decay, author-affinity from the "interested followers" signal, predicted engagement) and re-sorts before returning &mdash; this is usually called out as a follow-up rather than solved in the base design (see Follow-up Interview Questions below).</p>
+        <div class="callout">
+          <div class="callout-title">Real history: EdgeRank to machine-learned ranking</div>
+          Facebook's News Feed ranking has a well-documented public history that mirrors exactly this "recency vs. ranked" trade-off. From roughly 2009 into the early 2010s, Facebook used a publicly-named algorithm called <strong>EdgeRank</strong>, first described in detail at f8 in 2010: each candidate story ("edge") was scored on affinity (relationship strength between the viewer and the edge's creator), weight (a comment counts for more than a like, for example), and time decay. By around 2011&ndash;2013, Facebook had replaced EdgeRank with machine-learned ranking models &mdash; reported as early as 2013 to already weigh on the order of 100,000 signals per ranking decision, a number that has only grown as the models moved from a hand-tuned formula to a fully learned ranking function. The base design in this document intentionally starts at EdgeRank's level of sophistication &mdash; recency + affinity + engagement &mdash; precisely because that's the right first answer in an interview; a full ML ranking stack is a natural, expected follow-up rather than something to attempt from scratch in the base design.
+        </div>
+
+        <h2 id="detailed-design-comments-and-likes">Detailed Design &mdash; Comments &amp; Likes</h2>
+        <p>Comments and likes are the highest-fan-in write path in the system &mdash; a single popular post can receive thousands of both per second &mdash; so this section is really about denormalization and pagination discipline rather than anything exotic.</p>
+
+        <h3>Comment Threading &amp; Pagination</h3>
+        <p>Each comment stores a reference to its parent (<code>parent_post_id</code> or <code>parent_comment_id</code>). This lets the client load only the first page of top-level comments for a post (and lazily expand replies), instead of pulling an entire comment tree at once &mdash; critical for posts with tens of thousands of comments.</p>
+
+        <h3>Like / Favorite Counters</h3>
+        <p>A naive <code>SELECT COUNT(*)</code> per view doesn't scale. Maintain a denormalized counter on the post row (<code>NumFavorites</code>/<code>NumLikes</code>), updated via an atomic increment; at very high write concurrency on hot posts, shard the counter itself (N sub-counters summed on read, or an approximate/eventually-consistent count) rather than serializing every like on one row.</p>
+
+        <h3>Activity Log</h3>
+        <p>A separate append-only event stream (who liked/commented on my post, when) keyed by the post owner, read whenever the user opens their notifications/activity view &mdash; same storage pattern as the message store in the companion WhatsApp design (fast small writes, range scans by owner).</p>
+
+        <h2 id="detailed-design-search">Detailed Design &mdash; Search</h2>
+        <p>Search shares almost all of its underlying infrastructure with Trending (next section) &mdash; both are, at bottom, a token-counting problem layered on the same post stream, just aggregated differently at query time versus over sliding time windows.</p>
+        <ol>
+          <li><strong>Indexing:</strong> every accepted post is pushed onto an indexing queue and written into an inverted index (token/hashtag &rarr; list of post ids), e.g., Elasticsearch/Lucene-based, sharded similarly to the primary post store.</li>
+          <li><strong>Ranking:</strong> candidate posts matching the query terms are scored by a mix of text relevance (TF-IDF/BM25), recency decay, and engagement (likes/reshares) &mdash; recent, popular, relevant posts should outrank an old exact-text match.</li>
+          <li><strong>Retrieval:</strong> query fans out to the relevant index shards, each returns its local top-K, and an aggregator merges/re-ranks the combined result before paginating back to the client.</li>
+        </ol>
+        <p>Search and Trending intentionally share the same underlying token/hashtag counting infrastructure &mdash; trending is essentially "what is spiking in the search/indexing stream right now".</p>
+
+        <h2 id="detailed-design-trending-topics">Detailed Design &mdash; Trending Topics</h2>
+        <p>Trending is a streaming-analytics problem wearing a social-feed costume: the same post/query event stream that feeds Search is re-aggregated over sliding time windows to detect not what's popular, but what's suddenly getting more popular.</p>
+
+        <h3>Signal</h3>
+        <p>Rank hashtags/keywords by a combination of raw frequency and velocity (rate of increase) within a recent sliding time window &mdash; a topic that's merely popular is different from one that's suddenly spiking, and it's the spike that makes something "trending" rather than just "big".</p>
+
+        <h3>Pipeline</h3>
+        <p>The pipeline has to balance freshness (a genuinely new trend should surface within minutes) against stability (don't let a handful of bursty posts flicker the top-N list every few seconds).</p>
+        <ol>
+          <li>Every new post/search query is tokenized (hashtags, key n-grams) and emitted onto a stream (Kafka).</li>
+          <li>A stream processor (Flink/Storm-style) maintains per-token counters in short, overlapping sliding windows (e.g., 1-minute buckets rolled into a 10&ndash;15 minute window), so a fresh trend can surface within a couple of minutes instead of waiting for an hourly batch job.</li>
+          <li>Counts are decayed over time so yesterday's trend fades out rather than sticking around forever from historical volume.</li>
+          <li>A ranking step (by frequency &times; velocity, optionally weighted by how many distinct/high-reach users are posting it, not just raw volume) produces the top-N list per region/locale.</li>
+          <li>Results are cached (short TTL, e.g., 30&ndash;60s) and served to all readers from that cache rather than recomputed per request.</li>
+        </ol>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow-fb-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path>
+              </marker>
+            </defs>
+            <text x="350" y="18" text-anchor="middle" font-size="11.5" font-weight="600" fill="var(--color-primary)" font-family="var(--font-sans)">Trending Topics Pipeline</text>
+
+            <rect x="10" y="90" width="128" height="70" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="74" y="115" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">Post / query</text>
+            <text x="74" y="127" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">stream (Kafka)</text>
+
+            <rect x="150" y="90" width="128" height="70" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="214" y="115" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">Tokenizer</text>
+            <text x="214" y="127" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">(hashtags, n-grams)</text>
+
+            <rect x="290" y="90" width="128" height="70" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="354" y="110" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">Sliding-window</text>
+            <text x="354" y="122" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">counters (1&ndash;15 min)</text>
+            <text x="354" y="134" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">+ time decay</text>
+
+            <rect x="430" y="90" width="128" height="70" rx="5" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="494" y="110" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">Ranking: freq &times;</text>
+            <text x="494" y="122" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">velocity, distinct-</text>
+            <text x="494" y="134" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">user weighted</text>
+
+            <rect x="570" y="90" width="120" height="70" rx="5" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)"></rect>
+            <text x="630" y="112" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">Cache top-N</text>
+            <text x="630" y="124" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">(TTL 30&ndash;60s)</text>
+            <text x="630" y="136" text-anchor="middle" font-size="7.6" fill="var(--color-primary)" font-family="var(--font-sans)">&rarr; readers</text>
+
+            <line x1="140" y1="125" x2="148" y2="125" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-fb-5)"></line>
+            <line x1="280" y1="125" x2="288" y2="125" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-fb-5)"></line>
+            <line x1="420" y1="125" x2="428" y2="125" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-fb-5)"></line>
+            <line x1="560" y1="125" x2="568" y2="125" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-fb-5)"></line>
+
+            <text x="494" y="188" text-anchor="middle" font-size="7.4" fill="var(--color-text-muted)" font-family="var(--font-sans)">anti-gaming: weight by distinct accounts; down-weight bursty/bot signals;</text>
+            <text x="494" y="200" text-anchor="middle" font-size="7.4" fill="var(--color-text-muted)" font-family="var(--font-sans)">geo-bucket counters by locale so a local spike can't dominate the global list</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. The trending pipeline: the post/query stream is tokenized, aggregated in short overlapping sliding-window counters with time decay, ranked by frequency &times; velocity weighted toward distinct posting accounts, and cached with a short TTL so all readers hit the cache instead of recomputing the top-N list per request.</div>
+        </div>
+
+        <h3>Anti-gaming / Spam Resistance</h3>
+        <p>Trending is a uniquely gameable surface &mdash; unlike a ranked feed, which is personalized per viewer, a trending list is a single shared piece of public real estate that a small, motivated group can try to manipulate.</p>
+        <ul>
+          <li>Weight by distinct users/accounts posting, not raw post count, so a handful of bot accounts spamming a hashtag can't manufacture a trend.</li>
+          <li>Rate-limit / down-weight signals from accounts with abuse/spam history or unusually bursty, bot-like posting patterns.</li>
+          <li>Geographic/locale bucketing &mdash; trends differ by country/city, and a hashtag trending in one region shouldn't dominate a global list dominated by a much larger population.</li>
+        </ul>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>The schema splits cleanly along the same lines as the services above: small, rarely-changing, relational data (users, edges, likes, comments) versus a single very-high-throughput post/tweet table that gets its own sharding strategy in the next section.</p>
+
+        <h3>Core Relational Tables (User Service)</h3>
+        <p>These live comfortably in a well-sharded MySQL/Postgres store because they change rarely and benefit from relational joins for analytics.</p>
+        <table>
+          <tr><th>Table</th><th>Key columns</th></tr>
+          <tr><td>User</td><td>UserID (PK), Name, Email, DateOfBirth, CreationDate, LastLogin</td></tr>
+          <tr><td>UserFollow</td><td>UserID1 (PK, follower), UserID2 (PK, followee) &mdash; Twitter-style directional edge</td></tr>
+          <tr><td>Friendship</td><td>UserID1, UserID2, status (pending/accepted), created_at &mdash; Facebook-style, store once, query symmetric</td></tr>
+          <tr><td>Favorite / Like</td><td>PostID (PK), UserID (PK), CreationDate</td></tr>
+          <tr><td>Comment</td><td>CommentID (PK), PostID (FK), ParentCommentID (nullable), UserID, Text, CreationDate</td></tr>
+        </table>
+
+        <h3>Post / Tweet Table</h3>
+        <p>This is the one table in the whole schema that needs its own throughput and sharding story, since it absorbs essentially all of the write volume estimated above.</p>
+        <table>
+          <tr><th>Column</th><th>Type / meaning</th></tr>
+          <tr><td>PostID</td><td>PK &mdash; 64-bit Snowflake-style id (embeds time, see Data Sharding below)</td></tr>
+          <tr><td>UserID</td><td>author</td></tr>
+          <tr><td>Content</td><td>text, up to platform's character cap</td></tr>
+          <tr><td>MediaIDs[]</td><td>references into the Media Service</td></tr>
+          <tr><td>PostLatitude / PostLongitude</td><td>optional geo-tag for the post</td></tr>
+          <tr><td>UserLatitude / UserLongitude</td><td>optional geo-tag for the posting user</td></tr>
+          <tr><td>CreationDate</td><td>timestamp</td></tr>
+          <tr><td>NumFavorites / NumComments / NumShares</td><td>denormalized counters (see Comments &amp; Likes)</td></tr>
+        </table>
+        <p>Choosing SQL vs. NoSQL here follows the same reasoning as the messages table in the companion WhatsApp design: the post table needs very high insert throughput and range scans by author/time, which favors a wide-column/NoSQL store at very large scale, though many production systems start on a well-sharded relational store and migrate only the hottest tables once growth demands it.</p>
+
+        <h2 id="data-sharding">Data Sharding</h2>
+        <p>Sharding the post table is the design decision most likely to get a deep follow-up, because the two obvious approaches each fix one problem while creating another &mdash; and the resolution (embed time in the id itself) is a genuinely elegant piece of distributed-systems design worth knowing cold.</p>
+
+        <h3>Shard by UserID</h3>
+        <p>Hash(UserID) maps a user's own posts/likes/follows to one shard &mdash; simple, and makes "show me user X's own posts" a single-shard operation. Two problems: (a) a user who goes viral/celebrity creates a hot shard, and (b) uneven growth (some users post far more than others) skews shard sizes over time; both need re-partitioning or consistent hashing to recover from.</p>
+
+        <h3>Shard by PostID</h3>
+        <p>Hash(PostID) spreads posts uniformly at random across shards &mdash; fixes the hot-user problem, but now every timeline-generation query ("get posts from these 200 followed users") has to fan out to essentially all shards and merge results, adding latency.</p>
+
+        <h3>Shard by PostID That Encodes Creation Time (Snowflake-Style) &mdash; the Practical Answer</h3>
+        <p>Combine the benefits of both: make the PostID itself time-ordered, and shard on it. This gets time-ordering for free (no secondary index needed) while still spreading writes, because the timestamp component keeps rolling forward into new shard ranges.</p>
+        <div class="formula-box">
+          <span class="formula-label">Interview-style derivation (seconds granularity)</span>
+          Seconds in 50 years = 86,400 &times; 365 &times; 50 &asymp; 1.6 billion &rArr; needs 31 bits
+          <br>Expected new posts/sec &asymp; 1,150 (peak a few thousand) &rArr; 17 bits gives 2<sup>17</sup> &asymp; 130K new-id headroom per second
+          <br>Total = 31 + 17 = 48 bits &mdash; fits easily in 64, with room left over for a datacenter/worker-id field (see bit-layout diagram below)
+          <br>Run two generators (even/odd sequence ranges) for redundancy/fault tolerance so a single generator dying doesn't stall id issuance.
+        </div>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="350" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="var(--color-primary)" font-family="var(--font-sans)">64-bit Snowflake-style PostID &mdash; bit layout</text>
+
+            <rect x="20" y="55" width="40" height="65" fill="var(--color-border)" stroke="var(--color-text-muted)"></rect>
+            <text x="40" y="80" text-anchor="middle" font-size="8.5" fill="var(--color-primary)" font-family="var(--font-sans)">1</text>
+            <text x="40" y="98" text-anchor="middle" font-size="6.6" fill="var(--color-primary)" font-family="var(--font-sans)">unused</text>
+            <text x="40" y="108" text-anchor="middle" font-size="6.6" fill="var(--color-primary)" font-family="var(--font-sans)">/ sign</text>
+
+            <rect x="60" y="55" width="300" height="65" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="210" y="80" text-anchor="middle" font-size="9.5" fill="var(--color-primary)" font-family="var(--font-sans)">41 bits</text>
+            <text x="210" y="96" text-anchor="middle" font-size="7.4" fill="var(--color-primary)" font-family="var(--font-sans)">Timestamp &mdash; ms since a</text>
+            <text x="210" y="108" text-anchor="middle" font-size="7.4" fill="var(--color-primary)" font-family="var(--font-sans)">custom epoch (&asymp;69 yr range)</text>
+
+            <rect x="360" y="55" width="140" height="65" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)"></rect>
+            <text x="430" y="80" text-anchor="middle" font-size="9.5" fill="var(--color-primary)" font-family="var(--font-sans)">10 bits</text>
+            <text x="430" y="96" text-anchor="middle" font-size="7.2" fill="var(--color-primary)" font-family="var(--font-sans)">Datacenter +</text>
+            <text x="430" y="108" text-anchor="middle" font-size="7.2" fill="var(--color-primary)" font-family="var(--font-sans)">worker id (1,024)</text>
+
+            <rect x="500" y="55" width="160" height="65" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="580" y="80" text-anchor="middle" font-size="9.5" fill="var(--color-primary)" font-family="var(--font-sans)">12 bits</text>
+            <text x="580" y="96" text-anchor="middle" font-size="7.2" fill="var(--color-primary)" font-family="var(--font-sans)">Per-ms sequence</text>
+            <text x="580" y="108" text-anchor="middle" font-size="7.2" fill="var(--color-primary)" font-family="var(--font-sans)">(4,096 ids/ms/worker)</text>
+
+            <line x1="20" y1="135" x2="660" y2="135" stroke="var(--color-text-muted)" stroke-width="1"></line>
+            <line x1="20" y1="130" x2="20" y2="140" stroke="var(--color-text-muted)" stroke-width="1"></line>
+            <line x1="660" y1="130" x2="660" y2="140" stroke="var(--color-text-muted)" stroke-width="1"></line>
+            <text x="60" y="152" text-anchor="start" font-size="7.6" fill="var(--color-text-muted)" font-family="var(--font-sans)">MSB &mdash; sortable by creation time</text>
+            <text x="620" y="152" text-anchor="end" font-size="7.6" fill="var(--color-text-muted)" font-family="var(--font-sans)">LSB &mdash; spreads writes across shards</text>
+
+            <text x="350" y="180" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-family="var(--font-sans)">Total = 1 + 41 + 10 + 12 = 64 bits &mdash; fits a signed 64-bit integer</text>
+            <text x="350" y="196" text-anchor="middle" font-size="7.6" fill="var(--color-text-muted)" font-family="var(--font-sans)">This is exactly the real Twitter Snowflake split (see callout below)</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. A Snowflake-style 64-bit PostID: leading bits encode a millisecond timestamp (so ids &mdash; and the shards derived from them &mdash; sort by creation time with no secondary index), while a worker id and per-millisecond sequence in the trailing bits guarantee uniqueness and spread concurrent writes across generators.</div>
+        </div>
+        <div class="callout">
+          <div class="callout-title">Real system: this is Twitter's actual Snowflake</div>
+          This isn't just a generic pattern &mdash; it's literally the name and design of a real, open-sourced Twitter system. Twitter announced and open-sourced <strong>Snowflake</strong> in 2010 while migrating pieces of its storage layer to Cassandra, which (unlike MySQL) has no built-in auto-increment; Twitter needed something that could mint tens of thousands of roughly time-ordered, unique 64-bit ids per second with no central coordinator. The real production bit layout is 1 unused/sign bit + 41 bits of millisecond timestamp + 10 bits of datacenter/worker id + 12 bits of per-millisecond sequence &mdash; functionally identical to the illustrative derivation above, just at millisecond rather than second granularity. The pattern proved durable enough that Discord and Instagram later adopted variants of the same idea for their own id spaces.
+        </div>
+        <p>Benefits: no secondary index on creation time is needed (the id already sorts by time), writes are naturally spread across time-based shard ranges instead of hammering one hot shard, and "give me the latest posts" is a simple range scan on the newest shards.</p>
+
+        <h3>Social Graph Sharding</h3>
+        <p>Shard the follow/friend edge table by UserID as well, since "who does X follow" is by far the most common graph query and should be a single-shard lookup; "who follows X" for celebrities is the harder direction and is exactly why that data is also cached (see Caching below) and handled specially in fan-out (see Hybrid Fan-out above).</p>
+
+        <h2 id="caching">Caching</h2>
+        <p>Caching is layered rather than a single tier: a hot-object cache in front of the post store, a recency window sized off the actual estimated storage volume, and the pre-computed timeline itself, which is best understood as a cache even though it's usually described as a data structure in its own right.</p>
+        <ul>
+          <li><strong>Hot-tweet cache:</strong> an off-the-shelf in-memory store (Memcached/Redis) in front of the post DB, storing whole post objects; app servers check cache before hitting the DB.</li>
+          <li><strong>Eviction policy &mdash; LRU:</strong> discard the least-recently-viewed post first when the cache is full; a reasonable default given the 80/20 read pattern below.</li>
+          <li><strong>80/20 rule:</strong> roughly 20% of posts generate 80% of read traffic &mdash; caching just the top &asymp;20% of each shard's daily volume captures most of the benefit cheaply.</li>
+          <li><strong>Recency-window cache:</strong> if most users only scroll back &asymp;3 days, caching all posts from the last 3 days (&asymp;3 &times; 30GB text &asymp; 90GB, well under 100GB) fits in memory on a modest cluster, replicated across a few nodes to spread read load &mdash; implemented as a hash table keyed by OwnerID whose value is a doubly-linked list of that user's recent posts (newest at the head, oldest trimmed from the tail).</li>
+          <li><strong>Timeline cache:</strong> the pre-computed home timeline itself is, in effect, a cache &mdash; Redis sorted structure per user, capped at &asymp;800&ndash;1,000 entries.</li>
+        </ul>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <p>Every stateful tier in this design needs its own answer to "what happens when a node dies mid-operation" &mdash; the list below covers the shard/replica level, the cache level, the fan-out worker level, and the id-generator level.</p>
+        <ul>
+          <li><strong>Primary/secondary replication per shard:</strong> since the system is read-heavy, each DB partition has one primary (all writes) and several read replicas (serve reads); a primary failure fails over to a promoted secondary.</li>
+          <li><strong>Cache replication:</strong> hot/recency caches are replicated across multiple nodes so a single cache node loss doesn't spike DB read load.</li>
+          <li><strong>Fan-out consumer redundancy:</strong> Kafka-consumer-group semantics mean if one fan-out worker dies mid-processing, another in the group picks up the partition &mdash; no posts silently fail to fan out.</li>
+          <li><strong>Snowflake ID generator redundancy:</strong> run at least two id-generator instances (odd/even ranges, see Data Sharding above) so one instance dying doesn't stall post creation.</li>
+          <li><strong>Multi-region:</strong> serve users from their nearest region; replicate asynchronously cross-region for disaster recovery, accepting eventual consistency on failover.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Add load-balancing at three layers, per the classic breakdown for this problem &mdash; each layer has a different traffic shape and therefore a different tuning story.</p>
+        <ol>
+          <li>Between clients and application/API servers.</li>
+          <li>Between application servers and the database replica pools (route reads across replicas, writes to the primary).</li>
+          <li>Between fan-out/aggregation servers and the cache tier.</li>
+        </ol>
+        <p>Start with simple round robin (cheap, automatically drops dead nodes from rotation) and graduate to load-aware balancing (periodically polling backend load and shifting traffic away from hot nodes) once uneven load becomes visible in monitoring.</p>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging &amp; Analytics</h2>
+        <p>The metrics below double as the feedback loop that tells you when to add replication, caching, or sharding capacity in the first place &mdash; monitoring isn't a bolt-on here, it's how the rest of the design gets iterated on after launch.</p>
+        <table>
+          <tr><th>Category</th><th>Metrics</th></tr>
+          <tr><td>Write path</td><td>new posts/sec (and daily peak), content-filter reject rate, fan-out queue lag, fan-out completion latency</td></tr>
+          <tr><td>Read path</td><td>timeline read latency p50/p95/p99, cache hit rate, DB replica read latency, hot-shard detection (skewed QPS across shards)</td></tr>
+          <tr><td>Search / Trending</td><td>index lag (time from post to searchable), query latency, trending-list refresh latency, suspected-bot-traffic rate</td></tr>
+          <tr><td>Engagement</td><td>likes/comments/shares per second, notification delivery latency</td></tr>
+        </table>
+        <ul>
+          <li>Events (post created, liked, commented, followed, searched) stream into Kafka for both real-time aggregation (dashboards/alerting) and batch landing into a warehouse for BI/growth analysis.</li>
+          <li>Alert on: fan-out lag growing (celebrity posts not reaching followers fast enough), hot-shard QPS skew (a shard needs splitting or its owner needs different handling), cache hit-rate drops (often the first symptom of a cold cache after a deploy), and trending-pipeline lag.</li>
+          <li>By watching these counters over time you decide when to add replication, caching, or sharding capacity &mdash; the same feedback loop called out in the companion WhatsApp design.</li>
+        </ul>
+
+        <h2 id="key-trade-offs-and-alternatives-considered">Key Trade-offs &amp; Alternatives Considered</h2>
+        <p>Interviewers frequently ask "why not X instead" for at least one row in this table &mdash; being ready to state the alternative and the reason it was rejected, rather than presenting the chosen design as the only option, is itself a signal worth giving explicitly.</p>
+        <table>
+          <tr><th>Decision</th><th>Alternative</th><th>Why this choice</th></tr>
+          <tr><td>Hybrid fan-out (push + pull)</td><td>Pure fan-out-on-write, or pure fan-out-on-read</td><td>Pure push breaks on celebrity accounts (millions of writes per post); pure pull is too slow given a 280:1 read:write ratio; hybrid bounds both costs</td></tr>
+          <tr><td>Snowflake-style time-ordered PostID + shard on it</td><td>Shard purely by UserID, or purely by PostID (random)</td><td>UserID sharding creates hot shards for viral users; random PostID sharding makes "get latest posts" fan out to every shard; a time-embedded id gets both properties at once</td></tr>
+          <tr><td>MySQL/relational for User Service</td><td>NoSQL for user profiles too</td><td>Profile data changes rarely, is small, and benefits from ACID + relational joins for analytics &mdash; the write-throughput arguments that justify NoSQL for the post/message tables don't apply here</td></tr>
+          <tr><td>Denormalized/sharded like-counters</td><td>Recompute count via SELECT COUNT(*) on read</td><td>A hot post can receive thousands of likes/sec; counting on every read doesn't scale, an atomic/sharded counter does</td></tr>
+          <tr><td>Directional follow graph stored bidirectionally-indexed</td><td>Store only one direction and scan for the other</td><td>"Who follows X" is needed just as often as "who does X follow" (fan-out, notifications) &mdash; worth the extra index/storage to make both O(1)</td></tr>
+        </table>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <p>Interviewers commonly push into these three areas after the base design holds up: deeper timeline/feed mechanics, search and trending edge cases, and scale/reliability corner cases. Each question below expands the terse guidance an interviewer might give into a fuller reasoned answer &mdash; treat it as a rehearsal script, not something to memorize verbatim.</p>
+
+        <h3>Timeline / Feed Depth</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you pick the celebrity-vs-regular threshold, and can it change?</div>
+          <div class="qa-a">Don't hardcode a single follower-count number and call it done. Derive the threshold from measured fan-out cost and latency &mdash; the point at which pushing to every follower starts noticeably degrading fan-out completion time or queue lag is the real signal, not an arbitrary "10,000 followers" line. Because follower counts change over time, re-evaluate each account's bucket periodically (e.g., nightly or on crossing a watermark) rather than deciding once at account creation, and make the transition itself gentle &mdash; an account crossing into "celebrity" status should have its existing pre-computed timeline entries left alone while new posts switch to the pull path, rather than triggering a disruptive backfill or cleanup.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you rank the timeline instead of pure recency?</div>
+          <div class="qa-a">Score each candidate post on recency decay, author affinity (the "interested followers" signal from the Social Graph section), and predicted engagement (a lightweight model trained on likes/comments/dwell time), then blend that score with recency rather than replacing recency outright &mdash; a pure ML ranking with no recency floor can feel stale or repetitive, surfacing the same evergreen high-affinity authors while burying anything genuinely new. In practice this mirrors Facebook's real EdgeRank-to-ML-ranking transition discussed above: start with a small, interpretable set of signals, and only grow the feature set once you can measure that it's actually improving engagement/retention rather than just complexity.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if a fan-out worker crashes mid-fan-out for a huge post?</div>
+          <div class="qa-a">Track fan-out progress per (post, shard) rather than per post as a whole, so a resumed or retried worker can pick up exactly where the last one left off instead of restarting from zero (slow) or re-delivering to already-updated followers (wasteful, and risks duplicate timeline entries if writes aren't idempotent). Kafka consumer-group rebalancing already guarantees another worker picks up the abandoned partition; pairing that with idempotent per-shard writes (e.g., a Redis sorted-set add, which is naturally idempotent for a given post id) covers the rest without needing a custom checkpointing system.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you handle a user who just unfollowed someone &mdash; does their old content linger?</div>
+          <div class="qa-a">The pre-computed timeline is fundamentally a cache of post ids, not a live view, so this is a staleness problem, not a correctness bug that needs an immediate fix. The simplest approach is to lazily filter at read time: when assembling a timeline page, drop any post ids whose author is no longer in the caller's current follow/friend set before returning them. The alternative &mdash; pushing an unfollow-triggered cleanup event that scrubs the unfollowed author's ids out of the timeline immediately &mdash; is more "correct" but adds a write for an action (unfollowing) that's already rare relative to reads; the lazy-filter approach is usually simpler and cheap enough to be the better default.</div>
+        </div>
+
+        <h3>Search / Trending Depth</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you keep the search index in sync with newly deleted/edited posts?</div>
+          <div class="qa-a">Treat deletes and edits as their own event types on the same indexing stream used for new posts, rather than requiring a full reindex pass. A delete event applies a tombstone to the inverted index entry (so it stops being returned, and can be physically compacted away later during routine index segment merges); an edit event applies as a targeted update against just that document's index entry. This keeps the indexing pipeline uniform &mdash; one stream, one set of idempotent operations &mdash; instead of bolting on a separate reconciliation job.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you personalize search results per user?</div>
+          <div class="qa-a">Keep the base relevance/recency/engagement scoring as a first retrieval pass (so results are still reasonable for a logged-out or brand-new user), then apply a personalization re-ranking pass on top of that candidate set: does the viewer follow or friend the author, has the viewer engaged with similar content or hashtags before, is the author within the viewer's second-degree graph. Doing this as a re-ranking pass rather than baking personalization into the core index keeps the expensive, shared inverted-index infrastructure the same for every user, and isolates the per-user logic to a smaller, cheaper final step.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent a coordinated campaign from gaming trending topics?</div>
+          <div class="qa-a">Weight the trending signal by distinct accounts and their trust/reputation score rather than raw post volume, since a coordinated campaign (or a botnet) can trivially inflate raw counts but has a much harder time inflating the number of genuinely distinct, established accounts participating. Layer on anomaly detection for synchronized posting patterns &mdash; many accounts posting near-identical text within a narrow time window, accounts created very recently all posting the same hashtag, unusually high posting velocity from otherwise-dormant accounts &mdash; and down-weight or quarantine signal from flagged accounts before it ever reaches the ranking step, rather than trying to filter it out after a topic has already started trending.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would trending differ for a small city vs. globally?</div>
+          <div class="qa-a">Maintain separate sliding-window counters keyed by geo-bucket (city/region/country), and roll smaller buckets up into larger ones for broader views rather than maintaining one flat global counter set. This matters because a locally-significant spike (a hashtag genuinely trending in one city because of a local event) is statistical noise once mixed into a global population count, and would never surface if the only ranking pass were global &mdash; the geo-bucketing is what lets both "trending near you" and "trending worldwide" be accurate simultaneously from the same underlying event stream.</div>
+        </div>
+
+        <h3>Scale / Reliability Depth</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you reshard a hot UserID-sharded partition without downtime?</div>
+          <div class="qa-a">Introduce a level of logical-to-physical indirection: many more logical shards than physical machines, with a mapping table between them (as opposed to a raw hash-mod-N scheme, which requires rehashing everyone when N changes). To relieve a hot physical shard, move a handful of its logical shards to different, less-loaded hardware by updating the mapping &mdash; a metadata change &mdash; rather than rehashing and physically moving every affected user's data. This is the same technique behind consistent hashing with virtual nodes, just phrased in terms directly relevant to a UserID-sharded post store.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What if the Snowflake id generator's clock skews backward (NTP correction)?</div>
+          <div class="qa-a">This is a real and well-known failure mode for any timestamp-embedded id scheme, including the actual Twitter Snowflake system discussed above: if the generator's system clock is corrected backward (e.g., after an NTP sync detects drift), a naive implementation could mint an id with an earlier timestamp than one it already issued, breaking both uniqueness and the sort-by-time guarantee. The standard fix is to detect backward clock movement explicitly (compare the new timestamp against the last-issued timestamp) and refuse to generate ids &mdash; or buffer briefly &mdash; until the clock catches back up past its previous high-water mark, rather than silently issuing a regressed, potentially colliding id.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you support "who to follow" suggestions?</div>
+          <div class="qa-a">Look 2&ndash;3 hops out in the follow/friend graph &mdash; friends-of-friends, people who follow many of the same accounts you do, mutual connections &mdash; to build a candidate set, since the full graph is far too large to rank exhaustively for every user on every request. Bias that candidate set toward high-follower or high-engagement accounts (all else equal, a suggestion the viewer is more likely to recognize or find valuable performs better), then use a lightweight ML re-ranker on just that small candidate set rather than trying to score the entire graph per user &mdash; the same "cheap broad candidate generation, then expensive narrow re-ranking" pattern shows up across search, trending, and ranking in this design.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support edited posts given immutable, cached, and indexed copies everywhere?</div>
+          <div class="qa-a">Don't reuse the same post id for a new version in place &mdash; version the post explicitly, where an edit creates a new version record and the canonical post id becomes a pointer to "current version," while old versions remain addressable for history/audit purposes. Propagate an invalidation event (on the same event stream used for creation) to the hot-object cache and the search index so both eventually reflect the edit, and accept a short window of staleness in far-flung caches, CDN edges, and read replicas &mdash; consistent with the eventual-consistency NFR stated at the very top of this design, rather than trying to force synchronous invalidation everywhere the content might have been copied.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Keep the Twitter/Facebook duality explicit throughout rather than silently collapsing to one model: directional follow and bidirectional friend are genuinely different data shapes with different query and notification implications, and a strong answer treats both as first-class. The single hardest and most interview-relevant sub-problem is timeline generation, because no single fan-out strategy works uniformly &mdash; pure push breaks on celebrities, pure pull is too slow at a 280:1 read:write ratio, and the hybrid that production systems actually use is the one worth knowing cold, down to the getHomeTimeline() merge step. The Snowflake-style time-ordered id is the other piece of genuine cleverness in this design: it turns "which shard" and "what order" into the same problem, solved once, and it happens to be a real, still-in-use system rather than a textbook abstraction. Denormalized counters, an "interested followers" signal, and explicit active/passive/celebrity user classes are the recurring theme underneath almost every other decision here &mdash; this system is read-heavy enough, and skewed enough by a small number of extreme accounts, that treating "the average user" as representative of the whole system is the single most common mistake a candidate can make.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Twitter Engineering Blog &mdash; "Announcing Snowflake" (2010), on the original motivation (a Cassandra migration with no built-in auto-increment) and design of Twitter's real id generator: <a href="https://blog.x.com/engineering/en_us/a/2010/announcing-snowflake" target="_blank" rel="noopener">blog.x.com/engineering/en_us/a/2010/announcing-snowflake</a>.</li>
+          <li>GitHub &mdash; <code>twitter-archive/snowflake</code>, the original open-sourced Snowflake id-generator source: <a href="https://github.com/twitter-archive/snowflake" target="_blank" rel="noopener">github.com/twitter-archive/snowflake</a>.</li>
+          <li>Facebook Engineering &mdash; "TAO: The power of the graph" (2013), on the objects-and-associations model backing Facebook's real social graph: <a href="https://engineering.fb.com/2013/06/25/core-infra/tao-the-power-of-the-graph/" target="_blank" rel="noopener">engineering.fb.com/2013/06/25/core-infra/tao-the-power-of-the-graph</a>.</li>
+          <li>Bronson et al., "TAO: Facebook's Distributed Data Store for the Social Graph," USENIX ATC 2013 &mdash; the primary systems paper on TAO's storage/caching architecture and reported scale: <a href="https://www.usenix.org/system/files/conference/atc13/atc13-bronson.pdf" target="_blank" rel="noopener">usenix.org/system/files/conference/atc13/atc13-bronson.pdf</a>.</li>
+          <li>"EdgeRank" &mdash; Wikipedia, on the history of Facebook's original News Feed ranking formula and its 2011&ndash;2013 transition to machine-learned ranking: <a href="https://en.wikipedia.org/wiki/EdgeRank" target="_blank" rel="noopener">en.wikipedia.org/wiki/EdgeRank</a>.</li>
+          <li>Twitter Engineering Blog &mdash; "Manhattan, our real-time, multi-tenant distributed database for Twitter scale" (2014): <a href="https://blog.x.com/engineering/en_us/a/2014/manhattan-our-real-time-multi-tenant-distributed-database-for-twitter-scale" target="_blank" rel="noopener">blog.x.com/engineering/en_us/a/2014/manhattan-our-real-time-multi-tenant-distributed-database-for-twitter-scale</a>.</li>
+          <li>Community write-up on Twitter's fanout write-amplification figures, consulted for the illustrative ingestion-vs-timeline-write-rate comparison: <a href="https://dev.to/gabrielanhaia/twitters-fanout-strategy-at-scale-the-trade-off-most-designs-miss-55oa" target="_blank" rel="noopener">dev.to/gabrielanhaia/twitters-fanout-strategy-at-scale-the-trade-off-most-designs-miss-55oa</a>.</li>
+          <li>Aggregated Facebook/Meta DAU, MAU, and engagement statistics (2025&ndash;2026), consulted for the capacity-estimation "reality check" callout: <a href="https://www.demandsage.com/facebook-statistics/" target="_blank" rel="noopener">demandsage.com/facebook-statistics</a>.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="pastebin.html"><span class="dir">Previous</span>Design a Pastebin</a>
+          <a class="next" href="facebook-marketplace.html"><span class="dir">Next</span>Facebook Marketplace</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

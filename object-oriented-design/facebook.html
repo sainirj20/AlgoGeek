@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facebook | Object Oriented Design | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Object Oriented Design</a><span class="sep">/</span><span class="current">Facebook</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Object Oriented Design overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#actors-and-use-cases">Actors &amp; Use Cases</a></li>
+        <li><a href="#key-classes">Key Classes</a></li>
+        <li><a href="#class-diagram">Class Diagram</a></li>
+        <li><a href="#key-flow-activity-diagram">Key Flow: Visibility Enforcement</a></li>
+        <li><a href="#key-flow-sequence-diagram">Key Flow: Feed Assembly</a></li>
+        <li><a href="#design-patterns-applied">Design Patterns Applied</a></li>
+        <li><a href="#code-skeleton">Code Skeleton</a></li>
+        <li><a href="#extensibility-and-edge-cases">Extensibility &amp; Edge Cases</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">OBJECT ORIENTED DESIGN</span>
+          <h1>Design Facebook - A Social Network</h1>
+        </div>
+
+        <p><em>Every social network needs a mutual Friendship, and Facebook's is the same symmetric, mutual-consent shape as the Connection modeled on the LinkedIn page in this section: a request sent, a request accepted, one canonical fact true for both parties. That part of the model is settled ground and doesn't need relitigating here. What actually distinguishes Facebook's object model is a harder, far more pervasive question: <strong>who is allowed to see this?</strong> A Post isn't just content &mdash; it's content plus a configurable <strong>Audience</strong> (Public, Friends, Friends-except-someone, a Custom list, or Only-me), and that Audience has to be consulted correctly on every single read path: assembling a News Feed, rendering someone's Timeline, opening a Photo. Treat Visibility/Audience as a first-class <em>policy object</em> &mdash; not a bolted-on enum field &mdash; and the rest of the design (Groups with their own scoped visibility, Pages that are effectively always Public, a Block that has to override everything else, tagging that can leak a Photo beyond its Post's original audience) falls out as instances of that one rule being applied consistently everywhere content is read.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the core object model for a general-purpose social network. Each Member builds a personal network of mutual <strong>Friendships</strong> &mdash; formed only through a <strong>FriendRequest</strong> that the other party explicitly accepts, the same symmetric shape as a Connection elsewhere in this section. Members post updates (<strong>Post</strong>, optionally carrying a <strong>Photo</strong> or video) that other Members can <strong>Like/React</strong> to and <strong>Comment</strong> on, join member-managed <strong>Groups</strong>, and <strong>Follow</strong> public <strong>Pages</strong> (a one-directional subscription, unlike Friendship). The hard part of this problem isn't any single class &mdash; it's that almost every one of those classes needs a configurable <strong>Audience/Visibility</strong> (Public, Friends, Friends-except, a Custom list, or Only-me), and that Audience has to be correctly enforced on every read path: a Member's News Feed, another Member's Timeline, a Photo Album. Interviewers use this problem to see whether a candidate treats Visibility as a first-class, pluggable policy object with its own <code>isVisibleTo()</code> check &mdash; one that can consult a CustomFriendList or a Group's membership &mdash; rather than a plain enum field that can't express any of that; whether Groups and Pages are modeled as structurally distinct from a personal Friendship even though all three are "network" relationships; and whether a Block is correctly treated as an absolute override that suppresses visibility bidirectionally, ahead of every other rule.</p>
+
+        <h2 id="requirements">Requirements</h2>
+        <ol>
+          <li>Two Members become <strong>Friends</strong> only via a mutual <strong>FriendRequest</strong>-then-<strong>Accept</strong> flow &mdash; a symmetric relationship, the same shape as a Connection elsewhere in this section, so we won't re-elaborate that distinction here.</li>
+          <li>A Member can create a <strong>Post</strong> (text, Photo, or video) and must set a <strong>Visibility/Audience</strong> for it: Public, Friends, Friends-except-a-list, a Custom list, or Only-me.</li>
+          <li>Other Members can <strong>Like/React</strong> to and <strong>Comment</strong> on a Post, but only if that Post's Audience/Visibility rule allows them to see it in the first place.</li>
+          <li>A Member can join <strong>Groups</strong> (member-managed communities, potentially with their own posts, their own membership-approval flow, and their own per-group visibility) and <strong>Follow</strong> <strong>Pages</strong> (public figures/brands, one-directional, no mutual consent required &mdash; contrast this with Friendship).</li>
+          <li>Every content read-path &mdash; <strong>News Feed</strong>, a Member's <strong>Timeline</strong>/profile wall, a <strong>Photo Album</strong> &mdash; must apply the visibility rule so a viewer only ever sees content they're authorized to see.</li>
+          <li>Members receive <strong>Notifications</strong> for relevant events (a friend request, a comment on your Post, being tagged in a Photo) and can configure notification preferences.</li>
+          <li>A Member can <strong>Block</strong> another Member, which must suppress all visibility and interaction bidirectionally, regardless of any Friendship/Group/Page relationship the two might otherwise share.</li>
+        </ol>
+
+        <h2 id="actors-and-use-cases">Actors &amp; Use Cases</h2>
+        <p>Four actors touch the system, and &mdash; as with the other case studies in this section &mdash; Member dominates the use-case count while every other actor still owns at least one use case none of the others can initiate:</p>
+        <ul>
+          <li><strong>Member</strong> &mdash; sends/accepts Friend Requests, creates Posts and sets their Audience, Likes/Reacts/Comments (subject to visibility), joins Groups, follows Pages, views their News Feed, and can Block another Member.</li>
+          <li><strong>Group Admin/Moderator</strong> &mdash; approves pending Group membership requests and moderates posts inside the Group; never touches a Member's personal Friendship graph or Timeline.</li>
+          <li><strong>Page Admin</strong> &mdash; posts as the Page itself, since a Page has no personal owner voice of its own; never initiates a Friendship or a Follow.</li>
+          <li><strong>System</strong> &mdash; assembles each Member's News Feed by pulling candidate Posts from Friends, Groups, and followed Pages and filtering every one of them through the visibility rule before anything is shown; also dispatches Notifications. The only actor that never represents a single human decision.</li>
+        </ul>
+        <p>Primary use cases: <strong>Send/Accept Friend Request</strong>, <strong>Create Post with Audience</strong>, <strong>Comment/React on Post</strong>, <strong>Join Group</strong>, <strong>Follow Page</strong>, <strong>View News Feed</strong>, and <strong>Block Member</strong> &mdash; plus <strong>Post as Page</strong>, shown below since it's Page Admin's one exclusive action.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 840 620" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Use case diagram: Member, Group Admin/Moderator, Page Admin, and System actors connected to eight use cases inside the Facebook system boundary">
+            <rect x="150" y="50" width="520" height="520" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+            <text x="410" y="74" text-anchor="middle" font-size="14" font-weight="700" fill="var(--color-primary-dark)">Facebook (Social Network)</text>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="72" y1="144" x2="165" y2="110"/>
+              <line x1="72" y1="144" x2="165" y2="190"/>
+              <line x1="72" y1="144" x2="165" y2="270"/>
+              <line x1="72" y1="144" x2="165" y2="350"/>
+              <line x1="72" y1="144" x2="435" y2="110"/>
+              <line x1="72" y1="144" x2="435" y2="190"/>
+              <line x1="72" y1="144" x2="435" y2="270"/>
+
+              <line x1="72" y1="264" x2="165" y2="350"/>
+
+              <line x1="72" y1="384" x2="435" y2="350"/>
+
+              <line x1="72" y1="504" x2="435" y2="190"/>
+            </g>
+
+            <g font-size="12" fill="var(--color-text)">
+              <circle cx="55" cy="110" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="120" x2="55" y2="154" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="134" x2="70" y2="134" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="42" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="68" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="196" text-anchor="middle">Member</text>
+
+              <circle cx="55" cy="230" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="240" x2="55" y2="274" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="254" x2="70" y2="254" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="274" x2="42" y2="299" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="274" x2="68" y2="299" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="316" text-anchor="middle">Group Admin /</text>
+              <text x="55" y="330" text-anchor="middle">Moderator</text>
+
+              <circle cx="55" cy="350" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="360" x2="55" y2="394" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="374" x2="70" y2="374" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="394" x2="42" y2="419" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="394" x2="68" y2="419" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="436" text-anchor="middle">Page Admin</text>
+
+              <circle cx="55" cy="470" r="10" fill="none" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="480" x2="55" y2="514" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="40" y1="494" x2="70" y2="494" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="514" x2="42" y2="539" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="514" x2="68" y2="539" stroke="var(--color-accent)" stroke-width="2"/>
+              <text x="55" y="556" text-anchor="middle" fill="var(--color-accent-dark)">System</text>
+            </g>
+
+            <g font-size="11" fill="var(--color-text)">
+              <ellipse cx="275" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="106" text-anchor="middle">Send / Accept</text>
+              <text x="275" y="120" text-anchor="middle">Friend Request</text>
+
+              <ellipse cx="275" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="186" text-anchor="middle">Create Post</text>
+              <text x="275" y="200" text-anchor="middle">(with Audience)</text>
+
+              <ellipse cx="275" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="266" text-anchor="middle">Comment / React</text>
+              <text x="275" y="280" text-anchor="middle">on Post</text>
+
+              <ellipse cx="275" cy="350" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="354" text-anchor="middle">Join Group</text>
+
+              <ellipse cx="545" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="114" text-anchor="middle">Follow Page</text>
+
+              <ellipse cx="545" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="194" text-anchor="middle">View News Feed</text>
+
+              <ellipse cx="545" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="274" text-anchor="middle">Block Member</text>
+
+              <ellipse cx="545" cy="350" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="346" text-anchor="middle">Post as Page</text>
+              <text x="545" y="360" text-anchor="middle">(Page Admin)</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 1. Use-case diagram: Member initiates seven of the eight use cases &mdash; everything except Post as Page. Group Admin/Moderator shares Join Group with Member (a Member requests to join; the Admin approves/moderates). Page Admin's only exclusive use case is Post as Page. System shares View News Feed with Member: a Member requests it, but System is the one actually assembling and visibility-filtering the candidate Posts behind the scenes.</div>
+        </div>
+
+        <h2 id="key-classes">Key Classes</h2>
+        <p>Audience/Visibility gets its own row and its own emphasis below, because it's the one class on this page most candidates are tempted to under-model as a bare enum bolted onto Post.</p>
+        <table>
+          <thead><tr><th>Class</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td>Member</td><td>A registered user; can be Friends with other Members, joins Groups, follows Pages, and is the only entity that can author a Post, be tagged in a Photo, or receive a Notification.</td></tr>
+            <tr><td>Friendship</td><td>A single <strong>symmetric</strong> relationship record between two Members, created only once a FriendRequest is accepted &mdash; the same shape as a Connection elsewhere in this section (see that page for the full symmetric-vs-directional treatment; we won't repeat it here).</td></tr>
+            <tr><td>Post</td><td>An update authored by a Member, optionally attached to a Group or a Page. The pivotal class on this page because it carries an <strong>Audience</strong> that gates every read path.</td></tr>
+            <tr><td><strong>Audience / Visibility</strong> (Public / Friends / Friends-except / CustomList / Only-me)</td><td>A first-class <strong>policy object</strong>, not a bolted-on enum: encapsulates <code>isVisibleTo(viewer, post)</code>, which may need to consult a CustomFriendList or a Group's membership &mdash; logic a bare enum field simply cannot hold.</td></tr>
+            <tr><td>Photo</td><td>Media attached to a Post (or living in an Album); tagging another Member can expose it to people outside the Post's original Audience &mdash; an important edge case covered below.</td></tr>
+            <tr><td>Comment</td><td>A remark on a Post, authored by a Member; implicitly gated by the same visibility rule as the Post it's attached to &mdash; you can't comment on what you're not authorized to see.</td></tr>
+            <tr><td>Reaction</td><td>A typed Like/Love/Haha/etc. record on a Post, one per (Post, Member) pair.</td></tr>
+            <tr><td>Group</td><td>A member-managed community with its own membership-approval flow and its own default Audience for its Posts &mdash; structurally similar to, but distinct from, a personal Timeline.</td></tr>
+            <tr><td>GroupMembership</td><td>Association class linking Member &harr; Group; carries a role (Member/Moderator/Admin) and a status (Pending/Approved).</td></tr>
+            <tr><td>Page</td><td>A public-figure or brand entity a Member can Follow; Page Posts are effectively always Public by nature of what a Page is.</td></tr>
+            <tr><td>PageFollow</td><td>A <strong>directional</strong> edge, Member &rarr; Page, requiring no mutual consent &mdash; the same shape as a Follow elsewhere in this section.</td></tr>
+            <tr><td>CustomFriendList</td><td>A named subset of a Member's Friends (e.g. "Close Friends," "Coworkers"), referenced by a CustomListAudience to scope a Post to exactly that subset.</td></tr>
+            <tr><td>Notification</td><td>A record of an event relevant to a Member &mdash; a friend request, a comment, a tag &mdash; dispatched via Observer without the source class needing to know how it's delivered.</td></tr>
+            <tr><td>BlockRelationship</td><td>A suppression record between two Members that overrides every other visibility/interaction rule bidirectionally, regardless of any Friendship/Group/Page relationship they otherwise share.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="class-diagram">Class Diagram</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1150 1220" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="UML class diagram for the Facebook object model, centered on Post associating with an Audience policy object">
+            <defs>
+              <marker id="fbDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-primary-dark)" stroke="var(--color-primary-dark)" stroke-width="1"/>
+              </marker>
+              <marker id="fbTriangle" viewBox="0 0 20 14" refX="18" refY="7" markerWidth="18" markerHeight="14" orient="auto">
+                <path d="M1,1 L18,7 L1,13 Z" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.2"/>
+              </marker>
+              <marker id="fbArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)"/>
+              </marker>
+              <marker id="fbFollowArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-accent-dark)"/>
+              </marker>
+            </defs>
+
+            <!-- relationship lines drawn first so boxes sit on top -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="575" y1="170" x2="575" y2="250" marker-start="url(#fbDiamond)"/>
+              <line x1="460" y1="330" x2="370" y2="490" marker-start="url(#fbDiamond)"/>
+            </g>
+            <polyline points="690,340 780,340 780,910 710,910 710,930" fill="none" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#fbArrow)"/>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="460" y1="290" x2="370" y2="325" marker-end="url(#fbArrow)"/>
+              <line x1="460" y1="400" x2="370" y2="640" marker-end="url(#fbArrow)"/>
+              <line x1="730" y1="1120" x2="850" y2="990" marker-end="url(#fbArrow)"/>
+              <polyline points="690,90 800,90 800,595 850,595" marker-end="url(#fbArrow)"/>
+              <line x1="850" y1="610" x2="690" y2="610" marker-end="url(#fbArrow)"/>
+              <line x1="850" y1="790" x2="690" y2="790" marker-end="url(#fbArrow)"/>
+            </g>
+            <g stroke="var(--color-accent-dark)" stroke-width="1.4" fill="none">
+              <polyline points="690,130 820,130 820,760 850,760" marker-end="url(#fbFollowArrow)"/>
+            </g>
+
+            <!-- Friendship: reflexive, undirected, dashed line; same convention as LinkedIn's Connection -->
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none" stroke-dasharray="5,4">
+              <path d="M690,55 C760,55 760,135 690,135"/>
+              <line x1="760" y1="95" x2="850" y2="95"/>
+            </g>
+            <text x="763" y="80" font-size="9" font-style="italic" fill="var(--color-text-muted)">symmetric</text>
+
+            <!-- BlockRelationship: reflexive, distinctly colored/dashed to contrast with Friendship -->
+            <g stroke="var(--color-accent-2)" stroke-width="1.5" fill="none" stroke-dasharray="3,3">
+              <path d="M690,150 C790,150 790,265 850,265"/>
+            </g>
+            <text x="760" y="178" font-size="9.5" font-weight="700" fill="var(--color-accent-2)">blocks</text>
+
+            <!-- Audience realized by four concrete variants (dashed, hollow triangle) -->
+            <g stroke="var(--color-primary)" stroke-width="1.3" fill="none" stroke-dasharray="5,4">
+              <line x1="155" y1="1090" x2="520" y2="1050" marker-end="url(#fbTriangle)"/>
+              <line x1="375" y1="1090" x2="550" y2="1050" marker-end="url(#fbTriangle)"/>
+              <line x1="615" y1="1090" x2="615" y2="1050" marker-end="url(#fbTriangle)"/>
+              <line x1="845" y1="1090" x2="660" y2="1050" marker-end="url(#fbTriangle)"/>
+            </g>
+
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="583" y="188">1</text>
+              <text x="583" y="244">0..*</text>
+              <text x="448" y="322">1</text>
+              <text x="378" y="480">0..*</text>
+              <text x="448" y="284">1</text>
+              <text x="378" y="320">0..*</text>
+              <text x="448" y="394">1</text>
+              <text x="378" y="634">0..*</text>
+              <text x="720" y="905">1</text>
+              <text x="740" y="1105">0..1</text>
+              <text x="845" y="985">1</text>
+              <text x="700" y="85">0..*</text>
+              <text x="808" y="592">0..*</text>
+              <text x="808" y="608">0..*</text>
+              <text x="700" y="125">0..*</text>
+              <text x="808" y="757">0..*</text>
+            </g>
+
+            <!-- Member -->
+            <g>
+              <rect x="460" y="20" width="230" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="460" y1="54" x2="690" y2="54" stroke="var(--color-primary)"/>
+              <line x1="460" y1="118" x2="690" y2="118" stroke="var(--color-primary)"/>
+              <text x="575" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Member</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="470" y="68">- memberId: String</text>
+                <text x="470" y="82">- name, email: String</text>
+                <text x="470" y="96">- status: MemberStatus</text>
+                <text x="470" y="134">+ getFriends(): List&lt;Member&gt;</text>
+                <text x="470" y="148">+ isFriendsWith(m): boolean</text>
+              </g>
+            </g>
+
+            <!-- Friendship (association class) -->
+            <g>
+              <rect x="850" y="20" width="250" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="850" y1="58" x2="1100" y2="58" stroke="var(--color-primary)"/>
+              <line x1="850" y1="108" x2="1100" y2="108" stroke="var(--color-primary)"/>
+              <text x="975" y="34" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;association class&raquo;</text>
+              <text x="975" y="47" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Friendship</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="860" y="72">- friendshipId: String</text>
+                <text x="860" y="86">- memberIdA, memberIdB: String</text>
+                <text x="860" y="100">- since: Instant</text>
+                <text x="860" y="126">+ involves(m): boolean</text>
+                <text x="860" y="140">+ other(memberId): String</text>
+                <text x="860" y="154">+ static of(a, b, since)</text>
+              </g>
+            </g>
+
+            <!-- BlockRelationship (association class) -->
+            <g>
+              <rect x="850" y="195" width="250" height="140" fill="var(--color-formula-bg)" stroke="var(--color-accent-2)" stroke-width="1.5"/>
+              <line x1="850" y1="233" x2="1100" y2="233" stroke="var(--color-accent-2)"/>
+              <line x1="850" y1="283" x2="1100" y2="283" stroke="var(--color-accent-2)"/>
+              <text x="975" y="209" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;association class&raquo;</text>
+              <text x="975" y="222" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-accent-2)">BlockRelationship</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="860" y="247">- blockId: String</text>
+                <text x="860" y="261">- blockerId, blockedId: String</text>
+                <text x="860" y="275">- blockedAt: Instant</text>
+                <text x="860" y="299">+ involves(m): boolean</text>
+                <text x="860" y="313">+ suppressesEverything(): true</text>
+              </g>
+            </g>
+
+            <!-- Post -->
+            <g>
+              <rect x="460" y="250" width="230" height="220" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="460" y1="283" x2="690" y2="283" stroke="var(--color-primary)"/>
+              <line x1="460" y1="364" x2="690" y2="364" stroke="var(--color-primary)"/>
+              <text x="575" y="272" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Post</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="470" y="298">- postId, authorId: String</text>
+                <text x="470" y="312">- content: String</text>
+                <text x="470" y="326">- createdAt: Instant</text>
+                <text x="470" y="340">- groupId, pageId: String (nullable)</text>
+                <text x="470" y="354">- audience: Audience</text>
+                <text x="470" y="378">+ addComment(c): void</text>
+                <text x="470" y="392">+ addReaction(memberId, type)</text>
+                <text x="470" y="406">+ getAudience(): Audience</text>
+              </g>
+            </g>
+
+            <!-- Photo -->
+            <g>
+              <rect x="140" y="250" width="230" height="150" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="140" y1="283" x2="370" y2="283" stroke="var(--color-accent-dark)"/>
+              <line x1="140" y1="350" x2="370" y2="350" stroke="var(--color-accent-dark)"/>
+              <text x="255" y="272" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Photo</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="150" y="298">- photoId, postId: String</text>
+                <text x="150" y="312">- url: String</text>
+                <text x="150" y="326">- taggedMemberIds: List&lt;String&gt;</text>
+                <text x="150" y="340">- audienceOverride: Audience (nullable)</text>
+                <text x="150" y="364">+ tag(member): void</text>
+                <text x="150" y="378">+ getEffectiveAudience()</text>
+              </g>
+            </g>
+
+            <!-- Comment -->
+            <g>
+              <rect x="140" y="420" width="230" height="140" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="140" y1="453" x2="370" y2="453" stroke="var(--color-accent-dark)"/>
+              <line x1="140" y1="506" x2="370" y2="506" stroke="var(--color-accent-dark)"/>
+              <text x="255" y="442" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Comment</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="150" y="468">- commentId, postId: String</text>
+                <text x="150" y="482">- authorId: String</text>
+                <text x="150" y="496">- text: String</text>
+                <text x="150" y="520">+ edit(newText): void</text>
+              </g>
+            </g>
+
+            <!-- Reaction -->
+            <g>
+              <rect x="140" y="580" width="230" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="140" y1="613" x2="370" y2="613" stroke="var(--color-accent-dark)"/>
+              <line x1="140" y1="666" x2="370" y2="666" stroke="var(--color-accent-dark)"/>
+              <text x="255" y="602" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Reaction</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="150" y="628">- reactionId, postId: String</text>
+                <text x="150" y="642">- memberId: String</text>
+                <text x="150" y="656">- type: ReactionType</text>
+                <text x="150" y="682">+ getType(): ReactionType</text>
+              </g>
+            </g>
+
+            <!-- Group -->
+            <g>
+              <rect x="460" y="520" width="230" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="460" y1="553" x2="690" y2="553" stroke="var(--color-primary)"/>
+              <line x1="460" y1="606" x2="690" y2="606" stroke="var(--color-primary)"/>
+              <text x="575" y="542" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Group</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="470" y="568">- groupId, name: String</text>
+                <text x="470" y="582">- defaultAudience: Audience</text>
+                <text x="470" y="596">- approvalRequired: boolean</text>
+                <text x="470" y="620">+ approveMembership(m): void</text>
+                <text x="470" y="634">+ post(content, audience)</text>
+              </g>
+            </g>
+
+            <!-- GroupMembership (association class) -->
+            <g>
+              <rect x="850" y="520" width="250" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="850" y1="558" x2="1100" y2="558" stroke="var(--color-primary)"/>
+              <line x1="850" y1="625" x2="1100" y2="625" stroke="var(--color-primary)"/>
+              <text x="975" y="534" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;association class&raquo;</text>
+              <text x="975" y="547" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">GroupMembership</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="860" y="573">- membershipId, groupId: String</text>
+                <text x="860" y="587">- memberId: String</text>
+                <text x="860" y="601">- role: GroupRole</text>
+                <text x="860" y="615">- status: MembershipStatus</text>
+                <text x="860" y="639">+ approve(): void</text>
+              </g>
+            </g>
+
+            <!-- Page -->
+            <g>
+              <rect x="460" y="720" width="230" height="140" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="460" y1="753" x2="690" y2="753" stroke="var(--color-primary)"/>
+              <line x1="460" y1="806" x2="690" y2="806" stroke="var(--color-primary)"/>
+              <text x="575" y="742" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Page</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="470" y="768">- pageId, name: String</text>
+                <text x="470" y="782">- category: String</text>
+                <text x="470" y="796">- adminIds: List&lt;String&gt;</text>
+                <text x="470" y="820">+ postAsPage(content): Post</text>
+                <text x="470" y="834">+ getFollowerCount(): long</text>
+              </g>
+            </g>
+
+            <!-- PageFollow -->
+            <g>
+              <rect x="850" y="720" width="250" height="120" fill="var(--color-formula-bg)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="850" y1="753" x2="1100" y2="753" stroke="var(--color-accent-dark)"/>
+              <line x1="850" y1="806" x2="1100" y2="806" stroke="var(--color-accent-dark)"/>
+              <text x="975" y="742" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">PageFollow</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="860" y="768">- followId: String</text>
+                <text x="860" y="782">- followerId: String (Member)</text>
+                <text x="860" y="796">- pageId: String</text>
+                <text x="860" y="820">+ unfollow(): void</text>
+              </g>
+            </g>
+
+            <!-- Audience interface -->
+            <g>
+              <rect x="460" y="930" width="250" height="120" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="460" y1="968" x2="710" y2="968" stroke="var(--color-primary)"/>
+              <text x="585" y="944" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;interface&raquo;</text>
+              <text x="585" y="957" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Audience</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="470" y="983">+ isVisibleTo(viewer: Member,</text>
+                <text x="480" y="997">post: Post): boolean</text>
+              </g>
+            </g>
+
+            <!-- CustomFriendList -->
+            <g>
+              <rect x="850" y="930" width="250" height="110" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="850" y1="963" x2="1100" y2="963" stroke="var(--color-accent-dark)"/>
+              <line x1="850" y1="1016" x2="1100" y2="1016" stroke="var(--color-accent-dark)"/>
+              <text x="975" y="952" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">CustomFriendList</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="860" y="978">- listId, ownerId: String</text>
+                <text x="860" y="992">- name: String</text>
+                <text x="860" y="1006">- memberIds: Set&lt;String&gt;</text>
+                <text x="860" y="1030">+ contains(memberId): boolean</text>
+              </g>
+            </g>
+
+            <!-- PublicAudience -->
+            <g>
+              <rect x="60" y="1090" width="190" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="60" y1="1123" x2="250" y2="1123" stroke="var(--color-accent-dark)"/>
+              <text x="155" y="1112" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--color-text)">PublicAudience</text>
+              <text x="70" y="1140" font-size="9" fill="var(--color-text)">+ isVisibleTo(): true</text>
+            </g>
+
+            <!-- FriendsAudience -->
+            <g>
+              <rect x="270" y="1090" width="210" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="270" y1="1123" x2="480" y2="1123" stroke="var(--color-accent-dark)"/>
+              <text x="375" y="1112" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--color-text)">FriendsAudience</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="280" y="1138">- friendshipRepository</text>
+                <text x="280" y="1152">+ isVisibleTo(viewer, post)</text>
+              </g>
+            </g>
+
+            <!-- CustomListAudience -->
+            <g>
+              <rect x="500" y="1090" width="230" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="500" y1="1123" x2="730" y2="1123" stroke="var(--color-accent-dark)"/>
+              <text x="615" y="1112" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--color-text)">CustomListAudience</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="510" y="1138">- allowedList: CustomFriendList</text>
+                <text x="510" y="1152">+ isVisibleTo(viewer, post)</text>
+              </g>
+            </g>
+
+            <!-- OnlyMeAudience -->
+            <g>
+              <rect x="750" y="1090" width="190" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="750" y1="1123" x2="940" y2="1123" stroke="var(--color-accent-dark)"/>
+              <text x="845" y="1112" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--color-text)">OnlyMeAudience</text>
+              <text x="760" y="1140" font-size="9" fill="var(--color-text)">+ isVisibleTo(): self only</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 2. Member &mdash;filled diamond&rarr; Post (composition). Friendship is attached as an association class to a reflexive, <em>undirected</em> dashed line on Member labeled "symmetric" &mdash; the exact same convention used for Connection on the LinkedIn page. BlockRelationship is a second reflexive association, deliberately drawn with a different color and dash pattern and labeled "blocks" to signal it is not just another Friendship-like edge. Post &mdash;filled diamond&rarr; Comment (composition) and plain associations to Photo and Reaction. Post associates with the <strong>Audience</strong> interface, realized (dashed hollow triangle) by PublicAudience, FriendsAudience, CustomListAudience, and OnlyMeAudience; CustomListAudience in turn associates with CustomFriendList. Member associates with Group via the GroupMembership association class, and with Page via the directional PageFollow (same accent-colored arrow convention as LinkedIn's Follow).</div>
+        </div>
+        <p><strong>Why Audience/Visibility is modeled as its own class, not a plain enum on Post, is the central decision on this page.</strong> An enum can tell you <em>which</em> visibility level a Post has, but it cannot <em>evaluate</em> anything &mdash; and evaluating visibility is exactly what the system needs to do, correctly, on every read path. Deciding whether a given Viewer can see a FriendsAudience Post requires querying the Friendship graph; deciding whether they can see a CustomListAudience Post requires checking a specific CustomFriendList's current membership; deciding whether they can see a Group post requires checking that Group's membership instead of the post's nominal audience at all. That's real behavior with real dependencies (a repository, a list, a membership check), not a static label &mdash; which is exactly the textbook justification for Strategy/Policy: give <code>Audience</code> a single method, <code>isVisibleTo(Member viewer, Post post)</code>, and let each concrete variant implement it however it needs to, including consulting other objects the enum could never reach.</p>
+
+        <h2 id="key-flow-activity-diagram">Key Flow: Publishing a Post and Enforcing Visibility on Read (Activity Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 780" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Activity diagram for publishing a post with an audience, then enforcing block and visibility checks whenever a viewer later requests to see it">
+            <defs>
+              <marker id="fbActArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#fbActArrow)" fill="none">
+              <line x1="300" y1="30" x2="300" y2="54"/>
+              <line x1="300" y1="110" x2="300" y2="134"/>
+              <line x1="300" y1="185" x2="300" y2="254"/>
+              <line x1="300" y1="310" x2="300" y2="334"/>
+              <line x1="420" y1="384" x2="480" y2="384"/>
+              <line x1="300" y1="434" x2="300" y2="480"/>
+              <line x1="430" y1="540" x2="480" y2="540"/>
+              <line x1="300" y1="600" x2="300" y2="630"/>
+              <line x1="300" y1="685" x2="300" y2="709"/>
+            </g>
+            <circle cx="300" cy="20" r="10" fill="var(--color-primary)"/>
+
+            <rect x="170" y="55" width="260" height="55" rx="22" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="77" text-anchor="middle" font-size="10" fill="var(--color-text)">Member creates a Post, selects an</text>
+            <text x="300" y="91" text-anchor="middle" font-size="10" fill="var(--color-text)">Audience (Public / Friends / Custom / Only-me)</text>
+
+            <rect x="170" y="135" width="260" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="155" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Post is saved with that Audience</text>
+            <text x="300" y="169" text-anchor="middle" font-size="10.5" fill="var(--color-text)">attached to it</text>
+
+            <line x1="40" y1="222" x2="740" y2="222" stroke="var(--color-border)" stroke-width="1" stroke-dasharray="2,3"/>
+            <text x="45" y="216" font-size="9.5" font-style="italic" fill="var(--color-text-muted)">Later &mdash; independent of when the Post was created</text>
+
+            <rect x="170" y="255" width="260" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="277" text-anchor="middle" font-size="10" fill="var(--color-text)">A Viewer requests to see this Post</text>
+            <text x="300" y="291" text-anchor="middle" font-size="10" fill="var(--color-text)">(via Feed, Timeline, or a direct link)</text>
+
+            <polygon points="300,334 420,384 300,434 180,384" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="378" text-anchor="middle" font-size="9.5" fill="var(--color-text)">Is Viewer blocked by, or</text>
+            <text x="300" y="392" text-anchor="middle" font-size="9.5" fill="var(--color-text)">blocking, the Post's author?</text>
+            <text x="335" y="360" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+            <text x="252" y="444" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+
+            <rect x="480" y="356" width="270" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="615" y="378" text-anchor="middle" font-size="10" fill="var(--color-text)">Hide Post unconditionally &mdash;</text>
+            <text x="615" y="392" text-anchor="middle" font-size="10" fill="var(--color-text)">a Block overrides every other rule</text>
+
+            <line x1="615" y1="412" x2="615" y2="436" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#fbActArrow)"/>
+            <circle cx="615" cy="452" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="615" cy="452" r="6" fill="var(--color-primary)"/>
+
+            <polygon points="300,480 430,540 300,600 170,540" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="524" text-anchor="middle" font-size="9" fill="var(--color-text)">Does the Post's Audience rule</text>
+            <text x="300" y="537" text-anchor="middle" font-size="9" fill="var(--color-text)">permit Viewer? (Public / Friendship /</text>
+            <text x="300" y="550" text-anchor="middle" font-size="9" fill="var(--color-text)">CustomFriendList / Group membership)</text>
+            <text x="345" y="510" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="240" y="612" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="480" y="512" width="270" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="615" y="534" text-anchor="middle" font-size="10" fill="var(--color-text)">Hide Post &mdash; Viewer is outside</text>
+            <text x="615" y="548" text-anchor="middle" font-size="10" fill="var(--color-text)">the Audience/Visibility rule</text>
+
+            <line x1="615" y1="568" x2="615" y2="592" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#fbActArrow)"/>
+            <circle cx="615" cy="608" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="615" cy="608" r="6" fill="var(--color-primary)"/>
+
+            <rect x="170" y="630" width="260" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="652" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Show Post to Viewer</text>
+            <text x="300" y="666" text-anchor="middle" font-size="9.5" fill="var(--color-text)">(News Feed, Timeline, or Photo view)</text>
+
+            <circle cx="300" cy="725" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="300" cy="725" r="6" fill="var(--color-primary)"/>
+          </svg>
+          <div class="diagram-caption">Figure 3. The first decision &mdash; blocked, either direction? &mdash; is checked <em>before</em> the Post's own Audience is ever consulted, because a Block has to suppress visibility unconditionally, even for a Public post. Only once that gate is cleared does the flow ask the Audience/Visibility question, which itself may fan out into a Friendship check, a CustomFriendList membership check, or a Group membership check depending on which concrete Audience the Post carries.</div>
+        </div>
+
+        <h2 id="key-flow-sequence-diagram">Key Flow: Assembling a Member's News Feed with Visibility Filtering (Sequence Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Sequence diagram for assembling a member's news feed candidate set and filtering it through the visibility policy">
+            <defs>
+              <marker id="fbSeqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-border)" stroke-width="1.3" stroke-dasharray="4,4">
+              <line x1="80" y1="60" x2="80" y2="520"/>
+              <line x1="280" y1="60" x2="280" y2="520"/>
+              <line x1="480" y1="60" x2="480" y2="520"/>
+              <line x1="680" y1="60" x2="680" y2="520"/>
+              <line x1="880" y1="60" x2="880" y2="520"/>
+            </g>
+            <g fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5">
+              <rect x="20" y="20" width="120" height="40"/>
+              <rect x="205" y="20" width="150" height="40"/>
+              <rect x="385" y="20" width="190" height="40"/>
+              <rect x="595" y="20" width="170" height="40"/>
+              <rect x="795" y="20" width="170" height="40"/>
+            </g>
+            <g font-size="10" font-weight="700" fill="var(--color-text)" text-anchor="middle">
+              <text x="80" y="38">Member</text>
+              <text x="80" y="50">(Viewer)</text>
+              <text x="280" y="44">FeedService</text>
+              <text x="480" y="38">Friendship</text>
+              <text x="480" y="50">Repository</text>
+              <text x="680" y="38">Post</text>
+              <text x="680" y="50">Repository</text>
+              <text x="880" y="38">Visibility</text>
+              <text x="880" y="50">Policy</text>
+            </g>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#fbSeqArrow)">
+              <line x1="80" y1="90" x2="280" y2="90"/>
+              <line x1="280" y1="120" x2="480" y2="120"/>
+              <line x1="280" y1="185" x2="680" y2="185"/>
+              <line x1="280" y1="280" x2="880" y2="280"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#fbSeqArrow)">
+              <line x1="480" y1="150" x2="280" y2="150"/>
+              <line x1="680" y1="215" x2="280" y2="215"/>
+              <line x1="880" y1="310" x2="280" y2="310"/>
+              <line x1="280" y1="410" x2="80" y2="410"/>
+            </g>
+            <g font-size="10" fill="var(--color-text)">
+              <text x="90" y="85">getFeed(viewerId, page)</text>
+              <text x="290" y="115">getFriendIds(viewerId)</text>
+              <text x="330" y="145">List&lt;memberId&gt; (friends)</text>
+              <text x="290" y="180">getCandidatePosts(friendIds, groupIds, followedPageIds, page)</text>
+              <text x="500" y="210">List&lt;Post&gt; (candidates)</text>
+              <text x="90" y="405">FeedPage(visiblePosts, nextCursor)</text>
+            </g>
+
+            <rect x="260" y="250" width="660" height="90" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M260,250 L305,250 L305,262 L260,262 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="266" y="259" font-size="9" fill="var(--color-text)">loop</text>
+            <text x="311" y="259" font-size="9.5" fill="var(--color-text)">[for each candidate Post]</text>
+            <text x="290" y="275" font-size="10" fill="var(--color-text)">isVisibleTo(viewer, candidatePost)</text>
+            <text x="620" y="305" font-size="10" fill="var(--color-text)">boolean</text>
+
+            <rect x="280" y="430" width="600" height="60" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M280,430 L320,430 L320,442 L280,442 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="286" y="439" font-size="9" fill="var(--color-text)">note</text>
+            <text x="326" y="450" font-size="9.5" fill="var(--color-text)">VisibilityPolicy checks BlockRelationship first (short-circuits to false), then</text>
+            <text x="326" y="465" font-size="9.5" fill="var(--color-text)">delegates to the candidate's own Audience. Ranking/ordering of the filtered</text>
+            <text x="326" y="480" font-size="9.5" font-style="italic" fill="var(--color-text-muted)">results is HLD scope, not this page's (see System Design &mdash; Modern Systems).</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. This sequence deliberately scopes to <em>which candidate Posts survive the visibility filter</em>, not how they're ranked or ordered &mdash; the same OOD/HLD boundary the LinkedIn page draws for its own Feed sequence diagram. FeedService gathers candidates from the Viewer's Friends, Groups, and followed Pages, then runs each one through <code>VisibilityPolicy.isVisibleTo(viewer, post)</code> before it's ever eligible to appear.</div>
+        </div>
+
+        <h2 id="design-patterns-applied">Design Patterns Applied</h2>
+        <p>Name the pattern and the forcing function together, not just the label:</p>
+        <ul>
+          <li><strong>Strategy / Policy</strong> (Visibility/Audience as a pluggable policy object with an <code>isVisibleTo()</code> check) &mdash; the central pattern on this page. <code>Audience</code> is an interface; <code>PublicAudience</code>, <code>FriendsAudience</code>, <code>CustomListAudience</code>, and <code>OnlyMeAudience</code> are interchangeable strategies a Post holds one of. <code>VisibilityPolicy</code> (and every read path that uses it) never needs a <code>switch</code> on visibility type &mdash; it just calls <code>audience.isVisibleTo(viewer, post)</code> and trusts the concrete strategy to know how to answer, including reaching into a CustomFriendList or a Group's membership when it needs to.</li>
+          <li><strong>Composite-ish sub-community</strong> (Group) &mdash; a Group behaves like a bounded, self-contained social graph: it has its own membership-approval flow and its own default Audience for the Posts made inside it, structurally similar to a personal Timeline but deliberately distinct from one. This is why Group-post visibility is handled as its own check in <code>VisibilityPolicy</code> rather than being folded into the ordinary Public/Friends/Custom/Only-me Audience family &mdash; see the Extensibility section below.</li>
+          <li><strong>Observer</strong> (Notifications) &mdash; a new FriendRequest, a Comment on your Post, or being tagged in a Photo each publish an event that a Notification subscriber picks up and fans out (push, email, in-app badge), without the Post/Comment/Photo class needing to know how notifications are actually delivered.</li>
+          <li><strong>Symmetric vs. directional relationships</strong> (Friendship vs. PageFollow) &mdash; Friendship is one canonical, undirected record; PageFollow is a directional edge with no consent step. This duality is the same one explored in full depth on the LinkedIn page in this section (Connection vs. Follow); we deliberately don't re-derive it here beyond noting that Facebook's Friendship/PageFollow pair follows the identical reasoning.</li>
+        </ul>
+
+        <h2 id="code-skeleton">Code Skeleton</h2>
+        <p>Fields and method signatures only &mdash; not a runnable program. <code>FriendsAudience</code> and <code>CustomListAudience</code> are worked out in full, since the Audience/Visibility check is exactly what interviewers probe on, and <code>VisibilityPolicy</code> shows the Block short-circuit that has to run ahead of every Audience check.</p>
+
+        <pre><code>public class Member {
+    private final String memberId;
+    private String name;
+    private String email;
+    private MemberStatus status;
+
+    public Member(String memberId, String name, String email) {
+        this.memberId = memberId;
+        this.name = name;
+        this.email = email;
+        this.status = MemberStatus.ACTIVE;
+    }
+
+    public String getMemberId() { return memberId; }
+}</code></pre>
+
+        <pre><code>// A single record represents the (undirected) fact that two Members are friends --
+// same idiom as Connection on the LinkedIn page: canonical ordering guarantees
+// (A, B) and (B, A) never produce two rows.
+public final class Friendship {
+    private final String friendshipId;
+    private final String memberIdA;
+    private final String memberIdB;
+    private final Instant since;
+
+    private Friendship(String friendshipId, String memberIdA, String memberIdB, Instant since) {
+        if (memberIdA.compareTo(memberIdB) &lt;= 0) {
+            this.memberIdA = memberIdA;
+            this.memberIdB = memberIdB;
+        } else {
+            this.memberIdA = memberIdB;
+            this.memberIdB = memberIdA;
+        }
+        this.friendshipId = friendshipId;
+        this.since = since;
+    }
+
+    public static Friendship of(String friendshipId, String memberIdA, String memberIdB, Instant since) {
+        return new Friendship(friendshipId, memberIdA, memberIdB, since);
+    }
+
+    public boolean involves(String memberId) {
+        return memberIdA.equals(memberId) || memberIdB.equals(memberId);
+    }
+
+    public String other(String memberId) {
+        if (memberId.equals(memberIdA)) return memberIdB;
+        if (memberId.equals(memberIdB)) return memberIdA;
+        throw new IllegalArgumentException("member is not part of this friendship");
+    }
+}</code></pre>
+
+        <pre><code>public class Post {
+    private final String postId;
+    private final String authorId;
+    private String content;
+    private final Instant createdAt;
+    private final String groupId;   // nullable -- set only for a Group post
+    private final String pageId;    // nullable -- set only for a Page post
+    private Audience audience;      // ignored for Group posts; Group membership decides instead
+    private final List&lt;Comment&gt; comments = new ArrayList&lt;&gt;();
+    private final List&lt;Reaction&gt; reactions = new ArrayList&lt;&gt;();
+
+    public Post(String postId, String authorId, String content, Instant createdAt,
+                String groupId, String pageId, Audience audience) {
+        this.postId = postId;
+        this.authorId = authorId;
+        this.content = content;
+        this.createdAt = createdAt;
+        this.groupId = groupId;
+        this.pageId = pageId;
+        this.audience = audience;
+    }
+
+    public void addComment(Comment comment) { comments.add(comment); }
+    public void addReaction(Reaction reaction) { reactions.add(reaction); }
+
+    public String getAuthorId() { return authorId; }
+    public String getGroupId() { return groupId; }
+    public Audience getAudience() { return audience; }
+}</code></pre>
+
+        <pre><code>// The pluggable Visibility policy: a bare enum could tell you WHICH level a Post
+// has, but couldn't evaluate anything. isVisibleTo() is the whole point.
+public interface Audience {
+    boolean isVisibleTo(Member viewer, Post post);
+}
+
+public final class PublicAudience implements Audience {
+    @Override
+    public boolean isVisibleTo(Member viewer, Post post) {
+        return true; // anyone, including a logged-out visitor in a fuller model
+    }
+}
+
+public final class OnlyMeAudience implements Audience {
+    @Override
+    public boolean isVisibleTo(Member viewer, Post post) {
+        return viewer.getMemberId().equals(post.getAuthorId());
+    }
+}</code></pre>
+
+        <pre><code>public final class FriendsAudience implements Audience {
+    private final FriendshipRepository friendshipRepository;
+
+    public FriendsAudience(FriendshipRepository friendshipRepository) {
+        this.friendshipRepository = friendshipRepository;
+    }
+
+    @Override
+    public boolean isVisibleTo(Member viewer, Post post) {
+        if (viewer.getMemberId().equals(post.getAuthorId())) {
+            return true; // authors can always see their own post
+        }
+        return friendshipRepository.areFriends(viewer.getMemberId(), post.getAuthorId());
+    }
+}
+
+public final class CustomListAudience implements Audience {
+    private final CustomFriendList allowedList;
+
+    public CustomListAudience(CustomFriendList allowedList) {
+        this.allowedList = allowedList;
+    }
+
+    @Override
+    public boolean isVisibleTo(Member viewer, Post post) {
+        if (viewer.getMemberId().equals(post.getAuthorId())) {
+            return true;
+        }
+        return allowedList.contains(viewer.getMemberId());
+    }
+}</code></pre>
+
+        <pre><code>// Orchestrates the read-path check used by Feed, Timeline, and Photo views alike.
+// The Block check runs first and short-circuits every Audience variant equally --
+// even a PublicAudience post must stay hidden from a blocked party.
+public class VisibilityPolicy {
+    private final BlockRepository blockRepository;
+    private final GroupMembershipRepository groupMembershipRepository;
+
+    public VisibilityPolicy(BlockRepository blockRepository,
+                             GroupMembershipRepository groupMembershipRepository) {
+        this.blockRepository = blockRepository;
+        this.groupMembershipRepository = groupMembershipRepository;
+    }
+
+    public boolean isVisibleTo(Member viewer, Post post) {
+        if (blockRepository.isBlockedEitherWay(viewer.getMemberId(), post.getAuthorId())) {
+            return false;
+        }
+        // A Group post's visibility is the Group's membership, full stop --
+        // it deliberately ignores whatever personal default Audience the author has.
+        if (post.getGroupId() != null) {
+            return groupMembershipRepository.isMember(viewer.getMemberId(), post.getGroupId());
+        }
+        return post.getAudience().isVisibleTo(viewer, post);
+    }
+}</code></pre>
+
+        <h2 id="extensibility-and-edge-cases">Extensibility &amp; Edge Cases</h2>
+        <ul>
+          <li><strong>Unfriending strips Friends-audience visibility immediately.</strong> The moment a Friendship record is removed, every FriendsAudience Post that Friendship used to unlock must become invisible on the very next read &mdash; because visibility is derived live from <code>FriendshipRepository.areFriends()</code> rather than cached on the Post, this falls out for free. There's no stale "was visible" flag to clean up anywhere.</li>
+          <li><strong>A CustomFriendList can go stale relative to the Friendship graph.</strong> If a Member is removed from a CustomFriendList but is still a Friend, or vice versa, <code>CustomListAudience</code> has to check the list's <em>current</em> membership at read time (as shown above), not a snapshot taken when the Post was created &mdash; otherwise a Post could keep leaking to someone who was quietly dropped from "Close Friends" months ago.</li>
+          <li><strong>Group posts have their own audience scope, distinct from the poster's personal default.</strong> Even if a Member's personal default Audience is Public, a Post made inside a Group is visible only to that Group's members &mdash; <code>VisibilityPolicy</code> checks <code>groupId</code> first and, if present, ignores the Post's own <code>audience</code> field entirely. This is exactly why the design routes Group visibility through a separate membership check rather than trying to force it into one more Audience variant.</li>
+          <li><strong>Photo tagging can expose a Photo beyond its Post's original audience.</strong> If Member B tags Member C in a Photo that was posted with a Friends-of-B audience, C (and by extension C's own Friends, depending on tag-visibility settings) may now be able to see that Photo even though they were never in B's original audience. This is why Photo carries its own optional <code>audienceOverride</code> rather than blindly inheriting the Post's Audience unconditionally &mdash; a tag is effectively a second, additive grant of visibility that needs the tagged Member's implicit consent to exist at all.</li>
+          <li><strong>Page posts are effectively always Public.</strong> Because a Page has no Friends and no Only-me concept &mdash; it's a broadcast entity by design &mdash; <code>Page.postAsPage()</code> constructs its Posts with a <code>PublicAudience</code> by convention rather than exposing the full Audience picker a Member gets; there's no meaningful "Friends" set to restrict a Page post to.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">Why should Visibility/Audience be modeled as its own policy class instead of a plain enum on Post?</div>
+          <div class="qa-a">An enum can only ever be a static label &mdash; it can tell you a Post is "FRIENDS" or "CUSTOM," but it cannot itself answer "can this specific Viewer see this specific Post?" Answering that question correctly requires behavior with real dependencies: a FriendsAudience needs to query the Friendship graph, a CustomListAudience needs to check a specific CustomFriendList's current membership, and a Group post needs to check Group membership instead. None of that logic has anywhere to live on a bare enum constant. Modeling Audience as an interface with an <code>isVisibleTo(viewer, post)</code> method (the Strategy/Policy pattern) gives each visibility rule a real home for its own evaluation logic, and lets new rules (e.g., a future "Friends of Friends" audience) be added as one new class with zero changes to Post, VisibilityPolicy, or any existing Audience implementation.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does a Block have to override every other visibility rule, even for a Public post?</div>
+          <div class="qa-a">A Block is a suppression rule, not "one more relationship type" layered alongside Friendship/Group/Page &mdash; it has to be checked <em>before</em> any Audience is ever consulted, and it has to return "not visible" unconditionally regardless of what that Audience would otherwise say. Concretely, <code>VisibilityPolicy.isVisibleTo()</code> checks <code>BlockRepository.isBlockedEitherWay(viewer, author)</code> as its very first line and returns <code>false</code> immediately if it's true, never even calling into <code>post.getAudience().isVisibleTo(...)</code>. This is deliberate: a PublicAudience post is, by definition, visible to literally everyone except the people a Block explicitly carves out &mdash; if the Block check ran second, or was implemented as just another Audience variant that a bare PublicAudience could "outrank," a blocked Member could still see a blocker's Public content, which defeats the entire point of blocking someone.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you keep a Group's post visibility distinct from a Member's personal default Audience?</div>
+          <div class="qa-a">Give Post a nullable <code>groupId</code>, and have <code>VisibilityPolicy</code> branch on it before ever looking at the Post's own <code>audience</code> field: if <code>groupId != null</code>, visibility is entirely "is this Viewer a member of that Group?" via GroupMembership, full stop &mdash; the author's personal default Audience (even if it's Public) is simply never consulted for a Group post. This mirrors real product behavior: a Post made inside a private Group shouldn't leak to the author's Public-by-default Timeline audience just because that's their usual setting. Keeping the branch explicit in VisibilityPolicy, rather than trying to shoehorn "Group members only" into one more Audience implementation, keeps the two visibility systems (personal Audience vs. Group membership) from silently interacting in surprising ways.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Where's the line between this page's OOD-level visibility filter and an HLD-level feed-ranking system?</div>
+          <div class="qa-a">OOD scope stops at correctly determining <em>which candidate Posts a Viewer is even authorized to see</em> &mdash; the Block check, then the Audience/Group-membership check, expressed as the classes and method signatures shown above. The moment the conversation turns to <em>how those already-visible candidates get ordered</em> &mdash; engagement-based ranking scores, fan-out-on-write vs. fan-out-on-read, caching layers, sharding the social graph, handling a Page with tens of millions of followers &mdash; that's a distributed-systems/HLD conversation, exactly the same boundary the LinkedIn page in this section draws for its own Feed sequence diagram. A strong candidate names this boundary explicitly rather than drifting into fan-out architecture on a question meant to test visibility correctness.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What has to happen the instant two Members unfriend each other?</div>
+          <div class="qa-a">The Friendship record is deleted (or flagged inactive), and because FriendsAudience and CustomListAudience both evaluate membership live &mdash; querying FriendshipRepository/CustomFriendList at read time rather than trusting a cached "visible" flag on the Post &mdash; every FriendsAudience Post the removed Friendship used to unlock becomes invisible on the very next read, with no separate cleanup step required. The one thing worth calling out: if the unfriended Member was also in a CustomFriendList the author maintains, that list itself doesn't automatically get updated just because the Friendship ended &mdash; that's the stale-CustomFriendList edge case, a distinct failure mode from unfriending itself.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why can a CustomFriendList silently drift out of sync with the Friendship graph, and how should CustomListAudience handle that?</div>
+          <div class="qa-a">CustomFriendList is a separate, independently-maintained collection of memberIds &mdash; there's no enforced invariant tying its contents to who is currently a Friend, so a Member could remain on a "Close Friends" list long after being unfriended, or a brand-new Friend might not yet have been added to any list. CustomListAudience has to treat the list's membership as the sole source of truth at evaluation time (calling <code>allowedList.contains(viewerId)</code> live, as shown in the code skeleton) rather than assuming list membership implies current Friendship, or vice versa &mdash; the two are related concepts a product might want to reconcile with a UI nudge, but they are not the same data and shouldn't be treated as interchangeable in the visibility check itself.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is a Page's Follow directional while a Friendship is symmetric, and why can't a Page have a Friendship?</div>
+          <div class="qa-a">Friendship presumes two peers who both explicitly consent to a mutual bond &mdash; the entire FriendRequest/Accept flow exists to capture that mutual consent. A Page is a broadcast entity, not a peer: there's no meaningful sense in which a Page "consents" to a relationship with a Member the way another Member would. PageFollow correctly captures what following a Page actually is &mdash; a one-directional subscription to its updates, with no consent step and no expectation of reciprocity &mdash; which is precisely the same Follow-vs-Connection duality explored on the LinkedIn page in this section, just with Page standing in for Company.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Walk through the Photo-tagging edge case: how can a tag expose a Photo beyond the audience its Post was originally set to?</div>
+          <div class="qa-a">Suppose Member B posts a Photo with a FriendsAudience, then tags Member C, who is not B's Friend (say, a coworker B isn't connected to but happened to be in the picture with). If Photo simply inherited the Post's Audience unconditionally, C would have no path to ever see a Photo they're literally in. Modeling Photo with its own optional <code>audienceOverride</code> lets tagging grant additional, narrowly-scoped visibility &mdash; typically "the tagged Member (and optionally their own audience, subject to product policy) can see this specific Photo" &mdash; without loosening the Post's overall Audience for everyone else. The key modeling point: a tag is an additive grant tied to the tagged Member's implicit consent to being identified, not a blanket loosening of the original Post's visibility rule.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does Commenting/Reacting need to re-check visibility instead of trusting that the Post was already shown to the Viewer once?</div>
+          <div class="qa-a">Visibility isn't a one-time gate checked only when a Post first renders in a Feed &mdash; it has to hold at the moment of every subsequent interaction too, because the underlying facts it depends on can change between the two moments. A Friendship could be dissolved, a Block could be created, or a Member could be removed from a CustomFriendList in the window between "the Post rendered in my Feed" and "I click Comment." Re-running <code>VisibilityPolicy.isVisibleTo(viewer, post)</code> as a precondition before accepting a new Comment or Reaction (not just before rendering the Post) closes that gap; trusting a stale "I already saw this once" assumption would let a since-blocked or since-unfriended Member keep commenting on content they should no longer have any access to at all.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Key Takeaways</div>
+          <ul>
+            <li><strong>Visibility/Audience is a first-class policy object, not a bolted-on enum</strong> &mdash; it needs an <code>isVisibleTo(viewer, post)</code> method that can query a Friendship graph, a CustomFriendList, or a Group's membership, none of which a bare enum constant can do.</li>
+            <li>Friendship is the same symmetric, mutual-consent shape as Connection on the LinkedIn page &mdash; settled ground, deliberately not re-elaborated here so the page can focus on visibility.</li>
+            <li>A Block is a suppression rule that must be checked <em>before</em> any Audience is consulted, and it overrides every other rule unconditionally &mdash; even a PublicAudience post must stay hidden from a blocked party.</li>
+            <li>Group posts route visibility through Group membership, deliberately ignoring the author's personal default Audience &mdash; a private Group shouldn't leak content just because the poster's usual setting is Public.</li>
+            <li>Every read path &mdash; Feed, Timeline, Photo view &mdash; must apply the exact same <code>VisibilityPolicy</code> check; the Feed's job, per this page's OOD scope, is producing the correctly-filtered candidate set, not ranking or ordering it (that's HLD scope, mirroring the same boundary drawn on the LinkedIn page).</li>
+          </ul>
+        </div>
+
+        <h2 id="references">References</h2>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Strategy_pattern" target="_blank" rel="noopener">"Strategy pattern"</a> &mdash; general reference for modeling Audience/Visibility as a pluggable policy object rather than a static enum, the central design decision on this page.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Access-control_list" target="_blank" rel="noopener">"Access-control list"</a> &mdash; general background on the Public/Friends/Custom-list/Only-me visibility model, which is conceptually an access-control policy attached to a piece of content.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Observer_pattern" target="_blank" rel="noopener">"Observer pattern"</a> &mdash; general reference for the Notification design discussed in the Design Patterns section above.</p>
+        <p>For the symmetric-relationship (Friendship/Connection) modeling angle explored only briefly here, see <a href="linkedin.html">the LinkedIn page</a> in this same section, which covers the Connection-vs-Follow duality in full depth.</p>
+
+        <div class="page-nav">
+          <a class="prev" href="cricinfo.html"><span class="dir">Previous</span>Cricinfo</a>
+          <a class="next" href="index.html"><span class="dir">Next</span>Back to Section Overview</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

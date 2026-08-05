@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCP — Cloud Architecture Tutorial | Cloud | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Cloud</a><span class="sep">/</span><span class="current">GCP</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Cloud overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#use-case-and-requirements">Use Case &amp; Requirements</a></li>
+        <li><a href="#architecture-overview">Architecture Overview</a></li>
+        <li><a href="#component-breakdown">Component Breakdown</a></li>
+        <li><a href="#data-flow">Data Flow</a></li>
+        <li><a href="#infrastructure-as-code-iac">Infrastructure as Code (IaC)</a></li>
+        <li><a href="#best-practices">Best Practices</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">CLOUD ARCHITECTURE</span>
+          <h1>GCP — Cloud Architecture Tutorial</h1>
+        </div>
+
+        <p><em>An end-to-end reference architecture for a global e-commerce order &amp; checkout platform, built entirely on Google Cloud Platform &mdash; requirements and capacity math, service-by-service justification, request-level data flow, production Terraform, operational best practices, and interview-style Q&amp;A.</em></p>
+
+        <h2 id="use-case-and-requirements">Use Case &amp; Requirements</h2>
+
+        <h3>The Business Problem</h3>
+        <p>A mid-to-large e-commerce company is re-platforming its checkout and order-processing API to serve a genuinely global customer base rather than a single home region. The business already knows two things will break the old architecture: flash-sale traffic spikes that dwarf normal load by an order of magnitude, and customers outside the home region experiencing checkout latency bad enough to visibly hurt conversion. On top of that, finance and compliance have a non-negotiable requirement bolted on: an order, once accepted, must never be silently lost, and a customer's card must never be charged twice for the same order &mdash; even if a pod crashes, a region has a bad day, or a retry storm hits the API mid-transaction. The platform must handle roughly 200 million orders a year, present a catalog of about 50 million SKUs to browsing shoppers, and serve product imagery quickly to every region &mdash; while keeping raw cardholder data entirely out of the system by delegating that to a certified payment processor and only ever handling a tokenized reference to it.</p>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Accept checkout requests from web and mobile clients (cart contents, shipping address, tokenized payment method reference).</li>
+          <li>Reserve inventory for the items in the order at the moment of checkout, atomically with the order write.</li>
+          <li>Process / tokenize the payment reference by calling out to an external, PCI-DSS-certified payment processor &mdash; this system never stores or transmits a raw Primary Account Number (PAN).</li>
+          <li>Write a durable, authoritative order record the instant payment authorization succeeds.</li>
+          <li>Publish an order-placed event so downstream systems (fulfillment, notifications, analytics, fraud review) can react without being on the critical path of the checkout response.</li>
+          <li>Serve the product catalog and browse/search experience to shoppers worldwide, independently of the checkout write path.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Peak throughput:</strong> 5,000 transactions/second during flash-sale events, against a steady-state baseline of roughly 500 TPS &mdash; a 10&times; peak-to-steady ratio the platform must absorb without manual intervention.</li>
+          <li><strong>Latency:</strong> sub-150ms p99 for checkout API calls, measured globally, not just from the home region.</li>
+          <li><strong>Availability:</strong> 99.95% SLA for the checkout path.</li>
+          <li><strong>Consistency:</strong> strong consistency for order and payment writes (an order must never be double-charged or lost); browse/catalog reads may be eventually consistent.</li>
+          <li><strong>Compliance:</strong> PCI-DSS-adjacent handling of payment data &mdash; only tokenized card references are stored; raw PAN handling is delegated entirely to a certified processor.</li>
+          <li><strong>Deployment model:</strong> multi-region active-active, simultaneously for latency (serve every shopper from a nearby region) and for disaster recovery (no single region is a single point of failure).</li>
+        </ol>
+
+        <h3>Capacity Estimation and Constraints</h3>
+        <p>Two different numbers matter here and they are easy to conflate: the rate of <em>checkout API calls</em> (browsing-to-cart interactions, availability checks, retries, and the final submit) versus the rate of <em>completed order writes</em>. The 5,000/500 TPS figures describe API call volume; the ~200M orders/year figure describes completed, paid orders &mdash; and the gap between them is expected and healthy (not every checkout attempt converts).</p>
+
+        <div class="formula-box">
+          <span class="formula-label">Traffic &mdash; steady-state vs. peak</span>
+          Steady-state requests/day = 500 TPS &times; 86,400 sec &asymp; 43.2 million checkout API calls/day
+          <br>Flash-sale peak = 5,000 TPS &mdash; a 10&times; multiplier over steady-state that must be absorbed by autoscaling, not fixed capacity
+          <br>Sustained over a 2-hour flash-sale window: 5,000 &times; 7,200 sec = 36 million requests in that window alone
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Average completed order-write rate</span>
+          ~200,000,000 orders/year &divide; (365 &times; 24 &times; 3,600 sec) &asymp; 6.3 orders/sec average, annualized
+          <br>This is far below the 500 TPS steady-state API call rate &mdash; consistent with typical browse/cart-to-purchase conversion, where most checkout-path calls are availability checks, price recalculations, and abandoned carts rather than completed purchases
+          <br>Design implication: the Cloud Spanner write path must comfortably clear 5,000 TPS bursts even though its long-run average load is orders of magnitude lower &mdash; provision (and load-test) for peak, not for the average
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Order storage growth (3-year horizon)</span>
+          Assume ~2 KB per stored order record (order header, line items, shipping address, tokenized payment reference, audit metadata)
+          <br>Records over 3 years = 200M &times; 3 = 600 million order records
+          <br>Raw logical storage = 600M &times; 2 KB &asymp; 1.2 TB
+          <br>Cloud Spanner multi-region configurations typically maintain 5 read-write replicas across 3 regions (a 2-2-1 voting split) for quorum-based durability &mdash; even at 5&times; replication overhead, physical storage is &asymp; 6 TB, trivial for Spanner and with generous headroom to scale past a decade of growth
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Catalog size</span>
+          50 million SKUs &times; ~3 KB average record (title, description, price, attributes, variant/image references) &asymp; 150 GB raw catalog data
+          <br>Comfortably fits either Firestore or Cloud SQL before considering indexes/replicas &mdash; catalog size is not the deciding factor between the two (see Component Breakdown deep dive below)
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Image storage &amp; CDN egress (assumed browsing volume)</span>
+          Assume 5 images/SKU &times; 50M SKUs = 250 million images at ~200 KB average (web-optimized) &asymp; 50 TB origin storage in Cloud Storage
+          <br>Assume 20 million browsing sessions/day, each viewing ~30 product images &asymp; 600 million image views/day
+          <br>At a healthy 90% Cloud CDN cache-hit ratio, edge egress &asymp; 600M &times; 200 KB &asymp; 120 TB/day served from the edge, while only the remaining ~10% (&asymp; 12 TB/day) ever becomes an origin fetch against Cloud Storage &mdash; this is the entire point of fronting Cloud Storage with Cloud CDN
+        </div>
+
+        <h2 id="architecture-overview">Architecture Overview</h2>
+
+        <h3>Why GCP for This Workload</h3>
+        <p>Strip away the marketing and this workload has exactly two requirements that are genuinely hard to satisfy simultaneously: (1) an order must never be double-charged or lost, even under multi-region active-active writes, and (2) the platform must serve sub-150ms p99 checkout latency globally from one architecture, without hand-rolled region-aware DNS failover logic. GCP's two most distinctive platform capabilities map directly onto those two requirements. Cloud Spanner provides external consistency &mdash; a real, TrueTime-backed global strong-consistency guarantee &mdash; across multiple write regions at once, which is precisely the "never double-charge, never lose an order" requirement stated in engineering terms. And the Global External HTTPS Load Balancer fronts every backend region behind a single anycast IP, so a client's request is routed to the nearest healthy region at the network layer, with no DNS TTL, no client-side failover logic, and no "wait for DNS to propagate" delay during a regional incident. Put together, these two features let this platform be built as genuinely one architecture across regions, rather than N independent regional stacks stitched together after the fact.</p>
+        <p>That said, "distinctive" is not "free." Spanner is a genuinely different operating model from a conventional relational database &mdash; interleaved tables, careful primary-key design to avoid hotspotting, and a cost profile that is higher per-node than a comparable managed MySQL/Postgres instance. A team with deep Aurora or Cosmos DB experience and no urgent need for synchronous multi-region strong consistency could reasonably choose a sharded Aurora Global Database (accepting async cross-region replication and a small RPO on failover) or Cosmos DB with a tunable consistency level, and get a working system for meaningfully less operational learning curve. The honest case for GCP here is narrow but real: it is the best fit specifically because this workload's hardest requirement is "strong consistency across active-active regions," which is exactly the scenario Spanner was built to solve and the scenario where the alternatives have to compromise on either consistency or write-region topology.</p>
+
+        <h3>Cross-Cloud Comparison at a Glance</h3>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>GCP</th><th>AWS</th><th>Azure</th></tr>
+          <tr>
+            <td>Global load balancing model</td>
+            <td>Single anycast IP via the Global External HTTPS Load Balancer &mdash; one forwarding rule serves all regions, failover is network-layer, not DNS</td>
+            <td>Global Accelerator provides anycast entry, but is commonly paired with per-region ALBs and Route 53 latency-based routing for HTTP-layer routing &mdash; more moving parts to reach an equivalent outcome</td>
+            <td>Azure Front Door offers a global anycast edge tier; Traffic Manager (DNS-based) is the older pattern still used in some hybrid designs</td>
+          </tr>
+          <tr>
+            <td>Strong-consistency global database option</td>
+            <td>Cloud Spanner &mdash; external consistency (true global strong consistency via TrueTime) with synchronous multi-region writes</td>
+            <td>Aurora Global Database gives single-region strong consistency plus async cross-region replication (sub-second lag, not synchronous); DynamoDB Global Tables are eventually/tunably consistent, not globally strong</td>
+            <td>Cosmos DB offers a "Strong" consistency level, but Strong consistency restricts writes to a single region &mdash; true multi-region active-active writes require dropping to a weaker tunable level</td>
+          </tr>
+          <tr>
+            <td>Container platform maturity</td>
+            <td>GKE (Google originated Kubernetes); Autopilot is the most hands-off "no node management" mode among the three clouds</td>
+            <td>EKS has the broadest ecosystem and largest talent pool; Fargate offers a serverless mode but node-group management is still more common in practice</td>
+            <td>AKS integrates tightly with Entra ID and Azure Policy; an automatic/hands-off mode exists but is newer and less battle-tested than GKE Autopilot</td>
+          </tr>
+          <tr>
+            <td>Native CDN/WAF integration</td>
+            <td>Cloud CDN + Cloud Armor attach directly to the same Global External HTTPS Load Balancer &mdash; one hop, one config surface</td>
+            <td>CloudFront + AWS WAF is extremely mature with the largest edge POP footprint of the three</td>
+            <td>Front Door + Azure WAF is tightly integrated and improving quickly, though historically had a smaller edge footprint than CloudFront</td>
+          </tr>
+          <tr>
+            <td>Enterprise identity / hybrid story</td>
+            <td>Cloud Identity + Workload Identity Federation is solid for workload auth, but GCP has a smaller enterprise-directory install base historically</td>
+            <td>IAM + AWS Directory Service has broad enterprise reach and the largest managed-service catalog overall</td>
+            <td>Strongest option by far if the company is already a heavy Microsoft/Entra ID shop &mdash; native AD/Entra integration with no federation layer needed</td>
+          </tr>
+          <tr>
+            <td>Committed-discount savings ceiling</td>
+            <td>CUDs: up to 57% (1-yr) / up to 70% (3-yr) on compute; commitment sharing across projects on a billing account is on by default since June 2026</td>
+            <td>Savings Plans / Reserved Instances: comparable ceiling, up to roughly 70%+ on 3-yr all-upfront terms depending on instance family</td>
+            <td>Reserved VM Instances stack with Azure Hybrid Benefit for Windows/SQL workloads, which can push effective savings higher for Microsoft-licensed estates specifically</td>
+          </tr>
+        </table>
+        <p>None of the three clouds is a wrong choice for this workload in the abstract &mdash; AWS has the broadest managed-service ecosystem and the largest hiring pool of engineers who already know it, and Azure is the clear pick if the company is already deeply invested in Microsoft/Entra ID for workforce identity and has Windows/SQL Server licensing to amortize via Hybrid Benefit. GCP earns the recommendation here specifically because of the two requirements called out above: synchronous multi-region strong consistency for money-moving writes, and a single global anycast entry point for latency-sensitive traffic.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 980 600" xmlns="http://www.w3.org/2000/svg">
+            <text x="16" y="18" font-size="13" font-weight="700" fill="#0f2545">High-Level Design &mdash; Global Checkout Platform on GCP</text>
+
+            <rect x="405" y="24" width="170" height="40" rx="6" fill="#0f2545"/>
+            <text x="490" y="49" text-anchor="middle" font-size="11" fill="#fff">Client (Web / Mobile)</text>
+
+            <line x1="490" y1="64" x2="490" y2="90" stroke="#334155" marker-end="url(#arrow-gcp-1)"/>
+            <rect x="400" y="90" width="180" height="40" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="490" y="115" text-anchor="middle" font-size="11">Cloud DNS</text>
+
+            <line x1="490" y1="130" x2="490" y2="160" stroke="#334155" marker-end="url(#arrow-gcp-1)"/>
+            <rect x="310" y="160" width="360" height="46" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="490" y="188" text-anchor="middle" font-size="11.5" font-weight="700" fill="#6b4a10">Cloud CDN + Cloud Armor (edge / WAF / DDoS)</text>
+
+            <line x1="490" y1="206" x2="490" y2="236" stroke="#334155" marker-end="url(#arrow-gcp-1)"/>
+            <rect x="290" y="236" width="400" height="46" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="490" y="264" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">Global External HTTPS Load Balancer (single anycast IP)</text>
+
+            <line x1="430" y1="282" x2="220" y2="330" stroke="#334155" marker-end="url(#arrow-gcp-1)"/>
+            <line x1="550" y1="282" x2="760" y2="330" stroke="#334155" marker-end="url(#arrow-gcp-1)"/>
+
+            <rect x="70" y="330" width="300" height="48" rx="6" fill="#0f2545"/>
+            <text x="220" y="359" text-anchor="middle" font-size="11" fill="#fff">GKE Autopilot &mdash; Checkout API microservices</text>
+
+            <rect x="610" y="330" width="300" height="48" rx="6" fill="#dce6f7" stroke="#94a3b8"/>
+            <text x="760" y="359" text-anchor="middle" font-size="11">Catalog Service (Cloud Run)</text>
+
+            <line x1="150" y1="378" x2="125" y2="430" stroke="#334155" marker-end="url(#arrow-gcp-1)"/>
+            <line x1="220" y1="378" x2="350" y2="430" stroke="#334155" marker-end="url(#arrow-gcp-1)"/>
+            <line x1="290" y1="378" x2="575" y2="430" stroke="#334155" marker-end="url(#arrow-gcp-1)"/>
+
+            <rect x="20" y="430" width="210" height="48" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="125" y="459" text-anchor="middle" font-size="10.5">Cloud Spanner (orders / payments)</text>
+
+            <rect x="250" y="430" width="200" height="48" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="350" y="459" text-anchor="middle" font-size="10.5">Memorystore for Redis (cache)</text>
+
+            <rect x="470" y="430" width="210" height="48" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="575" y="459" text-anchor="middle" font-size="10.5">Pub/Sub (order-placed events)</text>
+
+            <line x1="760" y1="378" x2="765" y2="430" stroke="#334155" marker-end="url(#arrow-gcp-1)"/>
+            <line x1="800" y1="378" x2="910" y2="430" stroke="#334155" marker-end="url(#arrow-gcp-1)"/>
+
+            <rect x="700" y="430" width="130" height="46" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="765" y="458" text-anchor="middle" font-size="10">Firestore / Cloud SQL (catalog)</text>
+
+            <rect x="850" y="430" width="120" height="46" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="910" y="458" text-anchor="middle" font-size="10">Cloud Storage (images)</text>
+
+            <line x1="575" y1="478" x2="455" y2="530" stroke="#334155" stroke-dasharray="5,4" marker-end="url(#arrow-gcp-1)"/>
+            <line x1="575" y1="478" x2="630" y2="530" stroke="#334155" stroke-dasharray="5,4" marker-end="url(#arrow-gcp-1)"/>
+            <line x1="575" y1="478" x2="815" y2="530" stroke="#334155" stroke-dasharray="5,4" marker-end="url(#arrow-gcp-1)"/>
+
+            <rect x="380" y="530" width="150" height="42" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="455" y="555" text-anchor="middle" font-size="10">Fulfillment Service</text>
+
+            <rect x="550" y="530" width="160" height="42" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="630" y="555" text-anchor="middle" font-size="10">Notification Service</text>
+
+            <rect x="730" y="530" width="170" height="42" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="815" y="555" text-anchor="middle" font-size="10">Fraud-Review Service</text>
+
+            <polyline points="910,430 950,430 950,80 670,80 670,183" fill="none" stroke="#5a6472" stroke-dasharray="5,4" marker-end="url(#arrow-gcp-1)"/>
+            <text x="810" y="73" text-anchor="middle" font-size="9" fill="#5a6472">product images served from CDN edge cache directly to the client</text>
+
+            <defs><marker id="arrow-gcp-1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level design &mdash; a single anycast entry point fronts both the checkout write path (GKE Autopilot &rarr; Spanner / Memorystore / Pub/Sub &rarr; async downstream consumers) and the catalog read path (Cloud Run &rarr; Firestore/Cloud SQL), while Cloud Storage product images are served from the Cloud CDN edge cache without touching either application tier on a cache hit.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>One anycast IP, two independently-scaling paths:</strong> the checkout (write-heavy, strongly consistent) and catalog (read-heavy, eventually consistent) services share the same edge and load-balancing layer but diverge immediately afterward, so each can scale on its own terms.</li>
+          <li><strong>Everything not required to answer "was this order accepted?" is asynchronous:</strong> fulfillment, notifications, and fraud review all happen off Pub/Sub, after the checkout response has already been returned to the client.</li>
+          <li><strong>Static assets never touch the application tier on a cache hit:</strong> the Cloud Storage &rarr; Cloud CDN loop mirrors the same principle proven out in CDN-fronted designs elsewhere in this series &mdash; the fastest request is the one that never reaches your servers.</li>
+        </ul>
+
+        <h2 id="component-breakdown">Component Breakdown</h2>
+        <table class="sortable">
+          <tr><th>Component</th><th>GCP Service</th><th>Why Chosen Over Alternatives</th></tr>
+          <tr><td>Edge / CDN</td><td>Cloud CDN</td><td>Attaches directly to the Global External HTTPS Load Balancer with no separate distribution resource to manage, unlike stitching a CDN in front of a regional load balancer by hand.</td></tr>
+          <tr><td>WAF / DDoS</td><td>Google Cloud Armor</td><td>Shares the same anycast edge as Cloud CDN and the load balancer, so WAF rules and DDoS scrubbing apply globally from one policy, not per-region.</td></tr>
+          <tr><td>Load Balancing</td><td>Global External HTTPS Load Balancer</td><td>One anycast IP for all regions; routes to the nearest healthy backend at the network layer &mdash; no DNS TTL-based failover delay during a regional incident.</td></tr>
+          <tr><td>Compute / Containers</td><td>GKE Autopilot</td><td>Pay-per-pod-resource pricing, Google-managed node lifecycle/patching, and a 99.95% SLA that matches the platform's own availability target out of the box. See deep dive below.</td></tr>
+          <tr><td>Primary OLTP Database</td><td>Cloud Spanner</td><td>The only option among the three clouds offering synchronous, externally-consistent writes across multiple active write regions simultaneously. See deep dive below.</td></tr>
+          <tr><td>Cache</td><td>Memorystore for Redis</td><td>Fully managed Redis for session/cart hot-path reads, taking the caching layer off Spanner's read load without operating Redis nodes directly.</td></tr>
+          <tr><td>Async Messaging</td><td>Pub/Sub</td><td>Fully managed, globally available pub/sub with at-least-once delivery and no cluster/broker capacity planning, ideal for fanning order-placed events out to several independent consumers.</td></tr>
+          <tr><td>Catalog Database</td><td>Firestore</td><td>Native multi-region replication and flexible document schema fit a 50M-SKU catalog with varying attribute sets per product category better than a fixed relational schema at this scale.</td></tr>
+          <tr><td>Object Storage</td><td>Cloud Storage</td><td>Standard object store for product images, with lifecycle rules to auto-tier cold assets and native integration as a Cloud CDN origin.</td></tr>
+          <tr><td>IAM</td><td>Google Cloud IAM (custom roles)</td><td>Least-privilege custom roles scoped per service, paired with Workload Identity Federation so GKE workloads never need long-lived service account keys.</td></tr>
+          <tr><td>Secrets</td><td>Secret Manager</td><td>Centralized secret storage with IAM-scoped access and automatic versioning, avoiding secrets baked into container images or environment variables.</td></tr>
+          <tr><td>Encryption Keys</td><td>Cloud KMS (CMEK)</td><td>Customer-managed encryption keys for data at rest across Spanner, Firestore, and Cloud Storage, satisfying PCI-DSS-adjacent key-custody expectations.</td></tr>
+          <tr><td>Observability (metrics / logs / traces)</td><td>Cloud Monitoring, Cloud Logging, Cloud Trace</td><td>One integrated observability stack across every GCP service in the architecture, rather than stitching together separate metrics/log/trace backends.</td></tr>
+        </table>
+
+        <h3>Compute Deep Dive &mdash; GKE Autopilot vs. Cloud Run vs. Compute Engine VMs</h3>
+        <p>Three real compute options exist for the checkout API, and the choice genuinely matters here. <strong>Compute Engine VMs</strong> are ruled out first: running the checkout fleet as hand-managed VM groups means owning OS patching, capacity planning, and container orchestration from scratch &mdash; solvable, but it's re-building what GKE already provides, for a workload that doesn't need VM-level customization (no exotic kernel modules, no GPU pinning, no licensing constraint forcing bare VMs). <strong>Cloud Run</strong> is a genuinely strong contender for a single stateless HTTP API: it scales to zero, requires no cluster to operate, and is the right default for a lighter-weight service like the catalog-browse API in this same architecture, where cold-start latency on scale-from-zero is tolerable and there's no need for a shared service mesh across many microservices. The checkout API, however, is not one service &mdash; it's a small constellation of cooperating microservices (checkout orchestration, inventory reservation, payment-tokenization client, order writer) that benefit from a shared cluster boundary: consistent network policy, a common service mesh for mTLS between services, fine-grained pod affinity/anti-affinity to spread across zones, and predictable warm capacity so a flash-sale traffic ramp doesn't fight cold-start latency on the most latency-sensitive path in the whole system. <strong>GKE Autopilot</strong> gives that Kubernetes flexibility while removing the traditional GKE operational burden: Google manages node provisioning, security patching, and bin-packing, and billing is per-pod-resource-request rather than per-node, which removes the classic "we over-provisioned nodes for headroom we never used" waste. The trade-off is real: Autopilot restricts some low-level node customizations (e.g. privileged DaemonSets, certain host-level configurations) that standard GKE allows &mdash; none of which this checkout workload needs, which is exactly why Autopilot is the right default here rather than standard GKE or a from-scratch VM fleet.</p>
+
+        <h3>Primary Database Deep Dive &mdash; Cloud Spanner vs. Cloud SQL vs. Bigtable vs. Firestore</h3>
+        <p><strong>Cloud SQL</strong> (managed MySQL/Postgres) is eliminated for the order/payment table specifically because it is fundamentally single-region-write: achieving multi-region active-active with Cloud SQL means manual application-level sharding across independent regional instances plus asynchronous cross-region replication for DR &mdash; which reintroduces exactly the "eventual consistency window where a double-charge or lost order becomes possible" that this workload cannot tolerate. <strong>Bigtable</strong> is a wide-column store built for massive-scale, single-key-lookup, eventually-consistent workloads (time series, IoT, ML feature stores) &mdash; excellent for the clickstream/analytics side of this platform, but it has no multi-row ACID transactions, which rules it out for "decrement inventory and write the order atomically." <strong>Firestore</strong> offers documents, multi-region replication, and transactions scoped to a limited set of documents &mdash; a reasonable fit for the catalog (which is exactly where this design uses it), but its transaction model and throughput profile are tuned for document-level operations, not the relational, schema-enforced, high-throughput transactional workload of an order ledger with line items, inventory counters, and payment references that benefit from real joins and secondary indexes. <strong>Cloud Spanner</strong> is purpose-built for exactly this gap: a relational schema with real ACID transactions, horizontal scalability to handle the 5,000 TPS peak, and &mdash; the deciding factor &mdash; external consistency via TrueTime, meaning a transaction that commits in one region is guaranteed to be visible everywhere as having happened at a single, well-defined point in time, even with concurrent writes landing in different regions. That is what "an order must never be double-charged or lost" means in database terms, and it's the one property none of the other three options can provide without a compromise on write topology or transaction semantics. The honest cost: Spanner nodes/processing units are priced at a premium over comparable Cloud SQL capacity, and the interleaved-table schema design and primary-key hotspotting concerns (e.g. avoiding monotonically increasing keys as a partition key) require real ramp-up time for a team new to it.</p>
+
+        <h2 id="data-flow">Data Flow</h2>
+        <p>Two distinct flows matter for this platform: the synchronous checkout request that a customer is actively waiting on, and the asynchronous fan-out that happens after the order is already durably committed.</p>
+
+        <h3>Synchronous Checkout Request Walkthrough</h3>
+        <ol>
+          <li>Client submits a checkout request over HTTPS (cart contents, shipping address, tokenized payment method reference).</li>
+          <li>Cloud DNS resolves the platform's single global anycast IP &mdash; a one-time lookup, typically already cached client-side.</li>
+          <li>The request hits the edge: Cloud Armor evaluates WAF rules and DDoS/bot signals before anything reaches application infrastructure; Cloud CDN passes through non-cacheable API traffic untouched.</li>
+          <li>The Global External HTTPS Load Balancer routes the request to the nearest healthy GKE Autopilot pod &mdash; nearest by network topology, not by a DNS-level regional redirect.</li>
+          <li>The Checkout API pod validates the request and checks Memorystore for a cached inventory/session read; on a cache miss it reads current availability from Cloud Spanner.</li>
+          <li>The Checkout API calls out to the external, certified payment processor to authorize and tokenize the payment reference &mdash; the raw PAN never enters this system at any point.</li>
+          <li>On successful authorization, the Checkout API issues a single Cloud Spanner transaction that both decrements reserved inventory and writes the order record &mdash; externally consistent and atomic: either both happen, or neither does.</li>
+          <li>Immediately after the transaction commits, the Checkout API publishes an order-placed event to Pub/Sub. This publish is fire-and-forget from the caller's perspective &mdash; it does not block the response.</li>
+          <li>The order confirmation is returned to the client, targeting sub-150ms p99 for the entire round trip.</li>
+        </ol>
+
+        <h3>Asynchronous Fan-Out Walkthrough</h3>
+        <ol>
+          <li>Pub/Sub delivers the order-placed event to every subscribed consumer independently &mdash; each consumer has its own subscription and processes at its own pace.</li>
+          <li>The <strong>Fulfillment</strong> consumer reserves the physical pick/pack/ship workflow in the warehouse management system.</li>
+          <li>The <strong>Notification</strong> consumer sends the order-confirmation email/SMS/push notification to the customer.</li>
+          <li>The <strong>Fraud-Review</strong> consumer runs deeper, slower risk scoring than what was feasible synchronously at checkout time; a flagged order triggers a manual review workflow without unwinding the already-committed, already-shipped-toward order.</li>
+        </ol>
+        <p>Pub/Sub guarantees at-least-once delivery, not exactly-once by default, so every one of these consumers must be idempotent &mdash; safely re-processing the same order-placed event twice (e.g. after a redelivery following a consumer crash before acknowledgment) must not double-ship, double-notify, or double-flag the same order.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 900 800" xmlns="http://www.w3.org/2000/svg">
+            <text x="16" y="18" font-size="13" font-weight="700" fill="#0f2545">Checkout Request Lifecycle &mdash; Sequential Steps 1&ndash;9, then Async Fan-Out</text>
+
+            <rect x="140" y="30" width="620" height="44" rx="6" fill="#0f2545"/>
+            <text x="450" y="57" text-anchor="middle" font-size="11" fill="#fff">1. Client sends checkout request (HTTPS) to the platform's anycast IP</text>
+            <line x1="450" y1="74" x2="450" y2="100" stroke="#334155" marker-end="url(#arrow-gcp-2)"/>
+
+            <rect x="140" y="100" width="620" height="44" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="450" y="127" text-anchor="middle" font-size="11">2. Cloud DNS resolves the anycast IP (typically already cached)</text>
+            <line x1="450" y1="144" x2="450" y2="170" stroke="#334155" marker-end="url(#arrow-gcp-2)"/>
+
+            <rect x="140" y="170" width="620" height="44" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="450" y="197" text-anchor="middle" font-size="11">3. Cloud CDN + Cloud Armor inspect the request at the edge (WAF, DDoS)</text>
+            <line x1="450" y1="214" x2="450" y2="240" stroke="#334155" marker-end="url(#arrow-gcp-2)"/>
+
+            <rect x="140" y="240" width="620" height="44" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="450" y="267" text-anchor="middle" font-size="11">4. Global External HTTPS Load Balancer routes to nearest healthy GKE pod</text>
+            <line x1="450" y1="284" x2="450" y2="310" stroke="#334155" marker-end="url(#arrow-gcp-2)"/>
+
+            <rect x="140" y="310" width="620" height="44" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="450" y="337" text-anchor="middle" font-size="11">5. Checkout API validates request; checks Memorystore / Spanner for inventory</text>
+            <line x1="450" y1="354" x2="450" y2="380" stroke="#334155" marker-end="url(#arrow-gcp-2)"/>
+
+            <rect x="140" y="380" width="620" height="44" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="450" y="407" text-anchor="middle" font-size="11">6. Checkout API calls external processor to tokenize the payment reference</text>
+            <line x1="450" y1="424" x2="450" y2="450" stroke="#334155" marker-end="url(#arrow-gcp-2)"/>
+
+            <rect x="140" y="450" width="620" height="44" rx="6" fill="#0f2545"/>
+            <text x="450" y="477" text-anchor="middle" font-size="11" fill="#fff">7. Single Cloud Spanner transaction: decrement inventory + write order</text>
+            <line x1="450" y1="494" x2="450" y2="520" stroke="#334155" marker-end="url(#arrow-gcp-2)"/>
+
+            <rect x="140" y="520" width="620" height="44" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="450" y="547" text-anchor="middle" font-size="11">8. Checkout API publishes order-placed event to Pub/Sub (non-blocking)</text>
+            <line x1="450" y1="564" x2="450" y2="590" stroke="#334155" marker-end="url(#arrow-gcp-2)"/>
+
+            <rect x="140" y="590" width="620" height="44" rx="6" fill="#0f2545"/>
+            <text x="450" y="617" text-anchor="middle" font-size="11" fill="#fff">9. Order confirmation returned to client (p99 target: sub-150ms)</text>
+
+            <line x1="330" y1="564" x2="180" y2="670" stroke="#334155" stroke-dasharray="5,4" marker-end="url(#arrow-gcp-2)"/>
+            <line x1="450" y1="564" x2="450" y2="670" stroke="#334155" stroke-dasharray="5,4" marker-end="url(#arrow-gcp-2)"/>
+            <line x1="570" y1="564" x2="720" y2="670" stroke="#334155" stroke-dasharray="5,4" marker-end="url(#arrow-gcp-2)"/>
+
+            <text x="450" y="655" text-anchor="middle" font-size="9.5" fill="#5a6472">async fan-out via Pub/Sub &mdash; at-least-once delivery, consumers must be idempotent</text>
+
+            <rect x="60" y="670" width="240" height="46" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="180" y="698" text-anchor="middle" font-size="10.5">Fulfillment Service</text>
+
+            <rect x="330" y="670" width="240" height="46" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="450" y="698" text-anchor="middle" font-size="10.5">Notification Service</text>
+
+            <rect x="600" y="670" width="240" height="46" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="720" y="698" text-anchor="middle" font-size="10.5">Fraud-Review Service</text>
+
+            <defs><marker id="arrow-gcp-2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Figure 2. Request lifecycle for a single checkout call, steps 1&ndash;9, with the Pub/Sub-driven async fan-out to fulfillment, notification, and fraud-review consumers happening entirely after step 9 has already returned to the client.</div>
+        </div>
+
+        <h2 id="infrastructure-as-code-iac">Infrastructure as Code (IaC)</h2>
+        <p>This platform is provisioned with Terraform using the official <code>hashicorp/google</code> provider, currently in the 7.x major version line (e.g. 7.40.0 as of mid-2026). Resource arguments have shifted between major provider versions in the past (renamed fields, changed defaults, deprecated blocks), so production configurations should always pin an exact provider version and check the current provider documentation before upgrading across a major version boundary.</p>
+        <p>The script below provisions core networking and compute only &mdash; a custom-mode VPC, one subnet per region for the multi-region deployment, baseline firewall rules, and a regional GKE Autopilot cluster per region. It deliberately does not provision every service shown in the architecture diagram (Spanner, Pub/Sub, Memorystore, etc.) &mdash; those belong in their own focused modules, kept separate from the network/compute foundation shown here.</p>
+
+        <pre><code>terraform {
+  required_version = "&gt;= 1.7.0"
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~&gt; 7.40.0"  # pin an exact minor version; provider resource
+                              # arguments can shift across major versions --
+                              # always check current docs before upgrading
+    }
+  }
+}
+
+provider "google" {
+  project = var.project_id
+  region  = var.region_primary
+}
+
+# ---------------------------------------------------------------------------
+# Networking -- one custom-mode VPC shared across regions. Custom-mode means
+# we declare every subnet explicitly rather than accepting GCP's automatic
+# per-region defaults, which keeps IP ranges predictable and non-overlapping.
+# ---------------------------------------------------------------------------
+
+resource "google_compute_network" "checkout_vpc" {
+  name                    = "checkout-platform-vpc"
+  auto_create_subnetworks = false   # custom-mode: subnets are defined below, per region
+  routing_mode            = "GLOBAL" # routes/firewall rules apply consistently across all regions
+}
+
+resource "google_compute_subnetwork" "primary_region_subnet" {
+  name                     = "checkout-subnet-${var.region_primary}"
+  ip_cidr_range            = "10.10.0.0/20"
+  region                   = var.region_primary
+  network                  = google_compute_network.checkout_vpc.id
+  private_ip_google_access = true  # lets pods/VMs without external IPs reach
+                                    # Google APIs (Spanner, Pub/Sub, Secret Manager, etc.)
+
+  secondary_ip_range {
+    range_name    = "pods"
+    ip_cidr_range = "10.20.0.0/14"
+  }
+  secondary_ip_range {
+    range_name    = "services"
+    ip_cidr_range = "10.30.0.0/20"
+  }
+}
+
+resource "google_compute_subnetwork" "secondary_region_subnet" {
+  name                     = "checkout-subnet-${var.region_secondary}"
+  ip_cidr_range            = "10.11.0.0/20"
+  region                   = var.region_secondary
+  network                  = google_compute_network.checkout_vpc.id
+  private_ip_google_access = true
+
+  secondary_ip_range {
+    range_name    = "pods"
+    ip_cidr_range = "10.21.0.0/14"
+  }
+  secondary_ip_range {
+    range_name    = "services"
+    ip_cidr_range = "10.31.0.0/20"
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Firewall rules -- explicit allow-lists plus a deny-all default. Rules are
+# evaluated by priority (lower number = evaluated first).
+# ---------------------------------------------------------------------------
+
+resource "google_compute_firewall" "allow_health_checks" {
+  name      = "allow-gclb-health-checks"
+  network   = google_compute_network.checkout_vpc.id
+  direction = "INGRESS"
+  priority  = 900
+
+  # Google's published source ranges for external/internal load balancer health checks
+  source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "443", "8080"]
+  }
+
+  target_tags = ["checkout-gke-node"]
+}
+
+resource "google_compute_firewall" "allow_internal" {
+  name      = "allow-internal-vpc-traffic"
+  network   = google_compute_network.checkout_vpc.id
+  direction = "INGRESS"
+  priority  = 1000
+
+  source_ranges = [
+    "10.10.0.0/20", "10.20.0.0/14", "10.30.0.0/20", # primary region: nodes, pods, services
+    "10.11.0.0/20", "10.21.0.0/14", "10.31.0.0/20", # secondary region: nodes, pods, services
+  ]
+
+  allow {
+    protocol = "tcp"
+  }
+  allow {
+    protocol = "udp"
+  }
+  allow {
+    protocol = "icmp"
+  }
+}
+
+resource "google_compute_firewall" "deny_all_ingress" {
+  name      = "deny-all-ingress-default"
+  network   = google_compute_network.checkout_vpc.id
+  direction = "INGRESS"
+  priority  = 65534 # lowest priority -- evaluated last, after the explicit allows above
+  source_ranges = ["0.0.0.0/0"]
+
+  deny {
+    protocol = "all"
+  }
+}
+
+# ---------------------------------------------------------------------------
+# GKE Autopilot clusters -- one regional cluster per active-active region.
+# Autopilot manages node provisioning, patching, and bin-packing; we only
+# declare the control plane and its network attachment.
+# ---------------------------------------------------------------------------
+
+resource "google_container_cluster" "checkout_primary" {
+  name       = "checkout-api-${var.region_primary}"
+  location   = var.region_primary # regional (multi-zone control plane), not zonal
+  network    = google_compute_network.checkout_vpc.id
+  subnetwork = google_compute_subnetwork.primary_region_subnet.id
+
+  enable_autopilot = true # Autopilot mode -- no node_pool blocks allowed/needed
+
+  ip_allocation_policy {
+    cluster_secondary_range_name  = "pods"
+    services_secondary_range_name = "services"
+  }
+
+  release_channel {
+    channel = "REGULAR" # balances current GKE/Kubernetes versions against stability
+  }
+
+  deletion_protection = true # require explicit override before `terraform destroy` can remove prod
+}
+
+resource "google_container_cluster" "checkout_secondary" {
+  name       = "checkout-api-${var.region_secondary}"
+  location   = var.region_secondary
+  network    = google_compute_network.checkout_vpc.id
+  subnetwork = google_compute_subnetwork.secondary_region_subnet.id
+
+  enable_autopilot = true
+
+  ip_allocation_policy {
+    cluster_secondary_range_name  = "pods"
+    services_secondary_range_name = "services"
+  }
+
+  release_channel {
+    channel = "REGULAR"
+  }
+
+  deletion_protection = true
+}
+
+# ---------------------------------------------------------------------------
+# Variables
+# ---------------------------------------------------------------------------
+
+variable "project_id" {
+  description = "GCP project hosting the checkout platform"
+  type        = string
+}
+
+variable "region_primary" {
+  description = "Primary GCP region for the active-active deployment"
+  type        = string
+  default     = "us-central1"
+}
+
+variable "region_secondary" {
+  description = "Secondary GCP region for the active-active deployment"
+  type        = string
+  default     = "europe-west1"
+}</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Production Terraform practices</div>
+          Store Terraform state in a remote GCS backend with state locking enabled, never locally and never committed to version control. Keep a separate <code>.tfvars</code> file per environment (dev/staging/prod) so the same module can't accidentally apply prod-sized (or prod-named) resources against a lower environment. Always run <code>terraform plan</code> as a required CI check before any <code>apply</code> is allowed to run, and require human approval on the plan output for production applies specifically.
+        </div>
+
+        <h2 id="best-practices">Best Practices</h2>
+
+        <h3>Security</h3>
+        <ul>
+          <li>Use Google Cloud IAM least-privilege custom roles per service rather than broad primitive roles (Owner/Editor) &mdash; the checkout service should not hold permissions the catalog service needs, and vice versa.</li>
+          <li>Use Workload Identity Federation for every GKE workload instead of downloading long-lived service account key files &mdash; keys that can leak, get committed to a repo, or simply never get rotated.</li>
+          <li>Encrypt data at rest with Cloud KMS customer-managed encryption keys (CMEK) across Spanner, Firestore, and Cloud Storage, so key custody and rotation policy live outside any single service's default configuration.</li>
+          <li>Enforce TLS everywhere in transit, terminating at the Global External HTTPS Load Balancer with Google-managed certificates, and again between internal services via mTLS.</li>
+          <li>Use VPC Service Controls around the projects holding order and payment-adjacent data, to create a hard perimeter against data exfiltration even if IAM is misconfigured somewhere downstream.</li>
+          <li>Store all credentials and API keys (including the payment processor's client credentials) in Secret Manager, never in environment variables or container images.</li>
+          <li>Configure Cloud Armor rules for common web attacks (SQLi, XSS, bot/scraper signatures) at the edge, before requests ever reach GKE.</li>
+        </ul>
+
+        <h3>Monitoring, Logging and Alerting</h3>
+        <ul>
+          <li>Build Cloud Monitoring dashboards around the platform's actual SLOs (p99 checkout latency, 99.95% availability, Spanner commit latency), with alerting policies tied to SLO burn rate rather than raw threshold crossings alone.</li>
+          <li>Centralize structured logs in Cloud Logging across every service, and define log-based metrics for business-relevant events (payment tokenization failures, inventory reservation conflicts) that wouldn't otherwise surface as an infrastructure metric.</li>
+          <li>Instrument the entire checkout call path with Cloud Trace, from the load balancer through the Checkout API, the external payment processor call, and the Spanner transaction &mdash; this is what actually lets you find which hop is eating into the 150ms p99 budget.</li>
+          <li>Run uptime checks against the public checkout endpoint from multiple external locations, independent of in-cluster health checks, so a failure mode that only manifests externally (e.g. a load balancer misconfiguration) is still caught.</li>
+        </ul>
+
+        <h3>Cost Optimization</h3>
+        <ul>
+          <li>Use the CUD (Committed Use Discount) Recommender, which analyzes 30 days of usage history and produces recommendations under two distinct models &mdash; one optimized for stable-usage coverage, one optimized for maximum savings &mdash; letting a team pick the risk/reward trade-off that matches how predictable its workload actually is.</li>
+          <li>Committed Use Discounts can reduce compute costs by up to 57% for a 1-year commitment and up to 70% for a 3-year commitment &mdash; meaningful given this platform's large steady-state GKE and Spanner footprint.</li>
+          <li>As of June 2026, new GCP billing accounts have commitment sharing turned on by default at the billing-account level, meaning a commitment purchased against one project can apply across every eligible project on that account &mdash; a real, current lever for an organization running checkout, catalog, and other workloads under a shared billing account rather than one commitment per project.</li>
+          <li>GKE Autopilot's pay-per-pod-resource-request pricing model removes the classic node-level over-provisioning waste of standard GKE, where idle headroom on partially-packed nodes is paid for regardless of utilization.</li>
+          <li>Apply Cloud Storage lifecycle rules to automatically tier cold product images (discontinued SKUs, rarely-viewed listings) down to Nearline or Coldline storage classes, rather than paying Standard-class rates for assets nobody is actively browsing.</li>
+        </ul>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>These are grouped by theme; expect a real interview to pick a handful as "and then what?" follow-ups rather than working through every one in order.</p>
+
+        <h3>Consistency and Cloud Spanner</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">What is TrueTime, and why does it let Spanner claim "external consistency" rather than just "strong consistency"?</div>
+          <div class="qa-a">TrueTime is Google's globally synchronized clock API, backed by GPS and atomic clocks in Google's data centers, that returns a time interval bounded by a known uncertainty rather than a single instant. Spanner uses that bounded uncertainty to wait out the interval before acknowledging a commit, which lets it assign transactions a global commit order that matches real-world time ordering across regions &mdash; external consistency, which is a stronger guarantee than the strict serializability most "strongly consistent" databases offer within a single node or region.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Where does Spanner sit on the CAP theorem, and how does that reconcile with also being globally distributed?</div>
+          <div class="qa-a">Spanner is a CP system: during a network partition it favors consistency over availability for the affected range, rather than serving potentially stale/conflicting data. In practice, its multi-region replica topology and Paxos-based quorum writes mean partitions are rare and short-lived at the scale most applications operate, but the honest CAP classification is still CP, not "all three."</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why can't Aurora Global Database or Cosmos DB simply replace Spanner here?</div>
+          <div class="qa-a">Aurora Global Database is strongly consistent only within its single primary write region; cross-region replicas are asynchronous, so a failover can lose the last fraction of a second of writes. Cosmos DB's "Strong" consistency level is real, but it constrains writes to a single region &mdash; multi-region active-active writes on Cosmos DB require dropping to a weaker tunable consistency level, reintroducing the exact risk (a double-charge or lost order under concurrent regional writes) this platform is designed to eliminate.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What schema design mistake commonly causes Spanner hotspotting, and how do you avoid it?</div>
+          <div class="qa-a">Using a monotonically increasing value (like an auto-incrementing order ID or a timestamp) as a leading primary-key column concentrates all new writes on a single key range/split, defeating horizontal scalability. The standard fix is to prefix the key with a high-cardinality, well-distributed value (e.g. a hash of the customer ID or a UUID) so new writes spread evenly across splits.</div>
+        </div>
+
+        <h3>Compute Trade-offs</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">When would you pick Cloud Run over GKE Autopilot for a service in this architecture?</div>
+          <div class="qa-a">For a single, simple, stateless HTTP service where scale-to-zero and near-zero operational overhead matter more than a shared cluster boundary &mdash; the catalog-browse API is a good candidate. GKE Autopilot earns its keep when several cooperating microservices need a shared service mesh, consistent network policy, and warm capacity that avoids cold-start latency on the most latency-sensitive path, which describes the checkout API constellation specifically.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">GKE Autopilot vs. standard GKE &mdash; what do you give up?</div>
+          <div class="qa-a">Autopilot removes node-level control: no privileged DaemonSets, limited host-level customization, and Google chooses the underlying node shape for you. In exchange you get per-pod billing instead of per-node, and Google handles node provisioning, upgrades, and security patching. For a workload without an unusual node-level requirement, that trade is a clear win.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does GKE Autopilot's 99.95% SLA relate to the platform's own 99.95% availability target?</div>
+          <div class="qa-a">It's a favorable but not sufficient alignment &mdash; Autopilot's own SLA covers the Kubernetes control plane and node availability, not the application's end-to-end availability, which also depends on Spanner, the load balancer, Pub/Sub, and the application code itself. A real 99.95% SLA commitment requires composing the SLAs (and failure modes) of every dependency in the critical path, not just the compute layer.</div>
+        </div>
+
+        <h3>Messaging and Async Processing</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Pub/Sub is described as "at-least-once" delivery &mdash; what does that mean practically for the fulfillment/notification/fraud-review consumers?</div>
+          <div class="qa-a">A message can be redelivered (e.g. a consumer crashes after processing but before acknowledging), so every consumer must be idempotent: processing the same order-placed event twice must not double-ship, double-email, or double-flag the same order. This is usually implemented by keying processing on the order ID and checking/recording a processed-state before taking the side-effecting action.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why publish the order-placed event after the Spanner commit rather than before or as part of the same transaction?</div>
+          <div class="qa-a">Publishing before or during the commit risks announcing an order that Spanner then fails to actually commit (e.g. an inventory conflict), which would trigger fulfillment/notifications for an order that never really happened. Publishing strictly after a successful commit guarantees every event downstream corresponds to a real, durable order.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens to the customer-visible checkout latency if Pub/Sub is temporarily degraded?</div>
+          <div class="qa-a">Nothing, if the publish call is truly fire-and-forget with a bounded local retry/buffer rather than a synchronous blocking call on the critical path. The order is already committed in Spanner before the publish is attempted, so a Pub/Sub outage delays fulfillment/notifications, not the checkout response itself.</div>
+        </div>
+
+        <h3>Networking and Global Load Balancing</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How does the Global External HTTPS Load Balancer's single anycast IP avoid the DNS-based failover problem?</div>
+          <div class="qa-a">With DNS-based traffic management (e.g. latency-based routing or a Traffic Manager), a client resolves a region-specific IP and caches it for the DNS record's TTL &mdash; so a regional failure isn't visible to that client until the TTL expires and it re-resolves. An anycast IP is announced from every region simultaneously at the network (BGP) layer, so routing away from an unhealthy region happens without the client ever needing to re-resolve anything.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Is anycast global load balancing genuinely unique to GCP?</div>
+          <div class="qa-a">No &mdash; AWS Global Accelerator and Azure Front Door both provide anycast-based global entry points today. GCP's differentiator is narrower than "only GCP has this": it's that the Global External HTTPS Load Balancer integrates CDN, WAF, and HTTP(S) load balancing behind that one anycast IP as a single managed resource, whereas achieving the same outcome on AWS commonly involves composing Global Accelerator with per-region ALBs and Route 53.</div>
+        </div>
+
+        <h3>Cost and Operations</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you decide between the CUD Recommender's stable-usage-coverage model and its optimal-savings model?</div>
+          <div class="qa-a">Stable-usage coverage is the safer choice when the checkout platform's baseline (the 500 TPS steady-state, not the flash-sale peaks) is well understood and unlikely to shrink &mdash; commit against that floor. The optimal-savings model pushes further and accepts more variance/risk of an under-utilized commitment if usage patterns are still evolving; teams typically start conservative and revisit as 30 more days of usage data accumulate.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What changed about GCP commitment sharing as of June 2026, and why does it matter for a platform like this?</div>
+          <div class="qa-a">New billing accounts now have commitment sharing turned on by default at the billing-account level, so a CUD purchased against one project (say, the checkout project) automatically applies across every other eligible project on the same billing account (catalog, analytics, etc.), rather than requiring a separate commitment per project. This removes a manual step that previously caused organizations to under-utilize commitments purchased in the "wrong" project.</div>
+        </div>
+
+        <h3>Security</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Why use Workload Identity Federation instead of service account keys for GKE workloads?</div>
+          <div class="qa-a">A downloaded service account key is a long-lived credential that can leak (committed to a repo, left in a container image, exfiltrated from a compromised pod) with no built-in expiry. Workload Identity Federation lets a Kubernetes service account impersonate a Google service account using short-lived, automatically-rotated tokens tied to the pod's identity, so there's no static key to steal in the first place.</div>
+        </div>
+
+        <h3>Disaster Recovery and Multi-Region</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Walk through what happens if an entire GCP region hosting one of the two active regions goes down.</div>
+          <div class="qa-a">The Global External HTTPS Load Balancer's health checks detect the region's backends as unhealthy and stop routing new traffic there at the anycast layer &mdash; no DNS change required. Cloud Spanner's multi-region configuration already replicates synchronously across regions, so in-flight and already-committed order data in the surviving region(s) remains fully consistent and available; only the failed region's in-flight (not-yet-committed) requests are lost and must be retried by the client, which is an acceptable, bounded blast radius given the alternative of losing consistency guarantees entirely.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This architecture earns the "GCP" label for two specific, defensible reasons, not a general platform preference: Cloud Spanner's external consistency is the only option among the three major clouds that gives synchronous, globally strong-consistent writes across active-active regions &mdash; exactly what "an order must never be double-charged or lost" requires in database terms &mdash; and the Global External HTTPS Load Balancer's single anycast IP answers the "sub-150ms p99 globally" requirement without hand-built DNS failover logic. Everything else in the stack (GKE Autopilot, Memorystore, Pub/Sub, Firestore, Cloud CDN) is a strong, well-justified default, but not a unique differentiator the way those two are. Be honest in an interview about the real cost of that choice: Spanner carries a genuine operational learning curve and a cost premium over a conventional sharded relational database, and a team without this exact consistency requirement could reasonably choose Aurora Global Database or Cosmos DB instead. State the trade-offs explicitly &mdash; CAP classification, consistency model, cost ceiling &mdash; because that reasoning is what's actually being evaluated, not just the final box diagram.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Google Cloud, <a href="https://cloud.google.com/spanner/docs" target="_blank" rel="noopener">Cloud Spanner Documentation</a></li>
+          <li>Corbett et al., <a href="https://research.google/pubs/pub39966/" target="_blank" rel="noopener">"Spanner: Google's Globally-Distributed Database"</a> (TrueTime / external consistency paper)</li>
+          <li>Google Cloud, <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview" target="_blank" rel="noopener">GKE Autopilot Overview Documentation</a></li>
+          <li>Google Cloud Architecture Center, <a href="https://cloud.google.com/architecture" target="_blank" rel="noopener">Reference architectures and design patterns</a></li>
+          <li>Google Cloud, <a href="https://cloud.google.com/docs/cuds" target="_blank" rel="noopener">Committed Use Discounts and the CUD Recommender Documentation</a></li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="index.html"><span class="dir">Previous</span>Topic Overview</a>
+          <a class="next" href="aws.html"><span class="dir">Next</span>AWS</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

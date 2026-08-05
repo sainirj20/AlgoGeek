@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Bidding System | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">Online Bidding System</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-serialized-strictly-ordered-bid-acceptance-per-auction">Deep Dive — Serialized, Strictly-Ordered Bid Acceptance Per Auction</a></li>
+        <li><a href="#deep-dive-real-time-bid-fan-out-decoupled-from-the-acceptance-path">Deep Dive — Real-Time Bid Fan-Out Decoupled From the Acceptance Path</a></li>
+        <li><a href="#deep-dive-auction-close-and-anti-sniping-extension">Deep Dive — Auction Close and Anti-Sniping Extension</a></li>
+        <li><a href="#deep-dive-saga-style-cross-service-consistency">Deep Dive — Saga-Style Cross-Service Consistency</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#feature-specific-logic-proxymax-bid-auto-bidding">Feature-Specific Logic: Proxy/Max-Bid Auto-Bidding</a></li>
+        <li><a href="#rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Online Bidding System (eBay-Style Auctions)</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough: requirements, capacity estimation, API &amp; data model, the SQL-vs-NoSQL split, serialized per-auction bid acceptance, decoupled real-time fan-out, auto-close and anti-sniping, Saga-style cross-service consistency, sharding &amp; replication, proxy bidding, abuse prevention, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design an online bidding/auction platform in the style of eBay: a seller lists an item for a fixed duration (e.g. 24 hours, 3 days, or 7 days), buyers place competing bids that must strictly exceed the current highest bid by at least a minimum increment, and the listing closes automatically at its scheduled end time. At the instant of close, the system must determine — unambiguously, permanently, and auditably — who the winning bidder is, and notify both the winner and the seller so an order/payment flow can begin. While the auction is live, every bidder and every "watcher" following the item should see the current highest bid update in near real time.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>Most "design X at scale" interview problems reward eventual consistency almost everywhere — a stale feed, a delayed like-count, a slightly-late notification are all acceptable. This problem is the exception: the single most important requirement is that <strong>exactly one bidder is unambiguously the highest bidder at the exact instant the auction closes</strong>, and that fact must be provably, auditably correct even when two bids race in the same millisecond on a hot item. A strong candidate identifies this immediately as the load-bearing constraint and designs everything else — real-time fan-out, catalog browsing, cross-service updates — around never compromising it, while also never letting it slow those other paths down.</p>
+
+        <h3>Why build a dedicated Bidding Service instead of folding bids into the listing record?</h3>
+        <ul>
+          <li>A hot, viral item can receive a burst of write traffic (bids) concentrated in its final seconds, while the same item is simultaneously being read thousands of times per second by browsers loading its listing page — mixing those two workloads on one service/table means read-heavy browsing traffic and write-heavy bid traffic contend for the same resources.</li>
+          <li>Bid acceptance has a strict-consistency, strict-ordering requirement; listing browsing does not. Separating the services lets each be built, scaled, and replicated according to its own actual requirement instead of forcing one lowest-common-denominator design on both.</li>
+          <li>It isolates the auction-fairness-critical code path (bid validation, ordering, close semantics) from the much larger, much more frequently changing surface area of listing search, recommendations, and catalog browsing.</li>
+          <li>It gives us a single, narrow place to reason about — and prove — correctness under concurrent access, rather than scattering that responsibility across a general-purpose listing CRUD service.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope — this problem has several "it depends" forks that materially change the design.</p>
+        <ol>
+          <li>Do we close on a hard deadline (all bids after close_time are rejected, no exceptions), or do we need anti-sniping auto-extension (a late bid pushes the close time out)?</li>
+          <li>Is proxy/max-bid auto-bidding in scope, or do bidders always enter an explicit bid amount?</li>
+          <li>Do we need reserve prices (seller's hidden minimum) and/or a "Buy It Now" instant-purchase option, or is this a pure ascending-bid auction?</li>
+          <li>Is payment/settlement processing in scope, or does our design stop at "produce a winner and hand off to an order/payment platform"?</li>
+          <li>What's the minimum bid increment policy — a flat amount, or a tiered schedule that grows with price (e.g. $1 increments under $25, $5 increments over $100)?</li>
+          <li>Can a bidder retract or cancel a bid, and if so, under what constraints (e.g. only within a grace window, or only if the seller/platform approves)?</li>
+          <li>Do watchers need just the current price, or also personalized "you've been outbid" alerts?</li>
+          <li>What scale should we design for — total concurrently live auctions, and specifically the concurrency envelope of a single viral/hot item in its last minute?</li>
+          <li>Are there legal/dispute-resolution requirements around retaining a full, immutable bid history per auction?</li>
+          <li>Single region to start, or does the strict-consistency requirement need to be designed for multi-region from day one?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't stall waiting for every answer — state a reasonable assumption out loud ("I'll assume a hard deadline plus a short anti-sniping extension window, since that's the pattern real auction platforms converged on, and I'll assume proxy bidding is in scope since it's the feature most likely to generate a meaty follow-up discussion") and keep moving. Naming the fork and picking a defensible side is exactly the judgment interviewers want to see.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Sellers can create a time-boxed listing: title, description, images, starting price, minimum bid increment, auction duration/close_time, and optionally a reserve price.</li>
+          <li>Buyers can place a bid that must strictly exceed the current highest bid by at least the minimum increment; an insufficient bid is rejected with a clear reason.</li>
+          <li>The system enforces a single, unambiguous highest bidder at the moment of close and notifies the winner (and the seller) as soon as the auction closes.</li>
+          <li>Everyone watching an auction — bidders and passive watchers alike — sees the current highest bid update live, without refreshing the page.</li>
+          <li>Buyers can add/remove auctions to a personal watchlist and view their own bid history across auctions.</li>
+          <li>Support proxy/max-bid auto-bidding: a bidder sets a private ceiling, and the system automatically bids up on their behalf, up to that ceiling, whenever they're outbid.</li>
+          <li>Auto-close semantics are configurable: a hard deadline, or a hard deadline with an anti-sniping extension policy for bids arriving very close to close_time.</li>
+          <li>Every bid is retained in a full, immutable, strictly-ordered audit trail per auction for dispute resolution.</li>
+          <li>Outbid bidders are notified in near real time so they have a fair chance to respond before close.</li>
+          <li>Buyers can browse and search a very large, constantly changing catalog of live listings by category, keyword, price range, and time-remaining.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Strict consistency and strict ordering for bid acceptance:</strong> on a hot auction, no bid may be lost, silently dropped, or accepted out of order relative to when it actually arrived — this is the single defining NFR of the whole system, unlike most system-design problems where "eventually consistent is fine."</li>
+          <li><strong>High read scalability for browsing and watching:</strong> catalog search and listing views are read-heavy and can tolerate eventual consistency — a listing's displayed price lagging the true current price by a second or two is a cosmetic issue, not a correctness bug.</li>
+          <li><strong>Resilience of the close process:</strong> the auction-close job must fire exactly once per auction — never zero times (an auction that never resolves) and never more than once (which could re-run winner selection against a mutated state).</li>
+          <li><strong>Auditability and dispute resolution:</strong> every bid must be traceable — who placed it, for how much, at what time, in what order relative to every other bid on that auction — because auction fairness disputes depend entirely on this being provably correct.</li>
+          <li><strong>Low latency for real-time updates,</strong> but never at the cost of the bid-acceptance path — fan-out to watchers must never block or slow down whether a bid is accepted.</li>
+          <li><strong>Horizontal scalability across a very large number of independent, concurrent auctions,</strong> while isolating one hot auction's write load so it can never degrade every other auction sharing the cluster.</li>
+          <li><strong>Availability of the browsing/catalog path even during partial write-side degradation</strong> — a bidding hiccup on one auction should never take down the ability to browse the rest of the catalog.</li>
+        </ol>
+
+        <h3>Extended / Out of Scope</h3>
+        <p>We'll go deep on bid acceptance and ordering, real-time fan-out, auto-close/anti-sniping, cross-service consistency (Saga), data partitioning, proxy bidding, and abuse prevention. We call out but don't build the internals of payment/settlement processing, chargeback/dispute-resolution workflows, image storage/CDN pipelines, seller reputation and reviews, or search-relevance ranking internals — all real subsystems, layered on top of (or alongside) this core.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly and let them drive every downstream decision — the numbers below use eBay's own real order of magnitude for live listings as a grounding reference.</p>
+
+        <h3>Catalog Scale</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          &asymp;1.5 billion live listings at any given time (eBay's real order of magnitude for concurrently active listings)
+          <br>Assume an average auction lifetime of &asymp;5 days (a mix of 1/3/5/7/10-day formats)
+          <br>New listings created &asymp; auctions closing per day &asymp; 1,500,000,000 &divide; 5 &asymp; 300 million/day
+          <br>Average closings/sec &asymp; 300,000,000 &divide; 86,400 &asymp; 3,500/sec &mdash; though real closings cluster around popular listing-end times (e.g. Sunday evenings), not smoothly across the day
+        </div>
+
+        <h3>Bid Traffic — Average vs. Hot-Item Spike</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          &asymp;10% of listings receive at least one bid; those that do average &asymp;4 bids across their lifetime
+          <br>Bid-place requests/day &asymp; 300,000,000 &times; 0.10 &times; 4 &asymp; 120 million/day
+          <br>Average bid QPS = 120,000,000 &divide; 86,400 &asymp; 1,400/sec system-wide &mdash; modest in aggregate
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">The real challenge: a single hot auction</span>
+          A viral/hot auction in its final 60 seconds can draw 300&ndash;1,000+ competing (often proxy-triggered) bids as bidders and their auto-bid agents race the clock
+          <br>That's &asymp;5&ndash;16 bids/sec sustained against <strong>one</strong> auction_id's row/partition &mdash; trivial in aggregate cluster terms, but concentrated entirely on a single serialized write path
+          <br>This single-row contention on one hot item, not aggregate system QPS, is the real scaling challenge (see the Deep Dive on serialized bid acceptance below)
+        </div>
+
+        <h3>Watcher Fan-Out Sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          A popular/hot auction can accumulate 100,000&ndash;1,000,000 watchers (bidders + passive followers)
+          <br>Every accepted bid must fan a "current price changed" event out to all connected watchers for that auction_id &mdash; for a 500K-watcher item, one accepted bid triggers 500,000 WebSocket pushes
+          <br>Platform-wide: if 50,000 auctions are concurrently "hot" with &asymp;200 watchers each, that's &asymp;10 million standing WebSocket connections &mdash; a real but entirely separate scaling axis (connection fan-out) from the bid-acceptance write path
+        </div>
+
+        <h3>Storage Sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Bid ledger (SQL)</span>
+          120M bids/day &times; &asymp;150 bytes (bid_id, auction_id, bidder_id, amount, placed_at, sequence_no) &asymp; 18 GB/day raw
+          <br>Retained indefinitely for dispute/audit &asymp; 6.6 TB/year raw, &times;3 replication &asymp; &asymp;20 TB/year &mdash; modest; the bid ledger only needs to be strongly consistent, not enormous
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Catalog / listing metadata (NoSQL)</span>
+          1.5B listings &times; &asymp;2 KB (title, description, image refs, category, seller_id, price fields, close_time) &asymp; 3 PB raw
+          <br>&times;3 replication &asymp; &asymp;9 PB &mdash; this is the store that must scale to catalog-wide volume; it dwarfs the bid ledger by design, since the two stores serve entirely different consistency and scale requirements
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Live listings at any time</td><td>&asymp;1.5 billion</td></tr>
+          <tr><td>Listings created / closing per day</td><td>&asymp;300 million</td></tr>
+          <tr><td>Average bid QPS (system-wide)</td><td>&asymp;1,400/sec</td></tr>
+          <tr><td>Peak bid rate on a single hot auction (last 60s)</td><td>&asymp;5&ndash;16/sec sustained</td></tr>
+          <tr><td>Watchers on a single hot auction</td><td>up to &asymp;1,000,000</td></tr>
+          <tr><td>Concurrent standing WebSocket connections (platform-wide, hot auctions only)</td><td>&asymp;10 million</td></tr>
+          <tr><td>Bid ledger footprint (RF=3, per year)</td><td>&asymp;20 TB</td></tr>
+          <tr><td>Catalog / listing metadata footprint (RF=3)</td><td>&asymp;9 PB</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Buyers, sellers, and watchers all go through a single, versioned API. Every field needed for ordering, idempotency, and rendering travels with the request so the Bidding Service never needs a side lookup just to validate a bid.</p>
+
+        <h3>Create Listing</h3>
+        <pre><code>POST /v1/listings
+
+Request body:
+{
+  "seller_id": string,              // required
+  "title": string,                  // required
+  "description": string,
+  "category_id": string,
+  "images": [string],                // image references / CDN keys
+  "starting_price": decimal,        // required
+  "min_increment": decimal,         // required, or tiered schedule id
+  "reserve_price": decimal,         // optional, hidden from bidders
+  "duration_hours": integer,        // e.g. 24, 72, 168
+  "anti_snipe_window_sec": integer, // optional, e.g. 120; 0 disables anti-sniping
+  "buy_it_now_price": decimal       // optional
+}
+
+Response 201 Created:
+{ "listing_id": "lst_7f3a...", "auction_id": "auc_9d21...", "close_time": "2026-07-19T18:00:00Z", "status": "ACTIVE" }</code></pre>
+
+        <h3>Place Bid</h3>
+        <pre><code>POST /v1/auctions/{auction_id}/bids
+
+Request body:
+{
+  "bidder_id": string,             // required
+  "idempotency_key": string,       // required — caller-supplied, unique per logical bid attempt
+  "amount": decimal,               // required for a direct bid
+  "max_bid_amount": decimal        // optional — enables proxy/auto-bidding up to this ceiling
+}
+
+Response 200 OK (bid accepted):
+{
+  "bid_id": "bid_44e1...",
+  "sequence_no": 118,
+  "accepted": true,
+  "current_price": 152.50,
+  "current_high_bidder": "you",
+  "close_time": "2026-07-19T18:00:00Z"   // may have been extended by anti-sniping
+}
+
+Errors: 400 amount below current_price + min_increment &middot; 404 auction not found
+        409 duplicate idempotency_key (already processed) &middot; 410 auction already CLOSED
+        422 bidder is the seller, or is currently the high bidder (no self-outbid)</code></pre>
+
+        <h3>Get Auction Status</h3>
+        <pre><code>GET /v1/auctions/{auction_id}/status
+
+Response 200:
+{
+  "auction_id": "auc_9d21...",
+  "status": "OPEN | EXTENDED | CLOSED",
+  "current_price": 152.50,
+  "bid_count": 23,
+  "close_time": "2026-07-19T18:00:00Z",
+  "winner_bidder_id": null            // populated once status = CLOSED
+}</code></pre>
+
+        <h3>Watch / Unwatch</h3>
+        <pre><code>POST   /v1/auctions/{auction_id}/watch     { "user_id": string }
+DELETE /v1/auctions/{auction_id}/watch     { "user_id": string }
+GET    /v1/users/{user_id}/watchlist
+
+WebSocket subscribe (real-time updates):
+wss://realtime.example.com/v1/auctions/{auction_id}/subscribe
+&rarr; server pushes: { "type": "PRICE_UPDATE" | "OUTBID" | "AUCTION_CLOSED", "current_price": ..., "close_time": ... }</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          <code>idempotency_key</code> on <code>place-bid</code> is what makes retries safe under network flakiness at exactly the moment a bidder can least afford a duplicate submission (the final seconds of a close race). Call this out: "a client retry of a timed-out request reuses the same key, so the Bidding Service's unique constraint on it prevents the same logical bid from being counted twice."
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>The bid-acceptance transaction and the resulting order/payment records need ACID guarantees — "who currently has the highest bid" is a strict-consistency requirement, not a best-effort one.</li>
+          <li>Listing/catalog metadata is high-volume (billions of rows), read-heavy, and needs full-text search — a textbook fit for a document/NoSQL store that tolerates eventual consistency in exchange for horizontal read scale.</li>
+          <li>These two datasets have almost opposite requirements, which is exactly why they live in two different kinds of stores rather than one "good enough for everything" database.</li>
+        </ul>
+
+        <h3>Why SQL for the Bid-Acceptance Transaction and Order Records</h3>
+        <p>Accepting a bid is fundamentally a conditional update: "set current_price = X and current_high_bidder = Y, but only if the current_price is still what I last read." That's a compare-and-swap, and a relational database gives us row-level transactions, unique constraints, and (if needed) serializable isolation to make that operation provably correct under concurrent writers. Order and payment records inherit the same requirement: an order must reference exactly one winning bid, and that relationship must never be ambiguous.</p>
+
+        <h3>Why NoSQL/Document Store for Listing and Catalog Metadata</h3>
+        <p>A listing record (title, description, images, category, denormalized current price for display) is read enormously more often than it's written, needs to scale horizontally to billions of documents, and benefits from a search index (category facets, keyword search, price-range filters) far more than it benefits from relational joins or transactional guarantees. A document store (or a search-optimized store like Elasticsearch/OpenSearch backing a document database) is the standard fit, and it's completely fine if the displayed "current price" on a listing page is a second or two stale — the SQL bid ledger is always the actual source of truth.</p>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If pushed on "why not just use one database everywhere": a single store optimized for catalog-scale eventual-consistency reads would make the bid-acceptance CAS unsafe under concurrency; a single store optimized for the bid ledger's strict transactions would not horizontally scale to a multi-petabyte, billions-of-documents catalog. The split isn't indecision — it's matching each dataset to the consistency/scale trade-off it actually needs.
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Sellers create listings through a Listing/Seller Service; buyers browse and search through a read-optimized Catalog/Search store fed by that service. When a buyer places a bid, the request is routed to a dedicated Bidding Service, which serializes acceptance per auction_id and commits the outcome to a strongly consistent SQL bid ledger. Once committed, an event is published to a broker; a Real-Time/Notification Service consumes it and fans the update out over WebSocket to everyone watching that auction — entirely decoupled from the acceptance path itself, so slow or backed-up fan-out can never delay or block whether a bid is accepted.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sellers, buyers, and watchers go through an API Gateway to a Listing/Seller Service and Buyer/Account Service on the read-heavy browsing path, backed by a Catalog/Search NoSQL store, and to a dedicated Bidding Service on the write-heavy path, which commits to a strongly consistent SQL bid ledger and auction_state store. The SQL store publishes bid-accepted events to an Event Broker, which feeds a Real-Time/Notification Service that fans updates out to watchers over WebSocket, and an Order/Payment Service that creates orders for the auction winner on close.">
+            <style>
+              .bid-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .bid-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .bid-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .bid-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .bid-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .bid-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .bid-title-inv{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:#ffffff;}
+              .bid-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .bid-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:#dbe6ff;}
+              .bid-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .bid-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;}
+              .bid-arrow-dash{stroke:var(--color-accent);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+              .bid-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-bid-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-bid-1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="20" y="10" width="220" height="45" rx="6" class="bid-box"></rect>
+            <text x="130" y="28" text-anchor="middle" class="bid-title">Seller</text>
+            <text x="130" y="42" text-anchor="middle" class="bid-sub">creates a time-boxed listing</text>
+
+            <rect x="270" y="10" width="220" height="45" rx="6" class="bid-box"></rect>
+            <text x="380" y="28" text-anchor="middle" class="bid-title">Buyer</text>
+            <text x="380" y="42" text-anchor="middle" class="bid-sub">browses, places bids, watches</text>
+
+            <rect x="520" y="10" width="220" height="45" rx="6" class="bid-box"></rect>
+            <text x="630" y="28" text-anchor="middle" class="bid-title">Watcher (any user)</text>
+            <text x="630" y="42" text-anchor="middle" class="bid-sub">subscribed for live price updates</text>
+
+            <line x1="130" y1="55" x2="300" y2="94" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+            <line x1="380" y1="55" x2="382" y2="94" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+            <line x1="630" y1="55" x2="470" y2="94" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+
+            <rect x="190" y="95" width="380" height="50" rx="6" class="bid-box-strong"></rect>
+            <text x="380" y="115" text-anchor="middle" class="bid-title">API Gateway / Load Balancer</text>
+            <text x="380" y="131" text-anchor="middle" class="bid-sub">create-listing / place-bid / get-status / watch-unwatch</text>
+
+            <line x1="300" y1="145" x2="130" y2="184" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+            <line x1="380" y1="145" x2="370" y2="184" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+            <line x1="470" y1="145" x2="610" y2="184" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+
+            <rect x="20" y="185" width="220" height="60" rx="6" class="bid-box"></rect>
+            <text x="130" y="204" text-anchor="middle" class="bid-title">Listing / Seller Service</text>
+            <text x="130" y="218" text-anchor="middle" class="bid-sub">listing CRUD, pricing, duration</text>
+            <text x="130" y="231" text-anchor="middle" class="bid-sub">sets close_time, reserve price</text>
+
+            <rect x="260" y="185" width="220" height="60" rx="6" class="bid-box"></rect>
+            <text x="370" y="204" text-anchor="middle" class="bid-title">Buyer / Account Service</text>
+            <text x="370" y="218" text-anchor="middle" class="bid-sub">accounts, auth, watchlists</text>
+            <text x="370" y="231" text-anchor="middle" class="bid-sub">bid history views</text>
+
+            <rect x="500" y="185" width="220" height="60" rx="6" class="bid-box-strong"></rect>
+            <text x="610" y="204" text-anchor="middle" class="bid-title">Bidding Service</text>
+            <text x="610" y="218" text-anchor="middle" class="bid-sub">per-auction serialized bid acceptance</text>
+            <text x="610" y="231" text-anchor="middle" class="bid-sub">isolated from listing/browsing traffic</text>
+
+            <line x1="130" y1="245" x2="130" y2="294" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+            <line x1="370" y1="245" x2="280" y2="294" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+            <line x1="610" y1="245" x2="610" y2="294" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+
+            <rect x="20" y="295" width="460" height="60" rx="6" class="bid-box-store"></rect>
+            <text x="250" y="314" text-anchor="middle" class="bid-title">Catalog / Search (NoSQL / document store)</text>
+            <text x="250" y="328" text-anchor="middle" class="bid-sub">listing metadata at billions-of-listings scale</text>
+            <text x="250" y="341" text-anchor="middle" class="bid-sub">eventually consistent, read-heavy browsing path</text>
+
+            <rect x="500" y="295" width="220" height="60" rx="6" class="bid-box-store"></rect>
+            <text x="610" y="314" text-anchor="middle" class="bid-title">SQL Bid Ledger + auction_state</text>
+            <text x="610" y="328" text-anchor="middle" class="bid-sub">ACID: current highest bidder</text>
+            <text x="610" y="341" text-anchor="middle" class="bid-sub">strict consistency, strict ordering</text>
+
+            <line x1="610" y1="355" x2="610" y2="384" class="bid-arrow-store" marker-end="url(#arrow-bid-1s)"></line>
+            <text x="623" y="373" class="bid-label">publish after commit</text>
+
+            <rect x="500" y="385" width="220" height="50" rx="6" class="bid-box-bus"></rect>
+            <text x="610" y="405" text-anchor="middle" class="bid-title-inv">Event Broker (Kafka)</text>
+            <text x="610" y="419" text-anchor="middle" class="bid-sub-inv">bid_accepted, auction_extended, auction_closed</text>
+
+            <line x1="610" y1="435" x2="610" y2="459" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+            <line x1="540" y1="410" x2="410" y2="459" class="bid-arrow" marker-end="url(#arrow-bid-1)"></line>
+
+            <rect x="500" y="460" width="220" height="55" rx="6" class="bid-box"></rect>
+            <text x="610" y="480" text-anchor="middle" class="bid-title">Real-Time / Notification Service</text>
+            <text x="610" y="494" text-anchor="middle" class="bid-sub">manages WebSocket subscriptions per auction_id</text>
+
+            <rect x="270" y="460" width="200" height="55" rx="6" class="bid-box-muted"></rect>
+            <text x="370" y="480" text-anchor="middle" class="bid-title">Order / Payment Service</text>
+            <text x="370" y="494" text-anchor="middle" class="bid-sub">Saga: creates order for winner on close</text>
+
+            <path d="M610,460 C610,540 660,545 630,56" class="bid-arrow-dash" marker-end="url(#arrow-bid-1)" fill="none"></path>
+            <text x="660" y="270" class="bid-label" transform="rotate(90 660 270)">WebSocket push: price / outbid alert</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; the read-heavy browsing path (Listing/Seller Service, Buyer/Account Service, Catalog/Search) is physically separate from the write-heavy Bidding Service, which is the only path that touches the strongly consistent SQL bid ledger; a broker decouples real-time fan-out and order creation from bid acceptance itself.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>The Bidding Service is deliberately separate from listing/catalog operations</strong> — a hot item's write-heavy bid traffic never contends with the read-heavy browsing traffic hitting the same listing's page.</li>
+          <li><strong>The SQL bid ledger is the single source of truth for "who is currently winning,"</strong> — the catalog's displayed price is a downstream, eventually consistent copy, never the authority.</li>
+          <li><strong>The broker decouples "bid accepted" from everything that happens next</strong> — real-time fan-out and order creation are async consumers that can lag, retry, or fail independently without ever affecting whether the bid itself was accepted.</li>
+          <li><strong>Every arrow into the Bidding Service is routed by auction_id,</strong> setting up the serialized, per-auction acceptance path covered next.</li>
+        </ul>
+
+        <h2 id="deep-dive-serialized-strictly-ordered-bid-acceptance-per-auction">Deep Dive — Serialized, Strictly-Ordered Bid Acceptance Per Auction</h2>
+        <p>This is the core correctness problem in the entire system: two bidders submit a bid on the same item within the same millisecond. Whoever "wins" that race must be determined by a strict, auditable, reproducible ordering — not by whichever database replica happened to process it first, and not by wall-clock timestamps alone (clocks skew; two servers can disagree on which request was "really" first).</p>
+
+        <h3>Approach 1 — Single-Writer-Per-Auction-ID (Actor / Partitioned Queue)</h3>
+        <p>Route every bid for a given <code>auction_id</code> through consistent hashing to exactly one Bidding Service partition/worker (an "actor" in the actor-model sense, or a consumer reading a Kafka partition keyed by <code>auction_id</code>). Because only one worker ever processes bids for that auction, there is no concurrent access to reason about at all — the worker simply processes its inbound queue in strict arrival order and assigns a monotonically increasing <code>sequence_no</code> per auction. This converts a distributed-concurrency problem into an ordinary single-threaded queue-processing problem for any one auction, while still scaling horizontally across the huge number of different auctions (each gets its own worker/partition).</p>
+
+        <h3>Approach 2 — Optimistic Concurrency (Compare-and-Swap on auction_state)</h3>
+        <p>Keep a single <code>auction_state</code> row per auction with a <code>version</code> column. A bid acceptance is a conditional SQL update: <code>UPDATE auction_state SET current_price=:new, current_high_bidder=:bidder, version=version+1 WHERE auction_id=:id AND version=:expected</code>. Only one concurrent transaction can match the expected version; the loser's update affects zero rows, and that request is retried against the new state (and likely rejected, since the price has already moved past its bid). This works even without a dedicated single-writer worker, at the cost of a retry loop under heavy contention on one row.</p>
+
+        <h3>Recommended: Combine Both</h3>
+        <p>Partition by <code>auction_id</code> for locality and to minimize contention (Approach 1), and still protect the underlying row with an optimistic version check at the database layer as a defense-in-depth safety net (Approach 2) — so correctness never depends solely on the partitioning layer behaving perfectly. The single-writer partitioning keeps the common case fast (no retries needed, since only one worker is ever touching the row at a time); the CAS at the database layer guarantees correctness is provable directly from the data, which matters enormously for dispute resolution.</p>
+
+        <table class="sortable">
+          <tr><th>Approach</th><th>How it resolves a race</th><th>Contention behavior</th><th>Auditability</th></tr>
+          <tr><td>Single-writer-per-auction-id (actor/partition)</td><td>Physically impossible for two workers to touch the same auction concurrently</td><td>None within an auction; scales across auctions</td><td>Strong — natural strict ordering, sequence_no assigned in-process</td></tr>
+          <tr><td>Optimistic concurrency (CAS/version check)</td><td>Only the transaction matching the current version commits; losers retry</td><td>Retry storms possible under extreme contention on one row</td><td>Strong — version history is provable from the ledger</td></tr>
+          <tr><td>Pessimistic row lock</td><td>A lock serializes access; simple to reason about</td><td>Requests queue behind the lock holder; latency spikes under contention</td><td>Strong, but harder to scale the lock itself across regions</td></tr>
+          <tr><td>Naive last-write-wins (no ordering guarantee)</td><td>Whichever write physically lands last in storage wins</td><td>Looks fine at low volume, silently wrong under real concurrency</td><td>None — not reproducible or provable; unacceptable for this domain</td></tr>
+        </table>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two near-simultaneous bid requests, Bid A at t=00:00.001 and Bid B at t=00:00.002, are both routed by consistent hashing of auction_id to the same single Bidding Service partition. That partition's in-memory sequencer assigns monotonic sequence numbers in true arrival order, then issues a conditional compare-and-swap update against the SQL auction_state row's version column. The matching request commits and becomes the new current highest bid; the other is rejected as superseded.">
+            <style>
+              .bid-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .bid-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .bid-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .bid-diamond{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+              .bid-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .bid-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .bid-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .bid-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-bid-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="20" y="15" width="320" height="45" rx="6" class="bid-box"></rect>
+            <text x="180" y="34" text-anchor="middle" class="bid-title">Bid A &mdash; bidder_1, $155, t=00:00.001</text>
+            <text x="180" y="48" text-anchor="middle" class="bid-sub">arrives fractionally first</text>
+
+            <rect x="420" y="15" width="320" height="45" rx="6" class="bid-box"></rect>
+            <text x="580" y="34" text-anchor="middle" class="bid-title">Bid B &mdash; bidder_2, $155, t=00:00.002</text>
+            <text x="580" y="48" text-anchor="middle" class="bid-sub">arrives a millisecond later</text>
+
+            <line x1="180" y1="60" x2="330" y2="99" class="bid-arrow" marker-end="url(#arrow-bid-2)"></line>
+            <line x1="580" y1="60" x2="430" y2="99" class="bid-arrow" marker-end="url(#arrow-bid-2)"></line>
+
+            <rect x="230" y="100" width="300" height="50" rx="6" class="bid-box-strong"></rect>
+            <text x="380" y="120" text-anchor="middle" class="bid-title">hash(auction_id) routes both to</text>
+            <text x="380" y="135" text-anchor="middle" class="bid-sub">the same Bidding Service partition</text>
+
+            <line x1="380" y1="150" x2="380" y2="179" class="bid-arrow" marker-end="url(#arrow-bid-2)"></line>
+
+            <rect x="180" y="180" width="400" height="55" rx="6" class="bid-box-strong"></rect>
+            <text x="380" y="200" text-anchor="middle" class="bid-title">Bidding Service partition N (single writer)</text>
+            <text x="380" y="215" text-anchor="middle" class="bid-sub">in-memory sequencer: assigns sequence_no in true arrival order</text>
+            <text x="380" y="228" text-anchor="middle" class="bid-sub">Bid A &rarr; seq=118, Bid B &rarr; seq=119</text>
+
+            <line x1="380" y1="235" x2="380" y2="264" class="bid-arrow" marker-end="url(#arrow-bid-2)"></line>
+
+            <rect x="200" y="265" width="360" height="55" rx="6" class="bid-box-store"></rect>
+            <text x="380" y="285" text-anchor="middle" class="bid-title">SQL: conditional UPDATE auction_state</text>
+            <text x="380" y="299" text-anchor="middle" class="bid-sub">SET current_price, current_high_bidder, version+1</text>
+            <text x="380" y="312" text-anchor="middle" class="bid-sub">WHERE auction_id=... AND version=expected</text>
+
+            <line x1="380" y1="320" x2="380" y2="349" class="bid-arrow" marker-end="url(#arrow-bid-2)"></line>
+
+            <polygon points="280,390 380,350 480,390 380,430" class="bid-diamond"></polygon>
+            <text x="380" y="386" text-anchor="middle" class="bid-title">version matched?</text>
+            <text x="380" y="400" text-anchor="middle" class="bid-label">(seq=118 processed first)</text>
+
+            <line x1="310" y1="410" x2="180" y2="444" class="bid-arrow" marker-end="url(#arrow-bid-2)"></line>
+            <text x="220" y="424" text-anchor="middle" class="bid-label">yes (seq 118)</text>
+            <rect x="40" y="445" width="240" height="30" rx="6" class="bid-box"></rect>
+            <text x="160" y="465" text-anchor="middle" class="bid-title">Bid A accepted &mdash; new highest</text>
+
+            <line x1="450" y1="410" x2="580" y2="444" class="bid-arrow" marker-end="url(#arrow-bid-2)"></line>
+            <text x="540" y="424" text-anchor="middle" class="bid-label">no (seq 119, retry &rarr; reject)</text>
+            <rect x="480" y="445" width="240" height="30" rx="6" class="bid-box"></rect>
+            <text x="600" y="465" text-anchor="middle" class="bid-title">Bid B rejected &mdash; superseded</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Consistent hashing pins both near-simultaneous bids to the same single-writer partition, which assigns a monotonic sequence_no in true arrival order before a compare-and-swap commits the winner and rejects the loser &mdash; a strict, reproducible, auditable resolution.</div>
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If asked "why not just use the database's serializable isolation level for everything and skip the single-writer partitioning": you can, but under heavy contention on one hot row, serializable isolation degenerates into exactly the same retry-storm behavior as naive optimistic concurrency — the single-writer partition is what actually removes the contention, rather than just detecting and retrying around it.
+        </div>
+
+        <h2 id="deep-dive-real-time-bid-fan-out-decoupled-from-the-acceptance-path">Deep Dive — Real-Time Bid Fan-Out Decoupled From the Acceptance Path</h2>
+        <p>Once a bid is committed to the SQL ledger, everyone watching that auction needs to see the new current price. But the fan-out step must never sit on the critical path of accepting the bid — a bidder's "your bid was accepted" response must come back the instant the SQL transaction commits, regardless of how many (or how few) watchers are currently connected, and regardless of any backlog in the notification pipeline.</p>
+
+        <h3>Why Decoupling Is Non-Negotiable Here</h3>
+        <p>Fan-out size varies by four to five orders of magnitude across auctions — from zero watchers to a million. If fan-out were synchronous (the Bidding Service itself pushes to every WebSocket connection before acknowledging the bid), a viral item's massive watcher count would directly slow down bid acceptance on that exact item — precisely the item where fast, fair acceptance matters most. Publishing an event and returning immediately, then letting an independent Real-Time/Notification Service handle the fan-out asynchronously, keeps these two very different scaling problems (write-path correctness vs. read-path fan-out) from ever coupling to each other.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A bidder's request is committed to the SQL ledger by the Bidding Service, which immediately acknowledges the bidder on the fast synchronous path. Separately and asynchronously, the Bidding Service publishes a bid-accepted event to an Event Broker, which a Real-Time Notification Service consumes and forwards to a WebSocket Gateway holding subscriptions per auction_id, fanning the update out to many connected watchers.">
+            <style>
+              .bid-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .bid-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .bid-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .bid-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .bid-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .bid-title-inv{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:#ffffff;}
+              .bid-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .bid-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:#dbe6ff;}
+              .bid-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .bid-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .bid-arrow-dash{stroke:var(--color-accent);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+            </style>
+            <defs>
+              <marker id="arrow-bid-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="20" y="20" width="160" height="50" rx="6" class="bid-box"></rect>
+            <text x="100" y="42" text-anchor="middle" class="bid-title">Bidder</text>
+            <text x="100" y="56" text-anchor="middle" class="bid-sub">places a bid</text>
+
+            <line x1="180" y1="45" x2="219" y2="45" class="bid-arrow" marker-end="url(#arrow-bid-3)"></line>
+
+            <rect x="220" y="20" width="220" height="50" rx="6" class="bid-box-strong"></rect>
+            <text x="330" y="40" text-anchor="middle" class="bid-title">Bidding Service</text>
+            <text x="330" y="54" text-anchor="middle" class="bid-sub">commits to SQL ledger (Figure 2)</text>
+
+            <line x1="330" y1="15" x2="330" y2="14" class="bid-arrow"></line>
+            <path d="M440,35 C480,10 480,90 100,90" class="bid-arrow" marker-end="url(#arrow-bid-3)" fill="none"></path>
+            <text x="270" y="83" text-anchor="middle" class="bid-label">fast path: ACK "bid accepted" (milliseconds, synchronous)</text>
+
+            <line x1="330" y1="70" x2="330" y2="109" class="bid-arrow-dash" marker-end="url(#arrow-bid-3)"></line>
+            <text x="345" y="93" class="bid-label">async: publish event</text>
+
+            <rect x="220" y="110" width="220" height="50" rx="6" class="bid-box-bus"></rect>
+            <text x="330" y="130" text-anchor="middle" class="bid-title-inv">Event Broker (Kafka)</text>
+            <text x="330" y="144" text-anchor="middle" class="bid-sub-inv">bid_accepted, key=auction_id</text>
+
+            <line x1="330" y1="160" x2="330" y2="189" class="bid-arrow" marker-end="url(#arrow-bid-3)"></line>
+
+            <rect x="200" y="190" width="260" height="50" rx="6" class="bid-box"></rect>
+            <text x="330" y="210" text-anchor="middle" class="bid-title">Real-Time / Notification Service</text>
+            <text x="330" y="224" text-anchor="middle" class="bid-sub">consumes broker, resolves auction_id &rarr; subscribers</text>
+
+            <line x1="330" y1="240" x2="330" y2="269" class="bid-arrow" marker-end="url(#arrow-bid-3)"></line>
+
+            <rect x="180" y="270" width="300" height="50" rx="6" class="bid-box-strong"></rect>
+            <text x="330" y="290" text-anchor="middle" class="bid-title">WebSocket Gateway</text>
+            <text x="330" y="304" text-anchor="middle" class="bid-sub">holds live subscriptions, keyed by auction_id</text>
+
+            <line x1="250" y1="320" x2="130" y2="349" class="bid-arrow" marker-end="url(#arrow-bid-3)"></line>
+            <line x1="330" y1="320" x2="330" y2="349" class="bid-arrow" marker-end="url(#arrow-bid-3)"></line>
+            <line x1="410" y1="320" x2="530" y2="349" class="bid-arrow" marker-end="url(#arrow-bid-3)"></line>
+            <text x="330" y="343" text-anchor="middle" class="bid-label">fan-out, up to ~1M watchers on a hot auction</text>
+
+            <rect x="40" y="350" width="180" height="45" rx="6" class="bid-box-muted"></rect>
+            <text x="130" y="376" text-anchor="middle" class="bid-title">Watcher 1</text>
+
+            <rect x="240" y="350" width="180" height="45" rx="6" class="bid-box-muted"></rect>
+            <text x="330" y="376" text-anchor="middle" class="bid-title">Watcher 2</text>
+
+            <rect x="440" y="350" width="180" height="45" rx="6" class="bid-box-muted"></rect>
+            <text x="530" y="376" text-anchor="middle" class="bid-title">Watcher N</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. The bidder gets an acknowledgment the instant the SQL commit succeeds (fast, synchronous path). Fan-out to watchers is entirely asynchronous and downstream of a broker &mdash; a slow or backlogged Real-Time Service can never delay whether a bid is accepted.</div>
+        </div>
+
+        <h3>Handling the Very Large Fan-Out Case</h3>
+        <p>For an auction with hundreds of thousands of watchers, the WebSocket Gateway itself must shard subscriptions across many stateful nodes (see "Data Partitioning and Replication" below) and may batch/coalesce rapid successive price updates (e.g. at most one push per 250ms per connection) rather than pushing every single accepted bid individually to every watcher during a closing-seconds bidding war — watchers care about "the current price, right now," not a literal blow-by-blow of every increment.</p>
+
+        <h2 id="deep-dive-auction-close-and-anti-sniping-extension">Deep Dive — Auction Close and Anti-Sniping Extension</h2>
+        <p>At <code>close_time</code>, the auction must stop accepting bids and declare a winner — exactly once. Two closely related problems live here: guaranteeing the close fires reliably and exactly once, and deciding how to handle "sniping."</p>
+
+        <h3>The Sniping Problem</h3>
+        <p>In a hard-deadline auction, a rational bidder's best strategy is often to wait until the very last second to bid, denying every other bidder any chance to respond. This produces a poor experience (a bidder who would have happily paid more never gets the opportunity to) and, at scale, a burst of bid traffic concentrated in literally the final second of every auction — which is also the capacity-planning nightmare referenced in the estimation section above.</p>
+
+        <h3>Anti-Sniping Extension</h3>
+        <p>The common mitigation (used by many real auction platforms): if a bid arrives within a short window of the scheduled close_time (e.g. the last 2 minutes), extend close_time by a fixed amount (e.g. +2 minutes) from that bid's timestamp. This repeats for as long as bids keep arriving inside the window — the auction only truly closes once a full anti-snipe window passes with no new bid. This preserves the fairness property ("everyone gets a chance to respond to a late bid") without turning every auction into an indefinite, always-open listing, since genuinely uncontested auctions still close right on schedule.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Timeline showing an auction's originally scheduled close time T0. A bid arrives 90 seconds before T0, inside a 120-second anti-snipe window, which extends the close time to T1, 120 seconds after that bid. A second late bid arrives before T1 and extends the close time again to T2. No further bids arrive inside the window before T2, so the auction closes for real at T2.">
+            <style>
+              .bid-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .bid-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .bid-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .bid-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .bid-arrow-dash{stroke:var(--color-accent-dark);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+              .bid-line{stroke:var(--color-border);stroke-width:2;}
+              .bid-tick{stroke:var(--color-text-muted);stroke-width:1.5;}
+              .bid-dot{fill:var(--color-accent-dark);stroke:var(--color-primary-dark);stroke-width:1;}
+              .bid-window{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:1;}
+            </style>
+            <defs>
+              <marker id="arrow-bid-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path></marker>
+            </defs>
+
+            <text x="20" y="20" class="bid-title">Auction close timeline &mdash; anti-snipe window = 120 seconds</text>
+
+            <line x1="40" y1="150" x2="720" y2="150" class="bid-line"></line>
+
+            <rect x="330" y="100" width="90" height="100" class="bid-window"></rect>
+            <text x="375" y="95" text-anchor="middle" class="bid-label">anti-snipe window before T0</text>
+
+            <line x1="40" y1="140" x2="40" y2="160" class="bid-tick"></line>
+            <text x="40" y="180" text-anchor="middle" class="bid-sub">listing opens</text>
+
+            <circle cx="330" cy="150" r="6" class="bid-dot"></circle>
+            <text x="330" y="220" text-anchor="middle" class="bid-title">Bid arrives</text>
+            <text x="330" y="234" text-anchor="middle" class="bid-sub">T0 &minus; 90s (inside window)</text>
+
+            <line x1="420" y1="140" x2="420" y2="160" class="bid-tick"></line>
+            <text x="420" y="180" text-anchor="middle" class="bid-sub">T0 (original close_time)</text>
+
+            <path d="M330,150 C330,260 420,270 460,255" class="bid-arrow-dash" marker-end="url(#arrow-bid-4)" fill="none"></path>
+            <text x="400" y="280" text-anchor="middle" class="bid-label">extends close_time to T1 = bid_time + 120s</text>
+
+            <circle cx="460" cy="150" r="6" class="bid-dot"></circle>
+            <line x1="460" y1="140" x2="460" y2="160" class="bid-tick"></line>
+            <text x="460" y="120" text-anchor="middle" class="bid-sub">T1 (extended close)</text>
+
+            <circle cx="500" cy="150" r="6" class="bid-dot"></circle>
+            <text x="500" y="60" text-anchor="middle" class="bid-title">Second late bid</text>
+            <text x="500" y="74" text-anchor="middle" class="bid-sub">arrives before T1 &rarr; extends again</text>
+
+            <path d="M500,150 C500,40 600,40 600,140" class="bid-arrow-dash" marker-end="url(#arrow-bid-4)" fill="none"></path>
+
+            <line x1="600" y1="140" x2="600" y2="160" class="bid-tick"></line>
+            <text x="600" y="120" text-anchor="middle" class="bid-sub">T2 (final extended close)</text>
+
+            <line x1="600" y1="150" x2="700" y2="150" class="bid-arrow" marker-end="url(#arrow-bid-4)"></line>
+            <text x="655" y="240" text-anchor="middle" class="bid-sub">no further bids inside window</text>
+            <text x="655" y="254" text-anchor="middle" class="bid-title">Auction closes for real at T2</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. A bid arriving inside the anti-snipe window pushes the close time out; this can repeat, but the auction always closes once a full window passes with no new bid &mdash; genuinely uncontested auctions still close exactly on schedule.</div>
+        </div>
+
+        <h3>Guaranteeing the Close Fires Exactly Once</h3>
+        <p>The close job is a durable, idempotent, per-auction scheduled task — not a naive cron sweep. A common implementation: a scheduler service holds a durable timer per <code>auction_id</code> (backed by a database row or a scheduled-message feature of the broker); when the timer fires, the closing worker acquires a per-auction lock (or relies on the same single-writer-per-auction-id partitioning from the bid-acceptance deep dive), re-checks whether any bid landed inside the anti-snipe window since the timer was set, and either re-arms the timer for the extended close_time or performs the actual close: mark <code>auction_state.status = CLOSED</code>, freeze <code>current_high_bidder</code> as the winner, and publish an <code>auction_closed</code> event. Because this status flip is itself a conditional update guarded by the same version/CAS mechanism as bid acceptance, a duplicate close-timer firing (e.g. after a worker crash and retry) is a safe no-op — the second attempt's CAS simply fails because the status is already CLOSED.</p>
+
+        <table>
+          <tr><th>Close policy</th><th>Fairness</th><th>Predictability of close_time</th><th>Sniping resistance</th></tr>
+          <tr><td>Hard deadline only</td><td>Low &mdash; last-second bidder locks out any response</td><td>Perfect &mdash; always closes exactly on schedule</td><td>None</td></tr>
+          <tr><td>Hard deadline + anti-sniping extension (recommended)</td><td>High &mdash; a late bid always gets a fair window of response</td><td>Good for uncontested items; variable for hotly contested ones</td><td>Strong &mdash; snipe-and-win-instantly is structurally impossible</td></tr>
+          <tr><td>Fixed extension regardless of bid timing (always extend N times)</td><td>High, but arbitrary</td><td>Poor &mdash; every auction runs artificially long</td><td>Strong, but wastes time on uncontested items</td></tr>
+        </table>
+
+        <h2 id="deep-dive-saga-style-cross-service-consistency">Deep Dive — Saga-Style Cross-Service Consistency</h2>
+        <p>"Bid accepted" is not the end of the story — it also needs to update the auction's displayed price in the catalog (a different store), notify every watcher (a different service), and, once the auction closes, create an order and kick off payment for the winner (yet another service). This is a multi-step operation spanning multiple services and multiple data stores, which rules out a single distributed transaction (two-phase commit across services doesn't scale, and would re-introduce exactly the coupling we deliberately avoided in the fan-out deep dive). The standard pattern here is a Saga: a sequence of local transactions, each in its own service, coordinated either by orchestration (a central coordinator tells each service what to do next) or choreography (each service reacts to events from the previous step, with no central coordinator).</p>
+
+        <h3>Orchestrated vs. Choreographed</h3>
+        <table class="sortable">
+          <tr><th></th><th>Orchestrated Saga</th><th>Choreographed Saga</th></tr>
+          <tr><td>Coordination</td><td>A central orchestrator issues commands and tracks saga state explicitly</td><td>Each service reacts to the previous service's published event; no central brain</td></tr>
+          <tr><td>Visibility into "what step are we on"</td><td>Easy &mdash; one place to query saga state</td><td>Harder &mdash; must reconstruct progress by correlating events across services</td></tr>
+          <tr><td>Coupling</td><td>Orchestrator knows about every participating service</td><td>Services only know the event schema, not each other</td><td></td></tr>
+          <tr><td>Good fit here?</td><td>Yes for the close &rarr; order/payment handoff, where a clear "did the order get created" status matters for support/ops</td><td>Yes for the lighter bid-accepted &rarr; catalog-update &rarr; notify-watchers chain, where each step is independent and low-stakes if delayed</td></tr>
+        </table>
+        <p>A pragmatic design uses both: choreography (simple event fan-out) for the low-stakes "update catalog price, notify watchers" steps, and a lightweight orchestrator for the higher-stakes "auction closed &rarr; create order &rarr; hand off to payment" sequence, where we want an explicit, queryable saga state and clear compensating actions if a downstream step fails.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six-step saga: the Bidding Service commits a bid to the SQL ledger as the source of truth, then publishes a bid-accepted event. The Catalog Service consumes it to update the denormalized current price, and the Real-Time Service consumes it to fan out to watchers, both eventually consistent. At close time, an auction-closed event is published, and the Order and Payment Service consumes it to create an order for the winning bidder, with a compensating or retry path if that step fails.">
+            <style>
+              .bid-circle{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+              .bid-num{font-family:var(--font-sans);font-weight:700;font-size:13px;fill:#ffffff;}
+              .bid-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .bid-sub{font-family:var(--font-sans);font-weight:400;font-size:10px;fill:var(--color-text-muted);}
+              .bid-line{stroke:var(--color-border);stroke-width:2;}
+            </style>
+            <line x1="40" y1="40" x2="40" y2="425" class="bid-line"></line>
+
+            <circle cx="40" cy="40" r="16" class="bid-circle"></circle>
+            <text x="40" y="45" text-anchor="middle" class="bid-num">1</text>
+            <text x="75" y="34" class="bid-title">Bidding Service commits the winning bid</text>
+            <text x="75" y="49" class="bid-sub">SQL ledger + auction_state, source of truth (Figure 2)</text>
+
+            <circle cx="40" cy="95" r="16" class="bid-circle"></circle>
+            <text x="40" y="100" text-anchor="middle" class="bid-num">2</text>
+            <text x="75" y="89" class="bid-title">Publishes bid_accepted event</text>
+            <text x="75" y="104" class="bid-sub">to the Event Broker, keyed by auction_id</text>
+
+            <circle cx="40" cy="150" r="16" class="bid-circle"></circle>
+            <text x="40" y="155" text-anchor="middle" class="bid-num">3</text>
+            <text x="75" y="144" class="bid-title">Catalog Service updates denormalized price</text>
+            <text x="75" y="159" class="bid-sub">NoSQL listing document, eventually consistent</text>
+
+            <circle cx="40" cy="205" r="16" class="bid-circle"></circle>
+            <text x="40" y="210" text-anchor="middle" class="bid-num">4</text>
+            <text x="75" y="199" class="bid-title">Real-Time Service fans out to watchers</text>
+            <text x="75" y="214" class="bid-sub">WebSocket push, independent of step 3 (Figure 3)</text>
+
+            <circle cx="40" cy="260" r="16" class="bid-circle"></circle>
+            <text x="40" y="265" text-anchor="middle" class="bid-num">5</text>
+            <text x="75" y="254" class="bid-title">Close job fires at close_time</text>
+            <text x="75" y="269" class="bid-sub">status &rarr; CLOSED, publishes auction_closed with winner_bidder_id</text>
+
+            <circle cx="40" cy="315" r="16" class="bid-circle"></circle>
+            <text x="40" y="320" text-anchor="middle" class="bid-num">6</text>
+            <text x="75" y="309" class="bid-title">Order / Payment Service creates the order</text>
+            <text x="75" y="324" class="bid-sub">consumes auction_closed; own local transaction</text>
+
+            <circle cx="40" cy="370" r="16" class="bid-circle"></circle>
+            <text x="40" y="375" text-anchor="middle" class="bid-num">7</text>
+            <text x="75" y="364" class="bid-title">On failure: retry, don't unwind the bid</text>
+            <text x="75" y="379" class="bid-sub">bid ledger is never rolled back; order creation retries or alerts ops</text>
+
+            <circle cx="40" cy="425" r="16" class="bid-circle"></circle>
+            <text x="40" y="430" text-anchor="middle" class="bid-num">8</text>
+            <text x="75" y="419" class="bid-title">Seller and winner both notified</text>
+            <text x="75" y="434" class="bid-sub">via the same Real-Time / Notification path as live bid updates</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Steps 1&ndash;2 are the only strictly-ordered, transactional part of the flow; everything downstream is an independent local transaction reacting to events &mdash; a failure at step 6 is handled by retrying or alerting, never by rolling back the already-committed bid.</div>
+        </div>
+
+        <h3>What Happens When a Downstream Step Fails?</h3>
+        <p>The bid ledger (step 1) is never a candidate for rollback once committed — it's the one piece of state that must be immutable and permanent for audit purposes. If order creation (step 6) fails, the compensating action is to retry with backoff and, after exhausting retries, alert operations for manual intervention — not to "undo" the auction result. This is a deliberate asymmetry: earlier steps in the chain are increasingly expensive/impossible to compensate (you cannot un-notify a watcher, and you must never un-decide a winner), so the design pushes all recoverable failure handling to the last, most compensable step.</p>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+        <p>Sharding follows the same principle throughout: isolate one hot auction's write traffic from every other auction, and let the much larger catalog scale independently on its own axis.</p>
+        <ul>
+          <li><strong>Bids and auction_state are sharded by <code>auction_id</code></strong> (consistent hashing), so a single hot auction's entire write load lands on one shard/partition and can never spill over to affect any other auction's throughput or latency.</li>
+          <li><strong>Replication for the SQL bid ledger favors strong consistency</strong> — a leader-follower setup (or a consensus protocol such as Raft) with synchronous or near-synchronous replication to at least one follower before acknowledging a commit, so a leader failure doesn't lose an already-accepted bid.</li>
+          <li><strong>Catalog/listing metadata is sharded separately, at a much larger scale</strong> (by <code>listing_id</code> or category, across far more shards than the bid ledger needs), with asynchronous multi-replica replication — eventual consistency is an explicit, accepted trade-off here in exchange for horizontal read scale.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: a ring of SQL bid-ledger shard nodes hashed by auction_id, with one hot auction's data pinned to a primary node and replicated synchronously to two followers for durability and strict consistency. Right panel: a much larger grid of NoSQL catalog shards, hashed by listing_id, replicated asynchronously across many more nodes to serve billions of listings with eventual consistency.">
+            <style>
+              .bid-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .bid-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .bid-node{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1.5;}
+              .bid-node-active{fill:var(--color-accent-dark);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .bid-nodelabel{font-family:var(--font-sans);font-weight:700;font-size:8px;fill:var(--color-primary);}
+              .bid-nodelabel-inv{font-family:var(--font-sans);font-weight:700;font-size:8px;fill:#ffffff;}
+              .bid-cell{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1;}
+            </style>
+            <text x="20" y="20" class="bid-title">SQL bid ledger: ring sharded by hash(auction_id)</text>
+
+            <circle cx="180" cy="170" r="95" fill="none" stroke="var(--color-border)" stroke-dasharray="3 3"></circle>
+
+            <circle cx="275" cy="170" r="13" class="bid-node"></circle>
+            <text x="275" y="173" text-anchor="middle" class="bid-nodelabel">N0</text>
+            <circle cx="248" cy="238" r="13" class="bid-node-active"></circle>
+            <text x="248" y="241" text-anchor="middle" class="bid-nodelabel-inv">N1</text>
+            <circle cx="180" cy="265" r="13" class="bid-node-active"></circle>
+            <text x="180" y="268" text-anchor="middle" class="bid-nodelabel-inv">N2 (primary)</text>
+            <circle cx="112" cy="238" r="13" class="bid-node-active"></circle>
+            <text x="112" y="241" text-anchor="middle" class="bid-nodelabel-inv">N3</text>
+            <circle cx="85" cy="170" r="13" class="bid-node"></circle>
+            <text x="85" y="173" text-anchor="middle" class="bid-nodelabel">N4</text>
+            <circle cx="112" cy="102" r="13" class="bid-node"></circle>
+            <text x="112" y="105" text-anchor="middle" class="bid-nodelabel">N5</text>
+            <circle cx="180" cy="75" r="13" class="bid-node"></circle>
+            <text x="180" y="78" text-anchor="middle" class="bid-nodelabel">N6</text>
+            <circle cx="248" cy="102" r="13" class="bid-node"></circle>
+            <text x="248" y="105" text-anchor="middle" class="bid-nodelabel">N7</text>
+
+            <text x="180" y="300" text-anchor="middle" class="bid-sub">hash(auction_id) &rarr; primary N2, sync-replicated to N1 and N3</text>
+
+            <line x1="400" y1="20" x2="400" y2="290" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <text x="420" y="20" class="bid-title">Catalog / listing store: sharded by hash(listing_id), far more shards</text>
+
+            <rect x="420" y="45" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="480" y="45" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="540" y="45" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="600" y="45" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="660" y="45" width="55" height="30" rx="3" class="bid-cell"></rect>
+
+            <rect x="420" y="80" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="480" y="80" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="540" y="80" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="600" y="80" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="660" y="80" width="55" height="30" rx="3" class="bid-cell"></rect>
+
+            <rect x="420" y="115" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="480" y="115" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="540" y="115" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="600" y="115" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="660" y="115" width="55" height="30" rx="3" class="bid-cell"></rect>
+
+            <rect x="420" y="150" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="480" y="150" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="540" y="150" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="600" y="150" width="55" height="30" rx="3" class="bid-cell"></rect>
+            <rect x="660" y="150" width="55" height="30" rx="3" class="bid-cell"></rect>
+
+            <text x="420" y="200" class="bid-sub">Many more shards than the bid ledger needs &mdash;</text>
+            <text x="420" y="213" class="bid-sub">async multi-replica replication, eventual consistency</text>
+            <text x="420" y="226" class="bid-sub">is an accepted, deliberate trade-off for read scale</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. The bid ledger's ring is sharded by auction_id with synchronous replication for strict consistency; the catalog is sharded far more finely by listing_id with asynchronous replication, because the two stores optimize for opposite ends of the consistency/scale trade-off.</div>
+        </div>
+
+        <table>
+          <tr><th>Data</th><th>Sharded by</th><th>Replication</th></tr>
+          <tr><td>bids / auction_state (SQL)</td><td>hash(auction_id)</td><td>Leader-follower or Raft-style consensus, synchronous to at least 1 follower, RF=3</td></tr>
+          <tr><td>listings / catalog metadata (NoSQL)</td><td>hash(listing_id) or category</td><td>Asynchronous multi-replica, RF=3, eventually consistent</td></tr>
+          <tr><td>watchers / watchlists</td><td>hash(user_id)</td><td>RF=3, read-your-own-writes preferred for the owning user</td></tr>
+          <tr><td>WebSocket subscriptions</td><td>hash(auction_id) across gateway nodes</td><td>In-memory, rehydrated from a durable subscription store on node restart</td></tr>
+          <tr><td>Order / payment records (SQL)</td><td>hash(order_id), secondary index on winning bid_id</td><td>Leader-follower, RF=3, ACID</td></tr>
+        </table>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>Four core tables carry the design: <code>listings</code> (catalog, NoSQL-oriented but shown relationally for clarity), <code>bids</code> (the immutable SQL ledger), <code>auction_state</code> (the single mutable row per auction that answers "who's winning right now"), and <code>watchers</code>.</p>
+        <table>
+          <tr><th colspan="2">Table: listings (NoSQL document store, PK: listing_id)</th></tr>
+          <tr><td>listing_id (PK)</td><td>uuid</td></tr>
+          <tr><td>seller_id</td><td>bigint</td></tr>
+          <tr><td>title / description</td><td>text</td></tr>
+          <tr><td>category_id</td><td>text (indexed for search/browse)</td></tr>
+          <tr><td>images</td><td>array&lt;text&gt; (CDN references)</td></tr>
+          <tr><td>starting_price / min_increment / reserve_price</td><td>decimal</td></tr>
+          <tr><td>auction_id</td><td>uuid (FK to auction_state, SQL side)</td></tr>
+          <tr><td>close_time</td><td>timestamp</td></tr>
+          <tr><td>status</td><td>enum(DRAFT, ACTIVE, EXTENDED, CLOSED, CANCELLED)</td></tr>
+          <tr><td>display_current_price</td><td>decimal &mdash; denormalized copy for browsing, eventually consistent</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: bids (SQL, PK: bid_id, unique on idempotency_key, index on auction_id + sequence_no)</th></tr>
+          <tr><td>bid_id (PK)</td><td>uuid</td></tr>
+          <tr><td>auction_id</td><td>uuid</td></tr>
+          <tr><td>bidder_id</td><td>bigint</td></tr>
+          <tr><td>amount</td><td>decimal</td></tr>
+          <tr><td>max_bid_amount</td><td>decimal, nullable (proxy bidding ceiling, private)</td></tr>
+          <tr><td>is_proxy_increment</td><td>boolean &mdash; true if this row was auto-placed by the system on a bidder's behalf</td></tr>
+          <tr><td>placed_at</td><td>timestamp</td></tr>
+          <tr><td>sequence_no</td><td>bigint &mdash; monotonic per auction_id, assigned by the single-writer partition</td></tr>
+          <tr><td>idempotency_key (unique)</td><td>text</td></tr>
+          <tr><td>outcome</td><td>enum(ACCEPTED, REJECTED_LOW, REJECTED_SUPERSEDED, REJECTED_CLOSED)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: auction_state (SQL, PK: auction_id, one row per auction &mdash; source of truth)</th></tr>
+          <tr><td>auction_id (PK)</td><td>uuid</td></tr>
+          <tr><td>current_price</td><td>decimal</td></tr>
+          <tr><td>current_high_bidder_id</td><td>bigint, nullable</td></tr>
+          <tr><td>bid_count</td><td>int</td></tr>
+          <tr><td>close_time</td><td>timestamp &mdash; mutable, moves forward under anti-sniping</td></tr>
+          <tr><td>extension_count</td><td>int &mdash; number of times anti-sniping has pushed close_time out</td></tr>
+          <tr><td>status</td><td>enum(OPEN, EXTENDED, CLOSED)</td></tr>
+          <tr><td>version</td><td>bigint &mdash; optimistic-concurrency guard, incremented on every accepted write</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: watchers (PK: user_id + auction_id)</th></tr>
+          <tr><td>user_id + auction_id (composite PK)</td><td>bigint + uuid</td></tr>
+          <tr><td>watched_at</td><td>timestamp</td></tr>
+          <tr><td>notify_on_outbid</td><td>boolean</td></tr>
+          <tr><td>notify_on_price_change</td><td>boolean</td></tr>
+        </table>
+
+        <h2 id="feature-specific-logic-proxymax-bid-auto-bidding">Feature-Specific Logic: Proxy/Max-Bid Auto-Bidding</h2>
+        <p>Proxy bidding is the classic eBay mechanic: instead of manually re-bidding every time someone outbids you, a bidder sets a private <code>max_bid_amount</code> once, and the system automatically places the minimum bid necessary to keep them the current highest bidder — one increment above the current price, or one increment above the second-highest active max, whichever mechanic below applies — up to (but never exceeding) their ceiling.</p>
+
+        <h3>Mechanics</h3>
+        <ol>
+          <li>A bidder submits a direct bid amount plus an optional <code>max_bid_amount</code>. If no other bidder is currently active, <code>current_price</code> becomes their direct bid amount (or the listing's starting price, whichever is higher).</li>
+          <li>When a second bidder places a competing bid (direct or proxy), the Bidding Service compares the two active max ceilings. The bidder with the higher max wins the current round, and <code>current_price</code> is set to one increment above the <em>second-highest</em> max (never their own true max) — the same "second-price-like" mechanic real auction platforms use, so the winning bidder never pays more than the minimum needed to beat the runner-up.</li>
+          <li>Every automatic increment the system places on a bidder's behalf is still recorded as its own row in the <code>bids</code> ledger (with <code>is_proxy_increment = true</code>) and assigned its own <code>sequence_no</code> — proxy bidding doesn't bypass the strict-ordering/audit requirement, it just originates bids from the system instead of a live click.</li>
+          <li>If a new bidder's max exceeds the current highest bidder's max, the current highest bidder is automatically outbid, triggering an outbid notification (and, if that bidder has room left under their own max, a further automatic counter-increment).</li>
+        </ol>
+
+        <h3>Worked Example</h3>
+        <table class="sortable">
+          <tr><th>Event</th><th>current_price after</th><th>current_high_bidder</th></tr>
+          <tr><td>Starting price $100, min increment $5</td><td>$100</td><td>none</td></tr>
+          <tr><td>Bidder A sets max_bid_amount = $150</td><td>$100 (A's first bid, no competitor yet)</td><td>A</td></tr>
+          <tr><td>Bidder B bids directly at $120 (no max set)</td><td>$125 (one increment above B's $120)</td><td>A (A's max $150 &gt; B's $120)</td></tr>
+          <tr><td>Bidder B sets max_bid_amount = $180</td><td>$155 (one increment above A's max $150)</td><td>B (B's max $180 &gt; A's max $150)</td></tr>
+          <tr><td>Bidder A does not increase their max &mdash; stays outbid</td><td>$155 (final, if no further bids)</td><td>B</td></tr>
+        </table>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          A bidder's true <code>max_bid_amount</code> is never exposed to any other bidder, the seller, or even shown verbatim in the public bid history — only the resulting <code>current_price</code> is public. If asked "how do you prevent a seller or a colluding account from learning a bidder's true ceiling," the answer is: the max is stored only in the SQL ledger, readable only by the owning bidder and internal services, and every externally visible price is always one increment above the second-highest max, never the true top bid.
+        </div>
+
+        <h2 id="rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</h2>
+        <ul>
+          <li><strong>Per-user, per-auction bid-submission rate limits</strong> (e.g. no more than N bid attempts per second per user per auction) to blunt bots that hammer the place-bid endpoint in an auction's final seconds trying to win a sniping race purely through submission speed rather than a genuinely higher bid.</li>
+          <li><strong>Bid-sniping bot mitigation is structural, not just rate-limiting:</strong> the anti-sniping extension (see the Auto-Close deep dive) already neutralizes most of the incentive to build a submission-speed bot, since a last-instant bid no longer guarantees the win — this is a case where an architectural decision doubles as an abuse defense.</li>
+          <li><strong>Shill bidding detection:</strong> an offline/near-real-time analytics job examines the bidder-seller relationship graph (shared payment methods, shared device/IP fingerprints, shared shipping addresses, historical account-linkage signals) combined with bidding-pattern heuristics (an account that repeatedly bids just above the current price on a specific seller's items, then never wins and never bids elsewhere) to flag likely collusion for manual review — this must run asynchronously and never gate real-time bid acceptance.</li>
+          <li><strong>Per-account velocity limits:</strong> caps on the number of distinct auctions a single account can actively bid on within a short window, and a cap on total simultaneous proxy-bid (max_bid) commitments outstanding, bounding a single compromised or fraudulent account's blast radius.</li>
+          <li><strong>Step-up verification on suspicious bursts:</strong> a CAPTCHA or short auth challenge triggered by an unusual burst of rapid, failed, or rejected bid attempts from one account — a strong signal of automated abuse rather than a real bidder.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Seller and buyer identity verification:</strong> account verification (email/phone, and stronger KYC-style checks for high-value listings or sellers with elevated dispute rates) reduces both shill bidding and non-paying-winner risk, without being a hard blocker for casual, low-value listings.</li>
+          <li><strong>Listing-edit permissions:</strong> only the owning seller can edit a listing, and only before it has received its first bid — once bidding has started, core terms (starting price, reserve, duration) are locked to prevent a bait-and-switch against bidders who already committed.</li>
+          <li><strong>Bidder identity exposure:</strong> the current price and bid count are public (that's the point of a public auction), but individual bidder identities are pseudonymized to other bidders and the seller (e.g. "b***3"); full identity is visible only to platform admins and in dispute-resolution/audit tooling.</li>
+          <li><strong>Payment fraud is explicitly out of scope:</strong> this design covers bid acceptance and winner determination only; downstream payment fraud (stolen cards, chargebacks) is owned by a dedicated payments/fraud platform that the Order/Payment Service hands off to — call this boundary out explicitly rather than conflating "auction fairness" with "payment risk."</li>
+          <li><strong>Data-at-rest encryption and immutability:</strong> the bid ledger is append-only — no update or delete of a historical bid row, ever — with PII (bidder contact details) encrypted at rest and TLS everywhere in transit.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Load balancing shows up at several independent layers, each with a different balancing strategy:</p>
+        <ol>
+          <li>Standard L7, health-checked round-robin between clients and the API Gateway for stateless requests (create-listing, get-status, browse/search).</li>
+          <li>Auction-id-aware routing for place-bid traffic: requests are load-balanced via consistent hashing on <code>auction_id</code>, not plain round-robin, so every bid for a given auction always lands on the same Bidding Service partition — this is a correctness requirement (see the serialized-acceptance deep dive), not just a performance optimization.</li>
+          <li>Sticky, connection-aware balancing for the WebSocket Gateway — once a watcher's connection is established on a gateway node, it stays there for the connection's lifetime; new connections are balanced across nodes by current connection count / capacity headroom.</li>
+          <li>Stateless round-robin across catalog/search read replicas, since browsing traffic has no ordering or affinity requirement at all.</li>
+        </ol>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li><strong>Home-region pinning per auction:</strong> because bid acceptance must be strictly ordered, all bid traffic for a given <code>auction_id</code> is pinned to a single home region (typically the seller's region) rather than accepted active-active across regions — accepting bids for the same auction in two regions simultaneously would reintroduce exactly the cross-region consensus problem the single-writer partitioning was designed to avoid.</li>
+          <li><strong>Catalog/search runs active-active multi-region</strong> with asynchronous cross-region replication — browsing is read-heavy and tolerant of eventual consistency, so there's no correctness reason to centralize it.</li>
+          <li><strong>Watchers connect to their nearest regional WebSocket gateway;</strong> the bid-accepted event stream is replicated cross-region (e.g. via a broker mirroring feature) specifically so a watcher outside an auction's home region still gets timely updates, without requiring their connection to be served from the home region itself.</li>
+          <li><strong>A bidder physically far from an auction's home region pays a latency tax</strong> on each bid submission — an explicit, accepted trade-off given the strict-consistency requirement; this is a deliberate CAP-theorem choice (consistency over uniform low latency from every region) and should be stated as such if asked.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>A single viral/hot auction, not aggregate system load, is the practical bottleneck</td><td>Dedicated single-writer partition per auction_id keeps one hot item's contention fully isolated from every other auction on the cluster</td></tr>
+          <tr><td>Strict consistency limits how far one auction's bid-acceptance path can be sharded</td><td>Accept that a single auction cannot be split across multiple writers without reintroducing the ordering problem; instead make the single partition as fast as possible (in-memory sequencing, minimal-latency CAS)</td></tr>
+          <tr><td>Auction-close job fires zero times (missed) or more than once (duplicate)</td><td>Durable per-auction timer + idempotent CAS-guarded close transaction makes a duplicate fire a safe no-op; monitoring tracks "scheduled vs. actually closed" counts (see Monitoring below)</td></tr>
+          <tr><td>Watcher fan-out storm on a hot auction (up to ~1M connections)</td><td>Batched/coalesced pushes, sharded WebSocket gateway, fully decoupled from the acceptance path (Figure 3)</td></tr>
+          <tr><td>Proxy-bidding cascade at the very end of a hot auction (a rapid chain of auto-increments)</td><td>Processed as a sequence of ordinary serialized transactions within the same single-writer partition, not as independent races</td></tr>
+          <tr><td>SQL leader/replica failure for the bid ledger</td><td>Synchronous replication to at least one follower before ack; automatic leader failover; a lost leader never loses an already-accepted bid</td></tr>
+          <tr><td>Shill bidding / fraud undetected in real time</td><td>Fraud scoring runs asynchronously against the immutable ledger, never gating live bid acceptance</td></tr>
+          <tr><td>Region-wide outage in an auction's home region</td><td>Home-region pinning limits blast radius to that region's auctions; failover promotes a replica region, accepting a brief availability gap over any consistency violation</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor consistency (CP) for the bid-acceptance path and the <code>auction_state</code> row specifically — it is safer to briefly reject or delay a bid (return a retryable error) than to ever accept two different "current highest bidders" for the same auction. Favor availability (AP) for catalog browsing, search, and watcher fan-out — a stale search result or a delayed price update on a listing page is a cosmetic nuisance, never a correctness violation, so those paths should stay up and responsive even during a partial write-side incident elsewhere in the system.</p>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Bid-acceptance latency (p50/p99),</strong> broken out per auction where possible, with alerting on any regression — a healthy single-writer partition design should show flat, low latency even on the hottest auctions.</li>
+          <li><strong>Close-job reliability / exactly-once-fire monitoring:</strong> a dashboard tracking, for every auction, whether its close job fired exactly once — surfacing any auction closed zero times (stuck open past close_time) or more than once (a correctness incident) as a hard-paging alert.</li>
+          <li><strong>Watcher fan-out delivery lag:</strong> time from "bid committed in SQL" to "last subscribed watcher's WebSocket push delivered," tracked at p99, with particular attention to the largest (hottest) auctions where fan-out size is greatest.</li>
+          <li><strong>Dispute/audit-trail completeness checks:</strong> a periodic job verifying that every auction's <code>sequence_no</code> values are gapless and strictly monotonic in the immutable ledger — any gap or out-of-order sequence is itself a signal of a bug in the single-writer/CAS path and must be investigated immediately, since the entire dispute-resolution promise rests on this invariant holding.</li>
+          <li><strong>Business analytics:</strong> distribution of bids per auction, percentage of auctions with a bid inside the anti-snipe window (sniping frequency), proxy-bid adoption rate, close-price-to-starting-price ratio, and the volume of shill-bidding flags raised vs. confirmed after review.</li>
+        </ul>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Service separation</td><td>Dedicated Bidding Service, isolated from Listing/Seller and Buyer/Account services</td></tr>
+          <tr><td>Bid acceptance ordering</td><td>Single-writer-per-auction_id partitioning + optimistic CAS on auction_state.version</td></tr>
+          <tr><td>Bid-ledger datastore</td><td>SQL, ACID, synchronous replication (RF=3) &mdash; strict consistency by design</td></tr>
+          <tr><td>Catalog/listing datastore</td><td>NoSQL/document store + search index, eventually consistent, sharded far more finely</td></tr>
+          <tr><td>Real-time updates</td><td>Event broker + Real-Time/Notification Service, WebSocket fan-out fully decoupled from acceptance</td></tr>
+          <tr><td>Auto-close semantics</td><td>Hard deadline + anti-sniping extension (re-arm on any bid inside the window)</td></tr>
+          <tr><td>Close-job reliability</td><td>Durable per-auction timer + idempotent CAS-guarded close, monitored for exactly-once firing</td></tr>
+          <tr><td>Cross-service consistency</td><td>Saga &mdash; choreography for catalog-update/notify, lightweight orchestration for close &rarr; order/payment</td></tr>
+          <tr><td>Proxy bidding</td><td>Private max_bid_amount; system auto-increments to one step above the second-highest max</td></tr>
+          <tr><td>Sharding</td><td>Bids/auction_state by hash(auction_id); catalog by hash(listing_id), much larger shard count</td></tr>
+          <tr><td>Abuse prevention</td><td>Per-user/auction rate limits, async shill-bidding detection, per-account velocity caps</td></tr>
+          <tr><td>Multi-region</td><td>Home-region pinning for bid acceptance; active-active, eventually consistent catalog</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect a real interview to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Bid Acceptance and Ordering</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you fairly resolve two bids submitted within the same millisecond?</div>
+          <div class="qa-a">Route both bids by consistent hashing of auction_id to the same single-writer Bidding Service partition, which assigns a monotonic sequence_no in true arrival order, then commit via a compare-and-swap against the auction_state row's version column. Whichever bid the single-writer processes first wins; the guarantee is structural (only one worker ever touches that auction), not probabilistic.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why not just use a distributed lock across all Bidding Service nodes for every auction?</div>
+          <div class="qa-a">A distributed lock (e.g. via a coordination service) works but adds a network round-trip and a failure mode (lock service outage or lock-expiry races) on every single bid. Consistent-hash partitioning achieves the same single-writer guarantee without any lock acquisition step — it's a routing decision, not a runtime coordination cost, so it's both simpler and faster.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is SQL a better fit than NoSQL for the bid-acceptance transaction?</div>
+          <div class="qa-a">Bid acceptance is fundamentally a conditional compare-and-swap update with a strict, auditable ordering requirement — exactly the guarantee relational transactions, unique constraints, and row versioning are built for. Most NoSQL stores trade away strict, immediate consistency for horizontal scale, which is the wrong trade for a dataset that's small in volume but must be provably correct.</div>
+        </div>
+
+        <h3>Real-Time Updates</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why must WebSocket fan-out be decoupled from bid acceptance?</div>
+          <div class="qa-a">Fan-out size varies from zero to roughly a million watchers across different auctions. If the Bidding Service pushed to every watcher synchronously before acknowledging a bid, the busiest (most contested) auctions — exactly the ones where fast, fair acceptance matters most — would have the slowest bid acceptance. Publishing an event and returning immediately keeps the two workloads from ever coupling.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you handle one million watchers on a single viral auction?</div>
+          <div class="qa-a">Shard WebSocket subscriptions for that auction_id across many gateway nodes, and batch/coalesce rapid successive price updates (e.g. at most one push per connection per 250ms) rather than pushing every individual accepted bid — watchers need the current price, not a literal blow-by-blow of a closing-seconds bidding war.</div>
+        </div>
+
+        <h3>Auction Close and Anti-Sniping</h3>
+        <div class="qa-item">
+          <div class="qa-q">What is sniping, and why does anti-sniping extension mitigate it?</div>
+          <div class="qa-a">Sniping is bidding at the very last instant of a hard-deadline auction so no other bidder has time to respond. Anti-sniping extension removes the exploit's payoff: any bid arriving inside a short window before close pushes the close time out by that same window, so a last-second bid always leaves room for a counter-bid — it's structurally impossible to snipe-and-instantly-win.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you guarantee the close job fires exactly once per auction?</div>
+          <div class="qa-a">A durable, per-auction timer (not a naive periodic sweep) fires a closing worker that performs the status flip (OPEN/EXTENDED &rarr; CLOSED) as a CAS-guarded conditional update, identical in spirit to bid acceptance. A duplicate timer firing (e.g. after a crash-and-retry) simply fails its CAS check because the status is already CLOSED, making the duplicate a safe no-op rather than a double-close.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What are the trade-offs of anti-sniping extension versus a hard deadline?</div>
+          <div class="qa-a">A hard deadline is perfectly predictable (every auction closes exactly on schedule) but rewards sniping and gives no genuine second chance to respond. Anti-sniping extension is fairer and removes the sniping incentive, at the cost of unpredictable close times on hotly contested items — a trade-off most real auction platforms accept because fairness outweighs schedule predictability for the seller.</div>
+        </div>
+
+        <h3>Cross-Service Consistency</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why use a Saga instead of a distributed transaction across the bidding, catalog, and order services?</div>
+          <div class="qa-a">A single distributed transaction (e.g. two-phase commit) spanning multiple services and multiple heterogeneous stores doesn't scale and reintroduces tight coupling between services that should fail and scale independently. A Saga decomposes the flow into a sequence of local transactions with well-defined compensating/retry actions, letting each step succeed, retry, or fail on its own schedule.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if order creation fails after an auction closes?</div>
+          <div class="qa-a">The already-committed bid ledger and the recorded winner are never rolled back — that outcome is permanent and auditable. Order creation retries with backoff, and if retries are exhausted, the failure is surfaced to operations for manual handling; the compensating action is "retry or alert," never "undo the auction result."</div>
+        </div>
+
+        <h3>Proxy Bidding</h3>
+        <div class="qa-item">
+          <div class="qa-q">How does proxy/max-bid auto-bidding work mechanically?</div>
+          <div class="qa-a">A bidder sets a private max_bid_amount. Whenever a competing bid arrives, the system compares the two active maxes and sets current_price to one increment above the second-highest max — never the winner's own true max — so the current highest bidder always pays the minimum needed to stay ahead. Every automatic increment is still recorded as its own row with its own sequence_no.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is a bidder's max bid kept private?</div>
+          <div class="qa-a">Exposing a bidder's true ceiling would let a seller, a colluding shill account, or another bidder game the auction (e.g. bidding just below the known max to extract the maximum price). Keeping it private and only ever surfacing the resulting current_price is what makes the mechanic behave like a fair, sealed-ceiling auction rather than an open-book one.</div>
+        </div>
+
+        <h3>Data and Partitioning</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why split SQL for bids/orders versus NoSQL for listings, rather than one database for everything?</div>
+          <div class="qa-a">The two datasets have close to opposite requirements: the bid ledger is small in volume but must be strongly, provably consistent; the catalog is enormous in volume (billions of listings) and can tolerate eventual consistency in exchange for horizontal read scale. Forcing one database to serve both would either make the bid ledger unsafe under concurrency or make the catalog unable to scale.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you shard bid traffic without breaking strict ordering?</div>
+          <div class="qa-a">Shard by auction_id, never by bidder_id or any other key that would split one auction's bids across multiple partitions. Every bid for a given auction always lands on the same shard, so ordering only ever needs to be enforced within a single partition — a solved, single-node problem — never coordinated across shards.</div>
+        </div>
+
+        <h3>Abuse and Fraud</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you detect shill bidding?</div>
+          <div class="qa-a">An asynchronous analytics job cross-references the bidder-seller relationship graph (shared payment methods, device/IP fingerprints, shipping addresses) with bidding-pattern heuristics (an account that repeatedly nudges the price up on one seller's items but never actually wins or bids elsewhere), flagging suspicious pairs for manual review — this must never run synchronously on the bid-acceptance path.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you rate-limit bid-sniping bots without blocking legitimate last-second human bidders?</div>
+          <div class="qa-a">Per-user, per-auction submission-rate limits catch pure speed-based bot abuse without penalizing a human who simply bids late — and because anti-sniping extension already removes the payoff of winning purely by submitting last, the rate limit is a secondary defense rather than the primary mechanism preventing sniping.</div>
+        </div>
+
+        <h3>Scaling and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you scale to multiple regions given the strict-consistency requirement?</div>
+          <div class="qa-a">Pin each auction's bid-acceptance traffic to a single home region rather than accepting bids for one auction in multiple regions active-active, since that would reintroduce cross-region consensus on every single bid. Catalog browsing and watcher connections can still be fully active-active and geographically distributed, since they don't carry the same consistency requirement.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the single biggest bottleneck in this system, and why isn't it aggregate QPS?</div>
+          <div class="qa-a">A single viral, hotly contested auction — not overall platform traffic — is the practical bottleneck, because that one auction's writes are confined by design to a single serialized partition (a correctness requirement, not a limitation we can shard away). Aggregate system QPS across millions of independent auctions is comparatively easy to scale horizontally; contention concentrated on one row is not.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Strict, auditable ordering of bids on a single auction is the spine of this design, not a detail: single-writer-per-auction-id partitioning plus a compare-and-swap on auction_state is what makes "who's the current highest bidder" a provably correct fact rather than a race-dependent guess — state that explicitly, since it's the one requirement in this problem that can't be relaxed to "eventually consistent." Real-time fan-out and cross-service updates (catalog price, order creation) must be decoupled from bid acceptance via an event broker and a Saga, because coupling them would let a million-watcher fan-out or a slow downstream service degrade the one path that must never slow down. The SQL-versus-NoSQL split isn't indecision — it's matching two datasets with genuinely opposite consistency/scale requirements to two different stores. And the anti-sniping extension is the one piece of "clever" domain logic worth knowing cold: it turns a fairness problem into a simple, provable rule (a late bid always earns a fresh response window) rather than a policy exception bolted on after the fact.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Educative &mdash; "Grokking the System Design Interview": Designing an Online Auction / Bidding System (course material)</li>
+          <li>eBay Engineering Blog &mdash; architecture evolution from monolith to microservices, and notes on auction infrastructure at scale</li>
+          <li>Martin Kleppmann, <em>Designing Data-Intensive Applications</em> &mdash; chapters on transactions, consistency, ordering guarantees, and the Saga/compensating-transaction pattern</li>
+          <li>Apache Kafka documentation &mdash; partitioning by key, consumer groups, and ordering guarantees within a partition</li>
+          <li>Chris Richardson, <em>microservices.io</em> &mdash; Saga pattern (orchestration vs. choreography)</li>
+          <li>Community write-ups on optimistic concurrency control, compare-and-swap patterns, and anti-sniping mechanisms in online auction platforms</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="sorting-large-datasets.html"><span class="dir">Previous</span>Sorting Large Data Sets</a>
+          <a class="next" href="general-questions.html"><span class="dir">Next</span>General Questions</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

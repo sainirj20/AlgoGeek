@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Netflix Concurrent Screen Limit | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">Concurrent Screen Limit</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-atomic-admission-check-and-increment-under-concurrent-requests">Deep Dive — Atomic Admission Check-and-Increment Under Concurrent Requests</a></li>
+        <li><a href="#deep-dive-heartbeat-ttl-and-graceful-vs-crash-disconnect-handling">Deep Dive — Heartbeat, TTL, and Graceful vs. Crash Disconnect Handling</a></li>
+        <li><a href="#deep-dive-over-limit-ux-flow-block-vs-evict-oldest-vs-user-chooses">Deep Dive — Over-Limit UX Flow: Block vs. Evict-Oldest vs. User-Chooses</a></li>
+        <li><a href="#deep-dive-same-device-reconnectresume-without-double-counting">Deep Dive — Same-Device Reconnect/Resume Without Double-Counting</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#feature-specific-logic-per-profile-vs-per-account-limits-and-householdmulti-profile-considerations">Feature-Specific Logic: Per-Profile vs. Per-Account Limits and Household/Multi-Profile Considerations</a></li>
+        <li><a href="#rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Limiting Concurrent Streams Per Account (Netflix)</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough: the logged-in-devices vs. concurrent-streams distinction, requirements, capacity estimation, API design, an atomic Redis-backed admission control mechanism, heartbeat/TTL liveness, over-limit UX (block vs. evict vs. user-chooses), same-device reconnect handling, sharding &amp; replication, schema, security, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the system that enforces Netflix's per-plan concurrent-stream limit: Basic allows 1 simultaneous stream, Standard allows 2, Premium allows 4. The moment an account tries to play a stream that would exceed its plan's cap, the system must detect it and do something sensible — reject the new stream, or let the user boot an existing one.</p>
+        <div class="callout">
+          <div class="callout-title">The distinction that must be stated up front</div>
+          This is <strong>not</strong> a limit on how many devices or profiles can be logged in — an account can be signed in on a phone, two laptops, a smart TV, and a tablet all at once, indefinitely, with zero restriction. The limit applies <em>only</em> to concurrently <strong>active playback sessions</strong> — devices that are, right now, actually streaming video. A household can have ten logged-in devices and still be fully compliant on a Basic (1-stream) plan as long as only one of them is playing video at any given instant. Conflating these two concepts is the single most common way candidates misdesign this problem — a design that tracks "logged in" state instead of "actively playing" state will incorrectly block legitimate multi-device households that simply aren't watching simultaneously.
+        </div>
+        <p>Concretely: pressing Play on a device is the event that requests a slot. Pressing pause, stopping, closing the app, or letting the stream sit idle releases (or should release) that slot. The system's job is to always know, for a given account, the true count of devices currently in an active-playback state, compare it against the plan's cap, and admit or reject each new Play request accordingly — all in real time, without perceptibly delaying playback start for the common case.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It's a deceptively small-sounding feature that forces you to reason carefully about distributed counting under concurrency, liveness detection for a resource that can silently disappear (a crashed app, a dead network, a closed laptop lid), and a genuinely interesting product-vs-engineering trade-off in the over-limit UX. It also has a hard business angle: this is one of the primary technical levers behind plan-tier monetization, not an academic exercise.</p>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>A few minutes of scoping here prevents building the wrong thing.</p>
+        <ol>
+          <li>Is the limit per account or per profile? (i.e. can two different profiles under one Premium account each stream, counting against the shared account cap of 4, or is each profile independently capped?)</li>
+          <li>What happens on the (N+1)th concurrent stream attempt — do we hard-block the new stream with an error, or let the user pick an existing session to stop and continue?</li>
+          <li>Does casting to a TV (e.g. Chromecast/AirPlay from a phone) count as one active stream or two, given that both the casting device and the receiving TV are technically "involved"?</li>
+          <li>How much grace period should a session get after a network blip or app-background event before we declare it dead and free its slot?</li>
+          <li>If the same device stops and restarts playback quickly (e.g. episode-to-episode autoplay, or a brief app relaunch), should that reuse the existing session or count as a brand-new one?</li>
+          <li>Do downloads-for-offline-viewing count against the concurrent-stream limit at all, given there's no live connection to monitor?</li>
+          <li>Is there a separate, distinct system for detecting credential/password sharing across households, or is this purely about the technical concurrent-stream cap?</li>
+          <li>What's the acceptable latency budget for the admission decision itself — must it be sub-100ms so it's invisible ahead of video startup?</li>
+          <li>Do we need a self-service "Manage Streaming and Devices" UI where a user can see and remotely stop other active sessions?</li>
+          <li>Should plan-tier limits be hot-configurable (e.g. a promo temporarily bumping Standard to 3 streams) without a code deploy?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't wait for every answer before drawing boxes. State a reasonable assumption out loud — "I'll assume the limit is per-account (shared across all profiles under it), casting counts as a single stream from the perspective of the casting session, and a disconnected session gets roughly a 60&ndash;120 second grace period before its slot frees up" — and keep moving. Interviewers are grading your judgment under ambiguity, not your ability to extract a spec from them.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Enforce a configurable, per-account concurrent-active-stream cap based on the account's subscription plan tier (e.g. Basic = 1, Standard = 2, Premium = 4).</li>
+          <li>Admit a new playback session immediately if the account is under its cap; deny or negotiate admission if the account is at its cap.</li>
+          <li>On an over-cap Play attempt, present the user a clear choice: cancel the new stream, or select one of the existing active sessions to stop in order to free a slot.</li>
+          <li>Free a slot promptly when a session stops cleanly (user presses stop, closes the app, navigates away).</li>
+          <li>Free a slot automatically, within a bounded grace period, when a session dies uncleanly (app crash, device loses power, network drops) without ever explicitly signaling "stopped."</li>
+          <li>Never double-count the same device's playback as two sessions when it briefly reconnects or restarts (e.g. episode transition, app relaunch within a short window).</li>
+          <li>Expose a "manage streaming" view so a user can see every currently active session (device type, rough location/IP, content, started-at) and remotely stop any one of them.</li>
+          <li>Support per-plan-tier configuration changes (limits, grace periods) without a code deployment.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Low admission latency:</strong> the check must add negligible delay to the existing video-startup path (target: single-digit milliseconds, well under the perceptible threshold for "press play, video appears").</li>
+          <li><strong>Correctness under concurrency:</strong> even when two devices on the same account press Play within milliseconds of each other with exactly one slot free, the system must never admit both — an at-least-one-race-loses guarantee, not "usually correct."</li>
+          <li><strong>Resilience to bursty session-start attempts:</strong> a household toggling through several devices quickly, or a transient client retry storm, shouldn't corrupt the count or cause incorrect rejections/admissions.</li>
+          <li><strong>High availability:</strong> this check sits directly in the critical path of "can I watch anything at all," so the admission service and its backing store need to be highly available — an outage here should degrade gracefully, not block all playback account-wide (see the fail-open/fail-closed trade-off later).</li>
+          <li><strong>Timely slot reclamation:</strong> a crashed session shouldn't lock out a legitimate device for more than a small, bounded window (on the order of a couple of minutes at most).</li>
+          <li><strong>Global scale:</strong> hundreds of millions of accounts, each with a tiny amount of live state, but the aggregate read/write volume from constant heartbeats is enormous.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on the admission-control mechanism, heartbeat/TTL liveness, over-limit UX, same-device reconnect handling, partitioning, and schema. We call out but don't build the internals of a full household/credential-sharing-detection ML system, video encoding/CDN delivery, or billing/plan-upgrade flows — real, adjacent systems, but distinct from this concurrency-limiter.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>This is a very different scale problem from Netflix's video-serving/CDN traffic — the payloads here are tiny, but the request rate from constant heartbeats is what dominates.</p>
+
+        <h3>Accounts and Concurrency</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          ~260 million subscriber accounts globally
+          <br>Peak-hour concurrent-viewing ratio (evenings, accounts actively streaming at the single busiest moment) &asymp; 10&ndash;12% of accounts
+          <br>Peak concurrently active accounts &asymp; 260,000,000 &times; 0.11 &asymp; 28.6 million accounts streaming at once
+          <br>Average streams per active account at peak (some accounts run 2 devices at once, e.g. a parent + a kid's show) &asymp; 1.3
+          <br>Peak concurrent active playback sessions &asymp; 28.6M &times; 1.3 &asymp; ~37 million live sessions in the store at once
+        </div>
+
+        <h3>Play / Stop / Heartbeat QPS</h3>
+        <div class="formula-box">
+          <span class="formula-label">Event-rate sizing</span>
+          Play (session-start) events at peak &mdash; assume the average session lasts ~45 minutes and the pool of 37M sessions fully turns over roughly every 45 min:
+          <br>37,000,000 &divide; 2,700 sec &asymp; ~13,700 admission requests/sec at peak
+          <br>Heartbeat interval per active session &asymp; every 20&ndash;30 seconds (liveness signal, cheap and frequent)
+          <br>Heartbeat QPS at peak &asymp; 37,000,000 &divide; 25 sec &asymp; ~1.48 million heartbeat writes/sec
+          <br>Stop events roughly track Play events &asymp; another ~13,700/sec
+          <br><strong>Total session-store QPS at peak &asymp; ~1.5 million ops/sec</strong> &mdash; overwhelmingly dominated by heartbeats, not by admission decisions themselves
+        </div>
+
+        <h3>Per-Account Working Set Size</h3>
+        <div class="formula-box">
+          <span class="formula-label">Storage per account</span>
+          A session record (device_id, content_id, started_at, last_heartbeat_at, ip/fingerprint hash) &asymp; ~150 bytes; a Premium account has at most 4 concurrent rows &asymp; 600 bytes
+          <br>37M live sessions &times; ~150 bytes &asymp; ~5.5 GB of hot, frequently-touched live-session state at any instant &mdash; this comfortably fits in a modestly-sized in-memory cluster
+          <br>Contrast with video-serving: a single 4K stream alone can be 15&ndash;25 Mbps; this entire subsystem's live working set (~5.5 GB) is smaller than a few seconds of the platform's aggregate video egress &mdash; the enforcement system is a small-data, high-QPS problem layered on top of a completely separate big-data, high-bandwidth problem.
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Total subscriber accounts</td><td>~260M</td></tr>
+          <tr><td>Peak concurrently active accounts</td><td>~28.6M</td></tr>
+          <tr><td>Peak concurrent live sessions</td><td>~37M</td></tr>
+          <tr><td>Peak admission (Play) QPS</td><td>~13,700/sec</td></tr>
+          <tr><td>Peak heartbeat QPS</td><td>~1.48M/sec</td></tr>
+          <tr><td>Total session-store QPS at peak</td><td>~1.5M ops/sec</td></tr>
+          <tr><td>Live working-set size (session store)</td><td>~5.5 GB</td></tr>
+          <tr><td>Grace period before a dead session is reclaimed</td><td>~60&ndash;120 sec (configurable)</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>The player talks to a small, focused API that sits alongside (not inside) the video-manifest/playback-start path, so the enforcement check can be evaluated in parallel with other startup work wherever possible.</p>
+
+        <h3>Start Playback (Admission Request)</h3>
+        <pre><code>POST /v1/playback/start
+
+Request body:
+{
+  "account_id": string,             // required
+  "profile_id": string,             // required
+  "device_id": string,              // required — stable per-install/device identifier
+  "device_type": "tv"|"mobile"|"web"|"cast_receiver"|"cast_sender", // required
+  "content_id": string,             // required
+  "device_fingerprint": string,     // optional, for abuse/analytics
+  "client_ip": string               // captured server-side, not client-supplied
+}
+
+Response 200 Admitted:
+{ "session_id": "sess_8f21...", "status": "ADMITTED", "heartbeat_interval_sec": 25 }
+
+Response 409 Over Limit:
+{
+  "status": "OVER_LIMIT",
+  "plan_max_streams": 4,
+  "active_sessions": [
+    { "session_id": "sess_11a...", "device_type": "tv", "content_title": "...", "started_at": "..." },
+    { "session_id": "sess_22b...", "device_type": "mobile", "content_title": "...", "started_at": "..." }
+    // ... up to plan_max_streams entries
+  ]
+}</code></pre>
+
+        <h3>Stop Session Explicitly (to Free a Slot, or to Evict)</h3>
+        <pre><code>POST /v1/playback/stop
+{ "session_id": string, "reason": "user_stopped"|"user_evicted_for_new_stream"|"app_closed" }
+
+Response 200: { "status": "STOPPED" }</code></pre>
+
+        <h3>Heartbeat</h3>
+        <pre><code>POST /v1/playback/heartbeat
+{ "session_id": string }
+
+Response 200: { "status": "OK", "ttl_refreshed_sec": 90 }
+Response 410 Gone: { "status": "SESSION_EXPIRED" }   // client must re-request /start</code></pre>
+
+        <h3>Get Active Sessions (for the "Manage Streaming and Devices" UI)</h3>
+        <pre><code>GET /v1/accounts/{account_id}/sessions
+
+Response 200:
+{
+  "plan_max_streams": 4,
+  "active_count": 3,
+  "sessions": [
+    { "session_id": "sess_11a...", "device_type": "tv", "content_title": "...", "started_at": "...", "last_heartbeat_at": "..." },
+    ...
+  ]
+}</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Notice that <code>/start</code> is deliberately a separate, lightweight call from "fetch the video manifest" — it should be issued essentially in parallel with (not strictly before, blocking) other playback-initialization work, since it's a small key-value operation with a strict low-latency budget, while manifest/DRM negotiation is a heavier, separate concern. Coupling them into one serial chain would let this system's own latency compound with the rest of playback startup.
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>Extremely hot, extremely small: a handful of session rows per account, read and rewritten (via heartbeat) every 20&ndash;30 seconds for the entire duration of a stream.</li>
+          <li>No complex queries or joins on the hot path &mdash; just "how many active sessions does this account have right now" and "does this specific session still exist."</li>
+          <li>Needs native, cheap expiry (TTL) so a crashed session's slot frees itself without a human or a batch job intervening.</li>
+          <li>Needs atomic check-and-increment semantics under concurrent access &mdash; this is a counting/locking problem, not a general storage problem.</li>
+        </ul>
+        <p>An in-memory, single-threaded-per-key store like <strong>Redis</strong> (or a Redis-compatible cluster) is the natural fit for the hot path: it gives sub-millisecond reads/writes, atomic operations (and Lua scripting for compound check-and-set logic), and native per-key TTL that turns "a dead session's slot eventually frees" into a storage-engine guarantee instead of application code we have to get right. The account's live-session set can be modeled as a single Redis hash or sorted set keyed by <code>account_id</code>, so a slot count is just the cardinality of that structure &mdash; no cross-key aggregation required.</p>
+        <p>Redis alone is not durable enough to be a system of record, though: a node failure or a cache flush must never be the thing that silently un-limits an account, and product/analytics teams need a durable trail of session activity for billing disputes and abuse investigation. So a durable, async-written log (e.g. Cassandra or a similar wide-column store, or even an append-only event stream feeding a data warehouse) captures every session-lifecycle event (started, heartbeat-timed-out, stopped, evicted) for analytics and audit &mdash; it is never on the synchronous admission path.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If asked "why not just use the primary account/subscription database for this," the answer is the same shape as in other high-QPS counters: a relational store can hold the data, but a naive read-then-write update under ~1.5M ops/sec of concurrent heartbeat and admission traffic per second globally is exactly the kind of workload an in-memory, atomic-op-native store is built for, while a relational primary is better reserved for the durable, comparatively low-QPS account/plan/billing data.
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>The Player issues a Play request that reaches the Session Admission Service. That service checks the current active-session count for the account in Redis. If under the plan's cap, it atomically creates a new session record with a TTL and admits the stream. If at cap, it returns the list of current sessions so the client can prompt the user to choose (or simply reject). Once admitted, the Player sends periodic Heartbeats that renew the session's TTL; an explicit Stop, or a heartbeat that never arrives before the TTL lapses, removes the session and frees the slot.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The Player sends a Play request to the Session Admission Service, which checks the current session count for the account in Redis. If under the plan cap it creates a session with a TTL and admits playback; if at cap it returns the active session list so the client can prompt eviction. The Player sends periodic heartbeats that renew the TTL. An explicit stop or a TTL expiry removes the session and frees the slot. A durable session-history log is written asynchronously for analytics and billing.">
+            <style>
+              .nf-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .nf-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .nf-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .nf-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .nf-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .nf-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .nf-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .nf-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;}
+              .nf-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-nf-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-nf-1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="20" y="15" width="200" height="50" rx="6" class="nf-box"></rect>
+            <text x="120" y="36" text-anchor="middle" class="nf-title">Player (device)</text>
+            <text x="120" y="50" text-anchor="middle" class="nf-sub">phone / TV / web / cast</text>
+
+            <line x1="220" y1="40" x2="278" y2="40" class="nf-arrow" marker-end="url(#arrow-nf-1)"></line>
+            <text x="249" y="32" text-anchor="middle" class="nf-label">Play</text>
+
+            <rect x="280" y="15" width="230" height="50" rx="6" class="nf-box-strong"></rect>
+            <text x="395" y="36" text-anchor="middle" class="nf-title">Session Admission Service</text>
+            <text x="395" y="50" text-anchor="middle" class="nf-sub">checks count, admits or rejects</text>
+
+            <line x1="395" y1="65" x2="395" y2="99" class="nf-arrow" marker-end="url(#arrow-nf-1)"></line>
+
+            <rect x="280" y="100" width="230" height="60" rx="6" class="nf-box-store"></rect>
+            <text x="395" y="122" text-anchor="middle" class="nf-title">Redis</text>
+            <text x="395" y="136" text-anchor="middle" class="nf-sub">active_sessions per account_id</text>
+            <text x="395" y="149" text-anchor="middle" class="nf-sub">TTL per session, atomic ops</text>
+
+            <line x1="510" y1="40" x2="540" y2="40" class="nf-arrow-store"></line>
+            <line x1="540" y1="40" x2="540" y2="130" class="nf-arrow-store"></line>
+            <line x1="540" y1="130" x2="512" y2="130" class="nf-arrow-store" marker-end="url(#arrow-nf-1s)"></line>
+            <text x="600" y="85" text-anchor="middle" class="nf-label">read count / write session</text>
+
+            <line x1="280" y1="130" x2="252" y2="130" class="nf-arrow" marker-end="url(#arrow-nf-1)"></line>
+            <line x1="252" y1="130" x2="252" y2="65" class="nf-arrow"></line>
+            <line x1="252" y1="65" x2="220" y2="65" class="nf-arrow" marker-end="url(#arrow-nf-1)"></line>
+            <text x="215" y="100" text-anchor="middle" class="nf-label">admit / reject + active list</text>
+
+            <rect x="20" y="195" width="200" height="55" rx="6" class="nf-box"></rect>
+            <text x="120" y="216" text-anchor="middle" class="nf-title">Player (playing)</text>
+            <text x="120" y="230" text-anchor="middle" class="nf-sub">sends heartbeat every ~25s</text>
+
+            <line x1="220" y1="222" x2="278" y2="222" class="nf-arrow" marker-end="url(#arrow-nf-1)"></line>
+            <text x="249" y="214" text-anchor="middle" class="nf-label">heartbeat</text>
+
+            <rect x="280" y="195" width="230" height="55" rx="6" class="nf-box-strong"></rect>
+            <text x="395" y="216" text-anchor="middle" class="nf-title">Heartbeat Handler</text>
+            <text x="395" y="230" text-anchor="middle" class="nf-sub">renews session TTL in Redis</text>
+
+            <line x1="395" y1="250" x2="395" y2="279" class="nf-arrow" marker-end="url(#arrow-nf-1)"></line>
+            <text x="430" y="270" text-anchor="middle" class="nf-label">renew TTL</text>
+
+            <rect x="20" y="330" width="200" height="55" rx="6" class="nf-box"></rect>
+            <text x="120" y="351" text-anchor="middle" class="nf-title">Player (stop)</text>
+            <text x="120" y="365" text-anchor="middle" class="nf-sub">user stops / app closes</text>
+
+            <line x1="220" y1="357" x2="278" y2="357" class="nf-arrow" marker-end="url(#arrow-nf-1)"></line>
+            <text x="249" y="349" text-anchor="middle" class="nf-label">Stop</text>
+
+            <rect x="280" y="330" width="230" height="55" rx="6" class="nf-box-strong"></rect>
+            <text x="395" y="351" text-anchor="middle" class="nf-title">Stop Handler</text>
+            <text x="395" y="365" text-anchor="middle" class="nf-sub">deletes session, frees slot</text>
+
+            <line x1="395" y1="385" x2="395" y2="404" class="nf-arrow" marker-end="url(#arrow-nf-1)"></line>
+
+            <path d="M280,410 C260,300 260,180 280,155" class="nf-arrow-dash nf-arrow" stroke-dasharray="4 3" marker-end="url(#arrow-nf-1)"></path>
+            <text x="215" y="410" text-anchor="middle" class="nf-label">no heartbeat before TTL &rarr; auto-expire (same effect)</text>
+
+            <rect x="280" y="405" width="230" height="55" rx="6" class="nf-box-store"></rect>
+            <text x="395" y="426" text-anchor="middle" class="nf-title">Session History (async)</text>
+            <text x="395" y="440" text-anchor="middle" class="nf-sub">durable log: started / stopped / expired / evicted</text>
+
+            <line x1="510" y1="357" x2="600" y2="357" class="nf-arrow-store" marker-end="url(#arrow-nf-1s)"></line>
+            <line x1="600" y1="357" x2="600" y2="432" class="nf-arrow-store"></line>
+            <line x1="600" y1="432" x2="512" y2="432" class="nf-arrow-store" marker-end="url(#arrow-nf-1s)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; the Session Admission Service gates every Play request against a live Redis-backed count; heartbeats renew a TTL, and either an explicit stop or a lapsed TTL frees the slot, with a durable async log for analytics/billing.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Redis is the single source of truth for "is this account over its limit right now,"</strong> not a derived or cached value — every admission decision reads it directly.</li>
+          <li><strong>TTL is the safety net, not the primary mechanism</strong> &mdash; the common case is a clean Stop; TTL expiry exists specifically to handle the crash/disconnect case without any human or batch process involved.</li>
+          <li><strong>The durable log is entirely off the synchronous path</strong> &mdash; admission decisions never wait on it, so analytics/billing durability requirements never threaten playback-start latency.</li>
+        </ul>
+
+        <h2 id="deep-dive-atomic-admission-check-and-increment-under-concurrent-requests">Deep Dive — Atomic Admission Check-and-Increment Under Concurrent Requests</h2>
+        <p>The core correctness risk: two devices on the same account press Play within milliseconds of each other, and exactly one slot is free. If the admission logic is implemented as a naive "read the current count, check it, then write a new session" sequence, both requests can read the same pre-increment count, both see "3 of 4 used, room for one more," and both get admitted &mdash; silently blowing past the cap. This is a textbook check-then-act race condition, and it's the single most important correctness property in this entire design.</p>
+
+        <h3>Why a Plain Read-Then-Write Fails</h3>
+        <p>Between "read count" and "write new session," another request can interleave. Under ~13,700 admission requests/sec at peak, with a meaningful fraction of those landing on multi-device households pressing Play in quick succession, this isn't a rare theoretical edge case &mdash; it will happen continuously in production if the check and the write aren't a single atomic unit.</p>
+
+        <h3>The Fix — a Single Atomic Operation (Lua Script / Transaction)</h3>
+        <p>Redis executes a Lua script atomically and single-threaded per key, so we express "count current sessions, compare to the plan's cap, and conditionally add the new session" as one script invocation: no other command for that account's key can interleave partway through. Conceptually:</p>
+        <pre><code>-- Redis Lua (executed atomically)
+local key = "sessions:" .. account_id
+local current = redis.call("HLEN", key)
+if current &lt; max_streams then
+  redis.call("HSET", key, device_id, session_payload)
+  redis.call("EXPIRE", key, ttl_seconds)   -- coarse safety net; per-field TTL handled by a companion sorted set
+  return "ADMITTED"
+else
+  return "OVER_LIMIT"
+end</code></pre>
+        <p>An equivalent design uses a Redis transaction (<code>MULTI</code>/<code>EXEC</code> with a <code>WATCH</code> on the key) or, on a cluster that supports it, a compare-and-swap primitive — the load-bearing property is simply that "read count, decide, write" happens as one indivisible operation from the perspective of every other concurrent caller, not that it must specifically be Lua.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two devices, A and B, on the same account press Play almost simultaneously with one slot free. Both requests reach Redis, which serializes them internally via a single atomic Lua script per key. Device A's script runs first, sees the free slot, and is admitted. Device B's script then runs, sees the slot is now taken, and is rejected. Because the check and the write happen inside one atomic operation, there is no window where both could read the same pre-increment count.">
+            <style>
+              .nf-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .nf-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .nf-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .nf-box-reject{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1.5;}
+              .nf-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .nf-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .nf-label{font-family:var(--font-sans);font-weight:400;font-size:9.5px;font-style:italic;fill:var(--color-text-muted);}
+              .nf-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-nf-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="20" y="20" width="170" height="45" rx="6" class="nf-box"></rect>
+            <text x="105" y="40" text-anchor="middle" class="nf-title">Device A: Play</text>
+            <text x="105" y="54" text-anchor="middle" class="nf-sub">t=0ms</text>
+
+            <rect x="20" y="90" width="170" height="45" rx="6" class="nf-box"></rect>
+            <text x="105" y="110" text-anchor="middle" class="nf-title">Device B: Play</text>
+            <text x="105" y="124" text-anchor="middle" class="nf-sub">t=4ms</text>
+
+            <line x1="190" y1="42" x2="278" y2="80" class="nf-arrow" marker-end="url(#arrow-nf-2)"></line>
+            <line x1="190" y1="112" x2="278" y2="100" class="nf-arrow" marker-end="url(#arrow-nf-2)"></line>
+
+            <rect x="280" y="55" width="200" height="60" rx="6" class="nf-box-strong"></rect>
+            <text x="380" y="76" text-anchor="middle" class="nf-title">Redis: single key</text>
+            <text x="380" y="90" text-anchor="middle" class="nf-sub">sessions:{account_id}</text>
+            <text x="380" y="103" text-anchor="middle" class="nf-sub">Lua script executes serially</text>
+
+            <line x1="380" y1="115" x2="380" y2="144" class="nf-arrow" marker-end="url(#arrow-nf-2)"></line>
+            <text x="380" y="138" text-anchor="middle" class="nf-label">internal execution order</text>
+
+            <rect x="230" y="150" width="150" height="50" rx="6" class="nf-box-store"></rect>
+            <text x="305" y="170" text-anchor="middle" class="nf-title">Script(A) runs</text>
+            <text x="305" y="184" text-anchor="middle" class="nf-sub">3 of 4 used &rarr; admit</text>
+
+            <line x1="380" y1="200" x2="380" y2="219" class="nf-arrow" marker-end="url(#arrow-nf-2)"></line>
+
+            <rect x="230" y="220" width="150" height="50" rx="6" class="nf-box-store"></rect>
+            <text x="305" y="240" text-anchor="middle" class="nf-title">Script(B) runs</text>
+            <text x="305" y="254" text-anchor="middle" class="nf-sub">4 of 4 used &rarr; reject</text>
+
+            <line x1="380" y1="185" x2="560" y2="150" class="nf-arrow" marker-end="url(#arrow-nf-2)"></line>
+            <rect x="560" y="115" width="180" height="45" rx="6" class="nf-box"></rect>
+            <text x="650" y="135" text-anchor="middle" class="nf-title">Device A: ADMITTED</text>
+            <text x="650" y="149" text-anchor="middle" class="nf-sub">slot 4 of 4 now taken</text>
+
+            <line x1="380" y1="245" x2="560" y2="250" class="nf-arrow" marker-end="url(#arrow-nf-2)"></line>
+            <rect x="560" y="228" width="180" height="45" rx="6" class="nf-box-reject"></rect>
+            <text x="650" y="248" text-anchor="middle" class="nf-title">Device B: OVER_LIMIT</text>
+            <text x="650" y="262" text-anchor="middle" class="nf-sub">returns active session list</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Atomic admission: both Play requests reach the same Redis key, whose Lua script executes serially. Device A's script sees the free slot and admits; Device B's script &mdash; run only after A's completes &mdash; correctly sees the slot as taken. No window exists where both could read the same stale count.</div>
+        </div>
+
+        <table>
+          <tr><th>Approach</th><th>Race-safe?</th><th>Notes</th></tr>
+          <tr><td>Read count, then write (two separate ops)</td><td>No</td><td>Classic check-then-act race; will over-admit under concurrent load</td></tr>
+          <tr><td>Application-level mutex/lock per account</td><td>Yes, but costly</td><td>Works, but adds a distributed-lock dependency and latency for a problem Redis already solves natively</td></tr>
+          <tr><td>Redis Lua script (chosen)</td><td>Yes</td><td>Single round trip, atomic by construction, no external lock needed</td></tr>
+          <tr><td>Redis MULTI/EXEC with WATCH</td><td>Yes</td><td>Equivalent guarantee, slightly more round trips than a single Lua call</td></tr>
+        </table>
+
+        <h2 id="deep-dive-heartbeat-ttl-and-graceful-vs-crash-disconnect-handling">Deep Dive — Heartbeat, TTL, and Graceful vs. Crash Disconnect Handling</h2>
+        <p>A clean Stop is easy: the client tells us explicitly, we delete the session, the slot is free instantly. The hard case is the player that crashes, loses power, or drops off the network without ever sending that signal &mdash; the exact same "silent disappearance" problem that presence systems (e.g. "is this user online") solve with heartbeats and TTL expiry, applied here to a session slot instead of an online/offline flag.</p>
+
+        <h3>The Mechanism</h3>
+        <ul>
+          <li>Every active session carries a TTL in Redis (e.g. 90 seconds).</li>
+          <li>The Player sends a lightweight heartbeat roughly every 20&ndash;30 seconds, which atomically renews (resets) that TTL.</li>
+          <li>If three consecutive heartbeats are missed (i.e. no heartbeat arrives before the TTL lapses), Redis's native key/field expiry removes the session automatically &mdash; no polling job, no explicit cleanup logic required for the common case.</li>
+          <li>A lightweight background sweep can still run periodically as a defense-in-depth check for any edge case where native expiry notifications are missed or delayed, re-validating that any session older than a hard ceiling (e.g. 3&times; the TTL) is truly gone.</li>
+        </ul>
+
+        <h3>Why Not Expire Immediately on One Missed Heartbeat?</h3>
+        <p>A brief network blip &mdash; a subway tunnel, a wifi hiccup, a phone briefly backgrounded by the OS &mdash; is common and should not instantly kill a session the user fully intends to keep watching. Tuning the TTL to roughly 3&times; the heartbeat interval (e.g. 90s TTL against a 25&ndash;30s heartbeat cadence) gives a grace period that absorbs one or two missed beats without declaring the session dead, while still bounding worst-case slot-reclamation time to under two minutes if the disconnect turns out to be permanent. This TTL-to-heartbeat ratio is the central tuning knob of the whole mechanism: too tight and legitimate viewers get kicked over ordinary network jitter; too loose and a genuinely dead session locks out a slot for an uncomfortably long time.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Timeline showing a session sending heartbeats every 25 seconds that each renew a 90 second TTL. A brief network blip causes one heartbeat to be missed, but the session survives because the TTL has not yet lapsed; heartbeats resume and the session continues normally. In a separate scenario, the app crashes and no further heartbeats ever arrive; after the 90 second TTL fully lapses with no renewal, the session is automatically expired by Redis and the slot is freed.">
+            <style>
+              .nf-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .nf-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .nf-box-warn{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .nf-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .nf-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .nf-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .nf-tick{stroke:var(--color-border);stroke-width:1.5;}
+              .nf-beat{fill:var(--color-accent);}
+              .nf-miss{fill:none;stroke:var(--color-border);stroke-width:1.5;stroke-dasharray:2 2;}
+            </style>
+            <text x="12" y="20" class="nf-title">Scenario 1: brief network blip &mdash; session survives</text>
+            <line x1="20" y1="55" x2="740" y2="55" class="nf-tick"></line>
+            <circle cx="60" cy="55" r="6" class="nf-beat"></circle>
+            <text x="60" y="42" text-anchor="middle" class="nf-label">HB</text>
+            <circle cx="160" cy="55" r="6" class="nf-beat"></circle>
+            <text x="160" y="42" text-anchor="middle" class="nf-label">HB</text>
+            <circle cx="260" cy="55" r="6" class="nf-miss"></circle>
+            <text x="260" y="42" text-anchor="middle" class="nf-label">missed</text>
+            <circle cx="360" cy="55" r="6" class="nf-beat"></circle>
+            <text x="360" y="42" text-anchor="middle" class="nf-label">HB resumes</text>
+            <text x="60" y="75" text-anchor="middle" class="nf-sub">t=0</text>
+            <text x="160" y="75" text-anchor="middle" class="nf-sub">t=25s</text>
+            <text x="260" y="75" text-anchor="middle" class="nf-sub">t=50s</text>
+            <text x="360" y="75" text-anchor="middle" class="nf-sub">t=75s (TTL still had ~40s left)</text>
+            <rect x="420" y="35" width="300" height="40" rx="6" class="nf-box"></rect>
+            <text x="570" y="59" text-anchor="middle" class="nf-sub">TTL (90s) never fully lapses &mdash; session stays alive through the gap</text>
+
+            <text x="12" y="130" class="nf-title">Scenario 2: app crash &mdash; no further heartbeats, session expires</text>
+            <line x1="20" y1="165" x2="740" y2="165" class="nf-tick"></line>
+            <circle cx="60" cy="165" r="6" class="nf-beat"></circle>
+            <text x="60" y="152" text-anchor="middle" class="nf-label">HB</text>
+            <circle cx="160" cy="165" r="6" class="nf-beat"></circle>
+            <text x="160" y="152" text-anchor="middle" class="nf-label">HB (last one)</text>
+            <text x="160" y="185" text-anchor="middle" class="nf-sub">crash at t=27s</text>
+            <circle cx="260" cy="165" r="6" class="nf-miss"></circle>
+            <circle cx="360" cy="165" r="6" class="nf-miss"></circle>
+            <circle cx="460" cy="165" r="6" class="nf-miss"></circle>
+            <line x1="250" y1="165" x2="250" y2="230" stroke="var(--color-formula-border)" stroke-width="1.5" stroke-dasharray="3 3"></line>
+            <rect x="250" y="230" width="220" height="55" rx="6" class="nf-box-warn"></rect>
+            <text x="360" y="250" text-anchor="middle" class="nf-title">TTL lapses at t &asymp; 117s</text>
+            <text x="360" y="264" text-anchor="middle" class="nf-sub">Redis auto-expires the session key</text>
+            <text x="360" y="277" text-anchor="middle" class="nf-sub">slot is freed with zero manual cleanup</text>
+            <rect x="500" y="230" width="220" height="55" rx="6" class="nf-box">
+            </rect>
+            <text x="610" y="250" text-anchor="middle" class="nf-title">Background sweep (defense-in-depth)</text>
+            <text x="610" y="264" text-anchor="middle" class="nf-sub">re-validates stale sessions past a hard</text>
+            <text x="610" y="277" text-anchor="middle" class="nf-sub">ceiling, catching any missed-expiry edge case</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Heartbeat/TTL liveness: a brief network blip that misses one heartbeat is absorbed because the TTL (~90s) hasn't fully lapsed; a genuine crash with no further heartbeats leads to automatic TTL expiry (~2 missed-beat windows later) and the slot is freed without manual intervention.</div>
+        </div>
+
+        <h2 id="deep-dive-over-limit-ux-flow-block-vs-evict-oldest-vs-user-chooses">Deep Dive — Over-Limit UX Flow: Block vs. Evict-Oldest vs. User-Chooses</h2>
+        <p>When the (N+1)th stream is attempted on an already-full account, there are three fundamentally different product behaviors, and the choice materially affects both user experience and perceived fairness.</p>
+        <ul>
+          <li><strong>Block the new stream:</strong> simplest to implement, but frustrating &mdash; the user pressing play on a brand-new device has no idea which of their other devices is "at fault," and has to go hunt down and manually stop something elsewhere before trying again.</li>
+          <li><strong>Auto-evict the oldest / least-recently-active session:</strong> fully automatic, but silently kicks someone else off mid-show with no warning &mdash; a real household-friction generator (imagine a partner's stream cutting out mid-episode without any indication why).</li>
+          <li><strong>User chooses which session to stop (the real-world default):</strong> the new-stream requester sees the list of currently active sessions (device type, content, started-at) and picks one to end, then their own stream is admitted. This is what most real streaming platforms actually do, because it keeps the decision in the hands of a person rather than a silent heuristic, and it surfaces the over-limit event as useful information ("oh, the TV downstairs is still playing") rather than a confusing hard failure.</li>
+        </ul>
+        <p>The recommended default is user-chooses, with a plain block as the fallback if the client can't render the picker (e.g. a very old device/app version) and auto-evict-oldest reserved as a config option for accounts/contexts that explicitly want fully automatic behavior.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence diagram: a fifth device presses play on a Premium account already at its 4-stream cap. The Session Admission Service returns an over-limit response with the list of four active sessions. The client displays a picker to the user showing each active session's device and content. The user selects one session to stop. The client sends a stop request for that session, then retries the play request, which is now admitted since a slot is free.">
+            <style>
+              .nf-actor{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .nf-life{stroke:var(--color-border);stroke-width:1.5;stroke-dasharray:3 3;}
+              .nf-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .nf-label{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .nf-note{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:1.5;}
+              .nf-notetext{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text);}
+            </style>
+            <defs>
+              <marker id="arrow-nf-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="100" y="20" text-anchor="middle" class="nf-actor">5th Device (client)</text>
+            <line x1="100" y1="28" x2="100" y2="360" class="nf-life"></line>
+
+            <text x="400" y="20" text-anchor="middle" class="nf-actor">Session Admission Service</text>
+            <line x1="400" y1="28" x2="400" y2="360" class="nf-life"></line>
+
+            <text x="670" y="20" text-anchor="middle" class="nf-actor">User</text>
+            <line x1="670" y1="28" x2="670" y2="360" class="nf-life"></line>
+
+            <line x1="100" y1="55" x2="392" y2="55" class="nf-arrow" marker-end="url(#arrow-nf-3)"></line>
+            <text x="245" y="47" text-anchor="middle" class="nf-label">POST /playback/start</text>
+
+            <line x1="400" y1="80" x2="108" y2="80" class="nf-arrow" marker-end="url(#arrow-nf-3)"></line>
+            <text x="245" y="72" text-anchor="middle" class="nf-label">409 OVER_LIMIT + 4 active sessions</text>
+
+            <rect x="150" y="95" width="300" height="35" rx="5" class="nf-note"></rect>
+            <text x="300" y="117" text-anchor="middle" class="nf-notetext">client renders a picker: TV / phone / laptop / tablet</text>
+
+            <line x1="100" y1="150" x2="662" y2="150" class="nf-arrow" marker-end="url(#arrow-nf-3)"></line>
+            <text x="380" y="142" text-anchor="middle" class="nf-label">show active sessions, ask which to stop</text>
+
+            <line x1="670" y1="175" x2="108" y2="175" class="nf-arrow" marker-end="url(#arrow-nf-3)"></line>
+            <text x="380" y="167" text-anchor="middle" class="nf-label">user selects "laptop" to stop</text>
+
+            <line x1="100" y1="205" x2="392" y2="205" class="nf-arrow" marker-end="url(#arrow-nf-3)"></line>
+            <text x="245" y="197" text-anchor="middle" class="nf-label">POST /playback/stop {session: laptop}</text>
+
+            <line x1="400" y1="230" x2="108" y2="230" class="nf-arrow" marker-end="url(#arrow-nf-3)"></line>
+            <text x="245" y="222" text-anchor="middle" class="nf-label">200 STOPPED &mdash; slot freed</text>
+
+            <line x1="100" y1="270" x2="392" y2="270" class="nf-arrow" marker-end="url(#arrow-nf-3)"></line>
+            <text x="245" y="262" text-anchor="middle" class="nf-label">retry: POST /playback/start</text>
+
+            <line x1="400" y1="300" x2="108" y2="300" class="nf-arrow" marker-end="url(#arrow-nf-3)"></line>
+            <text x="245" y="292" text-anchor="middle" class="nf-label">200 ADMITTED &mdash; playback begins</text>
+
+            <rect x="150" y="320" width="470" height="35" rx="5" class="nf-note"></rect>
+            <text x="385" y="342" text-anchor="middle" class="nf-notetext">Total round trip adds one extra confirm step vs. a hard block, but the user stays in control</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Over-limit sequence: the 5th Play attempt on a full Premium account is rejected with the active-session list; the client prompts the user to pick a session to stop, then retries, and playback is admitted once a slot is free.</div>
+        </div>
+
+        <table>
+          <tr><th>Strategy</th><th>User experience</th><th>Implementation complexity</th><th>Used by real systems?</th></tr>
+          <tr><td>Hard block</td><td>Frustrating &mdash; no guidance on what to do next</td><td>Lowest</td><td>Fallback only</td></tr>
+          <tr><td>Auto-evict oldest/least-recently-active</td><td>Silent, surprising to whoever gets kicked</td><td>Low</td><td>Occasionally, as a config option</td></tr>
+          <tr><td>User chooses (recommended default)</td><td>Best &mdash; transparent, puts decision with a person</td><td>Medium (needs the picker UI + one extra round trip)</td><td>Yes &mdash; the common real-world pattern</td></tr>
+        </table>
+
+        <h2 id="deep-dive-same-device-reconnectresume-without-double-counting">Deep Dive — Same-Device Reconnect/Resume Without Double-Counting</h2>
+        <p>A device that stops and restarts playback quickly &mdash; an episode ending and the next one auto-playing, a brief app backgrounding/foregrounding, a quick app relaunch after a minor crash &mdash; should not be treated as a brand-new session competing for a fresh slot. Two mechanisms make this work together:</p>
+        <ul>
+          <li><strong>Stable device identity:</strong> every Play request carries a persistent <code>device_id</code> (not a random per-launch UUID), so the Admission Service can recognize "this is the same physical device that already holds a slot" rather than treating every request as an anonymous new claimant.</li>
+          <li><strong>A short reuse/grace window on the existing key:</strong> if a new <code>/playback/start</code> arrives for an <code>account_id</code> + <code>device_id</code> pair that already has a live (non-expired) session, the Admission Service updates that existing session's <code>content_id</code> and refreshes its TTL in place, rather than creating a second entry &mdash; this is a distinct, cheaper "resume" code path from the full check-and-increment admission logic, since it never touches the slot count at all.</li>
+        </ul>
+        <p>This is also exactly why TTL expiry (not instant, on-disconnect deletion) matters here too: an episode-to-episode transition might briefly gap the heartbeat stream by a few seconds, and if the old session had been deleted immediately rather than left to age out via TTL, the "same device" lookup above would have nothing to find, and the new episode's Play request would incorrectly consume a fresh slot.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Decision flow for an incoming Play request: the Admission Service first looks up whether the account_id plus device_id pair already has a live, non-expired session. If yes, it updates that existing session's content and refreshes its TTL in place, a cheap resume path that never touches the slot count. If no, it falls through to the full atomic check-and-increment admission logic described earlier.">
+            <style>
+              .nf-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .nf-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .nf-diamond{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+              .nf-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .nf-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .nf-label{font-family:var(--font-sans);font-weight:400;font-size:9.5px;font-style:italic;fill:var(--color-text-muted);}
+              .nf-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-nf-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="290" y="15" width="200" height="45" rx="6" class="nf-box"></rect>
+            <text x="390" y="34" text-anchor="middle" class="nf-title">Incoming Play request</text>
+            <text x="390" y="48" text-anchor="middle" class="nf-sub">account_id + device_id + content_id</text>
+
+            <line x1="390" y1="60" x2="390" y2="89" class="nf-arrow" marker-end="url(#arrow-nf-4)"></line>
+
+            <polygon points="270,150 390,90 510,150 390,210" class="nf-diamond"></polygon>
+            <text x="390" y="146" text-anchor="middle" class="nf-title">live session already</text>
+            <text x="390" y="159" text-anchor="middle" class="nf-title">exists for this</text>
+            <text x="390" y="172" text-anchor="middle" class="nf-title">account+device?</text>
+
+            <line x1="270" y1="150" x2="130" y2="150" class="nf-arrow" marker-end="url(#arrow-nf-4)"></line>
+            <text x="200" y="140" text-anchor="middle" class="nf-label">yes</text>
+
+            <rect x="20" y="122" width="150" height="56" rx="6" class="nf-box-strong"></rect>
+            <text x="95" y="143" text-anchor="middle" class="nf-title">Resume in place</text>
+            <text x="95" y="157" text-anchor="middle" class="nf-sub">update content_id,</text>
+            <text x="95" y="169" text-anchor="middle" class="nf-sub">refresh TTL &mdash; no count change</text>
+
+            <line x1="510" y1="150" x2="650" y2="150" class="nf-arrow" marker-end="url(#arrow-nf-4)"></line>
+            <text x="580" y="140" text-anchor="middle" class="nf-label">no</text>
+
+            <rect x="600" y="122" width="150" height="56" rx="6" class="nf-box-strong"></rect>
+            <text x="675" y="143" text-anchor="middle" class="nf-title">Full admission check</text>
+            <text x="675" y="157" text-anchor="middle" class="nf-sub">atomic check-and-increment</text>
+            <text x="675" y="169" text-anchor="middle" class="nf-sub">(see Figure 2)</text>
+
+            <text x="390" y="240" text-anchor="middle" class="nf-sub">Only a genuinely new device/account pair ever touches the slot count &mdash; a resuming device never does.</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Same-device reconnect decision flow: a live session already keyed to this account_id + device_id is updated and TTL-refreshed in place; only a request from a device with no existing live session falls through to the full atomic admission check.</div>
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Call out explicitly that this reconnect path is a lookup-and-update, not a check-and-increment &mdash; it deliberately bypasses the "am I over the cap" logic entirely for the same device, because the device already legitimately holds a slot; re-running the full admission check would be both wasteful and, at the boundary (account exactly at cap), incorrectly self-rejecting the very session that's continuing to play.
+        </div>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+        <p>Partitioning follows the same principle as the admission logic itself: everything about one account's live sessions must always be reachable atomically and consistently as a single unit.</p>
+        <ul>
+          <li><strong>Shard the session store by <code>account_id</code></strong> (consistent hashing across the Redis cluster), so every session for a given account &mdash; and the atomic Lua script that checks/updates them &mdash; always executes against the same node/shard, with no cross-shard coordination ever required for a single admission decision.</li>
+          <li><strong>Replicate each shard</strong> (e.g. one primary + 1&ndash;2 replicas) for availability: this is a business-critical enforcement path, and a single node failure must not take down playback-start for every account hashed to that shard.</li>
+          <li><strong>Plan-tier limits (<code>plan_limits</code>)</strong> are tiny, slow-changing reference data &mdash; fully replicated/cached everywhere (every Admission Service instance holds it in local memory, refreshed on a short poll interval or pushed via a config-change event), so looking up "what's this account's cap" never requires a network hop.</li>
+          <li><strong>The durable session-history log</strong> is sharded independently (e.g. by <code>account_id</code> or time-bucketed), since it's a write-heavy, append-only, analytics-oriented store with completely different access patterns from the hot live-session cache.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A Redis cluster ring sharded by hash of account_id, with each shard replicated as one primary plus two replicas for availability. One account's session data is shown routed consistently to a single shard's primary and its replicas, so the atomic admission check never needs cross-shard coordination.">
+            <style>
+              .nf-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .nf-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .nf-node{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1.5;}
+              .nf-node-primary{fill:var(--color-accent-dark);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .nf-node-replica{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+              .nf-nodelabel{font-family:var(--font-sans);font-weight:700;font-size:8px;fill:var(--color-primary);}
+              .nf-nodelabel-inv{font-family:var(--font-sans);font-weight:700;font-size:8px;fill:#ffffff;}
+            </style>
+            <text x="20" y="20" class="nf-title">Redis cluster: sharded by hash(account_id), each shard = 1 primary + 2 replicas</text>
+
+            <circle cx="380" cy="170" r="115" fill="none" stroke="var(--color-border)" stroke-dasharray="3 3"></circle>
+
+            <circle cx="490" cy="170" r="15" class="nf-node"></circle>
+            <text x="490" y="173" text-anchor="middle" class="nf-nodelabel">Shard 0</text>
+            <circle cx="450" cy="255" r="15" class="nf-node"></circle>
+            <text x="450" y="258" text-anchor="middle" class="nf-nodelabel">Shard 1</text>
+            <circle cx="357" cy="284" r="15" class="nf-node-primary"></circle>
+            <text x="357" y="287" text-anchor="middle" class="nf-nodelabel-inv">Shard 2 (P)</text>
+            <circle cx="270" cy="255" r="15" class="nf-node-replica"></circle>
+            <text x="270" y="258" text-anchor="middle" class="nf-nodelabel-inv">Shard 2 (R1)</text>
+            <circle cx="245" cy="170" r="15" class="nf-node-replica"></circle>
+            <text x="245" y="173" text-anchor="middle" class="nf-nodelabel-inv">Shard 2 (R2)</text>
+            <circle cx="270" cy="85" r="15" class="nf-node"></circle>
+            <text x="270" y="88" text-anchor="middle" class="nf-nodelabel">Shard 3</text>
+            <circle cx="357" cy="56" r="15" class="nf-node"></circle>
+            <text x="357" y="59" text-anchor="middle" class="nf-nodelabel">Shard 4</text>
+            <circle cx="450" cy="85" r="15" class="nf-node"></circle>
+            <text x="450" y="88" text-anchor="middle" class="nf-nodelabel">Shard 5</text>
+
+            <text x="380" y="170" text-anchor="middle" class="nf-sub" dy="45">hash(account_id) &rarr; Shard 2</text>
+            <text x="20" y="270" class="nf-sub">All of one account's active sessions land on Shard 2's primary; replicated</text>
+            <text x="20" y="283" class="nf-sub">synchronously (or with tight lag) to R1/R2 for failover.</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. Redis cluster sharded by hash(account_id): every session for a given account is always served by the same shard's primary (with replicas for failover), so the atomic admission check never needs cross-shard coordination.</div>
+        </div>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>Live enforcement state lives in Redis (modeled as hashes/sorted-sets keyed by <code>account_id</code>, not literal SQL tables), but it's useful to describe it schema-style, alongside the genuinely relational/wide-column tables that back configuration and analytics.</p>
+        <table>
+          <tr><th colspan="2">active_sessions (Redis hash, key: sessions:{account_id}; conceptual columns per field entry)</th></tr>
+          <tr><td>account_id (key)</td><td>string</td></tr>
+          <tr><td>device_id (hash field)</td><td>string &mdash; stable per-device identifier</td></tr>
+          <tr><td>session_id</td><td>uuid</td></tr>
+          <tr><td>content_id</td><td>string</td></tr>
+          <tr><td>device_type</td><td>enum(tv, mobile, web, cast_receiver, cast_sender)</td></tr>
+          <tr><td>started_at</td><td>timestamp</td></tr>
+          <tr><td>last_heartbeat_at</td><td>timestamp</td></tr>
+          <tr><td>ttl_expires_at</td><td>timestamp (managed via Redis EXPIRE, not a stored column)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">plan_limits (small config table, cached in every service instance)</th></tr>
+          <tr><td>plan_tier (PK)</td><td>enum(basic, standard, premium)</td></tr>
+          <tr><td>max_concurrent_streams</td><td>int (1, 2, 4)</td></tr>
+          <tr><td>updated_at</td><td>timestamp</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">session_history (durable, wide-column store; PK: account_id + session_id, written async)</th></tr>
+          <tr><td>account_id / session_id (composite PK)</td><td>bigint / uuid</td></tr>
+          <tr><td>profile_id</td><td>bigint</td></tr>
+          <tr><td>device_id / device_type</td><td>string / enum</td></tr>
+          <tr><td>content_id</td><td>string</td></tr>
+          <tr><td>started_at / ended_at</td><td>timestamp</td></tr>
+          <tr><td>end_reason</td><td>enum(user_stopped, ttl_expired, user_evicted_for_new_stream, app_closed)</td></tr>
+          <tr><td>ip_country / device_fingerprint_hash</td><td>string (for abuse/analytics, not raw PII where avoidable)</td></tr>
+        </table>
+
+        <h2 id="feature-specific-logic-per-profile-vs-per-account-limits-and-householdmulti-profile-considerations">Feature-Specific Logic: Per-Profile vs. Per-Account Limits and Household/Multi-Profile Considerations</h2>
+        <p>Most real deployments enforce the concurrent-stream cap at the <strong>account</strong> level, shared across every profile under it &mdash; a Premium account's 4-stream cap is a single pool that all profiles (parent, kids, guest) draw from together, not 4 streams per profile. This matches the commercial intent of the limit: it's about how many screens the household/paying account can use at once, not about giving every individual profile its own independent allowance (which would make the plan-tier cap nearly meaningless for large multi-profile households).</p>
+        <ul>
+          <li><strong>Admission key stays <code>account_id</code>, not <code>profile_id</code></strong> &mdash; the Redis structure that holds active sessions is keyed by account, with <code>profile_id</code> stored as a field within each session record purely for display/attribution (e.g. showing "Dad's profile is watching Show X" in the manage-streaming UI).</li>
+          <li><strong>Per-profile viewing history and recommendations</strong> are a completely separate concern from this concurrency limiter and live in a different system; conflating "which profile watched what" with "how many screens are active" is a common design error worth explicitly avoiding.</li>
+          <li><strong>Kids profiles</strong> don't need a special concurrency carve-out in most designs &mdash; they consume from the same shared account pool like any other profile, though some products layer additional restrictions (e.g. simultaneous mature content rules) that are unrelated to the stream-count limiter itself.</li>
+        </ul>
+
+        <h2 id="rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</h2>
+        <p>Beyond the core concurrency cap, the system needs to resist attempts to game it or overload it.</p>
+        <ul>
+          <li><strong>Rapid play/stop cycling:</strong> a client that repeatedly starts and immediately stops sessions to probe or manipulate slot availability should be throttled &mdash; apply a per-device rate limit on <code>/playback/start</code> calls (e.g. no more than a handful of admission attempts per minute per device), independent of the concurrency cap itself.</li>
+          <li><strong>Heartbeat flooding:</strong> a misbehaving or compromised client sending heartbeats far more often than the expected cadence should be throttled at the API-gateway layer, since the aggregate heartbeat volume (already ~1.5M/sec at peak) is the dominant cost driver in this system.</li>
+          <li><strong>Credential/account sharing detection is a related but explicitly distinct problem:</strong> this system only ever asks "how many active playback sessions does this specific account have right now" &mdash; it says nothing about whether those sessions originate from within one household. Detecting that a single account is being used simultaneously (or in a pattern suggestive of being used) from many unrelated households is a separate system, typically built on signals like distinct IP/geolocation clusters, device-fingerprint diversity over time, and account-linked "home network" heuristics, feeding into its own decision (e.g. prompting a household verification step). It's worth mentioning this distinction proactively in an interview, since candidates are often expected to know where this system's responsibility ends.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Session identity binding:</strong> a session's <code>stop</code> or <code>heartbeat</code> call must be authenticated as belonging to the same account (and ideally the same device credential) that created it &mdash; otherwise one device could maliciously evict another account's session or forge heartbeats to keep a stale session alive.</li>
+          <li><strong>Minimizing PII in the hot store:</strong> the live Redis session record needs just enough to render the manage-streaming UI (device type, rough location, content title) &mdash; avoid storing raw IP addresses or precise geolocation in the hot path; store a coarse, already-resolved region/country and keep anything more sensitive only in the access-controlled durable log.</li>
+          <li><strong>Authorization on the sessions-list and stop endpoints:</strong> only the authenticated account owner (or a profile with sufficient permission) can view or remotely stop another session on the account &mdash; a guest/kids profile shouldn't necessarily be able to kick the account owner's own stream.</li>
+          <li><strong>Transport security:</strong> TLS on every client-to-service call; internal service-to-Redis traffic on a private network segment with its own access controls, since this store is a business-critical enforcement path.</li>
+          <li><strong>Abuse resistance:</strong> the eviction flow (a device forcing another session to stop) must itself be authenticated and rate-limited, so it can't be used as a denial-of-service vector against a household's other devices.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Load balancing appears at a few independent layers:</p>
+        <ol>
+          <li>Standard L7 load balancing across stateless Session Admission Service instances, health-checked, in front of the Redis cluster.</li>
+          <li>Consistent hashing at the client/proxy layer routes each account's requests to the correct Redis shard directly, avoiding an extra service-side routing hop wherever the topology allows it.</li>
+          <li>Heartbeat traffic in particular benefits from being routed as close to the originating region as possible (see multi-region section) since it's high-volume and latency-insensitive individually, but sensitive in aggregate to unnecessary cross-region hops.</li>
+        </ol>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Pin each account's session state to a "home" region &mdash; the region nearest its typical usage &mdash; so the vast majority of admission/heartbeat traffic for that account never crosses a region boundary; this keeps the sub-millisecond latency budget achievable.</li>
+          <li>Cross-region replication of the live session store exists for disaster recovery/failover, not for serving live traffic cross-region &mdash; an account's session check should always be answered locally in steady state.</li>
+          <li>The rare cross-region case (e.g. a traveler streaming from a different continent while a device at home is also active) still routes to the account's home-region shard rather than creating a second, regional source of truth &mdash; consistency of the count matters more here than shaving milliseconds off an already-uncommon scenario.</li>
+          <li>The durable session-history log can replicate asynchronously, multi-region, since analytics/billing tolerate eventual consistency far better than the live admission path does.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Redis is a single critical dependency for every playback start</td><td>Sharded + replicated cluster (1 primary + 2 replicas per shard); automatic failover promotes a replica within seconds</td></tr>
+          <tr><td>Two devices racing for the last free slot</td><td>Atomic Lua script per account key eliminates the check-then-act race entirely</td></tr>
+          <tr><td>Crashed session locking out a slot indefinitely</td><td>Heartbeat + TTL expiry bounds worst-case slot-reclamation time to roughly 2&ndash;3 missed-heartbeat windows</td></tr>
+          <tr><td>Heartbeat volume (the dominant QPS driver, ~1.5M/sec at peak)</td><td>Lightweight payload, regional routing, horizontally scaled stateless handler tier</td></tr>
+          <tr><td>Hot single account (e.g. shared family plan with many devices) causing key-level contention</td><td>Contention is naturally bounded &mdash; at most max_concurrent_streams entries per account, so even a "hot" account's key stays small and fast to operate on</td></tr>
+          <tr><td>Regional outage taking down the home-region shard for a set of accounts</td><td>Cross-region replica promotion; brief admission-decision unavailability handled by the fail-open/fail-closed policy below</td></tr>
+        </table>
+
+        <h3>Consistency vs. Availability: Fail Open or Fail Closed?</h3>
+        <p>If the session store is briefly unreachable, the system faces a genuine trade-off. <strong>Fail closed</strong> (reject all new Play requests until the store recovers) guarantees the concurrency cap is never violated, but turns an infrastructure blip into a total playback outage for affected accounts &mdash; unacceptable for a core, revenue-generating product surface. <strong>Fail open</strong> (admit playback without a successful admission check during the outage) keeps the product working, at the cost of temporarily allowing an account to exceed its plan's cap for the duration of the incident. In practice, <strong>fail open is the right default</strong>: a brief window where a handful of accounts stream one extra concurrent session during a rare infrastructure incident is a negligible business cost compared to blocking all playback account-wide; the outage is also, by construction, short-lived and rare, while a fail-closed policy would turn every future Redis hiccup into a customer-facing incident on the single most core feature of the product (watching video at all).</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          State this trade-off explicitly and justify the direction: "I'd fail open here because the downside of over-admitting for a few minutes during a rare outage is a small, recoverable business cost, while the downside of fail-closed is blocking every paying customer from watching anything at all &mdash; that asymmetry is what should decide it, not a default reflex toward strict correctness."
+        </div>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Session-store latency (p50/p99/p999):</strong> the admission check's latency budget is razor-thin relative to overall playback-start time, so any Redis-side latency regression needs to alert quickly, before it becomes a customer-visible playback-start delay.</li>
+          <li><strong>Admission-rejection rate, broken out by plan tier:</strong> a sustained spike in Standard-tier rejections, for instance, is a strong, directly actionable signal &mdash; both an indicator of real user demand for more concurrent streams, and a leading indicator for plan-tier upgrade opportunities.</li>
+          <li><strong>Orphaned-session cleanup effectiveness:</strong> track how many sessions are reclaimed via clean Stop vs. TTL expiry vs. the background defense-in-depth sweep &mdash; a rising share of TTL-expiry reclamations relative to clean stops can indicate a client-side bug (e.g. an app failing to send Stop on backgrounding) worth fixing upstream.</li>
+          <li><strong>Business-metric dashboards on plan-tier upgrade conversions triggered by hitting the limit:</strong> correlate an account seeing the over-limit picker with a subsequent plan upgrade within some window &mdash; this is one of the most direct, quantifiable links between this specific engineering system and revenue, and product teams will want it front and center.</li>
+          <li><strong>Heartbeat volume and cadence drift:</strong> monitor actual heartbeat intervals against the configured cadence to catch client-side regressions (e.g. an app version sending heartbeats too infrequently, silently increasing false-expiry risk).</li>
+          <li><strong>Fail-open incident tracking:</strong> whenever the system falls back to fail-open mode, log and alert on it distinctly, and reconcile after recovery how many accounts (if any) briefly exceeded their cap, for both operational review and, if needed, later analytics correction.</li>
+        </ul>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Core distinction</td><td>Logged-in devices: unlimited. Concurrently active playback sessions: capped by plan tier (1/2/4)</td></tr>
+          <tr><td>Admission check</td><td>Atomic Redis Lua script per account_id key &mdash; check-and-increment as one indivisible operation</td></tr>
+          <tr><td>Liveness</td><td>Heartbeat every ~25s renews a ~90s TTL; TTL lapse auto-frees the slot on crash/disconnect</td></tr>
+          <tr><td>Over-limit UX</td><td>User-chooses-which-session-to-stop as the default; hard block as fallback, auto-evict-oldest as a config option</td></tr>
+          <tr><td>Same-device reconnect</td><td>Keyed by stable device_id; a reconnect updates the existing session in place rather than allocating a new slot</td></tr>
+          <tr><td>Scope of the limit</td><td>Per-account (shared pool across all profiles), not per-profile</td></tr>
+          <tr><td>Primary datastore</td><td>Redis (sharded by account_id, replicated) for the hot path; durable async log for history/billing/analytics</td></tr>
+          <tr><td>Partitioning</td><td>Consistent hashing on account_id, so one account's atomic check never spans shards</td></tr>
+          <tr><td>Outage behavior</td><td>Fail open &mdash; brief over-admission is preferable to blocking all playback account-wide</td></tr>
+          <tr><td>Multi-region</td><td>Home-region pinning per account; cross-region replication for DR, not live cross-region serving</td></tr>
+          <tr><td>Related-but-distinct problem</td><td>Credential/household-sharing detection is a separate system built on IP/device-fingerprint signals</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect an interviewer to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Core Concept and Scoping</h3>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between "logged in on a device" and "an active stream," and why does that distinction matter?</div>
+          <div class="qa-a">Being logged in is unlimited and persistent &mdash; a session token on a device with no time bound. An active stream is a transient, live playback state that exists only while video is actually running. The plan-tier cap applies exclusively to the latter; a design that tracks logged-in device count instead would incorrectly block a household with many signed-in but mostly idle devices.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Is the limit per profile or per account?</div>
+          <div class="qa-a">Per account, shared across every profile under it. The cap represents "how many screens can this paying account use at once," not an independent allowance per profile — the Redis key is keyed by account_id, with profile_id stored only as metadata within each session.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Does casting to a TV count as one stream or two?</div>
+          <div class="qa-a">Treat it as a single active session attributed to the receiving/playing device, since that's what's actually decoding and displaying video; the casting sender is just a remote control in this model. This should be stated as an explicit assumption, since reasonable products differ on it.</div>
+        </div>
+
+        <h3>Concurrency and Correctness</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you guarantee two simultaneous Play requests never both get admitted when only one slot is free?</div>
+          <div class="qa-a">A single atomic operation (a Redis Lua script, or an equivalent transaction/CAS) performs the read-count, compare-to-cap, and write-new-session steps as one indivisible unit against the account's key. Because Redis executes a script serially per key, the second request's script always observes the first request's completed write — there's no window for a stale read.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why not just use a distributed lock instead of a Lua script?</div>
+          <div class="qa-a">A distributed lock works but adds an extra dependency, round trips, and lock-timeout failure modes for a problem Redis already solves natively via single-threaded-per-key script execution — it's unnecessary complexity when the atomic-script approach gives the same correctness guarantee more cheaply.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you test the atomic admission logic under real concurrency?</div>
+          <div class="qa-a">Fire a burst of simultaneous Play requests (well beyond the cap) from a test harness against a single account and assert that exactly max_concurrent_streams are admitted regardless of arrival order or timing jitter, repeated across many trials to catch any rare race; also chaos-test with induced network delay between the service and Redis to widen any latent race window.</div>
+        </div>
+
+        <h3>Heartbeat, TTL and Disconnects</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you tune the heartbeat interval and TTL?</div>
+          <div class="qa-a">TTL should be roughly 3x the heartbeat interval (e.g. 90s TTL against a 25-30s heartbeat), so one or two missed beats from ordinary network jitter don't kill a session, while a genuinely dead session is still reclaimed within about two minutes. Tightening the ratio reduces slot-reclamation delay at the cost of more false expirations; loosening it does the opposite.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if a player crashes without ever sending a stop signal?</div>
+          <div class="qa-a">Nothing extra needs to happen at the moment of the crash — the session simply stops receiving heartbeats, its TTL is never renewed again, and Redis's native key/field expiry removes it automatically once the TTL lapses, freeing the slot without any explicit cleanup logic or manual intervention.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why not just delete the session immediately on the first missed heartbeat?</div>
+          <div class="qa-a">A single missed heartbeat is extremely common from ordinary transient network conditions and doesn't mean the session is actually dead. Deleting immediately would kick users off constantly over minor connectivity blips; the TTL grace period exists precisely to absorb that noise while still bounding worst-case reclamation time if the disconnect is permanent.</div>
+        </div>
+
+        <h3>Over-Limit UX</h3>
+        <div class="qa-item">
+          <div class="qa-q">What should happen when a 5th stream tries to start on a 4-stream Premium plan?</div>
+          <div class="qa-a">The recommended default is to reject the new stream with a 409-style response that includes the current active sessions, and let the client prompt the user to pick one to stop before retrying — giving the person control rather than silently blocking or silently evicting someone.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why not just auto-evict the oldest or least-recently-active session automatically?</div>
+          <div class="qa-a">It's simpler and fully automatic, but it silently interrupts whoever's session gets picked, with no warning and no chance to object — a real source of household friction (someone's show cutting out mid-episode for no visible reason). User-chooses keeps that decision with a person and surfaces useful information instead of a confusing failure.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What if the client can't render an interactive picker (e.g. a very old app version)?</div>
+          <div class="qa-a">Fall back to a plain block with a clear error message telling the user they're at their stream limit and to stop a session elsewhere manually — the API's 409 response already carries everything a richer client needs, so older clients simply degrade to using less of that payload.</div>
+        </div>
+
+        <h3>Reliability and Trade-Offs</h3>
+        <div class="qa-item">
+          <div class="qa-q">Redis is unreachable for a few minutes — what happens to playback across the whole platform?</div>
+          <div class="qa-a">Fail open: admit playback without a successful admission check during the outage, rather than fail closed and block all playback account-wide. The business cost of a brief, rare over-admission window is far smaller than turning an infrastructure blip into a customer-facing "you can't watch anything" incident on the platform's core feature.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you reconcile accounts that briefly exceeded their cap during a fail-open incident?</div>
+          <div class="qa-a">Log every fail-open admission distinctly during the incident window, and run a post-incident reconciliation job against the durable session-history log to identify any accounts that exceeded their cap, for operational review — this is an acceptable, boundable cost, not something requiring real-time correction.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why shard the session store by account_id instead of, say, by device_id or a random hash?</div>
+          <div class="qa-a">Every admission decision needs a consistent, atomic view of all of one account's sessions at once. Sharding by account_id guarantees all of an account's session data lives on one shard, so the check-and-increment logic never needs cross-shard coordination or a distributed transaction.</div>
+        </div>
+
+        <h3>Related Problems and Scope Boundaries</h3>
+        <div class="qa-item">
+          <div class="qa-q">How is this different from detecting account/credential sharing across households?</div>
+          <div class="qa-a">This system only answers "how many active playback sessions does this account have right now" — a purely technical, real-time counting problem. Whether those sessions represent one household or several unrelated ones is a separate, much fuzzier problem, typically solved with IP/geolocation clustering, device-fingerprint diversity analysis over time, and household-verification heuristics feeding a completely different decision pipeline.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does this system matter commercially, not just technically?</div>
+          <div class="qa-a">Unrestrained account sharing was estimated to cost streaming platforms on the order of billions of dollars a year (commonly cited estimates put 2019 losses around $9B, projected toward roughly $12.5B) — plan-tier concurrent-stream limits (1/2/4) are a direct, enforceable commercial lever, and this admission-control system is the mechanism that actually makes that tiering real rather than aspirational.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Do offline downloads count against the concurrent-stream limit?</div>
+          <div class="qa-a">Typically no — there's no live connection to monitor once content is downloaded, so it falls outside this system's scope entirely; a separate, usually more generous, cap on simultaneous authorized offline-download devices is a different, related feature with its own rules.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Get the core distinction right first: logged-in devices are unlimited, only concurrently active playback sessions are capped — a design that conflates the two is wrong from the first box drawn. The admission check must be a single atomic operation (a Redis Lua script or equivalent), not a separate read-then-write, or it will silently over-admit under concurrent load — this is the load-bearing correctness property of the whole system. Heartbeat plus TTL is what turns "a crashed player" from a permanently stuck slot into a bounded, self-healing recovery, and the TTL-to-heartbeat ratio is the central tuning knob balancing false-expiry risk against slot-reclamation delay. The over-limit UX is a real product decision, not an afterthought — user-chooses is the real-world default because it keeps a person in control instead of silently blocking or silently evicting. And when the store is briefly unreachable, fail open: a small, rare over-admission cost beats blocking all playback for every affected account. Finally, keep this system's scope tight — it enforces a technical concurrency cap, and is explicitly not the system that detects credential/household sharing, even though both serve the same underlying business goal.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Educative &mdash; "Grokking the System Design Interview": Designing a system like Netflix's concurrent-stream limiter (course material and community write-ups)</li>
+          <li>Martin Kleppmann, <em>Designing Data-Intensive Applications</em> &mdash; chapters on partitioning, replication, and distributed locking/leases</li>
+          <li>Redis documentation &mdash; EXPIRE/TTL semantics, Lua scripting (EVAL), and cluster sharding/replication</li>
+          <li>Industry reporting on password/account-sharing revenue impact estimates (commonly cited ~$9B 2019 figure, projected toward ~$12.5B)</li>
+          <li>Public engineering write-ups and talks on presence-system heartbeat/TTL design patterns (applicable to any "is this thing still alive" problem)</li>
+          <li>Community system-design write-ups on distributed rate limiting and atomic check-and-increment patterns</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="surge-pricing-system.html"><span class="dir">Previous</span>Surge Pricing System</a>
+          <a class="next" href="sorting-large-datasets.html"><span class="dir">Next</span>Sorting Large Data Sets</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Storage &amp; Database Patterns | System Design — Building Units | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Building Units</a><span class="sep">/</span><span class="current">Data Storage &amp; Database Patterns</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Building Units overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#relational-databases">Relational Databases (RDBMS / SQL)</a></li>
+        <li><a href="#key-value-stores">NoSQL — Key-Value Stores</a></li>
+        <li><a href="#document-stores">NoSQL — Document Stores</a></li>
+        <li><a href="#column-family-stores">NoSQL — Column-Family / Wide-Column Stores</a></li>
+        <li><a href="#graph-databases">NoSQL — Graph Databases</a></li>
+        <li><a href="#time-series-databases">Time-Series Databases</a></li>
+        <li><a href="#warehouses-lakes-lakehouses">Data Warehouses vs. Data Lakes vs. Lakehouses</a></li>
+        <li><a href="#object-storage">Object Storage</a></li>
+        <li><a href="#sharding-partitioning">Database Sharding / Partitioning</a></li>
+        <li><a href="#replication-cap">Database Replication &amp; the CAP Theorem</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN — BUILDING UNITS</span>
+          <h1>Data Storage &amp; Database Patterns</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Every system design interview eventually comes down to "where does the data live, and why." This page covers the storage models and distribution patterns you choose between — not specific vendor comparisons (see the dedicated <a href="../database-types/index.html">Database Types</a> section for deep per-product profiles of MySQL, MongoDB, Cassandra, and friends). Here, the focus is the architectural decision itself: which model fits the data shape and access pattern, and how storage scales and stays available once a single machine isn't enough.</p>
+
+        <h3 id="relational-databases">Relational Databases (RDBMS / SQL)</h3>
+        <p>A relational database organizes data into fixed-schema tables (rows and columns) related via keys, queried with SQL. Data is normalized to reduce redundancy; a query planner turns declarative SQL into an execution plan (index scans, joins, sorts). Transactions are governed by ACID guarantees, typically implemented via write-ahead logs and concurrency control (e.g. MVCC). PostgreSQL forks a process per connection (strong isolation, more memory overhead); MySQL/InnoDB uses threads per connection (cheaper at higher concurrency). Indexes (B-trees, hash indexes, GiST/GIN) accelerate lookups at the cost of write overhead and storage.</p>
+        <p><strong>Popular tools:</strong> PostgreSQL, MySQL/MariaDB, Oracle Database, Microsoft SQL Server, Amazon Aurora, Google Cloud SQL/AlloyDB, CockroachDB, Google Spanner. See the <a href="../database-types/relational-databases.html">Relational Databases</a> and <a href="../database-types/newsql-databases.html">NewSQL Databases</a> pages for individual product profiles.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Data is highly structured and relationships matter (orders/customers/inventory); you need multi-row/multi-table transactional integrity (banking ledgers, order processing); strong consistency is a hard requirement; the team needs flexible ad hoc querying. Default choice for most business applications unless a specific scale or data-shape problem points elsewhere.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Strong consistency and mature ecosystem</li><li>Powerful ad hoc querying (joins, subqueries, CTEs)</li><li>Enforced data integrity via constraints</li><li>Excellent for multi-table transactions</li></ul></td>
+            <td><ul><li>Harder horizontal write scaling</li><li>Costly schema changes at scale</li><li>Slower join-heavy queries on very large datasets</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="key-value-stores">NoSQL — Key-Value Stores</h3>
+        <p>The simplest NoSQL model: data is stored and retrieved as a value associated with a unique key, with no required schema for the value, accessed via simple <code>GET</code>/<code>PUT</code>/<code>DELETE</code>. In-memory stores (Redis) keep the full dataset in RAM via a largely single-threaded event loop; managed disk-backed stores (DynamoDB) partition data by hashing the key and replicate across nodes for consistent single-digit-millisecond latency at scale. Horizontal scaling is via partitioning/sharding on the key (consistent hashing is common) plus replication.</p>
+        <p><strong>Popular tools:</strong> Redis (and forks Valkey, Dragonfly), Amazon DynamoDB, Memcached, Riak, Aerospike, etcd. See the <a href="../database-types/key-value-column-stores.html">Key-Value Stores</a> page for individual product profiles.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Caching layers (session storage, API response caching), leaderboards/counters, rate limiting, real-time pub/sub, shopping carts, user session stores — anywhere needing single-digit-millisecond lookups by a known key at massive scale. A very common pattern: Redis as a hot cache in front of DynamoDB or a relational DB as the durable source of truth (cache-aside).
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Lowest latency of any storage tier</li><li>Trivially horizontal to scale</li><li>Simple operational model</li></ul></td>
+            <td><ul><li>No joins, limited query flexibility</li><li>In-memory variants bound dataset size by RAM</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="document-stores">NoSQL — Document Stores</h3>
+        <p>Stores data as semi-structured "documents" (typically JSON/BSON), where each document can have its own structure, grouped into collections. MongoDB organizes documents into collections with secondary indexes (compound, geospatial, text). High availability comes from <strong>replica sets</strong> — a primary accepts writes and replicates an oplog to secondaries, which can serve reads and take over via automatic election. Horizontal scale comes from <strong>sharding</strong>: a shard key partitions data across shards, a router (e.g. <code>mongos</code>) directs requests, and config servers store cluster metadata.</p>
+        <p><strong>Popular tools:</strong> MongoDB, Amazon DocumentDB, Couchbase, Firebase/Firestore, Azure Cosmos DB. See the <a href="../database-types/document-stores.html">Document Databases</a> page for individual product profiles.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Content management systems, product catalogs with varying attributes, user profiles, mobile/web app backends mapping closely to JSON, rapid-prototyping projects with evolving schemas. Less ideal for complex multi-entity joins or strict referential integrity across many entity types.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Schema flexibility speeds iterative development</li><li>Natural JSON mapping, good horizontal scale</li><li>Embedding avoids costly joins</li></ul></td>
+            <td><ul><li>Weaker enforced consistency without discipline</li><li>Denormalization creates update-anomaly risk</li><li>Shard-key decision is hard to reverse</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="column-family-stores">NoSQL — Column-Family / Wide-Column Stores</h3>
+        <p>Stores data in tables where rows can have a dynamic, sparse set of columns grouped into "column families," optimized for very high write throughput across many nodes. Cassandra uses a masterless, ring-based architecture (Dynamo-inspired distribution + Bigtable-inspired storage): consistent hashing assigns each node a token range, gossip handles membership, and an LSM-tree engine optimizes sequential writes — replication factor is configurable, and consistency is tunable per query (<code>ONE</code>, <code>QUORUM</code>, <code>ALL</code>). HBase instead uses a master-slave architecture on HDFS with strong/immediate consistency.</p>
+        <p><strong>Popular tools:</strong> Apache Cassandra, ScyllaDB, Apache HBase, Google Cloud Bigtable. See the <a href="../database-types/wide-column-stores.html">Wide-Column / Column-Family Stores</a> page for individual product profiles.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Massive-scale write-heavy workloads — logging/event ingestion, IoT sensor data, high-cardinality time-series data — and any system writing huge volumes across geographically distributed data centers with high availability (Cassandra's classic use case).
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Massive write scalability</li><li>Multi-datacenter replication built in</li><li>No single point of failure (Cassandra)</li></ul></td>
+            <td><ul><li>Very limited query flexibility, no joins</li><li>Eventual consistency needs careful handling</li><li>Operational complexity (JVM tuning, compaction, repair)</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="graph-databases">NoSQL — Graph Databases</h3>
+        <p>Purpose-built to store and query entities (nodes) and relationships (edges) as first-class citizens. Uses a <strong>property graph model</strong> with <strong>index-free adjacency</strong> — relationships are stored as direct physical pointers, so traversing to a connected node is a pointer lookup rather than a join, which is why multi-hop traversal queries run dramatically faster than equivalent multi-join SQL as depth increases. Query languages include Cypher (Neo4j), Gremlin (Neptune/JanusGraph), and SPARQL (RDF-style).</p>
+        <p><strong>Popular tools:</strong> Neo4j, Amazon Neptune, ArangoDB, JanusGraph, TigerGraph. See the <a href="../database-types/graph-databases.html">Graph Databases</a> page for individual product profiles.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Fraud detection/AML (tracing rings of connected accounts), recommendation engines, social networks, knowledge graphs, authorization graphs (who can access what, transitively), supply-chain topology. Avoid as the primary store for simple CRUD apps or heavy aggregate reporting.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Extremely fast relationship-heavy queries</li><li>Intuitive modeling for networked data</li><li>Strong pattern/fraud detection</li></ul></td>
+            <td><ul><li>Poor fit for simple aggregate/tabular analytics</li><li>Harder horizontal scaling (relationships span shards)</li><li>Smaller ecosystem</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="time-series-databases">Time-Series Databases</h3>
+        <p>Optimized specifically for data points indexed by time — metrics, events, sensor readings — where the dominant pattern is appending new time-stamped data and querying/aggregating over time ranges. Data is modeled as timestamp + tags (filterable metadata) + fields (measured values). Storage engines are columnar/LSM-based with heavy compression (deltas between consecutive points are small), plus automatic downsampling and retention policies.</p>
+        <p><strong>Popular tools:</strong> InfluxDB, TimescaleDB, Prometheus, QuestDB, Amazon Timestream. See the <a href="../database-types/time-series-databases.html">Time-Series Databases</a> page for individual product profiles.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Infrastructure/application monitoring, IoT sensor fleets, financial market tick data, DevOps dashboards. Choose InfluxDB/QuestDB for purpose-built high-ingest scenarios; TimescaleDB when you want time-series without leaving the Postgres ecosystem.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Massively more efficient than an RDBMS for time-stamped data</li><li>Purpose-built aggregation saves app-level work</li></ul></td>
+            <td><ul><li>Not designed for relational/transactional workloads</li><li>High-cardinality tags can degrade performance if modeled poorly</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="warehouses-lakes-lakehouses">Data Warehouses vs. Data Lakes vs. Lakehouses</h3>
+        <p>Three converging approaches to large-scale analytical storage. A <strong>data warehouse</strong> stores structured, curated data optimized for fast SQL analytics ("schema-on-write"); Snowflake fully decouples storage from multiple independent compute clusters, BigQuery is fully serverless (billed by bytes scanned). A <strong>data lake</strong> stores raw files (Parquet, ORC, Avro, JSON) directly on cheap object storage, deferring structure until read time ("schema-on-read"). A <strong>lakehouse</strong> adds an open table format on top of object storage — Delta Lake or Apache Iceberg — bringing ACID transactions, schema evolution, and "time travel" directly to files in object storage.</p>
+        <p><strong>Popular tools:</strong> Warehouses — Snowflake, BigQuery, Redshift. Lakes — Amazon S3, ADLS, GCS, HDFS. Lakehouse formats — Delta Lake, Apache Iceberg, Apache Hudi. See the <a href="../database-types/specialized-legacy-databases.html">Specialized &amp; Legacy Database Types</a> page for Snowflake/BigQuery/Redshift profiles.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Use a <strong>warehouse</strong> for classic BI/reporting with structured data and many concurrent analysts. Use a <strong>lake</strong> as the low-cost landing zone for raw/ML training data. Use a <strong>lakehouse</strong> to serve both BI and ML/data-science from one copy of data — increasingly the default for new greenfield analytics platforms.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Warehouse: fast, governed BI performance</li><li>Lake: cheapest, most flexible, any data type</li><li>Lakehouse: single source of truth for BI + ML</li></ul></td>
+            <td><ul><li>Warehouse: pricier, weaker for unstructured/ML data</li><li>Lake: risks becoming an unusable "data swamp" without governance</li><li>Lakehouse: newer, more complex ecosystem</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="object-storage">Object Storage</h3>
+        <p>Manages data as discrete "objects" (data + metadata + unique identifier) accessed over HTTP(S), rather than a file-system hierarchy or raw disk blocks. Objects live flat within a "bucket" namespace, retrieved by key via REST. Amazon S3, as a reference architecture, is built from hundreds of internal microservices and replicates data across a minimum of three Availability Zones by default, engineered for 99.999999999% ("11 nines") durability — with storage tiering (Standard, Infrequent Access, Glacier) and lifecycle policies.</p>
+        <p><strong>Popular tools:</strong> Amazon S3, Google Cloud Storage, Azure Blob Storage, MinIO, Cloudflare R2.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Storing/serving unstructured data at scale (images, video, backups, logs, static assets), and as the foundation under data lakes/lakehouses. Not right for a database's primary transactional volume (use block storage) or workloads needing POSIX semantics (use file storage).
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Near-infinite scale, very low cost per GB</li><li>Extremely high durability</li><li>Ideal backing store for data lakes/lakehouses</li></ul></td>
+            <td><ul><li>Not designed for low-latency random read/write</li><li>No POSIX file-locking semantics</li><li>Higher per-request latency than block/local storage</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="sharding-partitioning">Database Sharding / Partitioning</h3>
+        <p>The primary technique for horizontally scaling a database beyond one server's limits: splitting a large dataset across multiple nodes ("shards") so no single machine stores or serves the entire dataset. <strong>Range-based</strong> partitioning splits by contiguous ranges of the shard key (good for range queries, but can create hot spots on always-increasing IDs). <strong>Hash-based</strong> applies a hash function for even distribution (inefficient range queries; consistent hashing minimizes data movement on rebalance). <strong>Directory-based</strong> uses a lookup service to map keys to shards (maximum flexibility, but the directory itself becomes critical infrastructure). The shard key is the single most important decision — it must appear in the most common queries' <code>WHERE</code> clause, or queries degrade into expensive scatter-gather.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="26" font-size="13" font-weight="700" fill="#0f2545">Sharding Strategies</text>
+
+            <rect x="20" y="45" width="200" height="190" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="120" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">Range-Based</text>
+            <rect x="35" y="80" width="170" height="26" fill="#fff" stroke="#94a3b8"/><text x="120" y="98" text-anchor="middle" font-size="10">Shard A: keys 1&ndash;1000</text>
+            <rect x="35" y="110" width="170" height="26" fill="#fff" stroke="#94a3b8"/><text x="120" y="128" text-anchor="middle" font-size="10">Shard B: keys 1001&ndash;2000</text>
+            <rect x="35" y="140" width="170" height="26" fill="#fff" stroke="#94a3b8"/><text x="120" y="158" text-anchor="middle" font-size="10">Shard C: keys 2001&ndash;3000</text>
+            <text x="120" y="185" text-anchor="middle" font-size="9.5" fill="#5a6472">good for range scans;</text>
+            <text x="120" y="200" text-anchor="middle" font-size="9.5" fill="#5a6472">risk of hot spots on</text>
+            <text x="120" y="215" text-anchor="middle" font-size="9.5" fill="#5a6472">sequential keys</text>
+
+            <rect x="240" y="45" width="200" height="190" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="340" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="#6b4a10">Hash-Based</text>
+            <text x="340" y="90" text-anchor="middle" font-size="10">hash(key) mod N &rarr; shard</text>
+            <rect x="255" y="100" width="50" height="40" fill="#fff" stroke="#94a3b8"/><text x="280" y="124" text-anchor="middle" font-size="10">A</text>
+            <rect x="315" y="100" width="50" height="40" fill="#fff" stroke="#94a3b8"/><text x="340" y="124" text-anchor="middle" font-size="10">B</text>
+            <rect x="375" y="100" width="50" height="40" fill="#fff" stroke="#94a3b8"/><text x="400" y="124" text-anchor="middle" font-size="10">C</text>
+            <text x="340" y="165" text-anchor="middle" font-size="9.5" fill="#5a6472">even distribution;</text>
+            <text x="340" y="180" text-anchor="middle" font-size="9.5" fill="#5a6472">range queries need</text>
+            <text x="340" y="195" text-anchor="middle" font-size="9.5" fill="#5a6472">scatter-gather across</text>
+            <text x="340" y="210" text-anchor="middle" font-size="9.5" fill="#5a6472">every shard</text>
+
+            <rect x="460" y="45" width="200" height="190" rx="8" fill="#f0fdf4" stroke="#166534"/>
+            <text x="560" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">Directory-Based</text>
+            <rect x="520" y="80" width="80" height="30" fill="#fff" stroke="#94a3b8"/><text x="560" y="99" text-anchor="middle" font-size="9.5">Lookup Directory</text>
+            <line x1="560" y1="110" x2="500" y2="140" stroke="#334155"/>
+            <line x1="560" y1="110" x2="560" y2="140" stroke="#334155"/>
+            <line x1="560" y1="110" x2="620" y2="140" stroke="#334155"/>
+            <rect x="475" y="140" width="50" height="30" fill="#fff" stroke="#94a3b8"/><text x="500" y="160" text-anchor="middle" font-size="9.5">Shard 1</text>
+            <rect x="535" y="140" width="50" height="30" fill="#fff" stroke="#94a3b8"/><text x="560" y="160" text-anchor="middle" font-size="9.5">Shard 2</text>
+            <rect x="595" y="140" width="50" height="30" fill="#fff" stroke="#94a3b8"/><text x="620" y="160" text-anchor="middle" font-size="9.5">Shard 3</text>
+            <text x="560" y="195" text-anchor="middle" font-size="9.5" fill="#5a6472">maximum flexibility;</text>
+            <text x="560" y="210" text-anchor="middle" font-size="9.5" fill="#5a6472">directory itself must be HA</text>
+          </svg>
+          <div class="diagram-caption">The three core sharding strategies — each trades off query flexibility against rebalancing complexity differently.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> Native sharding in MongoDB, Cassandra, Elasticsearch; Vitess (MySQL), Citus (Postgres); auto-sharding NewSQL like CockroachDB, Spanner, YugabyteDB.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          When a single instance can no longer handle data volume/throughput after exhausting vertical scaling and read replicas; multi-tenant SaaS sharding by tenant ID; globally distributed apps needing data locality. Avoid premature sharding — exhaust simpler options first.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Near-linear scalability of storage/throughput</li><li>Smaller working sets per node</li></ul></td>
+            <td><ul><li>Expensive/impossible cross-shard joins and transactions</li><li>Risky rebalancing/resharding</li><li>Shard key is very hard to change later</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="replication-cap">Database Replication &amp; the CAP Theorem</h3>
+        <p>Replication maintains multiple copies of data across nodes for redundancy, availability, and read scalability. Three topologies dominate:</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 680 230" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="24" font-size="13" font-weight="700" fill="#0f2545">Replication Topologies</text>
+
+            <text x="120" y="48" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1d4ed8">Leader-Follower</text>
+            <rect x="80" y="55" width="80" height="32" rx="4" fill="#0f2545"/><text x="120" y="75" text-anchor="middle" font-size="10" fill="#fff">Leader</text>
+            <rect x="30" y="120" width="70" height="30" rx="4" fill="#eaf1ff" stroke="#2563eb"/><text x="65" y="139" text-anchor="middle" font-size="9.5">Follower</text>
+            <rect x="150" y="120" width="70" height="30" rx="4" fill="#eaf1ff" stroke="#2563eb"/><text x="185" y="139" text-anchor="middle" font-size="9.5">Follower</text>
+            <line x1="110" y1="87" x2="65" y2="120" stroke="#334155" marker-end="url(#a1)"/>
+            <line x1="130" y1="87" x2="185" y2="120" stroke="#334155" marker-end="url(#a1)"/>
+            <text x="120" y="175" text-anchor="middle" font-size="9" fill="#5a6472">one writer, simple,</text>
+            <text x="120" y="188" text-anchor="middle" font-size="9" fill="#5a6472">leader = write bottleneck</text>
+
+            <text x="340" y="48" text-anchor="middle" font-size="11.5" font-weight="700" fill="#6b4a10">Multi-Leader</text>
+            <rect x="300" y="70" width="70" height="30" rx="4" fill="#fff9ec" stroke="#d9a441"/><text x="335" y="89" text-anchor="middle" font-size="9.5">Leader A</text>
+            <rect x="380" y="70" width="70" height="30" rx="4" fill="#fff9ec" stroke="#d9a441"/><text x="415" y="89" text-anchor="middle" font-size="9.5">Leader B</text>
+            <line x1="370" y1="85" x2="380" y2="85" stroke="#334155" marker-end="url(#a1)"/>
+            <line x1="380" y1="95" x2="370" y2="95" stroke="#334155" marker-end="url(#a1)"/>
+            <text x="375" y="140" text-anchor="middle" font-size="9" fill="#5a6472">both accept writes,</text>
+            <text x="375" y="153" text-anchor="middle" font-size="9" fill="#5a6472">local low latency,</text>
+            <text x="375" y="166" text-anchor="middle" font-size="9" fill="#5a6472">needs conflict resolution</text>
+
+            <text x="565" y="48" text-anchor="middle" font-size="11.5" font-weight="700" fill="#166534">Leaderless (Quorum)</text>
+            <rect x="510" y="70" width="50" height="30" rx="4" fill="#f0fdf4" stroke="#166534"/><text x="535" y="89" text-anchor="middle" font-size="9">Node 1</text>
+            <rect x="570" y="70" width="50" height="30" rx="4" fill="#f0fdf4" stroke="#166534"/><text x="595" y="89" text-anchor="middle" font-size="9">Node 2</text>
+            <rect x="540" y="115" width="50" height="30" rx="4" fill="#f0fdf4" stroke="#166534"/><text x="565" y="134" text-anchor="middle" font-size="9">Node 3</text>
+            <text x="565" y="175" text-anchor="middle" font-size="9" fill="#5a6472">any node accepts writes;</text>
+            <text x="565" y="188" text-anchor="middle" font-size="9" fill="#5a6472">W + R &gt; N guarantees overlap</text>
+
+            <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Leader-follower (simple, one writer), multi-leader (local writes, needs conflict resolution), and leaderless/quorum (Dynamo-style, W+R&gt;N) replication.</div>
+        </div>
+
+        <p><strong>Leader-follower (single-leader):</strong> one leader accepts all writes and propagates to followers, which can serve reads and act as failover targets — default in MongoDB replica sets, PostgreSQL/MySQL streaming replication. <strong>Multi-leader:</strong> multiple nodes accept writes independently and replicate to each other — useful for multi-datacenter low-latency local writes, but requires conflict resolution (last-write-wins, vector clocks, CRDTs). <strong>Leaderless (quorum-based):</strong> any node accepts a write; clients use quorum math (<code>W + R &gt; N</code>) to guarantee overlap between writers and readers — pioneered by Amazon Dynamo, used by Cassandra/Riak with tunable consistency per query.</p>
+
+        <div class="formula-box">
+          <span class="formula-label">CAP theorem &amp; PACELC</span>
+          During a network <strong>P</strong>artition, a distributed system must choose between <strong>C</strong>onsistency and <strong>A</strong>vailability — this applies only <em>during</em> an actual partition, not as a permanent label on a database.
+          <br>PACELC extension: even absent a partition (<strong>E</strong>lse), systems trade off <strong>L</strong>atency vs. <strong>C</strong>onsistency. Cassandra/Dynamo are PA/EL (favor availability/latency); HBase/Spanner lean PC/EC (favor consistency).
+        </div>
+
+        <p><strong>Popular tools:</strong> PostgreSQL/MySQL, MongoDB replica sets (leader-follower); Cassandra/DynamoDB/Riak (leaderless/quorum); CockroachDB/Spanner/YugabyteDB/etcd (Raft/Paxos strong consistency).</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          <strong>Leader-follower</strong> for most standard OLTP needing read scaling and failover. <strong>Multi-leader</strong> for multiple active regions each needing fast local writes with tolerable/resolvable conflicts. <strong>Leaderless/quorum</strong> when availability under partition matters more than immediate consistency (shopping carts, session data, social feeds). Apply the CAP/PACELC lens whenever choosing a distributed store: can the use case tolerate stale reads (favor AP) or does it require guaranteed-fresh reads (favor CP — account balances, inventory, seat reservations)?
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Fault tolerance, read scalability, disaster recovery</li><li>Geographic locality for global users</li></ul></td>
+            <td><ul><li>Leader-follower: write throughput capped by one leader</li><li>Multi-leader: conflict-resolution complexity</li><li>Leaderless: more complex client logic, eventual-consistency surprises</li></ul></td>
+          </tr>
+        </table>
+
+        <div class="page-nav">
+          <a class="prev" href="index.html"><span class="dir">Previous</span>Topic Overview</a>
+          <a class="next" href="caching-strategies.html"><span class="dir">Next</span>Caching</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

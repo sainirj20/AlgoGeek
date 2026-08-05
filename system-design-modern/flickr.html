@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flickr — Photo Sharing Platform | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Flickr</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design-the-upload-and-serving-pipeline">Low-Level Design — The Upload and Serving Pipeline</a></li>
+        <li><a href="#deep-dive-sharded-mysql-the-dual-tree-architecture">Deep Dive — Sharded MySQL: The Dual Tree Architecture</a></li>
+        <li><a href="#deep-dive-the-upload-and-serving-pipeline-in-depth">Deep Dive — The Upload and Serving Pipeline in Depth</a></li>
+        <li><a href="#deep-dive-caching-memcached-in-front-of-every-shard">Deep Dive — Caching: Memcached in Front of Every Shard</a></li>
+        <li><a href="#deep-dive-tags-search-and-metadata-at-scale">Deep Dive — Tags, Search, and Metadata at Scale</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Flickr — Photo Sharing Platform</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough grounded in Flickr's real, historically documented architecture: ServerIron hardware load balancers, Squid caches, PHP application servers, NetApp-backed storage, the "Dual Tree" sharded-MySQL scheme, Memcached, and the upload/serving pipeline that sustained 500+ photo uploads/second across a lifetime total of more than 13 billion photos.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a large-scale photo-sharing service: users upload photos, each of which receives a unique, globally shareable URL; photos can be tagged and searched by keyword; users organize photos into sets and groups; and the system must serve photos globally at an extremely high read:write ratio while sustaining high upload throughput without losing anyone's originals. Unlike a generic "design a photo-sharing app from scratch" exercise, this walkthrough is grounded specifically in Flickr's actual, publicly documented production architecture &mdash; the load-balancing, caching, application, storage, and database choices Flickr's own engineers built and wrote about, rather than a modern reference-architecture rebuild.</p>
+
+        <h3>A Brief History</h3>
+        <p>Flickr launched in February 2004, originally as a photo-sharing module bolted onto <em>Game Neverending</em>, a browser-based multiplayer game built by a small company called Ludicorp. The photo-sharing piece &mdash; upload a picture, get back a unique URL you could paste anywhere on the web &mdash; turned out to be far more compelling than the game itself, and the company pivoted the whole product around it. Flickr amassed roughly 7.9 million photos in its first 12 months, was acquired by Yahoo in 2005, and went on to become one of the largest photo-sharing communities in the world, with more than 13 billion photos collectively uploaded over its history and sustained uploads exceeding 500 photos per second during its peak years.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>Flickr is a favorite "modern systems" prompt precisely because the public record of how it was actually built is unusually detailed: real load balancer models, a named custom database-sharding scheme, and a documented, later backend refactor. That means an interviewer can push past "draw some boxes" into "why this specific trade-off, and what changed over time" &mdash; rewarding candidates who know the difference between a ring-based consistent-hashing shard scheme and Flickr's own Dual Tree approach, and can explain why Flickr chose the latter.</p>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Always narrow the problem before designing. A strong candidate spends the first few minutes pinning down scope rather than assuming defaults.</p>
+        <ol>
+          <li>What upload rate should we design for &mdash; something close to Flickr's historical sustained peak of 500+ photos/second, or a smaller deployment?</li>
+          <li>How many size variants/derivatives does each photo need (square, thumbnail, small, medium, large, original), and are they generated eagerly at upload time or lazily on first request?</li>
+          <li>What read:write ratio should we assume &mdash; how much larger is view/download traffic than upload traffic?</li>
+          <li>Do we need full-text/tag search with ranking, or just an exact-tag-match filter?</li>
+          <li>Are users and traffic concentrated in one region, or globally distributed &mdash; does that drive a need for multiple photo caches / CDN presence?</li>
+          <li>Do photos need configurable visibility (public / friends / family / private), or is everything public?</li>
+          <li>Do we need to support organizing photos into sets and groups, or is a flat per-user photo list sufficient for this pass?</li>
+          <li>Is strong consistency required immediately after upload (the uploader must see their own photo right away), or is eventual consistency acceptable for propagation to caches and derivatives?</li>
+          <li>Do we need a public API for third-party apps to upload/fetch photos, and if so, what throttling model applies?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't wait for every answer before moving on &mdash; state a reasonable assumption out loud ("I'll assume a very read-heavy workload, several pre-generated size derivatives, and global distribution requiring multiple regional caches") and keep going. This shows judgment, not indecision.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Allow users to upload photos; each upload is stored durably and processed into a standard set of size derivatives.</li>
+          <li>Generate a unique, globally shareable URL for every uploaded photo.</li>
+          <li>Allow users to view and search photos by tag (and by owner, set, or group).</li>
+          <li>Allow users to organize photos into sets (personal albums) and groups (shared, multi-contributor pools).</li>
+          <li>(Extended) Support per-photo visibility (public / friends / family / private).</li>
+          <li>(Extended) Expose upload and retrieval functionality through a public, api_key-scoped API.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Extremely read-heavy:</strong> view/download traffic vastly exceeds upload traffic &mdash; the vast majority of design effort goes into caching and fast global serving, not the write path.</li>
+          <li><strong>Sustained high upload throughput without data loss:</strong> the write path must keep up with hundreds of uploads per second, indefinitely, and every accepted upload must survive even a full datacenter failure.</li>
+          <li><strong>Low-latency global image serving:</strong> a viewer anywhere in the world should get a photo back quickly, not from a single, distant origin store.</li>
+          <li><strong>Horizontal scalability of the metadata tier:</strong> the user/photo population grows continuously, so the database layer must be able to add capacity without a disruptive full-cluster rebalance.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>This design goes deep on upload, storage, serving, caching, and sharding &mdash; the core of what made Flickr's infrastructure notable. We explicitly call out, but don't build, the internals of the social graph/groups membership system or commerce/Pro-subscription billing; these are large sub-systems of their own and are noted only where they touch the core design (e.g., group membership resolution for group-pool photos).</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>Flickr's own publicly documented numbers make an unusually good basis for a worked estimate here, rather than an invented traffic assumption.</p>
+
+        <h3>Historical Growth</h3>
+        <div class="formula-box">
+          <span class="formula-label">Real numbers</span>
+          Year 1 (2004&ndash;2005): ~7.9 million photos uploaded &asymp; 658,000/month &asymp; 21,600/day &asymp; 0.25 photos/sec average
+          <br>Lifetime total: more than 13 billion photos uploaded across Flickr's history
+          <br>Peak sustained upload rate (multi-year peak era): more than 500 photos/second, continuously
+        </div>
+        <p>The jump from ~0.25 photos/sec average in year one to 500+/sec sustained at peak is a &asymp;2,000&times; growth in write throughput &mdash; exactly the kind of growth curve that makes "can we add capacity without a full rebalance" (the motivation behind the Dual Tree scheme, below) a first-order design constraint rather than a nice-to-have.</p>
+
+        <h3>Request-Rate Estimate</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Sustained peak uploads = 500/sec (real, documented figure)
+          <br>Assume a read:write ratio on the order of 300:1, defensible given "extremely read-heavy" and consistent with how aggressively Flickr layers caching in front of storage
+          <br>View/serve requests at peak &asymp; 500 &times; 300 = 150,000 requests/sec
+          <br>Of that 150,000/sec, the large majority is absorbed by the CDN, the five worldwide photo caches, Squid, and Memcached &mdash; only a small remainder ever reaches the sharded MySQL layer or NetApp storage directly
+        </div>
+
+        <h3>Storage-Growth Estimate</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Lifetime total &asymp; 13 billion photos
+          <br>Assume ~1.5 MB average combined footprint per photo (original + the standard set of derivatives &mdash; blended across early, smaller uploads and later, higher-resolution originals)
+          <br>Raw derivative + original storage &asymp; 13,000,000,000 &times; 1.5 MB &asymp; 19.5 PB
+          <br>Hot-hot writes across two coasts effectively double the durable master copy &rarr; &asymp; 39 PB of physical master storage, before counting the additional copies held at the five worldwide photo caches and CDN edges
+        </div>
+        <p>These are illustrative, order-of-magnitude figures &mdash; the point for an interview is showing the reasoning chain (documented growth &rarr; assumed per-object size &rarr; total footprint &rarr; replication multiplier), not landing on an exact byte count.</p>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Photos uploaded, first 12 months</td><td>~7.9 million</td></tr>
+          <tr><td>Photos uploaded, lifetime</td><td>13+ billion</td></tr>
+          <tr><td>Sustained peak upload rate</td><td>500+ photos/sec</td></tr>
+          <tr><td>Estimated peak view/serve rate</td><td>~150,000 requests/sec (assuming 300:1 read:write)</td></tr>
+          <tr><td>Estimated physical master storage</td><td>~39 PB (hot-hot, 2 coasts, before cache-layer copies)</td></tr>
+          <tr><td>Users per MySQL shard (documented)</td><td>~500,000</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Two endpoints capture the core of the system: accepting an upload, and serving back a specific size variant of a previously uploaded photo.</p>
+
+        <h3>Upload a Photo</h3>
+        <pre><code>uploadPhoto(api_key, user_id, image_bytes, tags[])
+
+Request:
+  api_key      string    required - identifies the calling application, used for upload throttling
+  user_id      bigint    required - owning user
+  image_bytes  binary    required - raw bytes of the original upload
+  tags[]       string[]  optional - freeform tags applied at upload time
+
+Response 201 Created:
+{
+  "photo_id": "3829471058",
+  "url": "https://flic.kr/p/3829471058",
+  "shard_id": 214,
+  "status": "processing"   // derivatives generate asynchronously
+}
+
+Errors: 400 invalid image &middot; 401 unauthenticated &middot; 413 payload too large &middot; 429 rate-limited (api_key over quota)</code></pre>
+
+        <h3>Retrieve a Photo</h3>
+        <pre><code>getPhoto(photo_id, size_variant)
+
+Request:
+  photo_id      string  required
+  size_variant  enum    required - one of: square, thumbnail, small, medium, large, original
+
+Success -> HTTP 200, bytes served from the nearest photo cache / CDN edge
+Not found -> HTTP 404
+No permission (friends/family/private visibility) -> HTTP 401 / 403
+Not yet processed (derivative still generating) -> HTTP 202, Retry-After header</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Every call is scoped to an <code>api_key</code>, throttled independently on the upload path vs. the (far higher-volume) retrieval path &mdash; the same mechanism Flickr itself used to protect the upload pipeline from any single noisy caller.
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">Table: photo</th></tr>
+          <tr><td>photo_id (PK)</td><td>bigint</td></tr>
+          <tr><td>owner_id (FK &rarr; user)</td><td>bigint</td></tr>
+          <tr><td>title</td><td>varchar(255)</td></tr>
+          <tr><td>tags</td><td>varchar(1024) &mdash; denormalized list; indexed separately by the search engine component</td></tr>
+          <tr><td>upload_time</td><td>datetime</td></tr>
+          <tr><td>shard_id</td><td>int</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: photo_derivative</th></tr>
+          <tr><td>photo_id (composite PK, FK &rarr; photo)</td><td>bigint</td></tr>
+          <tr><td>size_variant (composite PK)</td><td>enum(square, thumbnail, small, medium, large, original)</td></tr>
+          <tr><td>storage_path</td><td>varchar(512) &mdash; NetApp filer path, resolved via the Storage Manager</td></tr>
+        </table>
+        <p>Splitting derivatives into their own table &mdash; rather than columns on <code>photo</code> &mdash; keeps the hot metadata row small and lets the Image Daemon add, regenerate, or drop individual size variants (e.g., when Flickr later moved toward more dynamic resizing) without touching the core photo record at all.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Requests enter through a pair of ServerIron hardware load balancers, which front Squid caches sitting in reverse-proxy mode in front of the PHP application tier &mdash; Squid absorbs whole-response traffic (HTML pages and images) before it ever reaches an application server. The PHP application tier fans out to three independent downstream planes: a Storage Manager that routes photo bytes to NetApp filer storage; a Memcached cluster that fronts the sharded, master-master MySQL database layer (with a small "Dual Tree" central/global database resolving cross-shard lookups such as user &rarr; shard); and a dedicated search engine component that indexes tags and text separately from the transactional shards.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 620" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-flk-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-flk-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="10" width="200" height="45" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="32" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">Clients</text>
+            <text x="370" y="48" text-anchor="middle" fill="#cbd8ef" font-size="10">Web / iOS / Android / API</text>
+
+            <rect x="260" y="90" width="220" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="112" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">ServerIron Load Balancers</text>
+            <text x="370" y="128" text-anchor="middle" fill="#cbd8ef" font-size="9">hardware LB &mdash; upload + view traffic</text>
+
+            <rect x="240" y="175" width="260" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="200" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Squid Caches</text>
+            <text x="370" y="216" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">reverse-proxy, whole HTML/image responses</text>
+
+            <rect x="240" y="265" width="260" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="290" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">PHP Application Servers</text>
+            <text x="370" y="306" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">page and request logic</text>
+
+            <rect x="20" y="360" width="180" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="110" y="385" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Storage Manager</text>
+            <text x="110" y="401" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">placement and write routing</text>
+
+            <rect x="260" y="360" width="220" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="385" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Memcached Cluster</text>
+            <text x="370" y="401" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">~30 min TTL, fronts every shard</text>
+
+            <rect x="540" y="360" width="180" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="630" y="385" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Search Engine</text>
+            <text x="630" y="401" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">tag / text index</text>
+
+            <rect x="10" y="450" width="200" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="110" y="475" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">NetApp Filer Storage</text>
+            <text x="110" y="491" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">photo originals + derivatives</text>
+
+            <rect x="240" y="450" width="260" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="475" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Sharded MySQL</text>
+            <text x="370" y="491" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">master-master shards, ~500K users/shard</text>
+
+            <rect x="230" y="545" width="280" height="55" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-dasharray="5,3"></rect>
+            <text x="370" y="568" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Dual Tree Central / Global DB</text>
+            <text x="370" y="584" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">user_id &rarr; shard_id lookup</text>
+
+            <line x1="370" y1="55" x2="370" y2="88" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-flk-1)"></line>
+            <line x1="370" y1="140" x2="370" y2="173" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-flk-1)"></line>
+            <line x1="370" y1="230" x2="370" y2="263" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-flk-1)"></line>
+
+            <line x1="300" y1="320" x2="140" y2="358" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-flk-1)"></line>
+            <line x1="370" y1="320" x2="370" y2="358" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-flk-1)"></line>
+            <line x1="440" y1="320" x2="600" y2="358" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-flk-1)"></line>
+
+            <line x1="110" y1="415" x2="110" y2="448" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-flk-1)"></line>
+            <line x1="370" y1="415" x2="370" y2="448" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-flk-1)"></line>
+
+            <line x1="370" y1="515" x2="370" y2="543" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-flk-1m)" marker-start="url(#arrow-flk-1m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. Flickr's real, historically documented high-level architecture: ServerIron hardware load balancers front Squid reverse-proxy caches and a PHP application tier; the app tier fans out to a Storage Manager (NetApp filer storage), a Memcached cluster fronting sharded master-master MySQL (with a small Dual Tree central database for cross-shard lookups), and a dedicated search engine for tags/text.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Two independent caching layers before any database read:</strong> Squid catches whole responses at the edge of the app tier; Memcached catches individual metadata reads at the edge of the database tier.</li>
+          <li><strong>Search is deliberately decoupled</strong> from the sharded, transactional photo tables, since free-text/tag search access patterns don't fit a shard-by-user-id layout well.</li>
+          <li><strong>The Dual Tree central database is small and narrowly scoped</strong> &mdash; it exists only to answer "which shard owns this user/photo," not to hold any bulk data itself.</li>
+          <li><strong>Storage and metadata are handled by separate subsystems</strong> (Storage Manager/NetApp vs. Memcached/MySQL), so photo bytes and photo metadata can each scale independently.</li>
+        </ul>
+
+        <h2 id="low-level-design-the-upload-and-serving-pipeline">Low-Level Design — The Upload and Serving Pipeline</h2>
+        <p>A client hits a PHP Upload-API endpoint, which authenticates the caller, checks quota, and hands the raw bytes off to backend Java services: an Image Daemon (which generates the standard set of size derivatives) and a Storage Master (which decides physical placement). Uploads are written "hot-hot" across two geographically separate data centers &mdash; historically the US West and East Coasts &mdash; for durability. The master copy lands in NetApp-backed storage, and derivatives then propagate out to five worldwide photo caches plus a broader CDN layer that serves the overwhelming majority of view traffic.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 570" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-flk-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-flk-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="10" width="200" height="40" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="35" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client (Uploader)</text>
+
+            <rect x="250" y="75" width="240" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="97" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">PHP Upload-API Endpoint</text>
+            <text x="370" y="113" text-anchor="middle" fill="#cbd8ef" font-size="9">accepts raw bytes, auth, quota check</text>
+
+            <rect x="80" y="160" width="220" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="190" y="185" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Image Daemon (Java)</text>
+            <text x="190" y="201" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">generates size derivatives</text>
+
+            <rect x="440" y="160" width="220" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="550" y="185" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Storage Master (Java)</text>
+            <text x="550" y="201" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">decides physical placement</text>
+
+            <rect x="50" y="250" width="210" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="155" y="272" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Hot-Hot Write</text>
+            <text x="155" y="288" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">West Coast Data Center</text>
+
+            <rect x="480" y="250" width="210" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="585" y="272" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Hot-Hot Write</text>
+            <text x="585" y="288" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">East Coast Data Center</text>
+
+            <rect x="210" y="340" width="320" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="362" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">NetApp-Backed Master Storage</text>
+            <text x="370" y="378" text-anchor="middle" fill="#cbd8ef" font-size="9">durable original + master derivatives</text>
+
+            <rect x="40" y="428" width="120" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="100" y="449" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Cache</text>
+            <text x="100" y="463" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">US West</text>
+
+            <rect x="175" y="428" width="120" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="235" y="449" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Cache</text>
+            <text x="235" y="463" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">US East</text>
+
+            <rect x="310" y="428" width="120" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="370" y="449" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Cache</text>
+            <text x="370" y="463" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Europe</text>
+
+            <rect x="445" y="428" width="120" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="505" y="449" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Cache</text>
+            <text x="505" y="463" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Asia-Pacific</text>
+
+            <rect x="580" y="428" width="120" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="640" y="449" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Cache</text>
+            <text x="640" y="463" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">5th Region</text>
+
+            <rect x="210" y="505" width="320" height="45" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="527" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">CDN Edge Layer</text>
+            <text x="370" y="541" text-anchor="middle" fill="#cbd8ef" font-size="8">global view traffic &mdash; most reads never reach origin</text>
+
+            <line x1="370" y1="50" x2="370" y2="73" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-flk-2)"></line>
+            <line x1="320" y1="125" x2="200" y2="158" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-flk-2)"></line>
+            <line x1="420" y1="125" x2="540" y2="158" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-flk-2)"></line>
+
+            <line x1="190" y1="215" x2="300" y2="338" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrow-flk-2m)"></line>
+
+            <line x1="500" y1="215" x2="155" y2="248" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-flk-2)"></line>
+            <line x1="560" y1="215" x2="585" y2="248" stroke="var(--color-accent-dark)" stroke-width="1.3" marker-end="url(#arrow-flk-2)"></line>
+
+            <line x1="155" y1="305" x2="300" y2="338" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-flk-2)"></line>
+            <line x1="585" y1="305" x2="440" y2="338" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-flk-2)"></line>
+
+            <line x1="330" y1="390" x2="100" y2="426" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-flk-2)"></line>
+            <line x1="350" y1="390" x2="235" y2="426" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-flk-2)"></line>
+            <line x1="370" y1="390" x2="370" y2="426" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-flk-2)"></line>
+            <line x1="390" y1="390" x2="505" y2="426" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-flk-2)"></line>
+            <line x1="410" y1="390" x2="640" y2="426" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-flk-2)"></line>
+
+            <line x1="100" y1="478" x2="230" y2="503" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-flk-2m)"></line>
+            <line x1="235" y1="478" x2="290" y2="503" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-flk-2m)"></line>
+            <line x1="370" y1="478" x2="370" y2="503" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-flk-2m)"></line>
+            <line x1="505" y1="478" x2="450" y2="503" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-flk-2m)"></line>
+            <line x1="640" y1="478" x2="510" y2="503" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-flk-2m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 2. The upload and serving pipeline: a client hits the PHP Upload-API, which hands off to backend Java services &mdash; an Image Daemon (derivative generation) and a Storage Master (placement) &mdash; writing hot-hot across two coasts before landing in NetApp-backed master storage; derivatives then propagate out to five worldwide photo caches plus a CDN layer that serves the overwhelming majority of view traffic.</div>
+        </div>
+
+        <h2 id="deep-dive-sharded-mysql-the-dual-tree-architecture">Deep Dive — Sharded MySQL: The Dual Tree Architecture</h2>
+        <p>Rather than a ring-based consistent-hashing scheme, Flickr built a custom "Dual Tree" set of changes to MySQL that let the company scale by incrementally adding new master shards, without needing a full ring rebalance every time capacity was added. New users are randomly assigned to a shard at signup (documented shard sizing was on the order of roughly 500,000 users per shard); a small central/global database then holds the user_id &rarr; shard_id mapping (and, similarly, resolves which shard owns a given photo) so the application tier can route straight to the correct shard on every request.</p>
+        <p>The distinctive part of the scheme is how replication is arranged: each shard is duplicated onto another physical database host, and that same host is simultaneously serving as a different shard's active replica. In other words, a pair of hosts cross-duplicate each other's shards rather than each shard getting its own dedicated standby. This is cheaper than a conventional full master-master mesh, because it needs less redundant hardware per unit of capacity &mdash; every host is doing useful, load-bearing work (serving one shard's writes and another shard's reads/failover), rather than sitting idle as a pure hot spare.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-flk-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-flk-3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="210" y="10" width="280" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="350" y="32" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Dual Tree Central / Global DB</text>
+            <text x="350" y="48" text-anchor="middle" fill="#cbd8ef" font-size="8">user_id &rarr; shard_id (assigned randomly at signup)</text>
+
+            <rect x="40" y="100" width="280" height="180" rx="8" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="6,4"></rect>
+            <text x="50" y="120" fill="var(--color-text-muted)" font-size="10" font-weight="700" letter-spacing="0.03em">PHYSICAL DB HOST A</text>
+
+            <rect x="60" y="135" width="240" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="180" y="160" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Shard 1 &mdash; MASTER</text>
+            <text x="180" y="176" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">active writes, users 1&ndash;500K</text>
+
+            <rect x="60" y="205" width="240" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3" stroke-dasharray="4,3"></rect>
+            <text x="180" y="228" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Shard 2 &mdash; REPLICA</text>
+            <text x="180" y="244" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">standby copy, absorbs read load</text>
+
+            <rect x="380" y="100" width="280" height="180" rx="8" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="6,4"></rect>
+            <text x="390" y="120" fill="var(--color-text-muted)" font-size="10" font-weight="700" letter-spacing="0.03em">PHYSICAL DB HOST B</text>
+
+            <rect x="400" y="135" width="240" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="520" y="160" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Shard 2 &mdash; MASTER</text>
+            <text x="520" y="176" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">active writes, users 500K&ndash;1M</text>
+
+            <rect x="400" y="205" width="240" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3" stroke-dasharray="4,3"></rect>
+            <text x="520" y="228" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Shard 1 &mdash; REPLICA</text>
+            <text x="520" y="244" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">standby copy, absorbs read load</text>
+
+            <text x="350" y="300" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-style="italic">Each host serves one shard's MASTER and</text>
+            <text x="350" y="315" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-style="italic">the other shard's REPLICA &mdash; no idle standby hardware</text>
+
+            <line x1="280" y1="60" x2="180" y2="98" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-flk-3)"></line>
+            <line x1="420" y1="60" x2="520" y2="98" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-flk-3)"></line>
+
+            <line x1="300" y1="165" x2="400" y2="232" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-flk-3m)" marker-start="url(#arrow-flk-3m)"></line>
+            <text x="350" y="185" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">replication</text>
+
+            <line x1="400" y1="165" x2="300" y2="232" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-flk-3m)" marker-start="url(#arrow-flk-3m)"></line>
+            <text x="350" y="250" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">replication</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. The Dual Tree sharding scheme: users are randomly assigned to a shard at signup via a small central lookup database; rather than a ring-based consistent-hashing scheme, each shard is cross-duplicated onto another physical host that is simultaneously serving as a different shard's active master &mdash; cheaper than a full master-master mesh since it needs less redundant hardware per unit of capacity, and new master shards can be added incrementally without a full rebalance.</div>
+        </div>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If asked "why not just use consistent hashing like a typical distributed cache?" &mdash; the honest answer is that Flickr's real system predates and diverges from that pattern deliberately: consistent hashing minimizes data movement on resize, but the Dual Tree instead optimizes for adding whole new master shards cheaply, by making every piece of hardware do double duty (one shard's master, another's replica) instead of provisioning dedicated standby capacity.
+        </div>
+
+        <h2 id="deep-dive-the-upload-and-serving-pipeline-in-depth">Deep Dive — The Upload and Serving Pipeline in Depth</h2>
+        <p>Walking through Figure 2 end to end: the PHP Upload API accepts the raw file, authenticates the caller, and checks the calling <code>api_key</code>'s quota before accepting the bytes. From there, control passes to backend Java services &mdash; the Image Daemon generates the standard set of size derivatives (square, thumbnail, small, medium, large), while the Storage Master decides physical placement for the original and its derivatives. The write itself happens hot-hot across two coasts: the same upload is durably committed in both the West Coast and East Coast data centers before the upload is considered complete, so a single-datacenter loss can never lose a user's original photo. Once the master copy is safely in NetApp-backed storage, derivatives fan out to five worldwide photo caches and a broader CDN layer, so the overwhelming majority of subsequent view traffic is served from an edge location and never touches the origin store at all.</p>
+        <p>The specific engineering challenge worth calling out here is generating resized/re-derived images without visibly degrading quality: a naive resize pipeline can introduce blur, banding, or over-aggressive JPEG compression artifacts, especially across the wide range of source resolutions and formats a decade-plus-old, globally used product accumulates. Flickr's Image Daemon pre-generated a fixed, standard set of derivative sizes at upload time &mdash; a reasonable trade-off when the set of client layouts is small and known in advance. As client form factors diversified (new device sizes, responsive web layouts, apps wanting arbitrary intermediate resolutions), Flickr moved toward more dynamic, on-the-fly resizing rather than pre-generating an ever-growing combinatorial set of fixed sizes for every one of billions of existing photos &mdash; trading a small amount of per-request compute for not needing a backfill migration every time a new size requirement appeared.</p>
+
+        <h2 id="deep-dive-caching-memcached-in-front-of-every-shard">Deep Dive — Caching: Memcached in Front of Every Shard</h2>
+        <p>A Memcached layer with roughly a 30-minute cache lifetime sits directly in front of the sharded MySQL layer, absorbing the vast majority of metadata reads before they ever reach a database shard. Squid caches sit even further upstream, in front of the web/application tier, caching whole HTML and image responses rather than individual metadata fields.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 420" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-flk-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-flk-4m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="300" y="10" width="140" height="40" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="35" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client Request</text>
+
+            <rect x="210" y="80" width="320" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="105" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Squid Reverse-Proxy Cache</text>
+            <text x="370" y="121" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">whole HTML/image responses, fronts web/app tier</text>
+
+            <rect x="220" y="170" width="300" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="200" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">PHP Application Servers</text>
+
+            <rect x="220" y="255" width="300" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="280" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Memcached Cluster</text>
+            <text x="370" y="296" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">~30 min TTL, fronts every MySQL shard</text>
+
+            <rect x="210" y="345" width="320" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="374" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Sharded MySQL (master-master)</text>
+
+            <text x="620" y="270" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">30-min bounded TTL:</text>
+            <text x="620" y="283" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">simplicity over</text>
+            <text x="620" y="296" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">perfect freshness</text>
+            <line x1="580" y1="282" x2="522" y2="282" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arrow-flk-4m)"></line>
+
+            <line x1="370" y1="50" x2="370" y2="78" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-flk-4)"></line>
+            <text x="470" y="68" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">cache hit short-circuits here</text>
+
+            <line x1="370" y1="135" x2="370" y2="168" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-flk-4)"></line>
+            <text x="440" y="155" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">on miss</text>
+
+            <line x1="370" y1="220" x2="370" y2="253" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-flk-4)"></line>
+
+            <line x1="370" y1="310" x2="370" y2="343" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-flk-4m)"></line>
+            <text x="440" y="330" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">on miss</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Two independent caching layers protect Flickr's origin systems: Squid caches whole HTML/image responses in front of the web/app tier, while a Memcached cluster with a roughly 30-minute cache lifetime absorbs the vast majority of metadata reads in front of the sharded MySQL layer &mdash; a deliberately short, bounded TTL that trades perfect freshness for operational simplicity.</div>
+        </div>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Why a short, bounded TTL like 30 minutes rather than event-driven invalidation on every write? A fixed TTL needs no invalidation bookkeeping at all &mdash; no fan-out of "which cache keys does this write touch," no risk of a missed invalidation leaving stale data forever. The cost is a bounded staleness window (up to 30 minutes), which is an acceptable trade for most photo metadata (tags, titles, view counts) but would need revisiting for anything requiring near-real-time correctness.
+        </div>
+
+        <h2 id="deep-dive-tags-search-and-metadata-at-scale">Deep Dive — Tags, Search, and Metadata at Scale</h2>
+        <p>A dedicated search engine component indexes tags and text metadata separately from the transactional photo-metadata shards. This separation exists because search access patterns &mdash; free-text queries, multi-term matches, relevance ranking &mdash; don't fit a relational layout sharded by user_id well: a search for "sunset beach" needs to scan across many users' photos by content, which is exactly the access pattern sharding-by-owner is designed to avoid fanning out across.</p>
+        <p>Flickr's backend went through a real, documented modernization of this kind of legacy pipeline over time: an internal effort called "Tripod" refactored Flickr's infrastructure into a more general, multi-tenant photo/video platform, reusing the same proven upload/storage/serving pipeline described above (PHP Upload API, Java Image Daemon, Storage Master, hot-hot cross-coast writes, worldwide photo caches) while adding first-class concepts like applications, buckets, and API keys, so the same battle-tested infrastructure could power other products beyond Flickr itself. The notable design lesson is that this was an incremental evolution on top of working infrastructure, not a risky big-bang rewrite &mdash; the same pattern worth applying to any long-lived legacy pipeline that needs to keep serving traffic while it's being modernized underneath.</p>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <ul>
+          <li>Users are randomly assigned to a MySQL shard at signup via the Dual Tree scheme &mdash; documented shard sizing was on the order of roughly 500,000 users per shard.</li>
+          <li>Each shard is duplicated onto another physical database host, and that host simultaneously serves double duty as a different shard's active replica (see Figure 3) &mdash; this is what lets Flickr add capacity incrementally rather than rebalancing a full hash ring.</li>
+          <li>A small central/global "Dual Tree" lookup ties a user_id (and, similarly, a photo_id) back to its owning shard, so the application tier can route directly to the right shard's Memcached/MySQL pair on every request.</li>
+          <li>Photo bytes themselves are partitioned separately, by the Storage Manager's placement decision across NetApp filers &mdash; the photo table's <code>shard_id</code> column and the physical storage path are two independent partitioning schemes that happen to be resolved together at read time.</li>
+        </ul>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li><strong>Database:</strong> every shard is duplicated per the Dual Tree design, so a single database loss doesn't take that shard's capacity fully offline &mdash; the replica (itself another shard's active master) can be promoted.</li>
+          <li><strong>Photo storage:</strong> hot-hot cross-datacenter writes at upload time mean a datacenter-level failure cannot lose the original upload &mdash; a durable copy already exists on the other coast before the upload is acknowledged as complete.</li>
+          <li><strong>Serving:</strong> five worldwide photo caches plus the CDN layer mean that even a temporary origin-storage disruption can continue serving already-cached view traffic without customer-visible impact.</li>
+        </ul>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <ul>
+          <li><strong>On-the-fly / dynamic image resizing:</strong> rather than pre-generating every conceivable size variant ahead of time for every one of billions of photos, later-generation client form factors are served by generating derivatives dynamically on demand &mdash; avoiding a disruptive backfill migration each time a new client layout appears.</li>
+          <li><strong>Unique per-photo shareable URL generation:</strong> at upload time, each photo is assigned a unique photo_id (and a corresponding short, shareable URL) independent of its content &mdash; so two visually identical uploads by different users remain distinct, separately taggable, separately visible objects.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Per-photo visibility:</strong> public / friends / family / private settings are enforced at the metadata layer before any cached derivative is served &mdash; a Squid or CDN cache hit still passes through an authorization check rather than blindly returning cached bytes to an unauthorized viewer.</li>
+          <li><strong>API-key-based upload throttling:</strong> every upload call is scoped to an <code>api_key</code>, which is rate-limited independently of the (much higher-volume) view/retrieval path, protecting the write pipeline from any single caller.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>A pair of ServerIron hardware load balancers sits at the front door, distributing both upload and view traffic across the PHP application tier. Hardware load balancers were a deliberate choice at the scale and era Flickr operated at &mdash; offloading connection handling and basic health-check-driven failover from the application layer, so the PHP tier could remain a simple, horizontally scalable fleet of stateless workers behind it.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Five worldwide photo caches plus a CDN layer serve view traffic close to where users actually are, rather than routing every read back to a single origin.</li>
+          <li>Hot-hot cross-coast writes (West Coast and East Coast data centers) protect upload durability specifically &mdash; the same mechanism described in the Low-Level Design section above &mdash; rather than being a separate multi-region scheme for reads.</li>
+          <li>Derivative propagation from the master NetApp storage out to the five caches is decoupled from the upload's durability guarantee: the upload is already safe (hot-hot) before derivatives finish fanning out globally, so global cache warm-up latency never blocks the uploader.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Upload throughput vs. benchmark:</strong> track sustained uploads/sec against the historical ~500 photos/sec peak benchmark, watching for sustained deviation as an early warning of either a traffic surge or a pipeline slowdown.</li>
+          <li><strong>Cache hit-rate:</strong> monitor hit-rate on both the Memcached layer (metadata) and the Squid layer (whole responses) as first-class metrics &mdash; a drop in either, without an obvious traffic-pattern explanation, is the signal to investigate before users notice slower page loads.</li>
+          <li><strong>Per-shard load skew:</strong> monitor QPS/latency per MySQL shard to catch a shard that's become a hotspot (e.g., due to a small number of unusually popular accounts landing on it), since the random-assignment Dual Tree scheme doesn't guarantee perfectly even long-run load distribution.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation / Trade-Off</th></tr>
+          <tr><td>A hot celebrity/viral photo concentrates read load on one shard/cache node despite sharding</td><td>The CDN, five worldwide photo caches, and Squid absorb almost all of it before it ever reaches the owning shard's Memcached/MySQL pair</td></tr>
+          <tr><td>30-minute Memcached TTL means metadata can be stale for up to ~30 minutes</td><td>Deliberate freshness-vs-simplicity trade-off; a use case needing near-real-time metadata updates would need a shorter TTL or explicit write-time invalidation</td></tr>
+          <tr><td>A single physical DB host loss affects two shards at once under the Dual Tree scheme (it serves one shard's master and another's replica)</td><td>Promote the replica side quickly; keep enough spare read capacity that a temporary two-shard impact doesn't cascade into a wider outage</td></tr>
+          <tr><td>The central Dual Tree lookup DB is a small, high-fan-in dependency consulted on effectively every request</td><td>Keep it deliberately small, fast, and well-replicated &mdash; a slow or unavailable lookup DB stalls routing for the entire system</td></tr>
+          <tr><td>Cross-coast hot-hot writes add latency to every single upload</td><td>Accepted trade-off in exchange for datacenter-level durability; derivative propagation to caches/CDN happens asynchronously, off the upload's critical path</td></tr>
+          <tr><td>Search engine indexes tags/text separately from the sharded photo tables</td><td>Needs its own consistency/backfill story (e.g., a change feed or periodic re-index) independent of the transactional shards, so the two can drift briefly out of sync</td></tr>
+        </table>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Flickr's real, documented choice</th></tr>
+          <tr><td>Load balancing</td><td>ServerIron hardware load balancers</td></tr>
+          <tr><td>Whole-response caching</td><td>Squid reverse-proxy in front of the web/app tier</td></tr>
+          <tr><td>Application tier</td><td>PHP application servers</td></tr>
+          <tr><td>Backend processing</td><td>Java services &mdash; Image Daemon (derivatives), Storage Master (placement)</td></tr>
+          <tr><td>Primary photo storage</td><td>NetApp filer storage, written hot-hot across two coasts</td></tr>
+          <tr><td>Metadata cache</td><td>Memcached cluster, ~30 min TTL, fronting every shard</td></tr>
+          <tr><td>Metadata database</td><td>Sharded, master-master MySQL (custom Dual Tree scheme)</td></tr>
+          <tr><td>Cross-shard lookup</td><td>Small central/global Dual Tree database (user/photo &rarr; shard)</td></tr>
+          <tr><td>Search</td><td>Dedicated search engine component (tags/text), decoupled from sharded tables</td></tr>
+          <tr><td>Global serving</td><td>Five worldwide photo caches + CDN layer</td></tr>
+          <tr><td>Consistency model</td><td>Availability-leaning for reads/serving; strict routing consistency for shard assignment</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>These are organized by theme &mdash; use them to rehearse, or expect a real interview to pick a handful as "and then what?" follow-ups on top of the core design.</p>
+
+        <h3>Scaling and Performance</h3>
+        <div class="qa-item">
+          <div class="qa-q">A single celebrity's photo goes viral overnight, driving huge read concentration on one shard/cache node &mdash; walk through what absorbs that load.</div>
+          <div class="qa-a">The CDN edges and the five worldwide photo caches absorb almost all of it; Squid and Memcached catch most of what leaks through. Only a tiny sliver ever reaches the owning MySQL shard, and even that shard's replica (which is simultaneously another shard's active master under the Dual Tree scheme) can help absorb residual read load.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why did Flickr choose a custom Dual Tree scheme instead of a ring-based consistent-hashing shard architecture?</div>
+          <div class="qa-a">Ring-based rebalancing typically requires moving data across many nodes whenever capacity is added. The Dual Tree let Flickr add new master shards incrementally, and by cross-duplicating shards onto each other's hosts (each host serves one shard's master and another shard's replica), it needed less redundant hardware than a full master-master mesh.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you diagnose a shard that's become a hotspot?</div>
+          <div class="qa-a">Monitor per-shard QPS/latency/replication lag; look for a small cluster of user_ids driving disproportionate read/write volume (celebrity accounts, viral groups). Mitigate with more aggressive Memcached/Squid caching for that shard's hot keys, or in extreme cases, manually rebalance that shard's user population.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens to the read path if Memcached is momentarily unavailable?</div>
+          <div class="qa-a">The cache-aside pattern degrades gracefully &mdash; requests fall through to the sharded MySQL layer, which sees a load spike. Squid's whole-response caching upstream absorbs some of the increase, and Memcached's short 30-minute TTL means the cache repopulates quickly once it's back.</div>
+        </div>
+
+        <h3>Correctness and Data</h3>
+        <div class="qa-item">
+          <div class="qa-q">How does Flickr guarantee a user's photo is durable even if an entire data center is lost?</div>
+          <div class="qa-a">Uploads are written hot-hot across two geographically separate data centers (historically West Coast and East Coast) at write time, so the original master copy survives a full datacenter-level outage, not just a single server or disk failure.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">If a user is randomly assigned to a shard at signup, how does the system find their data on every subsequent request?</div>
+          <div class="qa-a">The small Dual Tree central/global database stores the user_id &rarr; shard_id mapping (and similarly resolves photo_id &rarr; owning shard). The app tier consults it, then routes directly to the correct shard's Memcached/MySQL pair.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Two requests for the same photo's not-yet-generated size derivative arrive concurrently &mdash; what happens?</div>
+          <div class="qa-a">The Image Daemon generates the standard derivative set once, asynchronously, right after upload. A request for a not-yet-ready size variant returns a 202/Retry-After rather than triggering duplicate concurrent resize work; once generated, the derivative is durably stored and served from cache/CDN from then on.</div>
+        </div>
+
+        <h3>Product and API Design</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you support Flickr's real per-photo "sets" and "groups" features in this data model?</div>
+          <div class="qa-a">Sets and groups are modeled as separate join tables (photo_id + set_id, photo_id + group_id) rather than columns on the photo table itself, since a photo can belong to many sets/groups &mdash; this keeps the core photo table narrow and fast for the hot lookup path.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you change getPhoto to support responsive web images (multiple resolutions for different screen sizes)?</div>
+          <div class="qa-a">This is exactly the direction Flickr evolved toward over time &mdash; moving from a small, fixed set of pre-generated derivative sizes to dynamic, on-the-fly resizing, so new client layouts don't require a data migration to backfill a new size variant for billions of existing photos.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why generate a unique shareable URL at upload time instead of a deterministic hash of the image content?</div>
+          <div class="qa-a">A deterministic content hash would collapse identical/duplicate uploads to the same URL, which breaks the "each of my uploads is my own shareable object with its own tags/visibility/metadata" product model. An assigned unique photo_id (and derived short URL) keeps ownership and per-upload metadata cleanly separate from raw content.</div>
+        </div>
+
+        <h3>Security and Abuse</h3>
+        <div class="qa-item">
+          <div class="qa-q">How is a private photo protected from being served out of a shared cache that doesn't know about visibility settings?</div>
+          <div class="qa-a">Visibility (public / friends / family / private) is enforced at the metadata layer before any cached derivative is returned &mdash; the application tier checks the permission on every request rather than trusting the cache layer to make that decision, so a cache hit still passes through an authorization check.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you stop a single API key from mass-scraping photo derivatives?</div>
+          <div class="qa-a">Per-api_key upload and request throttling at the application tier, consistent with how Flickr throttles the upload path itself, with tighter limits on any endpoint that could be used to enumerate or bulk-download content.</div>
+        </div>
+
+        <h3>Reliability and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">A single MySQL shard host fails &mdash; what's the customer-visible impact?</div>
+          <div class="qa-a">Because each physical host doubles as one shard's master and another shard's replica under the Dual Tree scheme, losing one host affects two shards' worth of capacity, not the whole system. The replica side can be promoted, and Memcached continues serving already-cached reads for a while regardless.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you tell whether cache hit-rate has silently degraded in production?</div>
+          <div class="qa-a">Monitor Squid and Memcached hit-rate as first-class metrics alongside a corresponding rise in MySQL QPS/latency. A hit-rate drop without an obvious traffic-pattern change (e.g., after a deploy or a TTL config change) is the signal to investigate before users notice slow page loads.</div>
+        </div>
+
+        <h3>Extensions and Evolution</h3>
+        <div class="qa-item">
+          <div class="qa-q">What did Flickr's later "Tripod" effort change, and why wasn't it a big-bang rewrite?</div>
+          <div class="qa-a">Tripod was a real, documented internal refactor of Flickr's backend into a more general, multi-tenant photo/video platform &mdash; reusing the existing upload/storage/serving pipeline, but adding applications, buckets, and API keys as first-class concepts &mdash; so the same infrastructure could power other Yahoo products. It evolved incrementally on top of proven infrastructure rather than replacing it wholesale.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend the search engine component to support ranked, multi-term free-text search instead of exact-tag matching?</div>
+          <div class="qa-a">Because search already lives in a dedicated component decoupled from the sharded transactional MySQL tables, evolving it (inverted index, ranking signals, multi-term queries) is a change local to that component &mdash; it doesn't require touching the Dual Tree sharding scheme or the photo/derivative tables at all.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Ground the design in the real, documented numbers &mdash; 7.9 million photos in year one, 13+ billion over Flickr's lifetime, 500+ sustained uploads/sec at peak &mdash; and let them visibly drive every downstream decision, the way a strong candidate would. The read-heavy skew justifies two independent, deliberately simple caching layers (Squid upstream of the app tier, Memcached upstream of the database), and the extreme durability requirement justifies hot-hot cross-coast writes even at the cost of added upload latency. The single most distinctive, interview-worthy fact about this system is the Dual Tree sharding scheme: it trades the elegance of ring-based consistent hashing for a scheme that adds master shards incrementally and gets double duty out of every piece of database hardware. Finally, know that Flickr's own backend evolved over time (dynamic resizing, the Tripod refactor) rather than staying frozen &mdash; a good design answer accounts for evolution, not just a single point-in-time architecture.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>High Scalability, <a href="https://highscalability.com/flickr-architecture/" target="_blank" rel="noopener">"Flickr Architecture"</a></li>
+          <li>Flickr Engineering (code.flickr.com), <a href="https://code.flickr.net/2010/02/08/using-abusing-and-scaling-mysql-at-flickr/" target="_blank" rel="noopener">"Using, Abusing and Scaling MySQL at Flickr"</a> &mdash; the Dual Tree database-sharding design</li>
+          <li>Yahoo Engineering, <a href="https://yahooeng.tumblr.com/post/157200523046/introducing-tripod-flickrs-backend-refactored" target="_blank" rel="noopener">"Introducing Tripod: Flickr's Backend, Refactored"</a></li>
+          <li>Cal Henderson / bytebot.net, <a href="http://www.bytebot.net/blog/archives/2007/04/25/federation-at-flickr-a-tour-of-the-flickr-architecture" target="_blank" rel="noopener">"Federation at Flickr: A Tour of the Flickr Architecture"</a></li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="google-docs.html"><span class="dir">Previous</span>Google Docs</a>
+          <a class="next" href="weather-application.html"><span class="dir">Next</span>Weather Application</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon Shopping — E-Commerce Platform | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Amazon Shopping</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design-order-taking-flow-and-concurrency-control">Low-Level Design — Order-Taking Flow and Concurrency Control</a></li>
+        <li><a href="#deep-dive-search-serviceability-and-the-inventory-availability-check">Deep Dive — Search, Serviceability, and the Inventory-Availability Check</a></li>
+        <li><a href="#deep-dive-inbound-service-and-multi-seller-inventory-normalization">Deep Dive — Inbound Service and Multi-Seller Inventory Normalization</a></li>
+        <li><a href="#deep-dive-cart-wishlist-and-inventory-bound-availability">Deep Dive — Cart, Wishlist, and Inventory-Bound Availability</a></li>
+        <li><a href="#deep-dive-homepage-recommendation-engine">Deep Dive — HomePage Recommendation Engine</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Amazon Shopping — E-Commerce Platform</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a large multi-seller e-commerce marketplace: a personalized home page, location-aware search, cart/wishlist, and a correctness-critical order-taking flow &mdash; grounded in original whiteboard architecture notes rather than a single public reference.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a large multi-seller e-commerce marketplace &mdash; think Amazon.com. Many independent sellers list products through the platform; shoppers browse a personalized home page, search for products, add items to a cart or a wishlist, and place orders. The platform is the system of record for what is in stock, who owns which listing, and whether a given order was actually paid for.</p>
+        <p>The single hardest correctness requirement in this design is the order-taking flow: two shoppers can try to buy the very last unit of a hot item at the same moment, and a checkout can be abandoned mid-payment. The system must guarantee it never oversells an item that has already run out, and never double-charges &mdash; or silently loses &mdash; a shopper's money because of a race condition at checkout.</p>
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>Unlike a single-seller catalog, a marketplace forces two very different problems to coexist in one design: read-heavy scale (personalization, search, browse) and write-side correctness under contention (inventory, payment). A strong candidate keeps these two halves of the system visibly separate throughout, instead of treating the whole thing as one monolithic "database problem."</p>
+        <h3>What a Multi-Seller Marketplace Adds on Top of a Single-Seller Catalog</h3>
+        <ul>
+          <li>Every listing belongs to exactly one seller, and different sellers describe their inventory with completely different attributes (size, color, fit, condition, wattage, and so on) &mdash; there is no single fixed schema for "a product."</li>
+          <li>Sellers push updates to their own listings independently and concurrently, at high volume, often via bulk/batch feeds rather than one row at a time.</li>
+          <li>The platform must keep one seller from ever seeing or modifying another seller's inventory, pricing, or order data.</li>
+          <li>Serviceability &mdash; can this item even ship to this address? &mdash; is now a per-seller, per-item, per-location decision, not a single global answer.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Marketplace system design questions are easy to under-scope. Spend the first few minutes narrowing down exactly which slice of "Amazon" you are building.</p>
+        <ol>
+          <li>Are we designing a single-seller retail catalog, or a true multi-seller marketplace where any seller can list and manage their own products?</li>
+          <li>How deep should we go into warehouse operations and logistics internals &mdash; can we treat "the warehouse" mostly as a black box that reports state changes (item left, item reached, item delivered)?</li>
+          <li>How deep should payment processing go &mdash; do we design the payment gateway itself, or treat it as an external dependency we call and receive a success/failure callback from?</li>
+          <li>How sophisticated does the home page's personalization/recommendation logic need to be &mdash; simple rules, or a full offline ML pipeline?</li>
+          <li>Do we need to explicitly design for flash-sale/peak-event traffic (a 5&ndash;10&times; spike concentrated on a handful of hot SKUs), or is steady-state traffic enough?</li>
+          <li>How do sellers actually submit their product listings &mdash; UI, API, batch file upload, or all three, and in what formats?</li>
+          <li>What consistency model is acceptable where &mdash; is eventual consistency fine for search/recommendations, while inventory and payment need strict correctness?</li>
+          <li>Do we need to support returns, cancellations, and refunds in this pass, or is that a follow-on system?</li>
+          <li>Do we need multi-currency / cross-border seller support, or is this a single-region, single-currency design?</li>
+          <li>What scale are we targeting &mdash; roughly how many active listings, how many orders per day, and how many sellers?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't wait for every answer before sketching a box. State a reasonable assumption out loud ("I'll assume a multi-seller marketplace, roughly 500M active listings, tens of millions of orders/day, and that warehouse/logistics internals and the payment gateway itself are out of scope") and keep moving &mdash; that is what shows judgment under time pressure.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Show a personalized home page with recommended products for the current user (signed-in or anonymous).</li>
+          <li>Let a user search for products, with results filtered by delivery-location serviceability (only show items that can actually ship to the buyer's address).</li>
+          <li>Let a user place an order and view their past orders.</li>
+          <li>Let a user add and remove items from a cart and a wishlist.</li>
+          <li>Let sellers add and update their own product listings.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Strict correctness on inventory and payment:</strong> never oversell an item, and never double-charge (or silently lose) a shopper's money because of a race condition at checkout.</li>
+          <li><strong>High read availability</strong> for search and browse &mdash; the home page and search are on the critical path of nearly every visit and must stay up and fast even during partial downstream outages.</li>
+          <li><strong>Eventual consistency is acceptable</strong> for recommendations and analytics &mdash; a stale "trending now" widget or a slightly-delayed recommendation refresh is invisible to the shopper.</li>
+          <li>Horizontal scalability on the read side (search/browse) independent of the write side (orders), since the two have very different volumes and very different consistency requirements.</li>
+          <li><strong>Durability:</strong> a placed order must survive server/database failures.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We go deep on the home page, search, cart/wishlist, and the order-taking + inventory concurrency core. We explicitly call out &mdash; but do not build in depth &mdash; the internals of warehouse-operations HLD/LLD, the full payment-gateway internals (treated as an external dependency), and the seller-onboarding flow.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>We size this system off two headline numbers: roughly 500 million active product listings across all sellers, and tens of millions of orders placed per day at steady state, with sharp multi-times spikes during flash-sale events. State these assumptions explicitly &mdash; the exact multiplier matters less than showing the numbers actually drive the design.</p>
+
+        <h3>Listings and Catalog Size</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          &asymp;500 million active listings across all sellers at any given time
+          <br>Each listing record (item attributes + inventory count) averages &asymp;1 KB (wide, seller-specific attribute set)
+          <br>Raw catalog storage &asymp; 500M &times; 1 KB = 500 GB; with 3&times; replication &asymp; 1.5 TB
+        </div>
+
+        <h3>Order-Taking Traffic</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          &asymp;50 million orders placed per day at steady state
+          <br>Orders / second = 50,000,000 &divide; 86,400 &asymp; 579 &rarr; round to ~600 orders/sec steady state
+          <br>Flash-sale peak runs 5&ndash;10&times; average &rarr; design for ~3,000&ndash;6,000 orders/sec at peak
+        </div>
+
+        <h3>Search / Browse Traffic</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Assume &asymp;300 million daily active shoppers, averaging ~5 searches/browses each per day
+          <br>Searches / day &asymp; 1.5 billion &rarr; Searches / second = 1,500,000,000 &divide; 86,400 &asymp; 17,361 &rarr; round to ~20,000 QPS steady state
+          <br>Flash-sale peak runs 5&ndash;10&times; average &rarr; design for ~100,000&ndash;200,000 search QPS at peak
+        </div>
+
+        <h3>Inventory-Update Event Volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Each order generates at least one inventory-decrement event (~50M/day); sellers additionally push &asymp;150 million restock/price/quantity updates/day via the Inbound Service
+          <br>Total inventory-update events / day &asymp; 200 million &rarr; Events / second = 200,000,000 &divide; 86,400 &asymp; 2,315 &rarr; round to ~2,500/sec steady state
+          <br>At flash-sale peak this volume is heavily concentrated on a small number of hot SKUs rather than spread evenly &mdash; the per-row contention, not the aggregate QPS, is the real bottleneck (see "Bottlenecks" below)
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Steady state</th><th>Flash-sale peak (5&ndash;10&times;)</th></tr>
+          <tr><td>Active listings</td><td>~500 million</td><td>&mdash;</td></tr>
+          <tr><td>Orders / sec</td><td>~600</td><td>~3,000&ndash;6,000</td></tr>
+          <tr><td>Search / browse QPS</td><td>~20,000</td><td>~100,000&ndash;200,000</td></tr>
+          <tr><td>Inventory-update events / sec</td><td>~2,500</td><td>Same aggregate order of magnitude, but concentrated on far fewer hot items</td></tr>
+          <tr><td>Catalog storage (3&times; replicated)</td><td>~1.5 TB</td><td>&mdash;</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Three APIs anchor this design: <code>search</code> for browsing, <code>addToCart</code> for building up an order, and <code>placeOrder</code> for the correctness-critical checkout path.</p>
+
+        <h3>Search</h3>
+        <pre><code>search(query, user_location, filters, page_token)
+
+query          - free-text search string
+user_location  - shopper's delivery address / geo, used for serviceability filtering
+filters        - category, price range, brand, rating, etc.
+page_token     - opaque cursor for pagination
+
+Response 200:
+{
+  "results": [
+    { "item_id": "B0X1", "title": "...", "price": 24.99, "seller_id": "S告102",
+      "serviceable": true, "eta_days": 2 }
+  ],
+  "next_page_token": "..."
+}</code></pre>
+
+        <h3>Add to Cart</h3>
+        <pre><code>addToCart(user_id, item_id, qty)
+
+Validates: qty &lt;= current inventory count for item_id
+(an item is kept in the cart only while inventory &gt; 0 - see the
+"Cart, Wishlist" deep dive below)
+
+Response 200:
+{ "cart_id": "C889", "items": [ {"item_id": "B0X1", "qty": 1, "price": 24.99} ],
+  "subtotal": 24.99 }</code></pre>
+
+        <h3>Place Order</h3>
+        <pre><code>placeOrder(user_id, cart_id, payment_token)
+
+1. Locks the relevant items in the Order DB
+2. Calls Payment Service with payment_token
+3. On success: decrements Inventory DB, writes Order DB, deletes the Redis lock entry
+4. On failure: unlocks the Order DB
+(see "Low-Level Design" below for the full concurrency protocol)
+
+Response 200:
+{ "order_id": "O55231", "status": "PLACED" }</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Notice that <code>placeOrder</code> is the one API in this entire design that cannot be "mostly eventually consistent." Everything else &mdash; search ranking, recommendations, analytics &mdash; tolerates staleness, but a lost or duplicated lock here is a real financial bug, not a UX blemish.
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+        <p>The Order record and the Inventory record deliberately live in two very different kinds of databases, chosen for opposite reasons.</p>
+
+        <h3>Order Record</h3>
+        <table>
+          <tr><th colspan="2">Table: order (MySQL &mdash; relational, for ACID)</th></tr>
+          <tr><td>order_id (PK)</td><td>bigint</td></tr>
+          <tr><td>item_code (FK &rarr; inventory.item_id)</td><td>varchar(32)</td></tr>
+          <tr><td>quantity</td><td>int</td></tr>
+          <tr><td>price</td><td>decimal(10,2)</td></tr>
+          <tr><td>status</td><td>enum(LOCKED, PLACED, FAILED, CANCELLED, DELIVERED)</td></tr>
+        </table>
+        <p>The Order DB is relational (MySQL) rather than NoSQL specifically because the order-taking flow needs real ACID transactions and row-level locking to implement the lock &rarr; commit/rollback protocol described below &mdash; this is a correctness-first choice, not a performance one.</p>
+
+        <h3>Inventory Record</h3>
+        <table>
+          <tr><th colspan="2">Table: inventory (Cassandra &mdash; wide-column store)</th></tr>
+          <tr><td>item_id (PK)</td><td>varchar(32)</td></tr>
+          <tr><td>seller_id</td><td>varchar(32)</td></tr>
+          <tr><td>type / color / size / fit (seller-defined attributes)</td><td>map&lt;text, text&gt;</td></tr>
+          <tr><td>quantity</td><td>int</td></tr>
+        </table>
+        <p>The Inventory DB is deliberately a flexible, wide-column store (Cassandra) rather than a fixed relational schema, because different sellers describe items with completely different attribute sets &mdash; a clothing seller cares about size/color/fit, an electronics seller cares about wattage/voltage &mdash; and forcing one rigid relational schema across every seller category would mean either a sparse table full of nulls or constant schema migrations.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Every client request enters through a single API Gateway, which fans out to five core services: <strong>User Service</strong>, <strong>HomePage service</strong>, <strong>Search Service</strong>, <strong>Cart service</strong>, and <strong>Order service</strong> (which handles both placing an order and viewing past orders). Sellers reach the platform through a completely separate path: a dedicated <strong>Inbound Service</strong> &mdash; "a service for sellers to add their products, has various endpoints for various sellers" &mdash; publishes normalized listing/inventory events into a central <strong>Kafka</strong>. Kafka is also fed lightweight analytics events from the Search, Cart, and Order services (labeled "analytics :: what user is searching" for Search, and simply "analytics ::" for Cart and Order). From Kafka, events fan out to four downstream consumers: an <strong>Inventory Service</strong> (which consumes the Inbound Service's events and updates inventory), a <strong>Warehouse Service</strong> (warehouse state changes &mdash; item left, item reached, item delivered), a <strong>Logistics Service</strong>, and a <strong>Notification Service</strong>.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 540" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-amz-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-amz-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="90" y="15" width="150" height="40" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="165" y="40" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client</text>
+
+            <rect x="520" y="15" width="150" height="40" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="595" y="40" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Sellers</text>
+
+            <rect x="250" y="90" width="200" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="350" y="112" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">API Gateway</text>
+            <text x="350" y="128" text-anchor="middle" fill="#cbd8ef" font-size="9">routes to core shopper services</text>
+
+            <rect x="520" y="90" width="200" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="620" y="112" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Inbound Service</text>
+            <text x="620" y="128" text-anchor="middle" fill="#cbd8ef" font-size="8">endpoints per seller format</text>
+
+            <rect x="10" y="190" width="135" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="77" y="218" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">User Service</text>
+
+            <rect x="160" y="190" width="135" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="227" y="218" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">HomePage service</text>
+
+            <rect x="310" y="190" width="135" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="377" y="218" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Search Service</text>
+
+            <rect x="460" y="190" width="135" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="527" y="218" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Cart service</text>
+
+            <rect x="610" y="190" width="140" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="680" y="214" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Order service</text>
+            <text x="680" y="229" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">place order / view orders</text>
+
+            <rect x="290" y="330" width="180" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="380" y="352" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Kafka</text>
+            <text x="380" y="366" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">central event bus</text>
+
+            <rect x="10" y="440" width="175" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="97" y="466" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Inventory Service</text>
+            <text x="97" y="481" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">consumes inbound events</text>
+
+            <rect x="205" y="440" width="175" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="292" y="466" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Warehouse Service</text>
+            <text x="292" y="481" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">item left / reached / delivered</text>
+
+            <rect x="400" y="440" width="175" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="487" y="466" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Logistics Service</text>
+
+            <rect x="595" y="440" width="155" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="672" y="466" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Notification Service</text>
+
+            <line x1="165" y1="55" x2="330" y2="90" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-amz-1)"></line>
+            <line x1="595" y1="55" x2="620" y2="90" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-amz-1)"></line>
+
+            <line x1="330" y1="140" x2="90" y2="188" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-1)"></line>
+            <line x1="345" y1="140" x2="230" y2="188" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-1)"></line>
+            <line x1="365" y1="140" x2="377" y2="188" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-1)"></line>
+            <line x1="400" y1="140" x2="520" y2="188" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-1)"></line>
+            <line x1="420" y1="140" x2="670" y2="188" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-amz-1)"></line>
+
+            <line x1="600" y1="140" x2="460" y2="330" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-1)"></line>
+            <text x="590" y="245" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">publishes normalized listing/inventory events</text>
+
+            <line x1="377" y1="255" x2="365" y2="328" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-amz-1m)"></line>
+            <text x="300" y="300" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">analytics :: what user is searching</text>
+
+            <line x1="527" y1="255" x2="410" y2="328" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-amz-1m)"></line>
+            <text x="500" y="300" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">analytics ::</text>
+
+            <line x1="680" y1="255" x2="450" y2="328" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-amz-1m)"></line>
+            <text x="640" y="300" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">analytics ::</text>
+
+            <line x1="330" y1="380" x2="97" y2="438" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-1)"></line>
+            <line x1="360" y1="380" x2="292" y2="438" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-1)"></line>
+            <line x1="400" y1="380" x2="487" y2="438" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-1)"></line>
+            <line x1="430" y1="380" x2="672" y2="438" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-amz-1)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture, redrawn from the original whiteboard notes: the API Gateway fans out to User/HomePage/Search/Cart/Order services; a separate Inbound Service (for sellers) publishes into Kafka; Search/Cart/Order also emit analytics events into Kafka; Kafka fans out to Inventory, Warehouse, Logistics, and Notification services.</div>
+        </div>
+
+        <h3>Why Inbound Service Is Kept Separate From the Client-Facing Path</h3>
+        <p>Sellers are a fundamentally different traffic pattern from shoppers &mdash; bursty, batch-oriented, and capable of overwhelming inventory writes if a single seller submits a bad feed. Keeping Inbound Service as its own ingress path, rather than routing seller uploads through the same API Gateway/Order-service path shoppers use, means a slow or broken seller feed can be rate-limited and contained without ever touching shopper-facing latency.</p>
+
+        <h2 id="low-level-design-order-taking-flow-and-concurrency-control">Low-Level Design — Order-Taking Flow and Concurrency Control</h2>
+        <p>This is the crux of the whole design. The order-taking server sits behind a replicated pool behind the API Gateway, and calls out to a <strong>Payment Service</strong> and an <strong>Inventory Service</strong> to actually take an order. Active orders are written to a <strong>MySQL DB + Redis</strong> pair (MySQL for ACID correctness, Redis as a fast, TTL-based lock/lease mechanism), and a scheduled <strong>cron job / archiver</strong> migrates completed orders out of that hot store into <strong>Cassandra</strong>, a mostly-reads long-term history store. "View Orders" reads go straight to Cassandra rather than the hot MySQL+Redis path. The order-taking server also publishes analytics-and-notification events into Kafka, which fans out to Warehouse Service, Logistics Service, and Notification service with delivery-status updates.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 640" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-amz-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-amz-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="15" width="140" height="40" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="90" y="40" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client</text>
+
+            <rect x="290" y="95" width="200" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="390" y="124" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">API Gateway</text>
+
+            <rect x="270" y="185" width="240" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="390" y="210" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Order Taking Server</text>
+            <text x="390" y="226" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">replicated pool</text>
+
+            <rect x="20" y="285" width="170" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="105" y="310" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Payment Service</text>
+            <text x="105" y="325" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">external dependency</text>
+
+            <rect x="300" y="285" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="400" y="310" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">MySQL DB + Redis</text>
+            <text x="400" y="325" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">active orders &mdash; lock, rollback/refund</text>
+
+            <rect x="560" y="285" width="170" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="645" y="310" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Inventory Service</text>
+
+            <rect x="300" y="380" width="200" height="45" rx="6" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.3"></rect>
+            <text x="400" y="405" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Cron Job / Archiver</text>
+
+            <rect x="300" y="465" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="400" y="490" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Cassandra</text>
+            <text x="400" y="505" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">order history &mdash; mostly reads</text>
+
+            <rect x="20" y="465" width="170" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="105" y="488" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Kafka</text>
+            <text x="105" y="502" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">analytics + notification events</text>
+
+            <rect x="20" y="560" width="150" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="95" y="591" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Warehouse Service</text>
+
+            <rect x="190" y="560" width="150" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="265" y="591" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Logistics Service</text>
+
+            <rect x="360" y="560" width="170" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="445" y="584" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Notification Service</text>
+            <text x="445" y="599" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">delivery-status updates</text>
+
+            <line x1="90" y1="55" x2="360" y2="95" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-amz-2)"></line>
+            <line x1="390" y1="145" x2="390" y2="183" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-amz-2)"></line>
+
+            <line x1="320" y1="245" x2="120" y2="283" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-2)"></line>
+            <text x="220" y="270" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">1. lock items / start payment</text>
+
+            <line x1="390" y1="245" x2="395" y2="283" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-2)"></line>
+            <text x="470" y="260" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">3. write active order</text>
+
+            <line x1="470" y1="245" x2="620" y2="283" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-2)"></line>
+            <text x="590" y="270" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">2. decrement on success</text>
+
+            <line x1="400" y1="340" x2="400" y2="378" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-2)"></line>
+            <text x="500" y="365" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">4. archive completed orders</text>
+
+            <line x1="400" y1="425" x2="400" y2="463" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-2)"></line>
+
+            <line x1="520" y1="120" x2="520" y2="490" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-amz-2m)"></line>
+            <text x="600" y="160" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">"View Orders" reads go straight to Cassandra</text>
+
+            <line x1="300" y1="220" x2="105" y2="463" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-amz-2m)"></line>
+            <text x="180" y="430" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">analytics + notification events</text>
+
+            <line x1="105" y1="515" x2="95" y2="558" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-2)"></line>
+            <line x1="105" y1="515" x2="265" y2="558" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-2)"></line>
+            <line x1="105" y1="515" x2="445" y2="558" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-amz-2)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 2. Order-taking flow and concurrency control: the replicated Order Taking Server calls Payment Service and Inventory Service, writes active orders to MySQL + Redis, a cron/archiver migrates completed orders into Cassandra (which also serves "View Orders" reads directly), and the server publishes analytics/notification events to Kafka, which fans out to Warehouse, Logistics, and Notification services.</div>
+        </div>
+
+        <h3>The Concurrency Protocol, Step by Step</h3>
+        <p>This is the exact protocol that keeps the system from overselling an item or losing/double-charging money:</p>
+        <ol>
+          <li>When a user starts payment, the order-taking service <strong>locks the relevant items in the Order DB</strong> (and sets a Redis entry with a TTL representing that in-flight lock/lease).</li>
+          <li><strong>On payment success:</strong> the service updates both the Order DB (status &rarr; PLACED) and the Inventory DB (decrementing quantity), and <strong>deletes the corresponding Redis entry</strong>.</li>
+          <li><strong>On payment failure:</strong> the service <strong>unlocks the Order DB</strong> so the items become available to other shoppers again.</li>
+          <li><strong>If there is no response at all</strong> (the user closed the window / abandoned checkout mid-payment), the Redis entry's TTL expires and its <strong>key-expiry callback fires, cancelling the order</strong> and releasing the lock &mdash; without ever needing a poller.</li>
+          <li><strong>If a late payment-success arrives after that Redis expiry already fired</strong> (a genuinely slow payment callback), the system either <strong>refunds the money</strong> (since the order was already cancelled) <strong>or replaces/re-creates the order</strong> (if the item is still available and the business wants to honor the late success instead of refunding).</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Why Redis TTL, not a polling job</div>
+          A key-expiry callback means the system does not need a background poller scanning for abandoned checkouts &mdash; cancellation is driven by the absence of an event (a delete that never came), which is exactly what Redis's TTL/expiry-notification mechanism is built for. The trade-off is that this callback path is now correctness-critical: if it silently fails to fire, an item stays locked forever; if it fires too early, a slow-but-legitimate payment can race it (handled by step 5 above).
+        </div>
+
+        <h2 id="deep-dive-search-serviceability-and-the-inventory-availability-check">Deep Dive — Search, Serviceability, and the Inventory-Availability Check</h2>
+        <p>The Search Service sits behind an LB and is replicated for read scale. A search request first goes to a <strong>Serviceable Location</strong> component, which applies a set of dynamic rules: seller-level restrictions on which areas they will ship to, individual items that simply are not deliverable to a given location, and pre-computed shortest distances/ETAs from every warehouse to that location (falling back to a mapping-service integration for remote areas that do not have a clean precomputed answer). Only after a candidate item clears serviceability does the Serviceable Location component call the <strong>Inventory Service</strong> to confirm the item is actually still in stock.</p>
+        <p>Search results come from an <strong>Elastic Search</strong> index kept fresh by a dedicated <strong>Search Consumer</strong>, which listens to Kafka for items added by the Inbound Service or items that just finished (went out of stock) via the Inventory Service, and performs the corresponding index/ranking updates. Separately, the Search Service reads the user's saved delivery address from the <strong>User Service</strong>, and sends "what user is searching" analytics events into Kafka.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 410" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-amz-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-amz-3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="15" width="120" height="40" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="80" y="40" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">LB</text>
+
+            <rect x="270" y="15" width="200" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="38" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Search Service</text>
+            <text x="370" y="53" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">replicated pool</text>
+
+            <rect x="550" y="15" width="150" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="625" y="38" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">User Service</text>
+            <text x="625" y="53" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">saved delivery address</text>
+
+            <rect x="260" y="115" width="240" height="75" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="380" y="140" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Serviceable Location</text>
+            <text x="380" y="155" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">seller restrictions &middot; non-deliverable items</text>
+            <text x="380" y="168" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">precomputed warehouse ETAs</text>
+
+            <rect x="550" y="115" width="150" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="625" y="139" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Mapping Service</text>
+            <text x="625" y="153" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">remote-area fallback</text>
+
+            <rect x="260" y="235" width="240" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="380" y="260" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Inventory Service</text>
+            <text x="380" y="274" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">confirm availability</text>
+
+            <rect x="20" y="235" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="120" y="260" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Elastic Search Index</text>
+            <text x="120" y="274" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">kept fresh by Search Consumer</text>
+
+            <rect x="20" y="330" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="120" y="355" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Search Consumer</text>
+            <text x="120" y="369" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">listens to Kafka: item added/finished</text>
+
+            <rect x="270" y="330" width="180" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="360" y="352" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Kafka</text>
+            <text x="360" y="366" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">search analytics + item events</text>
+
+            <line x1="140" y1="35" x2="268" y2="35" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-amz-3)"></line>
+            <line x1="470" y1="40" x2="548" y2="40" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-amz-3m)"></line>
+            <text x="510" y="28" text-anchor="middle" fill="var(--color-text-muted)" font-size="7" font-style="italic">reads saved address</text>
+
+            <line x1="380" y1="65" x2="380" y2="113" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-3)"></line>
+            <line x1="500" y1="140" x2="548" y2="140" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-amz-3)"></line>
+            <line x1="380" y1="190" x2="380" y2="233" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-3)"></line>
+
+            <line x1="260" y1="260" x2="220" y2="260" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-3)"></line>
+            <text x="240" y="248" text-anchor="middle" fill="var(--color-text-muted)" font-size="7" font-style="italic">query</text>
+
+            <line x1="120" y1="290" x2="120" y2="328" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-3)"></line>
+            <line x1="220" y1="357" x2="268" y2="357" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-3)"></line>
+
+            <line x1="370" y1="65" x2="360" y2="328" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-amz-3m)"></line>
+            <text x="470" y="200" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">analytics :: what user is searching</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Search &amp; serviceability: an LB feeds a replicated Search Service, which calls Serviceable Location (seller restrictions, non-deliverable items, precomputed warehouse ETAs, mapping-service fallback for remote areas), which calls Inventory Service to confirm availability. A Search Consumer keeps the Elastic Search index fresh off Kafka; Search Service reads the shopper's saved address from User Service and emits search analytics to Kafka.</div>
+        </div>
+
+        <h3>Why Serviceability Is Checked Before Inventory, Not After</h3>
+        <p>Checking serviceability first means an item that cannot physically reach the buyer is filtered out before ever touching the Inventory Service &mdash; cheaper, and it also avoids showing a shopper an item they technically could buy but could never receive, which is a worse experience than not showing it at all.</p>
+
+        <h2 id="deep-dive-inbound-service-and-multi-seller-inventory-normalization">Deep Dive — Inbound Service and Multi-Seller Inventory Normalization</h2>
+        <p>Many sellers submit product feeds in wildly different formats &mdash; JSON, XML, CSV, and even ISO/legacy batch formats &mdash; and mostly via batch upload rather than a real-time API. The Inbound Service's job is to act as an <strong>adapter/normalizer</strong>: it accepts whatever format a given seller submits and converts it into one Amazon-standard schema before writing through to the Inventory Service. The Inventory Service itself is backed by a "db wrapper" fronting a MySQL cluster (for structured, transactional writes) plus Redis for hot reads, and it both consumes from and publishes to Kafka.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-amz-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="15" width="100" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="70" y="40" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">JSON</text>
+
+            <rect x="140" y="15" width="100" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="190" y="40" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">XML</text>
+
+            <rect x="260" y="15" width="100" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="310" y="40" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">CSV</text>
+
+            <rect x="380" y="15" width="160" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="460" y="40" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Legacy / ISO batch</text>
+
+            <rect x="170" y="110" width="300" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="320" y="135" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Inbound Service</text>
+            <text x="320" y="150" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">adapter / normalizer &rarr; Amazon-standard schema</text>
+
+            <rect x="170" y="225" width="300" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="320" y="250" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Inventory Service</text>
+            <text x="320" y="265" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">db wrapper</text>
+
+            <rect x="40" y="330" width="170" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="125" y="360" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">MySQL Cluster</text>
+
+            <rect x="390" y="330" width="170" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="475" y="360" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Redis (hot reads)</text>
+
+            <rect x="580" y="225" width="150" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="655" y="250" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Kafka</text>
+            <text x="655" y="265" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">consumes + publishes</text>
+
+            <line x1="70" y1="55" x2="230" y2="108" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-amz-4)"></line>
+            <line x1="190" y1="55" x2="280" y2="108" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-amz-4)"></line>
+            <line x1="310" y1="55" x2="340" y2="108" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-amz-4)"></line>
+            <line x1="460" y1="55" x2="400" y2="108" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-amz-4)"></line>
+
+            <line x1="320" y1="170" x2="320" y2="223" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-4)"></line>
+            <text x="440" y="200" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">write-through, normalized schema</text>
+
+            <line x1="260" y1="285" x2="150" y2="328" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-4)"></line>
+            <line x1="410" y1="285" x2="460" y2="328" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-4)"></line>
+            <line x1="470" y1="255" x2="578" y2="255" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-4)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 4. Sellers submit feeds in JSON, XML, CSV, or legacy/ISO batch formats (mostly batch upload). The Inbound Service normalizes every format into one Amazon-standard schema and writes through to the Inventory Service, which is backed by a db wrapper over a MySQL cluster plus Redis for hot reads, and both consumes and publishes Kafka events.</div>
+        </div>
+
+        <h3>Why Normalize at the Edge Instead of Downstream</h3>
+        <p>Doing format translation once, at the Inbound Service boundary, means every downstream consumer (Inventory Service, Search indexing, HomePage recommendations) only ever has to understand one schema. Pushing that translation downstream instead would mean re-implementing, and re-testing, seller-format parsing in every consumer that touches listing data.</p>
+
+        <h2 id="deep-dive-cart-wishlist-and-inventory-bound-availability">Deep Dive — Cart, Wishlist, and Inventory-Bound Availability</h2>
+        <p>The Cart Service writes to its own Cassandra cart database and triggers a "purchase flow" when the shopper checks out. A separate Wishlist Service writes to a <em>separate</em> Cassandra cluster entirely &mdash; and that separation is deliberate, not incidental.</p>
+        <h3>Why Cart and Wishlist Do Not Share a Cluster</h3>
+        <p>Wishlist data only ever grows: once added, an item tends to sit on a wishlist indefinitely. Cart data, by contrast, clears out after every purchase &mdash; it is a constantly-churning, bounded working set. Co-locating those two access patterns on one cluster would be a capacity-planning mistake: you would size the cluster for the much larger, ever-growing wishlist workload, while paying compaction/storage overhead for cart data that is supposed to be transient, and a traffic spike in one workload would compete for the same node resources as the other, unrelated workload.</p>
+        <p>One more rule threads through both: an item is allowed to remain in a cart only while its inventory count is greater than zero. If inventory hits zero while an item is sitting in a shopper's cart, it is evicted &mdash; a cart is a claim on availability, not a permanent record like a wishlist entry.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-amz-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-amz-5m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="15" width="160" height="40" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="350" y="40" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client</text>
+
+            <rect x="60" y="110" width="200" height="55" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="160" y="135" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Cart Service</text>
+            <text x="160" y="150" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">own Cassandra cart DB</text>
+
+            <rect x="460" y="110" width="200" height="55" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="560" y="135" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Wishlist Service</text>
+            <text x="560" y="150" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">separate Cassandra cluster</text>
+
+            <rect x="20" y="220" width="190" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="115" y="245" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Cart DB (Cassandra)</text>
+            <text x="115" y="259" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">clears after purchase</text>
+
+            <rect x="260" y="220" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="360" y="245" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Inventory Service</text>
+            <text x="360" y="259" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">qty &gt; 0 check</text>
+
+            <rect x="500" y="220" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="600" y="245" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Wishlist DB (Cassandra)</text>
+            <text x="600" y="259" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">grows only, never clears</text>
+
+            <rect x="60" y="320" width="200" height="50" rx="6" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.3"></rect>
+            <text x="160" y="349" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Purchase Flow</text>
+
+            <line x1="310" y1="55" x2="180" y2="108" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-5)"></line>
+            <line x1="390" y1="55" x2="540" y2="108" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-5)"></line>
+
+            <line x1="120" y1="165" x2="115" y2="218" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-5)"></line>
+            <line x1="220" y1="165" x2="330" y2="218" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-5)"></line>
+            <text x="290" y="195" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">check qty &gt; 0</text>
+
+            <line x1="560" y1="165" x2="590" y2="218" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-5)"></line>
+
+            <line x1="360" y1="220" x2="200" y2="167" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-amz-5m)"></line>
+            <text x="320" y="192" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">evict item if qty hits 0</text>
+
+            <line x1="160" y1="165" x2="160" y2="318" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-5)"></line>
+            <text x="205" y="290" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">checkout</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Cart Service writes to its own Cassandra cart DB and triggers the purchase flow at checkout; Wishlist Service writes to a separate Cassandra cluster, since wishlist data only ever grows while cart data clears out after every purchase. An item stays in the cart only while Inventory Service reports quantity greater than zero.</div>
+        </div>
+
+        <h2 id="deep-dive-homepage-recommendation-engine">Deep Dive — HomePage Recommendation Engine</h2>
+        <p>The HomePage service is backed by a Spark cluster running batch ML jobs against a Hadoop cluster to generate personalized recommendations, which are persisted to Cassandra for the HomePage service to read at request time. A Spark Streaming consumer reads live user-search and wishlist-add events directly off Kafka; that stream feeds fresh data back into Hadoop for the next batch run, and also generates live operational reports, like "what products people are buying right now," independent of the slower batch cycle.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 380" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-amz-6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="280" y="15" width="200" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="380" y="38" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">HomePage Service</text>
+            <text x="380" y="53" text-anchor="middle" fill="#cbd8ef" font-size="8">personalized recommendations</text>
+
+            <rect x="280" y="110" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="380" y="135" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Cassandra</text>
+            <text x="380" y="150" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">persisted recommendations</text>
+
+            <rect x="280" y="205" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="380" y="230" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Spark Cluster</text>
+            <text x="380" y="245" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">batch ML jobs</text>
+
+            <rect x="280" y="300" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="380" y="332" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Hadoop Cluster</text>
+
+            <rect x="40" y="205" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="140" y="237" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Spark Streaming Consumer</text>
+
+            <rect x="40" y="300" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="140" y="325" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Kafka</text>
+            <text x="140" y="339" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">search + wishlist-add events</text>
+
+            <rect x="540" y="205" width="160" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="620" y="228" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Live Operational Reports</text>
+            <text x="620" y="243" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">what people are buying right now</text>
+
+            <line x1="380" y1="110" x2="380" y2="65" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-6)"></line>
+            <text x="450" y="90" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">personalized recs</text>
+
+            <line x1="380" y1="205" x2="380" y2="165" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-6)"></line>
+            <text x="460" y="185" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">persist recommendations</text>
+
+            <line x1="380" y1="300" x2="380" y2="260" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-6)"></line>
+            <text x="460" y="280" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">batch ML job input</text>
+
+            <line x1="140" y1="300" x2="140" y2="260" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-amz-6)"></line>
+
+            <line x1="240" y1="240" x2="278" y2="300" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-6)"></line>
+            <text x="260" y="275" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">feed next batch run</text>
+
+            <line x1="240" y1="220" x2="538" y2="222" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-amz-6)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 6. A Spark batch-ML job reads from Hadoop and persists personalized recommendations to Cassandra for the HomePage Service to read; a Spark Streaming Consumer reads live search/wishlist events off Kafka, feeding both the next Hadoop batch run and a live "trending now" operational report.</div>
+        </div>
+
+        <h3>Batch vs. Streaming — Two Different Jobs, One Kafka Source</h3>
+        <p>The batch path optimizes for recommendation quality (it can afford to look at a large historical window and run an expensive model); the streaming path optimizes for freshness (a wishlist-add or a burst of searches for one product should show up in "trending now" within seconds, not the next batch cycle). Reading both off the same Kafka topics, rather than maintaining two separate event pipelines, keeps the two paths from drifting out of sync with each other.</p>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <ul>
+          <li><strong>Inventory</strong> is sharded by item/seller. Cassandra's wide-column, schema-flexible model is exactly what makes this practical &mdash; each seller category can carry its own attribute set without forcing a single rigid partitioning scheme tied to fixed columns.</li>
+          <li><strong>Order DB</strong> is partitioned by recency rather than by a hash of order_id: hot, active orders live in MySQL + Redis (small working set, needs ACID + fast lock/unlock), while completed orders are archived into Cassandra for cheap, read-mostly, long-term storage. This keeps the expensive, correctness-critical store holding only in-flight orders, not the platform's entire order history.</li>
+        </ul>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li>The <strong>MySQL cluster</strong> backing the transactional order path runs with replicas, so a primary failure does not take down the ability to place or look up an active order.</li>
+          <li><strong>Cassandra's</strong> natural multi-replica model covers inventory, cart, wishlist, and archived order history &mdash; all four are read-heavy, tolerant of eventual consistency, and benefit from Cassandra's built-in replication rather than needing a bespoke failover scheme.</li>
+          <li><strong>Redis</strong> is used purely as a fast, TTL-based safety net for in-flight order state (the lock/lease mechanism described in the LLD section) &mdash; it is never the system of record. If Redis itself is lost, the worst case is a set of orders that miss their expiry-callback cancellation and need manual reconciliation against the Order DB, not a loss of the underlying financial truth.</li>
+        </ul>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <h3>The Payment-Lock / Expiry-Callback Protocol (Restated)</h3>
+        <p>This is the single most important piece of feature-specific logic in the entire design:</p>
+        <ol>
+          <li>Start payment &rarr; lock items in the Order DB, set a Redis lock entry with a TTL.</li>
+          <li>Payment succeeds &rarr; update Order DB (PLACED) + Inventory DB (decrement), delete the Redis entry.</li>
+          <li>Payment fails &rarr; unlock the Order DB.</li>
+          <li>No response at all &rarr; Redis TTL expires, its key-expiry callback fires and cancels the order.</li>
+          <li>A late payment-success arrives after that expiry already fired &rarr; refund the money, or replace/re-create the order.</li>
+        </ol>
+        <h3>ETA Pre-Computation via Shortest-Distance-From-Every-Warehouse</h3>
+        <p>The other notable piece of feature-specific optimization lives in the Serviceable Location component: rather than computing a live routing query on every single search request, the system pre-computes the shortest distance/ETA from every warehouse to essentially every deliverable location ahead of time, and only falls back to a live mapping-service call for remote areas that fall outside the precomputed set. This trades a large but boundedly-refreshed batch computation for near-zero added latency on the hot search path.</p>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Per-seller scoping:</strong> every write to the Inventory Service is scoped to the authenticated seller's own seller_id &mdash; one seller can never see or modify another seller's inventory, listings, or pricing.</li>
+          <li><strong>Payment-token handling:</strong> the order-taking server never stores the raw payment instrument &mdash; it passes a payment_token through to the Payment Service and stores only the resulting transaction/order state, keeping payment-card data out of the order-taking server's own storage entirely.</li>
+          <li><strong>Rate limiting on the Inbound Service:</strong> per-seller throttling on batch submissions prevents a single seller's bad or oversized batch job from overwhelming inventory writes for every other seller sharing the same pipeline.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>An LB sits directly in front of the Search Service, Cart service, and Order service pools, distributing read/write traffic across replicated instances of each. The API Gateway itself is the single front door for all client traffic: it handles authentication, adapts and consolidates responses from multiple backend services into a single composite response (the home page, for instance, needs data from HomePage service, User Service, and effectively Search/Cart state all at once), and serves static content off a CDN so it never even reaches the application tier.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Serviceability checks are inherently regional/warehouse-aware &mdash; each region's Serviceable Location component only needs to reason about the warehouses and delivery zones relevant to that region.</li>
+          <li>Elasticsearch and Cassandra replicas are kept region-local, so search and browse latency stays low without every read crossing a region boundary.</li>
+          <li>A global, eventually-consistent view aggregates cross-region inventory and order data for reporting/analytics purposes &mdash; there is no requirement that a shopper in one region see instantly-consistent inventory counts for a warehouse on the other side of the world.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <p>The analytics events threaded through Search, Cart, Order, and Inbound Service in the diagrams above (the "analytics ::" arrows into Kafka) feed dashboards that track:</p>
+        <ul>
+          <li><strong>Conversion funnel</strong> &mdash; search &rarr; view &rarr; cart &rarr; order, and where shoppers drop off at each stage.</li>
+          <li><strong>Cart-abandonment rate</strong> &mdash; how often items sit in a cart without ever reaching placeOrder.</li>
+          <li><strong>Inventory-turnover</strong> &mdash; how quickly a given item's stock depletes, which also feeds back into flash-sale capacity planning.</li>
+          <li><strong>Order-fulfillment SLA</strong> &mdash; time from order placed to delivered, sourced from the Warehouse/Logistics/Notification event stream.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Why it matters / Mitigation</th></tr>
+          <tr><td>Redis-expiry-driven order cancellation</td><td>Subtle, correctness-critical: a bug here either loses real orders (cancels one that should have gone through) or double-ships them (fails to cancel one it should have) &mdash; it needs to be tested as carefully as the payment path itself</td></tr>
+          <tr><td>Flash-sale traffic on a small number of hot items/inventory rows</td><td>The single hardest scaling problem in this design &mdash; a 5&ndash;10&times; aggregate traffic increase concentrates almost entirely on a handful of SKUs' inventory rows, creating extreme per-row write contention that no amount of horizontal service scaling alone fixes</td></tr>
+          <tr><td>Inbound Service overload from a bad seller batch</td><td>Per-seller rate limiting contains the blast radius to one seller's writes</td></tr>
+          <tr><td>Kafka backlog</td><td>Analytics/notification/warehouse consumers fall behind, but this never blocks order placement or search, since all of it is fully asynchronous</td></tr>
+          <tr><td>Cross-cluster capacity mistakes (e.g. cart + wishlist co-located)</td><td>Size clusters to their actual access pattern &mdash; growing-only vs. churn-and-clear &mdash; rather than sharing one cluster across mismatched workloads</td></tr>
+        </table>
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor consistency on the order-taking / payment-lock path &mdash; the system must never hand out the same inventory unit to two different orders, even at the cost of a brief lock/retry under contention. Favor availability everywhere else &mdash; search, browse, recommendations, and the home page should all stay up and responsive even when a downstream dependency, like the recommendation pipeline, is degraded or stale.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Order DB</td><td>MySQL (ACID, row-level locking) for active orders</td></tr>
+          <tr><td>Order history</td><td>Cassandra, archived via a cron/archiver from MySQL + Redis</td></tr>
+          <tr><td>Inventory DB</td><td>Cassandra (wide-column, flexible per-seller schema)</td></tr>
+          <tr><td>Concurrency control at checkout</td><td>Order DB item lock + Redis TTL lease with a key-expiry cancellation callback</td></tr>
+          <tr><td>Search index</td><td>Elastic Search, kept fresh by a Kafka-driven Search Consumer</td></tr>
+          <tr><td>Serviceability</td><td>Dynamic rules (seller restrictions, non-deliverable items) + precomputed warehouse ETAs, mapping-service fallback for remote areas</td></tr>
+          <tr><td>Cart vs. Wishlist storage</td><td>Two separate Cassandra clusters (churn-and-clear vs. grow-only)</td></tr>
+          <tr><td>Recommendations</td><td>Spark batch ML over Hadoop &rarr; Cassandra, plus a Spark Streaming path for live "trending now" reports</td></tr>
+          <tr><td>Seller ingestion</td><td>Inbound Service &mdash; adapter/normalizer for JSON/XML/CSV/legacy formats &rarr; one Amazon-standard schema</td></tr>
+          <tr><td>Consistency model</td><td>Strict consistency for inventory/payment; eventual consistency for search, recommendations, analytics</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Beyond the core design, interviewers love to pressure-test one component at a time. These are organized by theme &mdash; rehearse them, or expect a real interview to pick 3&ndash;5 of these as "and then what?" follow-ups.</p>
+
+        <h3>Scaling and Performance</h3>
+        <div class="qa-item">
+          <div class="qa-q">A flash sale drives 10&times; normal traffic onto a handful of doorbuster SKUs &mdash; walk through what happens.</div>
+          <div class="qa-a">Search/browse traffic scales out horizontally across the Search Service pool and Elasticsearch replicas without much trouble. The real pressure lands on a tiny number of Inventory Service rows for the doorbuster items themselves &mdash; that is per-row contention, not an aggregate-QPS problem, and needs a different mitigation (e.g. a short-lived in-memory reservation counter in front of the row, or pre-splitting a hot item's stock count across shards) than simply adding more service instances.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you keep search latency low even during a flash sale?</div>
+          <div class="qa-a">Elasticsearch is scaled and replicated independently of the write path; the Search Consumer keeps the index warm off Kafka rather than querying live inventory on every request, and the Serviceable Location component's precomputed warehouse ETAs avoid a live routing call on the hot path except for the rare remote-area fallback.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">The recommendation pipeline (Spark/Hadoop) falls behind by six hours &mdash; what is the customer-visible impact?</div>
+          <div class="qa-a">Recommendations are simply as fresh as the last completed batch, which is an acceptable, eventually-consistent degradation, not an outage &mdash; the home page keeps serving from the last successfully-persisted Cassandra snapshot. This is exactly why the design deliberately keeps recommendations off the strict-consistency path.</div>
+        </div>
+
+        <h3>Correctness and Concurrency</h3>
+        <div class="qa-item">
+          <div class="qa-q">Two shoppers try to buy the last unit of an item at the same moment &mdash; walk through exactly what stops both from succeeding.</div>
+          <div class="qa-a">Whichever order-taking request locks the item in the Order DB first proceeds to payment; the second request either finds the item already locked and is told it is unavailable/must retry, or, if inventory truly has only one unit, the Inventory DB decrement itself is the final backstop that prevents a second successful payment from also decrementing past zero.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A user starts checkout, payment is processing, and they close the browser tab &mdash; what happens to the locked item?</div>
+          <div class="qa-a">Nothing cancels it immediately; the Redis lock entry's TTL eventually expires, and its key-expiry callback fires, cancelling the order and releasing the Order DB lock &mdash; no polling job is needed.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">The payment provider's success callback arrives 30 seconds after the Redis key already expired and the order was cancelled &mdash; what now?</div>
+          <div class="qa-a">The system reconciles the late success against an already-cancelled order: either refund the payment, since the order no longer exists or the item may have already been resold, or, if the item is still available, replace/re-create the order to honor the late success instead of refunding. Which path to take is itself a product decision worth stating explicitly in the interview.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why use a relational MySQL store for the Order DB instead of the same Cassandra used for Inventory?</div>
+          <div class="qa-a">The order-taking flow needs real ACID transactions and row-level locking to implement lock &rarr; commit/rollback correctly under concurrent checkout attempts &mdash; that is squarely relational-database territory, whereas Inventory's variable, per-seller schema and pure key-based access pattern is squarely Cassandra's.</div>
+        </div>
+
+        <h3>Data Model and Storage</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why does Inventory use Cassandra's wide-column model instead of a fixed relational schema?</div>
+          <div class="qa-a">Different sellers describe products with completely different attribute sets (size/color/fit for apparel vs. wattage/voltage for electronics); a fixed relational schema would force either a sparse, null-heavy table or constant per-category migrations, while Cassandra's flexible columns let each seller's item carry only the attributes relevant to it.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why archive completed orders into a separate Cassandra store instead of just leaving everything in MySQL?</div>
+          <div class="qa-a">MySQL + Redis is sized and tuned for the small, latency-sensitive, lock-heavy working set of active orders; the platform's entire multi-year order history is a much larger, read-mostly, rarely-updated dataset that is a poor fit for the same store &mdash; archiving keeps the correctness-critical store small and fast.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why do Cart and Wishlist live on two separate Cassandra clusters instead of one shared cluster?</div>
+          <div class="qa-a">Wishlist data only grows, while cart data constantly churns and clears after every purchase &mdash; sizing and compaction strategy for those two access patterns are fundamentally different, and sharing a cluster means over- or under-provisioning one workload to accommodate the other.</div>
+        </div>
+
+        <h3>Product, Search, and API Design</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why check serviceability before checking inventory availability during search?</div>
+          <div class="qa-a">Filtering out items that cannot physically reach the buyer's address first is both cheaper (it avoids an unnecessary Inventory Service call) and a better shopper experience &mdash; there is no point showing an item the shopper could add to cart but could never actually receive.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support a seller wanting to restrict shipping to only certain regions?</div>
+          <div class="qa-a">That is exactly the kind of dynamic rule the Serviceable Location component is built to hold &mdash; seller-level shipping restrictions are evaluated alongside item-level non-deliverable flags and warehouse-distance rules, all before the request ever reaches Inventory Service.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does the search index stay in sync when an item goes out of stock?</div>
+          <div class="qa-a">The Inventory Service publishes an "item finished" event to Kafka; the Search Consumer picks it up and updates/re-ranks the Elastic Search index &mdash; the same mechanism used when the Inbound Service adds a brand-new item, just a different event type.</div>
+        </div>
+
+        <h3>Security, Operations, and Extensions</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you stop Seller A from tampering with Seller B's inventory?</div>
+          <div class="qa-a">Every write through the Inbound Service and Inventory Service is scoped to the authenticated seller's own seller_id; there is no code path that lets one seller's credentials touch another seller's rows.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A single seller uploads a malformed, oversized batch feed &mdash; what stops it from taking down inventory writes for everyone else?</div>
+          <div class="qa-a">Per-seller rate limiting on the Inbound Service contains the blast radius to that one seller's own submissions, so a bad batch job degrades only that seller's own listings, not the shared Inventory Service write path for every other seller.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support same-day delivery in select metro areas?</div>
+          <div class="qa-a">The Serviceable Location component's precomputed warehouse-ETA data is exactly where this logic would live &mdash; add a same-day-eligible flag keyed on (item, warehouse, destination) combinations that fall within a tight ETA threshold, surfaced back through search/serviceability without touching the order-taking or inventory core at all.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is the very first thing you would check if shoppers reported items "stuck" in their cart long after going out of stock?</div>
+          <div class="qa-a">Whether the Cart Service's inventory-bound eviction check (qty &gt; 0) is actually wired up to real-time Inventory Service state or to a stale cached copy &mdash; a lagging cache here is the most likely root cause of that specific symptom.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The order-taking flow's lock &rarr; payment &rarr; commit/rollback &rarr; Redis-expiry-cancellation protocol is the single piece of this design worth knowing cold &mdash; it is what stands between "correct marketplace" and "oversold inventory or lost money." Keep the read-heavy surfaces (home page, search, recommendations) architecturally separate from that correctness-critical write path: they tolerate staleness and scale by replication/caching, while the order-taking path trades a little latency for guaranteed correctness under contention. Store data according to its actual access pattern, not out of habit &mdash; relational MySQL where you need ACID transactions and locking (active orders), flexible wide-column Cassandra where schemas vary per seller and access is a pure key lookup (inventory, cart, wishlist, order history), each sized to its own growth/churn profile rather than sharing a cluster designed for a different workload. And never forget that in a marketplace, "the platform" is really juggling two customers at once &mdash; the shopper and the seller &mdash; and a good design keeps their traffic, and their data, cleanly separated.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>General e-commerce / marketplace system design background: common patterns for catalog search, cart/checkout, and inventory management used across large online marketplaces.</li>
+          <li>This design is grounded in original whiteboard architecture notes for a large multi-seller marketplace rather than a single published reference &mdash; the service names, event flows, and concurrency protocol (Order DB lock + Redis TTL expiry callback) reproduced here follow those notes directly.</li>
+          <li>Community write-ups on inventory-locking and overselling-prevention patterns for high-concurrency checkout flows.</li>
+          <li>Community write-ups on Lambda-architecture-style batch (Hadoop/Spark) plus streaming (Spark Streaming/Kafka) recommendation pipelines.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="nearby-friends.html"><span class="dir">Previous</span>Nearby Friends (Tinder)</a>
+          <a class="next" href="google-calendar.html"><span class="dir">Next</span>Google Calendar</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

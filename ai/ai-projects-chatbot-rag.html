@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Projects: Chatbot &amp; RAG | AI | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">AI</a><span class="sep">/</span><span class="current">AI Projects: Chatbot &amp; RAG</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to AI overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#project-1-build-a-custom-chatbot">Project 1 &mdash; Build a Custom Chatbot</a></li>
+        <li><a href="#project-2-build-a-simple-rag-pipeline">Project 2 &mdash; Build a Simple RAG Pipeline</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">AI</span>
+          <h1>AI Projects: Chatbot &amp; RAG</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Reading about LLMs, RAG, and Skills builds vocabulary for an interview, but nothing cements the concepts like building two small, real, working things. This page walks through two beginner-friendly projects end to end: a custom command-line chatbot with real conversation memory, and a simple Retrieval-Augmented Generation pipeline over your own text documents — both using the Anthropic API directly, with no framework required. Each project is intentionally kept small enough to build in an afternoon, with notes on how to grow it toward a production-grade version afterward.</p>
+
+        <div class="callout">
+          <div class="callout-title">Before you start</div>
+          Both projects need an Anthropic API key (create one at <a href="https://platform.claude.com" target="_blank" rel="noopener">platform.claude.com</a>) and the official Python SDK: <code>pip install anthropic</code>. Never hard-code an API key into source you might commit or share — load it from an environment variable, as shown below. Model names shown (e.g. <code>claude-sonnet-5</code>) are illustrative; always check current model names in the Claude API docs, since the available model lineup changes over time.
+        </div>
+
+        <h2 id="project-1-build-a-custom-chatbot">Project 1 &mdash; Build a Custom Chatbot</h2>
+        <p>The goal is a small command-line chatbot that remembers the conversation so far, follows a persona you define, and streams its reply token-by-token instead of making you wait for the whole answer.</p>
+
+        <h3>Step 1 — The simplest possible call</h3>
+        <p>Every Claude API call is a request containing a model name, a token budget, and a list of messages. Start here to confirm your setup works before adding anything else:</p>
+        <pre><code>import os
+import anthropic
+
+client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+response = client.messages.create(
+    model="claude-sonnet-5",
+    max_tokens=512,
+    messages=[
+        {"role": "user", "content": "Say hello in one short sentence."}
+    ],
+)
+
+print(response.content[0].text)
+</code></pre>
+
+        <h3>Step 2 — Give it a persona with a system prompt</h3>
+        <p>The <code>system</code> parameter sets behavior that applies across the whole conversation — tone, role, constraints — separately from the back-and-forth <code>messages</code> list:</p>
+        <pre><code>SYSTEM_PROMPT = (
+    "You are Ada, a friendly and concise coding mentor. "
+    "Explain things simply, use short examples, and never ramble."
+)
+
+response = client.messages.create(
+    model="claude-sonnet-5",
+    max_tokens=512,
+    system=SYSTEM_PROMPT,
+    messages=[
+        {"role": "user", "content": "What's a closure in JavaScript?"}
+    ],
+)
+print(response.content[0].text)
+</code></pre>
+
+        <h3>Step 3 — Add real conversation memory</h3>
+        <p>The API itself is stateless — it has no memory of previous calls. A chatbot "remembers" only because <em>you</em> resend the full message history (including the model's own previous replies) on every call. This is the single most important idea in building any conversational app on top of the API:</p>
+        <pre><code>history = []
+
+def ask(user_text: str) -> str:
+    history.append({"role": "user", "content": user_text})
+    response = client.messages.create(
+        model="claude-sonnet-5",
+        max_tokens=512,
+        system=SYSTEM_PROMPT,
+        messages=history,
+    )
+    reply = response.content[0].text
+    history.append({"role": "assistant", "content": reply})
+    return reply
+
+print(ask("My name is Priya."))
+print(ask("What's my name?"))   # Works, because history[] carries it forward
+</code></pre>
+
+        <h3>Step 4 — Stream the response</h3>
+        <p>For a chat-like feel, stream tokens as they're generated instead of blocking until the full reply is ready:</p>
+        <pre><code>def ask_streaming(user_text: str) -> str:
+    history.append({"role": "user", "content": user_text})
+    full_reply = ""
+    with client.messages.stream(
+        model="claude-sonnet-5",
+        max_tokens=512,
+        system=SYSTEM_PROMPT,
+        messages=history,
+    ) as stream:
+        for text in stream.text_stream:
+            print(text, end="", flush=True)
+            full_reply += text
+    print()
+    history.append({"role": "assistant", "content": full_reply})
+    return full_reply
+</code></pre>
+
+        <h3>Step 5 — Put it together as a CLI loop</h3>
+        <pre><code>import os
+import anthropic
+
+client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+SYSTEM_PROMPT = (
+    "You are Ada, a friendly and concise coding mentor. "
+    "Explain things simply, use short examples, and never ramble."
+)
+history = []
+
+def ask_streaming(user_text: str) -> str:
+    history.append({"role": "user", "content": user_text})
+    full_reply = ""
+    with client.messages.stream(
+        model="claude-sonnet-5",
+        max_tokens=512,
+        system=SYSTEM_PROMPT,
+        messages=history,
+    ) as stream:
+        for text in stream.text_stream:
+            print(text, end="", flush=True)
+            full_reply += text
+    print()
+    history.append({"role": "assistant", "content": full_reply})
+    return full_reply
+
+if __name__ == "__main__":
+    print("Ada is ready. Type 'quit' to exit.\n")
+    while True:
+        user_text = input("You: ")
+        if user_text.strip().lower() == "quit":
+            break
+        print("Ada: ", end="")
+        ask_streaming(user_text)
+</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Where to take it next</div>
+          Trim <code>history</code> once it approaches the model's context window (drop or summarize the oldest turns), persist it to a file or database so the chatbot survives a restart, and add tool use if you want Ada to actually <em>do</em> things (look up data, call an API) rather than just talk — that's the same tool-calling mechanism that powers the AI coding agents and MCP integrations covered elsewhere in this section.
+        </div>
+
+        <h2 id="project-2-build-a-simple-rag-pipeline">Project 2 &mdash; Build a Simple RAG Pipeline</h2>
+        <p>The goal is a small script that answers questions about a folder of your own text files, grounded in their actual content — the same core idea covered conceptually on the <a href="ai-system-design.html">AI System Design</a> page, built here as real, runnable code with no vector database required.</p>
+
+        <h3>Step 1 — Chunk your documents</h3>
+        <p>Split each document into overlapping passages so no single chunk gets too large to embed meaningfully, and so a fact near a chunk boundary isn't lost entirely:</p>
+        <pre><code>def chunk_text(text: str, chunk_size: int = 800, overlap: int = 100) -> list[str]:
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start += chunk_size - overlap
+    return chunks
+
+# Load and chunk every .txt file in a folder
+import glob
+
+all_chunks = []          # list of {"text": ..., "source": ...}
+for path in glob.glob("docs/*.txt"):
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    for chunk in chunk_text(text):
+        all_chunks.append({"text": chunk, "source": path})
+</code></pre>
+
+        <h3>Step 2 — Embed every chunk</h3>
+        <p>Anthropic's own RAG cookbook recommends Voyage AI's embedding models for retrieval quality. Install with <code>pip install voyageai</code>:</p>
+        <pre><code>import voyageai
+
+vo = voyageai.Client(api_key=os.environ["VOYAGE_API_KEY"])
+
+texts = [c["text"] for c in all_chunks]
+embeddings = vo.embed(texts, model="voyage-3", input_type="document").embeddings
+
+for chunk, embedding in zip(all_chunks, embeddings):
+    chunk["embedding"] = embedding
+</code></pre>
+
+        <h3>Step 3 — Retrieve by cosine similarity</h3>
+        <p>No vector database is needed at small scale — a plain in-memory cosine-similarity scan over a few hundred or few thousand chunks is fast enough, and it makes the mechanics fully visible:</p>
+        <pre><code>import numpy as np
+
+def cosine_similarity(a, b) -> float:
+    a, b = np.array(a), np.array(b)
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+def retrieve(query: str, k: int = 4) -> list[dict]:
+    query_embedding = vo.embed([query], model="voyage-3", input_type="query").embeddings[0]
+    scored = [
+        (cosine_similarity(query_embedding, c["embedding"]), c)
+        for c in all_chunks
+    ]
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    return [chunk for _, chunk in scored[:k]]
+</code></pre>
+
+        <h3>Step 4 — Generate a grounded answer</h3>
+        <p>Feed the retrieved chunks into the prompt as context, and explicitly instruct the model to answer only from that context — this is the single highest-leverage line for reducing hallucination in a RAG system:</p>
+        <pre><code>RAG_SYSTEM_PROMPT = (
+    "Answer the user's question using ONLY the context provided below. "
+    "If the answer isn't in the context, say you don't know — "
+    "do not use outside knowledge."
+)
+
+def answer(question: str) -> str:
+    top_chunks = retrieve(question)
+    context = "\n\n---\n\n".join(
+        f"[Source: {c['source']}]\n{c['text']}" for c in top_chunks
+    )
+    response = client.messages.create(
+        model="claude-sonnet-5",
+        max_tokens=512,
+        system=RAG_SYSTEM_PROMPT,
+        messages=[
+            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"}
+        ],
+    )
+    return response.content[0].text
+
+print(answer("What is our policy on refunds after 30 days?"))
+</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Where to take it next</div>
+          Swap the in-memory scan for a real vector database (Chroma, Pinecone, or similar) once your corpus grows past a few thousand chunks, add a re-ranking pass over the top-k candidates for better precision, try contextual embeddings (prepending a short auto-generated summary of the source document to each chunk before embedding it) to improve retrieval on chunks that lose context in isolation, and add citations in the final answer so users can verify which source backed each claim. See the <a href="ai-system-design.html">AI System Design</a> page for the fuller production-grade version of this pipeline, and its <a href="ai-system-design.html#agentic-rag">Agentic RAG</a> section for how to let the model decide when to re-query instead of retrieving only once.
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">Your chatbot's <code>history</code> list keeps growing every turn. What breaks eventually, and how would you fix it?</div>
+          <div class="qa-a">Eventually the accumulated messages exceed the model's context window, and the request fails or the model loses access to the earliest turns. Fixes include trimming to the most recent N turns, summarizing older turns into a compact recap message, or persisting the full history externally while sending only a windowed/summarized version to the API on each call.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why embed the query with <code>input_type="query"</code> but documents with <code>input_type="document"</code>?</div>
+          <div class="qa-a">Retrieval-optimized embedding models like Voyage's are trained asymmetrically — queries and documents have systematically different structure (a short question vs. a long passage), so the model applies a different internal transformation depending on which role text is playing. Using the matching input type for each side of the comparison materially improves retrieval quality versus embedding both the same way.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">This RAG pipeline scans every chunk's embedding in a Python loop. Why is that acceptable here, and when would it stop being acceptable?</div>
+          <div class="qa-a">A linear cosine-similarity scan is O(n) per query, which is fast enough at a few hundred to low thousands of chunks — the cost is dwarfed by the LLM generation call itself. It stops being acceptable once the corpus grows large enough that the scan itself adds noticeable latency (tens of thousands of chunks and up) or needs to run at high query volume, at which point an approximate nearest neighbor index (HNSW, IVF) in a real vector database becomes worth the added infrastructure.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">The RAG system prompt says "answer only from the provided context." Is that enough to fully prevent hallucination?</div>
+          <div class="qa-a">It substantially reduces hallucination but doesn't fully eliminate it — the model can still misread or over-extrapolate from the retrieved context, and if retrieval itself fails to surface the relevant chunk, the instruction only guarantees the model says "I don't know" rather than guaranteeing it always finds the right answer. Retrieval quality (chunking, embedding choice, re-ranking) is just as important to hallucination reduction as the prompt-level instruction.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you evaluate whether this RAG pipeline actually works well before shipping it?</div>
+          <div class="qa-a">Build a small labeled set of realistic questions with known correct source chunks, and measure retrieval quality (recall@k — does the right chunk show up in the top k?) separately from generation quality (does the final answer correctly and faithfully use what was retrieved?). Spot-check a sample of real answers by hand before fully trusting an automated or LLM-as-judge score, since early-stage evaluation sets are usually too small to fully trust in isolation.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          A chatbot's "memory" is nothing more than you resending the full message history on every stateless API call — there's no hidden server-side memory. A minimal RAG pipeline is just four steps in code: chunk, embed, retrieve by cosine similarity, and generate with the retrieved context injected into the prompt and an explicit "answer only from context" instruction. Both projects are intentionally small enough to build without a framework, which is exactly what makes the underlying mechanics — and their failure modes — visible.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="claude-plugins.html"><span class="dir">Previous</span>Claude Plugins</a>
+          <a class="next" href="index.html"><span class="dir">Next</span>Topic Overview</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

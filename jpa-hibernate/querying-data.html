@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Retrieval | JPA / Hibernate | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">JPA / Hibernate</a><span class="sep">/</span><span class="current">Data Retrieval</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to JPA / Hibernate overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#jpql">JPQL (Java Persistence Query Language)</a></li>
+        <li><a href="#criteria-api">The Criteria API</a></li>
+        <li><a href="#native-sql">Native SQL</a></li>
+        <li><a href="#comparison-table">Comparison Table</a></li>
+        <li><a href="#when-to-reach-for-each">When to Reach for Each</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">JPA / HIBERNATE</span>
+          <h1>Data Retrieval</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>JPA gives you three fundamentally different ways to pull data out of the database: JPQL, the Criteria API, and Native SQL. Each trades off type safety, portability, and dynamism differently &mdash; JPQL is the readable, portable default; the Criteria API sacrifices readability for compile-time-checked, programmatically composable queries; Native SQL sacrifices portability for full access to whatever your database engine can do. Knowing which one to reach for &mdash; and being able to justify the choice &mdash; is a very common interview topic, because it signals whether you understand JPA as an abstraction rather than just a set of annotations.</p>
+
+        <h2 id="jpql">JPQL (Java Persistence Query Language)</h2>
+        <p>JPQL is an object-oriented query language: you write queries against entities and their fields (<code>Post</code>, <code>p.status</code>, <code>p.tags</code>), not against tables and columns (<code>post</code>, <code>status</code>, <code>post_tag</code>). Hibernate translates the JPQL string into SQL for whatever dialect is configured, which is what makes JPQL portable across database vendors. It reads almost like SQL, so most teams reach for it by default for the vast majority of queries.</p>
+        <p>Here is the running example &mdash; all PUBLISHED posts tagged with a given tag name, newest first &mdash; written in JPQL:</p>
+        <pre><code>TypedQuery&lt;Post&gt; query = entityManager.createQuery(
+    "select distinct p from Post p join p.tags t " +
+    "where p.status = :status and t.name = :tagName " +
+    "order by p.publishedAt desc", Post.class);
+query.setParameter("status", PostStatus.PUBLISHED);
+query.setParameter("tagName", tagName);
+List&lt;Post&gt; posts = query.getResultList();</code></pre>
+        <p>Named parameters (<code>:status</code>, <code>:tagName</code>) are preferred over positional parameters because they are self-documenting and resilient to reordering. When the same query is used repeatedly across a codebase, it is common to hoist it into a <code>@NamedQuery</code> on the entity so it is parsed once at startup and reused by name:</p>
+        <pre><code>@Entity
+@NamedQuery(
+    name = "Post.findPublishedByTag",
+    query = "select distinct p from Post p join p.tags t " +
+            "where p.status = :status and t.name = :tagName " +
+            "order by p.publishedAt desc"
+)
+public class Post {
+    // fields, getters, setters
+}
+
+// usage
+TypedQuery&lt;Post&gt; query = entityManager.createNamedQuery("Post.findPublishedByTag", Post.class);</code></pre>
+        <p>The key thing to remember for interviews: a JPQL query is just a <code>String</code>. It is validated against the entity model the first time it is parsed &mdash; typically at application startup for a <code>@NamedQuery</code>, or the first time an ad-hoc <code>createQuery</code> call executes &mdash; but it is never checked by the Java compiler. A typo like <code>p.staus</code> or a renamed field that a JPQL string forgets to follow will compile cleanly and only blow up at runtime with a <code>QuerySyntaxException</code> or similar. This is the single biggest downside of JPQL and the primary motivation for the Criteria API.</p>
+
+        <h2 id="criteria-api">The Criteria API</h2>
+        <p>The Criteria API lets you build the same query as a Java object graph instead of a string, so the compiler checks it and refactoring tools can follow it. It is considerably more verbose than JPQL, but that verbosity buys you two things: full compile-time type safety, and the ability to assemble a query dynamically &mdash; adding or omitting predicates based on which parameters were actually supplied, which is awkward to do with string concatenation in JPQL.</p>
+        <p>The same running example built with <code>CriteriaBuilder</code>, <code>CriteriaQuery</code>, and <code>Root</code>:</p>
+        <pre><code>CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+CriteriaQuery&lt;Post&gt; cq = cb.createQuery(Post.class);
+Root&lt;Post&gt; post = cq.from(Post.class);
+Join&lt;Post, Tag&gt; tags = post.join(Post_.tags);
+
+Predicate statusPredicate = cb.equal(post.get(Post_.status), PostStatus.PUBLISHED);
+Predicate tagPredicate = cb.equal(tags.get(Tag_.name), tagName);
+
+cq.select(post)
+  .distinct(true)
+  .where(cb.and(statusPredicate, tagPredicate))
+  .orderBy(cb.desc(post.get(Post_.publishedAt)));
+
+TypedQuery&lt;Post&gt; query = entityManager.createQuery(cq);
+List&lt;Post&gt; posts = query.getResultList();</code></pre>
+        <p>Breaking down each piece: <code>CriteriaBuilder</code> is the factory for every predicate, expression, and ordering you can build; <code>CriteriaQuery&lt;Post&gt;</code> is the query definition itself, the object you progressively configure; <code>Root&lt;Post&gt;</code> represents the <code>FROM Post</code> clause and is the starting point for navigating to fields and associations; <code>Join&lt;Post, Tag&gt;</code> represents the join across the many-to-many <code>tags</code> association, equivalent to <code>join p.tags t</code> in JPQL; and each <code>Predicate</code> is one boolean condition that gets combined with <code>cb.and(...)</code>.</p>
+        <p>Note the <code>Post_</code> and <code>Tag_</code> classes &mdash; these are metamodel classes generated at compile time by an annotation processor (Hibernate's <code>hibernate-jpamodelgen</code>, wired in via the standard JPA metamodel generator). For every entity you annotate, the processor generates a shadow class with static, typed fields (<code>Post_.status</code>, <code>Post_.publishedAt</code>, <code>Tag_.name</code>) so that <code>post.get(Post_.status)</code> is checked against the actual field type at compile time. Renaming a field on <code>Post</code> and forgetting to update a Criteria query simply will not compile &mdash; which is exactly the failure mode JPQL cannot catch.</p>
+        <p>This dynamism is the real reason teams reach for Criteria: imagine a search endpoint with five optional filters. With JPQL you'd be conditionally concatenating query fragments by hand; with Criteria you build a growing <code>List&lt;Predicate&gt;</code> and only add a predicate when its corresponding filter parameter is present, then combine whatever ended up in the list with <code>cb.and(...)</code>.</p>
+
+        <h2 id="native-sql">Native SQL</h2>
+        <p>Native SQL steps outside JPA's abstraction entirely and lets you write raw, database-specific SQL &mdash; window functions, common table expressions, optimizer hints, vendor-specific functions &mdash; anything the underlying engine supports, even if JPQL has no equivalent syntax for it. The cost is that the query is no longer portable across database vendors, and there is zero compile-time or parse-time checking of table and column names.</p>
+        <p>The same running example as raw SQL, still mapped back onto managed <code>Post</code> entities:</p>
+        <pre><code>String sql =
+    "select p.* from post p " +
+    "join post_tag pt on pt.post_id = p.id " +
+    "join tag t on t.id = pt.tag_id " +
+    "where p.status = 'PUBLISHED' and t.name = :tagName " +
+    "order by p.published_at desc";
+
+Query nativeQuery = entityManager.createNativeQuery(sql, Post.class);
+nativeQuery.setParameter("tagName", tagName);
+List&lt;Post&gt; posts = nativeQuery.getResultList();</code></pre>
+        <p>Passing <code>Post.class</code> as the second argument to <code>createNativeQuery</code> tells Hibernate to map each result row back onto a managed <code>Post</code> entity, as long as the selected columns line up with the entity's mapped columns (<code>select p.*</code> works here because it pulls every mapped column). For result shapes that don't map cleanly onto an entity &mdash; a projection or aggregate, for example &mdash; you'd instead use a <code>@SqlResultSetMapping</code> or a constructor-expression-style DTO mapping rather than trying to force it into an entity.</p>
+
+        <h2 id="comparison-table">Comparison Table</h2>
+        <table>
+          <thead>
+            <tr><th>Aspect</th><th>JPQL</th><th>Criteria API</th><th>Native SQL</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Type safety</td><td>None &mdash; plain string, parsed at runtime</td><td>Full, with metamodel classes (<code>Post_</code>, <code>Tag_</code>)</td><td>None &mdash; plain string, no entity-model checking</td></tr>
+            <tr><td>Portability across DBs</td><td>High &mdash; compiled to the configured dialect</td><td>High &mdash; same as JPQL under the hood</td><td>Low &mdash; tied to the target database's SQL dialect</td></tr>
+            <tr><td>Dynamic query building</td><td>Awkward &mdash; manual string concatenation</td><td>Natural &mdash; add predicates conditionally in Java</td><td>Awkward &mdash; manual string concatenation</td></tr>
+            <tr><td>Learning curve</td><td>Low &mdash; reads like SQL over entities</td><td>Steep &mdash; verbose, builder-style API</td><td>Low if you already know SQL</td></tr>
+            <tr><td>Best for</td><td>The vast majority of everyday queries</td><td>Search screens with many optional filters</td><td>Vendor-specific features or hand-tuned performance</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="when-to-reach-for-each">When to Reach for Each</h2>
+        <p>Default to <strong>JPQL</strong> for the vast majority of everyday queries. It is concise, portable, and covers standard joins, filtering, aggregation, and ordering perfectly well &mdash; there is no reason to pay the verbosity tax of Criteria for a query whose shape is fixed at compile time.</p>
+        <p>Reach for the <strong>Criteria API</strong> when a query's structure is only known at runtime &mdash; the canonical example being a search form with many optional filters, where the set of predicates you need to apply depends on which fields the user actually populated. Criteria lets you build that predicate list incrementally in plain Java, which is far safer than assembling a JPQL string by hand.</p>
+        <p>Drop down to <strong>Native SQL</strong> when you need a database-specific feature JPQL simply cannot express &mdash; a window function, a recursive CTE, a full-text search operator, an optimizer hint &mdash; or when you need to hand-tune the execution plan of a query that JPQL/Hibernate is generating suboptimally and you need precise control over the exact SQL that reaches the database.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">What's the main advantage of the Criteria API over JPQL?</div>
+          <div class="qa-a">Two things: compile-time type safety via generated metamodel classes like <code>Post_</code> and <code>Tag_</code>, and the ability to build a query's predicates dynamically in Java &mdash; adding or skipping conditions based on runtime input &mdash; which is much harder to do safely with JPQL string concatenation.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is JPQL not checked at compile time?</div>
+          <div class="qa-a">Because a JPQL query is just a <code>String</code> as far as the Java compiler is concerned. Hibernate only parses and validates it against the entity model when the query is first executed (or, for a <code>@NamedQuery</code>, at application startup). A typo in a field name or a stale reference to a renamed field will compile fine and only surface as a runtime exception.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">When would you drop down to native SQL instead of JPQL?</div>
+          <div class="qa-a">When you need a database-specific capability JPQL has no equivalent for &mdash; window functions, CTEs, vendor optimizer hints, full-text search &mdash; or when you need to hand-tune the exact execution plan of a slow query rather than trusting Hibernate's generated SQL.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is the JPA metamodel and what generates classes like Post_?</div>
+          <div class="qa-a">The metamodel is a set of generated shadow classes &mdash; one per entity, following the <code>EntityName_</code> naming convention &mdash; that expose each entity's persistent fields as static, typed members (<code>Post_.status</code>, <code>Post_.publishedAt</code>). They are produced at compile time by an annotation processor (Hibernate's <code>hibernate-jpamodelgen</code>) and consumed by the Criteria API so field references like <code>post.get(Post_.status)</code> are checked against the real field type.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Can you mix native SQL results back into managed entities?</div>
+          <div class="qa-a">Yes &mdash; passing an entity class as the second argument to <code>entityManager.createNativeQuery(sql, Post.class)</code> tells Hibernate to map each result row onto a managed entity, provided the selected columns line up with the entity's mapping. For shapes that don't map onto a single entity, use <code>@SqlResultSetMapping</code> or a scalar/DTO-style mapping instead.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>JPQL is object-oriented and portable, but it is only a string &mdash; errors surface at parse/runtime, never at compile time.</li>
+          <li>The Criteria API trades verbosity for compile-time safety and dynamic, programmatic query construction &mdash; ideal for optional-filter search screens.</li>
+          <li>Metamodel classes like <code>Post_</code> and <code>Tag_</code> are generated by an annotation processor and are what make Criteria queries type-safe.</li>
+          <li>Native SQL gives full access to database-specific features and execution-plan control, at the cost of portability and any compile-time or parse-time checking.</li>
+          <li>Default to JPQL, escalate to Criteria for dynamic queries, and drop to native SQL only when JPQL genuinely can't express what you need.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="entity-lifecycle.html"><span class="dir">Previous</span>Entity Lifecycle &amp; States</a>
+          <a class="next" href="performance-caching.html"><span class="dir">Next</span>Performance &amp; Caching</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

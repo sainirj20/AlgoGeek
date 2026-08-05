@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Developing a Weather Application | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">Weather Application</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-geospatial-bucketing">Deep Dive — Geospatial Bucketing</a></li>
+        <li><a href="#deep-dive-cache-refill-and-ttl-strategy">Deep Dive — Cache-Refill and TTL Strategy</a></li>
+        <li><a href="#deep-dive-forecast-ingestion-rate-limits-and-fault-tolerance">Deep Dive — Forecast Ingestion, Rate Limits, and Fault Tolerance</a></li>
+        <li><a href="#deep-dive-severe-weather-alerting-and-fan-out">Deep Dive — Severe Weather Alerting and Fan-Out</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging, and Analytics</a></li>
+        <li><a href="#security-and-cost-considerations">Security and Cost Considerations</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Developing a Weather Application</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a weather app like Weather.com / AccuWeather / Apple Weather: requirements, capacity estimation, geospatial bucketing, caching &amp; TTL strategy, upstream-provider fault tolerance, severe weather alert fan-out, data model, sharding, replication, security &amp; cost, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a weather application that serves current conditions, multi-day forecasts, severe weather alerts, and historical weather lookups to a very large user base. The service does not own any weather stations, radar installations, or satellites &mdash; it ingests data from one or more external upstream providers (e.g. NOAA / the National Weather Service, a commercial provider in the OpenWeatherMap/AccuWeather mold, or a fictional "WeatherCorp" feed used for this write-up) and re-serves that data to a much larger read audience.</p>
+
+        <h3>Why is this fundamentally a caching problem, not a sensor-network problem?</h3>
+        <p>It's tempting to reach for IoT/sensor-network framing ("millions of weather stations streaming telemetry"), but that's the wrong mental model here: we are not Doppler radar or NOAA's observation network. Precisely because the upstream provider already does the hard meteorological work (numerical weather prediction, radar processing, station aggregation) and publishes it as a rate-limited, metered API, our system's entire job is to stand between a huge, bursty read audience and a small, expensive, slow-moving data source &mdash; and to do it without ever showing an error, since "weather app is down" is worst exactly when a storm is approaching and everyone is checking at once. This makes the design far closer in spirit to a CDN/cache-offload problem (absorbing read amplification behind a TTL'd cache) than to a write-heavy ingestion problem.</p>
+
+        <h3>Why do people check a weather app?</h3>
+        <ul>
+          <li>Daily planning: "do I need a jacket / umbrella today," commute and travel decisions.</li>
+          <li>Safety: severe weather alerts (tornado warnings, flash floods, hurricanes) that can be life-or-death and time-critical.</li>
+          <li>Repeated, habitual checking &mdash; the same handful of nearby locations, checked many times a day by many nearby people, which is exactly the read-amplification pattern the design must exploit.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Always clarify scope before designing. A strong candidate spends the first few minutes narrowing the problem rather than assuming defaults.</p>
+        <ol>
+          <li>Do we own any sensors/radar, or do we exclusively ingest from third-party upstream provider(s)? (We'll assume the latter throughout.)</li>
+          <li>How many upstream providers are there, and what are their rate limits and pricing model (per-call cost, calls/minute cap)?</li>
+          <li>What data-freshness / staleness window is acceptable for current conditions vs. forecasts?</li>
+          <li>Do we need severe weather push notifications, and if so, what's the target delivery latency?</li>
+          <li>Do we need historical weather lookup, and how far back should it go?</li>
+          <li>Do users query by exact lat/long, city name, or zip/postal code &mdash; and do we need location search/autocomplete?</li>
+          <li>Single-country product (e.g. US-only, backed by NWS) or global, multi-provider?</li>
+          <li>Do we need radar/precipitation map imagery, or just numeric conditions/forecasts?</li>
+          <li>How many favorite/saved locations per user, and do we push alerts for all of them or just the user's current location?</li>
+          <li>Is strong consistency required anywhere, or is eventual consistency acceptable everywhere (as it usually is for weather)?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          State reasonable assumptions out loud and keep moving: "I'll assume a single commercial upstream provider with a hard rate limit and per-call cost, a 10&ndash;15 minute acceptable staleness window for current conditions, and that severe weather alerts are a hard requirement since they're the headline non-functional driver of this whole design." This shows judgment, not indecision.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Current conditions for a location, specified by lat/long, city name, or zip/postal code.</li>
+          <li>Multi-day forecast: hourly (next ~48 hours) and daily (next ~7&ndash;10 days).</li>
+          <li>Severe weather alerts, delivered as push notifications to affected/subscribed users.</li>
+          <li>Historical weather data lookup for a location and date/date-range.</li>
+          <li>Radar / precipitation map data (tile imagery or vector overlays for a map view).</li>
+          <li>Location search / autocomplete (city name, zip/postal code, "current location").</li>
+          <li>Per-user unit preference (Celsius / Fahrenheit), applied consistently across all responses.</li>
+          <li>Favoriting / saving multiple locations per user (e.g. "Home," "Work," "Mom's house").</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>High read availability (99.99%+):</strong> people check weather constantly, and the worst possible moment to be down is during a severe weather event &mdash; exactly when read volume peaks.</li>
+          <li><strong>Low latency:</strong> sub-200ms for cached current-conditions responses; forecast responses should feel similarly instant.</li>
+          <li><strong>The external-provider dependency is the actual bottleneck:</strong> most third-party weather APIs impose strict rate limits and per-call costs &mdash; the system must be designed around minimizing upstream calls, not around our own compute capacity.</li>
+          <li><strong>Eventual consistency is fine everywhere:</strong> weather data is inherently a few minutes stale from the source already (satellite/radar processing lag, model run cadence), so there is no correctness reason to chase strong consistency.</li>
+          <li><strong>Massive read amplification:</strong> millions of users checking the same handful of nearby grid cells must collapse into a tiny number of actual upstream calls.</li>
+          <li><strong>Horizontal scalability</strong> on the read path, decoupled from the (much lower-volume, schedule-driven) ingestion path.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on geospatial bucketing, caching/TTL strategy, upstream fault tolerance, and severe weather alert fan-out &mdash; the core of what makes this problem interesting &mdash; and touch on partitioning, security, and cost. We explicitly call out, but don't design, the internals of a numerical weather prediction model, radar-imagery rendering pipeline, or a full push-notification platform (assume a managed provider such as FCM/APNs sits underneath our Notification Pipeline).</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>This system is dominated by two facts: read traffic vastly exceeds anything the upstream provider can or will serve directly, and read traffic is extremely concentrated (millions of users collapse onto a small number of shared grid cells). The capacity math below is really a "how much can caching offload from an expensive, rate-limited upstream" argument &mdash; the same shape as a Redis/CDN cache-offload calculation, just applied to a geospatial key instead of a URL or a scoreboard.</p>
+
+        <h3>Traffic Estimates &mdash; Client-Facing Read Volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          50 million daily active users (DAU); average 4 checks/user/day (morning, midday, evening, plus ad-hoc)
+          <br>Requests/day = 50M &times; 4 = 200 million
+          <br>Average QPS = 200,000,000 &divide; 86,400 &asymp; 2,315 requests/sec
+          <br>Normal-day peak (commute/morning/evening bursts, &asymp;5&times; average) &asymp; 11,500 QPS
+        </div>
+
+        <h3>Severe Weather Event Surge &mdash; the "Hurricane Hitting a Metro" Case</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          A hurricane approaches a metro area of 20 million residents; 40% check the app within a 1-hour landfall-approach window
+          <br>Surge requests = 0.40 &times; 20,000,000 = 8 million checks in that hour
+          <br>Surge QPS = 8,000,000 &divide; 3,600 &asymp; 2,220 requests/sec, layered on top of the system-wide peak
+          <br>System-wide peak during the event &asymp; 11,500 + 2,220 &asymp; 13,700 QPS &mdash; and if several regions have concurrent events (e.g. a hurricane on the coast and severe storms in the Midwest), design headroom for &asymp;20,000 peak QPS system-wide
+        </div>
+        <p>The critical detail: that 2,220 QPS surge is not spread evenly &mdash; it lands on the few hundred grid cells covering one metro area, and disproportionately on the densest cells within it. That concentration is exactly what a per-geocell cache is built to absorb.</p>
+
+        <h3>Geocell Sizing and the Upstream Call Budget (the Core Argument)</h3>
+        <p>Choose a grid-cell resolution of roughly 5&times;5 km (geohash length 5, &asymp;4.9 &times; 4.89 km &mdash; see the geospatial bucketing deep dive below for why). Assume roughly 500,000 distinct geocells receive at least one query on a given day globally (this covers essentially every populated area at 5 km resolution). Assume a cache/refresh TTL of 12 minutes, i.e. 1,440 &divide; 12 = 120 refresh windows per day.</p>
+        <div class="formula-box">
+          <span class="formula-label">Worst-case upstream calls (every active cell queried continuously)</span>
+          Upstream calls/day &le; 500,000 cells &times; 120 refresh windows/day = 60,000,000 calls/day
+          <br>This worst-case bound alone is already 3.3&times; less than the 200M raw client requests/day &mdash; i.e. even in the pathological case where every cell is hot all day, caching still collapses read volume by 3.3:1
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Realistic upstream calls (long tail is queried, not continuously hot)</span>
+          &asymp;50,000 "always hot" cells refresh the full 120 times/day = 6,000,000 calls
+          <br>&asymp;450,000 long-tail cells are queried only occasionally &mdash; averaging &asymp;5 refreshes/day each = 2,250,000 calls
+          <br>Realistic total &asymp; 8.25 million upstream calls/day
+          <br>Overall offload ratio = 200,000,000 &divide; 8,250,000 &asymp; 24:1 &mdash; every genuine upstream call answers roughly 24 client requests on average across the whole system
+        </div>
+        <p>Now look at a single hot cell during the hurricane surge above: assume the top 20 densest cells in the affected metro absorb half the 2,220 QPS surge, i.e. &asymp;1,110 QPS &divide; 20 cells &asymp; 56 requests/sec sustained per cell.</p>
+        <div class="formula-box">
+          <span class="formula-label">Hot-cell offload ratio during the event</span>
+          Requests served per upstream refresh = 56 req/sec &times; 720 sec (12-min TTL window) &asymp; 40,300 requests
+          <br>Offload ratio for that single hot cell &asymp; 40,300:1 &mdash; one upstream call answers over 40,000 user requests during the surge
+        </div>
+        <p>This is the same shape of argument as a hot-key/cache-offload calculation for any read-heavy system: the busier a key gets, the better the cache's offload ratio gets, because the number of upstream refreshes per key is bounded by the TTL, not by request volume.</p>
+
+        <h3>Cache Memory Estimate</h3>
+        <div class="formula-box">
+          <span class="formula-label">Cache sizing</span>
+          Payload per geocell (current conditions + 48h hourly + 10-day daily forecast, compressed JSON) &asymp; 5 KB
+          <br>500,000 active geocells &times; 5 KB &asymp; 2.5 GB
+          <br>Even caching every &sim;5 km cell covering Earth's populated land area (&asymp;6 million cells) &times; 5 KB &asymp; 30 GB
+        </div>
+        <p>Either number is tiny &mdash; this is the opposite problem from most caching case studies: the working set is small, so the entire hot dataset fits comfortably in a modest Redis Cluster with room to spare; the challenge is upstream call volume and hot-cell concentration, not memory.</p>
+
+        <h3>Bandwidth Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Bandwidth</span>
+          Inbound (ingestion &larr; upstream): 8.25M calls/day &times; &asymp;2 KB response &asymp; 16.5 GB/day &asymp; 190 KB/sec average
+          <br>Outbound (clients &larr; us): 200M requests/day &times; &asymp;3 KB average response &asymp; 600 GB/day &asymp; 6.9 MB/sec average, with peaks of &asymp;35&ndash;40 MB/sec during a severe weather surge
+        </div>
+
+        <h3>Historical Data Storage Estimate</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          2 million geocells with historical coverage; hourly observations retained for 10 years
+          <br>Records/cell = 24 &times; 365 &times; 10 = 87,600
+          <br>Total records = 2,000,000 &times; 87,600 &asymp; 175.2 billion rows
+          <br>Record size &asymp; 200 bytes (geocell_id, timestamp, temp, humidity, wind, pressure, precip, condition_code, source)
+          <br>Raw storage &asymp; 175.2B &times; 200 bytes &asymp; 35 TB; with 3&times; replication &asymp; 105 TB
+          <br>Time-series columnar compression (delta/dictionary encoding, typically 5&ndash;8&times;) brings the effective on-disk footprint down to roughly 15&ndash;20 TB
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>DAU</td><td>50 million</td></tr>
+          <tr><td>Average client QPS</td><td>&asymp;2,300 (peak &asymp;11,500)</td></tr>
+          <tr><td>Severe-event system-wide peak QPS</td><td>&asymp;13,700 (design headroom to &asymp;20,000)</td></tr>
+          <tr><td>Grid-cell resolution</td><td>&asymp;5 &times; 5 km (geohash-5 / S2 &sim;level 12)</td></tr>
+          <tr><td>Active geocells/day (global)</td><td>&asymp;500,000</td></tr>
+          <tr><td>Cache / refresh TTL</td><td>10&ndash;15 min (12 min assumed)</td></tr>
+          <tr><td>Realistic upstream calls/day</td><td>&asymp;8.25 million (&asymp;24:1 offload ratio)</td></tr>
+          <tr><td>Hot-cell offload ratio during a severe event</td><td>&asymp;40,000:1 for the hottest cells</td></tr>
+          <tr><td>Cache memory (active working set)</td><td>&asymp;2.5 GB (&asymp;30 GB for full global land coverage)</td></tr>
+          <tr><td>Historical storage (10 yrs, 3&times; replicated, compressed)</td><td>&asymp;15&ndash;20 TB effective</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>A REST API over HTTPS is the natural fit: stateless, cacheable via standard HTTP caching headers (<code>Cache-Control</code>, <code>ETag</code>), and easy to front with a CDN for the read-heavy endpoints.</p>
+
+        <h3>Get Current Conditions</h3>
+        <pre><code>GET /api/v1/conditions?lat=40.7128&amp;long=-74.0060&amp;units=metric
+
+Response 200 OK:
+{
+  "geocell_id": "9q8yyk",
+  "resolved_location": "New York, NY, US",
+  "observed_at": "2026-07-18T14:05:00Z",
+  "as_of_age_seconds": 220,
+  "is_stale": false,
+  "temperature": { "value": 29.4, "unit": "C" },
+  "feels_like": { "value": 31.1, "unit": "C" },
+  "humidity_pct": 61,
+  "wind": { "speed_kmh": 14.2, "direction_deg": 210 },
+  "condition_code": "PARTLY_CLOUDY",
+  "provider_source": "weathercorp"
+}
+
+Errors: 400 invalid coordinates &middot; 404 unresolvable location &middot; 429 rate-limited</code></pre>
+
+        <h3>Get Forecast</h3>
+        <pre><code>GET /api/v1/forecast?lat=40.7128&amp;long=-74.0060&amp;granularity=daily&amp;days=10
+
+Response 200 OK:
+{
+  "geocell_id": "9q8yyk",
+  "generated_at": "2026-07-18T13:58:00Z",
+  "granularity": "daily",
+  "periods": [
+    { "valid_date": "2026-07-19", "temp_high_c": 31.0, "temp_low_c": 22.5,
+      "precip_probability_pct": 40, "condition_code": "THUNDERSTORMS" },
+    { "valid_date": "2026-07-20", "temp_high_c": 28.4, "temp_low_c": 21.0,
+      "precip_probability_pct": 10, "condition_code": "SUNNY" }
+  ]
+}</code></pre>
+
+        <h3>Search Location (Autocomplete)</h3>
+        <pre><code>GET /api/v1/locations/search?query=austin
+
+Response 200 OK:
+{
+  "results": [
+    { "location_id": "austin-tx-us", "display_name": "Austin, TX, USA",
+      "lat": 30.2672, "long": -97.7431, "geocell_id": "9v6mgx" },
+    { "location_id": "austin-mn-us", "display_name": "Austin, MN, USA",
+      "lat": 43.6666, "long": -92.9746, "geocell_id": "9zwsxk" }
+  ]
+}</code></pre>
+
+        <h3>Subscribe to Severe Weather Alerts</h3>
+        <pre><code>POST /api/v1/alerts/subscriptions
+{
+  "user_id": "u_88213",
+  "location_id": "austin-tx-us",
+  "severity_threshold": "warning",
+  "channel": "push",
+  "device_push_token": "dGhpc2lzYXRva2Vu..."
+}
+
+Response 201 Created:
+{ "subscription_id": "sub_9f21a", "status": "active" }</code></pre>
+
+        <h3>Get Historical Weather (Extended)</h3>
+        <pre><code>GET /api/v1/historical?lat=30.2672&amp;long=-97.7431&amp;date=2025-07-04
+
+Response 200 OK:
+{
+  "geocell_id": "9v6mgx",
+  "observation_date": "2025-07-04",
+  "temp_high_c": 36.1, "temp_low_c": 25.0,
+  "precipitation_mm": 0.0, "dominant_condition": "SUNNY"
+}</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Every field is scoped to a <code>geocell_id</code>, not a raw lat/long &mdash; this is the load-bearing decision behind the whole API. It's what makes the response cacheable at all: two users 400 meters apart resolve to the same cell and therefore the same cached response, instead of each generating a distinct cache key.
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>A small number of distinct geocells (hundreds of thousands to low millions), each with a tiny, frequently-refreshed "current state" payload.</li>
+          <li>A much larger, append-only historical time series per geocell &mdash; classic time-series access pattern (write once, range-scan by time).</li>
+          <li>A comparatively small amount of user data (accounts, favorites, alert subscriptions) with real relational structure.</li>
+          <li>The read path is a pure key lookup by geocell_id (plus a time range for forecast/history) &mdash; no joins on the hot path.</li>
+        </ul>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">Table: geocells</th></tr>
+          <tr><td>geocell_id (PK)</td><td>varchar(12) &mdash; geohash / S2 token</td></tr>
+          <tr><td>center_lat / center_long</td><td>decimal(9,6)</td></tr>
+          <tr><td>resolution_level</td><td>tinyint (geohash length / S2 level)</td></tr>
+          <tr><td>country_code</td><td>varchar(2)</td></tr>
+          <tr><td>timezone</td><td>varchar(40)</td></tr>
+          <tr><td>population_density_tier</td><td>enum(low, medium, high, dense_urban)</td></tr>
+          <tr><td>last_ingested_at</td><td>datetime</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: locations (search / autocomplete index)</th></tr>
+          <tr><td>location_id (PK)</td><td>varchar(32)</td></tr>
+          <tr><td>display_name</td><td>varchar(96)</td></tr>
+          <tr><td>place_type</td><td>enum(city, zip, poi)</td></tr>
+          <tr><td>lat / long</td><td>decimal(9,6)</td></tr>
+          <tr><td>geocell_id (FK)</td><td>varchar(12)</td></tr>
+          <tr><td>search_tokens (indexed)</td><td>text</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: current_conditions (cache-backed, keyed by geocell)</th></tr>
+          <tr><td>geocell_id (PK, FK)</td><td>varchar(12)</td></tr>
+          <tr><td>observed_at</td><td>datetime</td></tr>
+          <tr><td>temperature_c / feels_like_c</td><td>decimal(5,2)</td></tr>
+          <tr><td>humidity_pct</td><td>tinyint</td></tr>
+          <tr><td>wind_speed_kmh / wind_direction_deg</td><td>decimal(5,2) / smallint</td></tr>
+          <tr><td>pressure_hpa</td><td>decimal(6,2)</td></tr>
+          <tr><td>precipitation_mm_last_hr</td><td>decimal(5,2)</td></tr>
+          <tr><td>condition_code (normalized across providers)</td><td>varchar(16)</td></tr>
+          <tr><td>provider_source</td><td>varchar(24)</td></tr>
+          <tr><td>is_stale</td><td>boolean</td></tr>
+          <tr><td>cache_ttl_expires_at</td><td>datetime</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: forecast_data (keyed by geocell + valid_time)</th></tr>
+          <tr><td>geocell_id + valid_time (composite PK)</td><td>varchar(12) + datetime</td></tr>
+          <tr><td>granularity</td><td>enum(hourly, daily)</td></tr>
+          <tr><td>generated_at</td><td>datetime</td></tr>
+          <tr><td>temperature_high_c / temperature_low_c</td><td>decimal(5,2)</td></tr>
+          <tr><td>precipitation_probability_pct</td><td>tinyint</td></tr>
+          <tr><td>condition_code</td><td>varchar(16)</td></tr>
+          <tr><td>provider_source</td><td>varchar(24)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: historical_weather (time-series, partitioned by geocell + date)</th></tr>
+          <tr><td>geocell_id + observation_date + observation_hour (composite PK / partition key)</td><td>varchar(12) + date + tinyint</td></tr>
+          <tr><td>temperature_c / humidity_pct / wind_speed_kmh / pressure_hpa</td><td>decimal / tinyint / decimal / decimal</td></tr>
+          <tr><td>precipitation_mm</td><td>decimal(5,2)</td></tr>
+          <tr><td>condition_code</td><td>varchar(16)</td></tr>
+          <tr><td>source</td><td>varchar(24)</td></tr>
+          <tr><td>ingested_at</td><td>datetime</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: user_favorite_locations</th></tr>
+          <tr><td>user_id + location_id (composite PK)</td><td>bigint + varchar(32)</td></tr>
+          <tr><td>display_name (e.g. "Home", "Work")</td><td>varchar(64)</td></tr>
+          <tr><td>geocell_id (FK)</td><td>varchar(12)</td></tr>
+          <tr><td>sort_order</td><td>tinyint</td></tr>
+          <tr><td>unit_preference (overrides account default)</td><td>enum(metric, imperial), nullable</td></tr>
+          <tr><td>created_at</td><td>datetime</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: alert_subscriptions</th></tr>
+          <tr><td>subscription_id (PK)</td><td>bigint</td></tr>
+          <tr><td>user_id (FK)</td><td>bigint</td></tr>
+          <tr><td>geocell_id or location_id (FK)</td><td>varchar(12) / varchar(32)</td></tr>
+          <tr><td>severity_threshold</td><td>enum(advisory, watch, warning, emergency)</td></tr>
+          <tr><td>channel</td><td>enum(push, sms, email)</td></tr>
+          <tr><td>device_push_token</td><td>varchar(256), nullable</td></tr>
+          <tr><td>active</td><td>boolean</td></tr>
+          <tr><td>created_at</td><td>datetime</td></tr>
+        </table>
+
+        <h3>SQL vs. NoSQL &mdash; the Recommended Hybrid</h3>
+        <p><code>current_conditions</code> and <code>forecast_data</code> are simple, extremely hot, geocell-keyed lookups &mdash; a natural fit for a key-value/wide-column store (Redis as the cache tier, backed by a wide-column store such as Cassandra/DynamoDB as the durable "source of truth for cache refill"). <code>historical_weather</code> is a textbook time-series workload (append-mostly, range-scanned by time) and belongs in a purpose-built time-series store (e.g. a Cassandra-style wide-column store partitioned by geocell+date, or a dedicated TSDB). <code>user_favorite_locations</code> and <code>alert_subscriptions</code> have genuine relational shape (user &rarr; many locations/subscriptions) and modest volume, so a conventional relational database (Postgres/MySQL) is the right, boring choice there &mdash; there is no benefit to forcing everything into one storage paradigm.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Good framing: "the bulk, hot, geospatially-keyed data (current conditions, forecasts, history) goes in NoSQL/time-series stores optimized for that access pattern; the comparatively small, relationship-heavy user data (favorites, subscriptions) goes in SQL." This mirrors the SQL-for-control-plane / NoSQL-for-data-plane split used elsewhere in this series, just drawn along a different boundary.
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Clients talk to a CDN / API Gateway first, which caches semi-static forecast responses at the edge for the busiest locations. The Weather Service is a stateless application tier that checks a per-geocell Redis cache; on a miss, it calls a Forecast Aggregator that reads the durable store's last-known-good value (never a live upstream call inline with a user request) and repopulates the cache. Completely decoupled from user traffic, a Forecast Ingestion Service polls the upstream provider(s) on a fixed schedule, normalizes the payload into our internal schema, and writes it into both the durable store and (for hot cells) directly into the cache. An Alerting Service consumes the same upstream provider's severe-weather feed and fans out push notifications through a Notification Pipeline. Analytics consumes lightweight, fire-and-forget events from both the Weather Service (cache hit/miss) and the Ingestion Service (upstream call volume and cost) to drive pre-warming and capacity decisions.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="wx-fig1-title">
+            <title id="wx-fig1-title">High-level architecture of the weather application</title>
+            <defs>
+              <marker id="arrow-wx-1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path>
+              </marker>
+              <marker id="arrow-wx-1d" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+            <rect x="20" y="20" width="180" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="110" y="50" text-anchor="middle" font-size="13" fill="var(--color-primary)">Client (mobile / web)</text>
+
+            <rect x="290" y="20" width="180" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="380" y="45" text-anchor="middle" font-size="13" fill="var(--color-primary)">CDN / API Gateway</text>
+            <text x="380" y="61" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">(edge cache)</text>
+
+            <rect x="560" y="20" width="180" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="650" y="50" text-anchor="middle" font-size="13" fill="var(--color-primary)">Weather Service</text>
+
+            <rect x="20" y="120" width="180" height="50" rx="8" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="110" y="140" text-anchor="middle" font-size="13" fill="var(--color-primary)">Notification</text>
+            <text x="110" y="156" text-anchor="middle" font-size="13" fill="var(--color-primary)">Pipeline</text>
+
+            <rect x="290" y="120" width="180" height="50" rx="8" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="380" y="140" text-anchor="middle" font-size="13" fill="var(--color-primary)">Alerting Service</text>
+            <text x="380" y="156" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">(CAP feed &rarr; fan-out)</text>
+
+            <rect x="560" y="120" width="180" height="50" rx="8" fill="#fff9ec" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="650" y="140" text-anchor="middle" font-size="13" fill="var(--color-primary)">Redis Cache</text>
+            <text x="650" y="156" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">per-geocell, TTL'd</text>
+
+            <rect x="20" y="220" width="180" height="50" rx="8" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="110" y="240" text-anchor="middle" font-size="13" fill="var(--color-primary)">Upstream Provider(s)</text>
+            <text x="110" y="256" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">WeatherCorp / NOAA-NWS</text>
+
+            <rect x="290" y="220" width="180" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="380" y="240" text-anchor="middle" font-size="13" fill="var(--color-primary)">Forecast Ingestion</text>
+            <text x="380" y="256" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">Service (scheduled poller)</text>
+
+            <rect x="560" y="220" width="180" height="50" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="650" y="240" text-anchor="middle" font-size="13" fill="var(--color-primary)">Forecast Aggregator</text>
+            <text x="650" y="256" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">(on-demand fallback)</text>
+
+            <rect x="20" y="320" width="180" height="50" rx="8" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="110" y="340" text-anchor="middle" font-size="13" fill="var(--color-primary)">Analytics</text>
+            <text x="110" y="356" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">(hit rate, cost)</text>
+
+            <rect x="560" y="320" width="180" height="50" rx="8" fill="#fff9ec" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="650" y="340" text-anchor="middle" font-size="13" fill="var(--color-primary)">Durable Store</text>
+            <text x="650" y="356" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">time-series / wide-column</text>
+
+            <line x1="200" y1="45" x2="285" y2="45" stroke="var(--color-accent)" stroke-width="1.6" marker-end="url(#arrow-wx-1)"></line>
+            <line x1="470" y1="45" x2="555" y2="45" stroke="var(--color-accent)" stroke-width="1.6" marker-end="url(#arrow-wx-1)"></line>
+            <line x1="650" y1="70" x2="650" y2="115" stroke="var(--color-accent)" stroke-width="1.6" marker-end="url(#arrow-wx-1)"></line>
+            <text x="662" y="95" font-size="10.5" fill="var(--color-text-muted)">cache-aside</text>
+
+            <line x1="650" y1="220" x2="650" y2="175" stroke="var(--color-text-muted)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arrow-wx-1d)"></line>
+            <text x="662" y="200" font-size="10.5" fill="var(--color-text-muted)">miss / repopulate</text>
+
+            <line x1="650" y1="270" x2="650" y2="315" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-wx-1)"></line>
+            <text x="612" y="298" font-size="10.5" fill="var(--color-text-muted)">read LKG</text>
+
+            <line x1="290" y1="245" x2="205" y2="245" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-wx-1)"></line>
+            <text x="205" y="212" font-size="10.5" fill="var(--color-text-muted)">poll ~12 min</text>
+
+            <line x1="470" y1="235" x2="640" y2="180" stroke="var(--color-accent)" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrow-wx-1)"></line>
+            <text x="490" y="190" font-size="10" fill="var(--color-text-muted)">proactive refresh</text>
+
+            <line x1="380" y1="270" x2="620" y2="320" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-wx-1)"></line>
+            <text x="440" y="310" font-size="10.5" fill="var(--color-text-muted)">persist</text>
+
+            <line x1="110" y1="220" x2="345" y2="180" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-wx-1)"></line>
+            <text x="150" y="205" font-size="10.5" fill="var(--color-text-muted)">alerts feed (CAP)</text>
+
+            <line x1="290" y1="145" x2="205" y2="145" stroke="var(--color-accent)" stroke-width="1.4" marker-end="url(#arrow-wx-1)"></line>
+
+            <path d="M110,115 C110,90 110,70 110,73" stroke="var(--color-accent)" stroke-width="1.4" fill="none" marker-end="url(#arrow-wx-1)"></path>
+            <text x="30" y="95" font-size="10.5" fill="var(--color-text-muted)">push</text>
+
+            <line x1="200" y1="345" x2="285" y2="245" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrow-wx-1d)"></line>
+            <text x="205" y="300" font-size="10" fill="var(--color-text-muted)">cost events</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; the client read path (CDN &rarr; Weather Service &rarr; Redis &rarr; Aggregator &rarr; Durable Store) is fully decoupled from the scheduled ingestion path (Ingestion Service &rarr; Upstream Provider), which is the only component that ever calls the paid, rate-limited upstream API. The Alerting path shares the same upstream feed but fans out independently.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Only the Ingestion Service (and, rarely, the Aggregator for a brand-new "cold" cell) ever calls the upstream provider</strong> &mdash; user request volume never directly drives upstream call volume, which is the entire point of the design.</li>
+          <li><strong>The read path favors availability over freshness:</strong> a genuine cache miss falls back to the durable store's last-known-good value, never to a synchronous live upstream call blocking a user request.</li>
+          <li><strong>Alerts and analytics are decoupled side paths</strong> that never sit on the critical path of a conditions/forecast read.</li>
+          <li><strong>Multiple layers absorb load before touching the durable store:</strong> CDN edge cache &rarr; Redis cache &rarr; durable store, each layer shedding the vast majority of traffic.</li>
+        </ul>
+
+        <h2 id="deep-dive-geospatial-bucketing">Deep Dive — Geospatial Bucketing</h2>
+        <p>Weather forecasts are not naturally a function of exact coordinates &mdash; upstream providers publish forecasts per grid cell (their numerical weather models run on a grid, e.g. NOAA's NDFD grid at &asymp;2.5 km resolution), not per infinitely-precise lat/long. Two users 50 meters apart get, and should get, the identical forecast. Bucketing our own data the same way is therefore not just a caching trick &mdash; it mirrors how the source data is actually produced, and it's exactly what makes caching effective: many nearby users round to the same cell and share one cache entry.</p>
+
+        <h3>Geohash vs. S2 vs. H3</h3>
+        <table class="sortable">
+          <tr><th>Scheme</th><th>Cell shape</th><th>Notes</th></tr>
+          <tr><td>Geohash</td><td>Rectangular, variable aspect ratio by latitude</td><td>Simple, human-readable string prefix; easy to shard by prefix; cells distort (non-square) away from the equator</td></tr>
+          <tr><td>Google S2</td><td>Roughly square, hierarchical</td><td>Projects the sphere onto a cube face, giving more uniform cell area globally; used by many production geo-indexing systems</td></tr>
+          <tr><td>Uber H3</td><td>Hexagonal, hierarchical</td><td>Hexagons have uniform adjacency (6 equidistant neighbors, unlike a square grid's edge/corner distinction) &mdash; convenient for "expand outward by one ring" queries such as radar tiles or nearby-cell blending</td></tr>
+        </table>
+        <p><strong>Recommendation:</strong> geohash length 5 (&asymp;4.9 &times; 4.89 km) as the primary key for its simplicity and prefix-shardability (see partitioning below); S2 or H3 are equally defensible choices and are preferable if the interviewer pushes on cell-area uniformity near the poles or wants clean "k-ring" neighbor expansion for radar/precipitation overlays.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="wx-fig2-title">
+            <title id="wx-fig2-title">Mapping precise user coordinates onto a shared grid cell</title>
+            <defs>
+              <marker id="arrow-wx-2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+            <g stroke="var(--color-border)" stroke-width="1" fill="var(--color-surface)">
+              <rect x="40" y="30" width="620" height="280" fill="none"></rect>
+              <line x1="40" y1="100" x2="660" y2="100"></line>
+              <line x1="40" y1="170" x2="660" y2="170"></line>
+              <line x1="40" y1="240" x2="660" y2="240"></line>
+              <line x1="152" y1="30" x2="152" y2="310"></line>
+              <line x1="264" y1="30" x2="264" y2="310"></line>
+              <line x1="376" y1="30" x2="376" y2="310"></line>
+              <line x1="488" y1="30" x2="488" y2="310"></line>
+              <line x1="600" y1="30" x2="600" y2="310"></line>
+            </g>
+            <rect x="264" y="170" width="112" height="70" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="320" y="195" text-anchor="middle" font-size="12" fill="var(--color-primary)" font-weight="600">geocell 9q8yyk</text>
+            <text x="320" y="210" text-anchor="middle" font-size="10.5" fill="var(--color-text-muted)">&asymp;4.9 &times; 4.9 km</text>
+            <circle cx="290" cy="220" r="4" fill="var(--color-accent-dark)"></circle>
+            <circle cx="310" cy="200" r="4" fill="var(--color-accent-dark)"></circle>
+            <circle cx="340" cy="228" r="4" fill="var(--color-accent-dark)"></circle>
+            <circle cx="355" cy="185" r="4" fill="var(--color-accent-dark)"></circle>
+            <text x="320" y="255" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">4 nearby users &rarr; 1 shared cached forecast</text>
+
+            <circle cx="378" cy="171" r="4" fill="#b8860b"></circle>
+            <line x1="378" y1="171" x2="420" y2="130" stroke="#b8860b" stroke-width="1.2" stroke-dasharray="3 2" marker-end="url(#arrow-wx-2)"></line>
+            <text x="425" y="120" font-size="10.5" fill="#6b4a10">boundary point &mdash; assigned by</text>
+            <text x="425" y="134" font-size="10.5" fill="#6b4a10">containing cell, not pixel distance</text>
+
+            <text x="350" y="335" text-anchor="middle" font-size="11.5" fill="var(--color-text-muted)">User lat/long &rarr; geohash-encode at precision 5 &rarr; cell lookup key</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Multiple nearby users round to the same grid cell and share one cached response; a user near a cell boundary is still assigned deterministically by the encoding function, not by distance to a centroid.</div>
+        </div>
+
+        <h3>Mapping a User's Precise Location to a Cell</h3>
+        <ol>
+          <li>Client resolves a location (GPS lat/long, or a geocoded city/zip lookup via the <code>locations</code> table) to a precise coordinate.</li>
+          <li>Server encodes that coordinate at the chosen precision (geohash-5 / S2 level &asymp;12) to get a deterministic <code>geocell_id</code> &mdash; this is a pure function, no lookup required.</li>
+          <li>All reads and cache keys use <code>geocell_id</code>, never the raw coordinate &mdash; this is what collapses read amplification.</li>
+          <li>For map/radar views spanning multiple cells, expand outward using neighbor lookup (geohash neighbor function, or an H3 k-ring) rather than re-encoding many individual points.</li>
+        </ol>
+
+        <h2 id="deep-dive-cache-refill-and-ttl-strategy">Deep Dive — Cache-Refill and TTL Strategy</h2>
+        <p>The cache-aside pattern is standard: the Weather Service checks Redis first; on a hit, it returns immediately (sub-200ms target); on a miss, it goes through the Forecast Aggregator to the durable store, repopulates Redis, and resets the TTL. The interesting design decision is the TTL value itself and how refills are triggered.</p>
+
+        <h3>Why 10&ndash;15 Minutes?</h3>
+        <ul>
+          <li><strong>Freshness-adequate:</strong> most upstream providers themselves only update current-conditions and short-range forecasts every 10&ndash;15 minutes (bounded by their own model/observation cadence) &mdash; caching for longer than the source refreshes doesn't cost any real freshness.</li>
+          <li><strong>Effective at collapsing read amplification:</strong> as shown in the capacity math above, a 12-minute TTL turns tens of thousands of requests against one hot cell into a single upstream call per window &mdash; the longer the TTL, the better the offload ratio, up to the point where it stops matching the source's real update cadence.</li>
+          <li><strong>Short enough that severe weather still updates promptly:</strong> a rapidly-evolving storm's conditions won't be stale for more than one TTL window, and severe alerts bypass the cache/TTL cycle entirely via the dedicated Alerting path (below).</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 640 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="wx-fig3-title">
+            <title id="wx-fig3-title">Cache-refill and TTL cycle</title>
+            <defs>
+              <marker id="arrow-wx-3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path>
+              </marker>
+            </defs>
+            <rect x="240" y="20" width="160" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="320" y="46" text-anchor="middle" font-size="12.5" fill="var(--color-primary)">Write / refill cache</text>
+            <text x="320" y="62" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">(t = 0, fresh TTL set)</text>
+
+            <rect x="440" y="170" width="170" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="525" y="196" text-anchor="middle" font-size="12.5" fill="var(--color-primary)">Serve reads &mdash; HIT</text>
+            <text x="525" y="212" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">for up to 12 minutes</text>
+
+            <rect x="240" y="320" width="160" height="60" rx="8" fill="#fff9ec" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="320" y="346" text-anchor="middle" font-size="12.5" fill="var(--color-primary)">TTL expires</text>
+            <text x="320" y="362" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">entry marked stale</text>
+
+            <rect x="30" y="170" width="170" height="60" rx="8" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="115" y="196" text-anchor="middle" font-size="12.5" fill="var(--color-primary)">Next request = MISS</text>
+            <text x="115" y="212" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">single-flight refill triggered</text>
+
+            <path d="M395,55 C430,80 460,120 500,165" stroke="var(--color-accent)" stroke-width="1.6" fill="none" marker-end="url(#arrow-wx-3)"></path>
+            <path d="M525,235 C525,270 450,300 405,325" stroke="var(--color-accent)" stroke-width="1.6" fill="none" marker-end="url(#arrow-wx-3)"></path>
+            <path d="M240,345 C160,320 120,270 115,235" stroke="var(--color-accent)" stroke-width="1.6" fill="none" marker-end="url(#arrow-wx-3)"></path>
+            <path d="M150,175 C190,130 220,90 250,60" stroke="var(--color-accent)" stroke-width="1.6" fill="none" marker-end="url(#arrow-wx-3)"></path>
+            <text x="320" y="255" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">only the request that misses triggers a real refill &mdash;</text>
+            <text x="320" y="270" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">everyone else keeps getting the (briefly stale) cached value</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. The cache-refill cycle: a write resets the TTL clock; reads are served from cache for the whole window; on expiry, only the next incoming request (coalesced via single-flight so concurrent requests don't all stampede the durable store) triggers a refill.</div>
+        </div>
+
+        <h3>Request Coalescing (Single-Flight) to Prevent a Thundering Herd</h3>
+        <p>When a hot cell's TTL expires during a traffic surge, dozens of requests can arrive within milliseconds of each other, all seeing a miss simultaneously. Without protection, all of them would hit the durable store (or worse, trigger duplicate upstream calls) at once. The standard fix is <strong>request coalescing / single-flight</strong>: the first request to see a miss for a given <code>geocell_id</code> acquires a short-lived lock (or registers itself as the "in-flight" fetcher) and performs the refill; every other concurrent request for that same key waits on the in-flight result and receives it once it completes, instead of independently re-fetching. This is the same pattern used by any high-traffic cache-aside system to protect the layer behind the cache.</p>
+
+        <h2 id="deep-dive-forecast-ingestion-rate-limits-and-fault-tolerance">Deep Dive — Forecast Ingestion, Rate Limits, and Fault Tolerance</h2>
+        <p>The Forecast Ingestion Service is the only component that talks to the upstream provider(s), which makes it the natural place to enforce rate-limit discipline and failure isolation. It runs on a schedule (e.g. every 10&ndash;15 minutes per active cell, prioritized by traffic), normalizes each provider's proprietary response into our internal schema (unifying condition codes, units, and field names across providers), and writes the result into the durable store and, for currently-hot cells, directly into Redis.</p>
+
+        <h3>Circuit Breaker Against a Failing or Rate-Limited Upstream</h3>
+        <p>The single most important behavioral rule in this whole design: <strong>never show an error because the upstream provider is unavailable or rate-limiting us &mdash; always serve the last-known-good value with a visible age/staleness indicator.</strong> A circuit breaker around every upstream call enforces this cleanly.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 640 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="wx-fig4-title">
+            <title id="wx-fig4-title">Circuit breaker states for the upstream provider dependency</title>
+            <defs>
+              <marker id="arrow-wx-4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path>
+              </marker>
+            </defs>
+            <circle cx="150" cy="90" r="80" fill="#e9f8ee" stroke="#2e8b57" stroke-width="2"></circle>
+            <text x="150" y="80" text-anchor="middle" font-size="13" fill="#1e5f3b" font-weight="600">CLOSED</text>
+            <text x="150" y="98" text-anchor="middle" font-size="10.5" fill="#1e5f3b">healthy &mdash; calls pass</text>
+            <text x="150" y="112" text-anchor="middle" font-size="10.5" fill="#1e5f3b">through normally</text>
+
+            <circle cx="490" cy="90" r="80" fill="#fdeceb" stroke="#c0392b" stroke-width="2"></circle>
+            <text x="490" y="80" text-anchor="middle" font-size="13" fill="#8e2418" font-weight="600">OPEN</text>
+            <text x="490" y="98" text-anchor="middle" font-size="10.5" fill="#8e2418">tripped &mdash; serve last-known-</text>
+            <text x="490" y="112" text-anchor="middle" font-size="10.5" fill="#8e2418">good + "stale" flag, no calls out</text>
+
+            <circle cx="320" cy="290" r="80" fill="#fff9ec" stroke="var(--color-formula-border)" stroke-width="2"></circle>
+            <text x="320" y="280" text-anchor="middle" font-size="13" fill="#6b4a10" font-weight="600">HALF-OPEN</text>
+            <text x="320" y="298" text-anchor="middle" font-size="10.5" fill="#6b4a10">cooldown elapsed &mdash; allow a</text>
+            <text x="320" y="312" text-anchor="middle" font-size="10.5" fill="#6b4a10">trickle of test calls through</text>
+
+            <path d="M228,80 C300,60 380,60 412,80" stroke="var(--color-accent)" stroke-width="1.6" fill="none" marker-end="url(#arrow-wx-4)"></path>
+            <text x="320" y="55" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">error rate &gt; threshold</text>
+
+            <path d="M445,160 C400,210 370,235 355,255" stroke="var(--color-accent)" stroke-width="1.6" fill="none" marker-end="url(#arrow-wx-4)"></path>
+            <text x="470" y="210" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">cooldown timer elapses</text>
+
+            <path d="M285,255 C255,215 220,160 190,140" stroke="var(--color-accent)" stroke-width="1.6" fill="none" marker-end="url(#arrow-wx-4)"></path>
+            <text x="185" y="215" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">test call succeeds</text>
+
+            <path d="M395,240 C430,200 460,175 460,165" stroke="#c0392b" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#arrow-wx-4)"></path>
+            <text x="470" y="240" text-anchor="middle" font-size="10.5" fill="#8e2418">test call fails &rarr; re-open</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Circuit breaker around every upstream call: a healthy provider (CLOSED) trips to OPEN on sustained errors/rate-limit responses &mdash; during which the cache and durable store keep serving their last-known-good values with a staleness indicator &mdash; then periodically probes via HALF-OPEN before fully recovering.</div>
+        </div>
+
+        <h3>Additional Resilience Techniques</h3>
+        <ul>
+          <li><strong>Secondary provider fallback:</strong> if the primary provider's circuit is open, route that region's ingestion to a secondary upstream (e.g. fail over from a commercial provider to NOAA/NWS for US locations) rather than going dark.</li>
+          <li><strong>Provider reconciliation:</strong> when two providers disagree meaningfully (e.g. temperature differs by more than a few degrees, or precipitation type differs), prefer the higher-historical-accuracy source for that region, or blend/average for less consequential fields, and flag large disagreements for monitoring rather than silently picking one.</li>
+          <li><strong>Every response carries an <code>is_stale</code> flag and an <code>as_of_age_seconds</code> field</strong> so the client can render "conditions as of 42 minutes ago" instead of presenting stale data as if it were fresh.</li>
+          <li><strong>Rate-limit-aware scheduling:</strong> the Ingestion Service's poll scheduler is itself token-bucketed against the upstream's published rate limit, and prioritizes hot/dense cells over long-tail cells when budget is constrained.</li>
+        </ul>
+
+        <h2 id="deep-dive-severe-weather-alerting-and-fan-out">Deep Dive — Severe Weather Alerting and Fan-Out</h2>
+        <p>Severe weather alerts (tornado warnings, hurricane warnings, flash flood warnings) cannot wait for the normal 10&ndash;15 minute refresh cycle &mdash; they need to reach potentially millions of affected users within seconds of being issued. This is architecturally a broadcast/fan-out problem, not a per-request read problem.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="wx-fig5-title">
+            <title id="wx-fig5-title">Severe weather alert fan-out pipeline</title>
+            <defs>
+              <marker id="arrow-wx-5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path>
+              </marker>
+            </defs>
+            <rect x="260" y="15" width="180" height="46" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="43" text-anchor="middle" font-size="12.5" fill="var(--color-primary)">Upstream Alerts Feed (CAP)</text>
+
+            <rect x="240" y="95" width="220" height="52" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="118" text-anchor="middle" font-size="12.5" fill="var(--color-primary)">Alerting Service</text>
+            <text x="350" y="134" text-anchor="middle" font-size="10.5" fill="var(--color-text-muted)">maps affected polygon &rarr; geocells</text>
+
+            <rect x="240" y="185" width="220" height="52" rx="8" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="350" y="205" text-anchor="middle" font-size="12" fill="var(--color-primary)">Geocell &rarr; Subscriber Index</text>
+            <text x="350" y="221" text-anchor="middle" font-size="10.5" fill="var(--color-text-muted)">reverse lookup: cell &rarr; device tokens</text>
+
+            <rect x="30" y="275" width="150" height="50" rx="8" fill="#fff9ec" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="105" y="304" text-anchor="middle" font-size="11.5" fill="var(--color-primary)">Worker shard 1</text>
+
+            <rect x="275" y="275" width="150" height="50" rx="8" fill="#fff9ec" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="350" y="304" text-anchor="middle" font-size="11.5" fill="var(--color-primary)">Worker shard 2</text>
+
+            <rect x="520" y="275" width="150" height="50" rx="8" fill="#fff9ec" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="595" y="304" text-anchor="middle" font-size="11.5" fill="var(--color-primary)">Worker shard N</text>
+
+            <text x="350" y="365" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">&darr; APNs / FCM &rarr; up to millions of affected devices, target &lt;60 sec end-to-end</text>
+
+            <line x1="350" y1="61" x2="350" y2="90" stroke="var(--color-accent)" stroke-width="1.6" marker-end="url(#arrow-wx-5)"></line>
+            <line x1="350" y1="147" x2="350" y2="180" stroke="var(--color-accent)" stroke-width="1.6" marker-end="url(#arrow-wx-5)"></line>
+            <line x1="300" y1="237" x2="120" y2="270" stroke="var(--color-accent)" stroke-width="1.6" marker-end="url(#arrow-wx-5)"></line>
+            <line x1="350" y1="237" x2="350" y2="270" stroke="var(--color-accent)" stroke-width="1.6" marker-end="url(#arrow-wx-5)"></line>
+            <line x1="400" y1="237" x2="580" y2="270" stroke="var(--color-accent)" stroke-width="1.6" marker-end="url(#arrow-wx-5)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 5. Alert fan-out: an incoming CAP (Common Alerting Protocol) alert is mapped from its affected polygon to the set of overlapping geocells, resolved against a geocell-to-subscriber reverse index, and fanned out across sharded workers to push providers &mdash; the same fan-out-on-write shape used for broadcast notifications at scale.</div>
+        </div>
+
+        <h3>How Fan-Out Works</h3>
+        <ol>
+          <li>The upstream provider's alert feed (modeled on NOAA's CAP &mdash; Common Alerting Protocol &mdash; format) publishes an alert with a geographic polygon (or a county/zone FIPS code) and a severity level.</li>
+          <li>The Alerting Service intersects that polygon against our geocell grid to get the affected cell set &mdash; typically a few dozen to a few hundred cells for a metro-scale event.</li>
+          <li>For each affected cell, look up subscribed device tokens (users who favorited a location in that cell, or who have location-based alerting enabled) via the geocell-to-subscriber reverse index &mdash; this index is the key data structure that makes fan-out fast; without it, we'd have to scan every user.</li>
+          <li>Fan out push jobs across many worker shards (partitioned by device-token hash) so no single worker/queue is a bottleneck for a metro-wide alert.</li>
+          <li>Push through a managed provider (APNs/FCM); track delivery latency percentiles as a first-class SLO (see monitoring below), since this is the one place in the whole design where seconds genuinely matter.</li>
+        </ol>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+
+        <h3>Shard by Geocell Prefix &mdash; the Uber Quadtree Analogy</h3>
+        <p>Both the Redis cache and the durable store are sharded by <code>geocell_id</code> prefix. This deliberately echoes how Uber's geospatial indexing (originally a quadtree over S2 cells, now largely H3-based) buckets driver and rider locations: nearby entities land in the same or adjacent index buckets, which makes proximity queries efficient and lets a dense, high-traffic region be subdivided further without touching the rest of the keyspace. In our system, prefix-sharding gives the same two benefits: nearby cells (useful for multi-cell radar/map queries) tend to land on the same or adjacent shards, and a densely-queried metro area can be given its own dedicated shard capacity without re-architecting the global partitioning scheme.</p>
+        <p>Hash-based sharding (hash the full <code>geocell_id</code>, not just its prefix) is the safer default for the durable store, since it spreads load independently of any real-world clustering in the keyspace; use consistent hashing so a shard add/remove only moves a bounded fraction of keys. Prefix-based sharding is preferred specifically for the cache tier and for any component that benefits from co-locating nearby cells (radar tiling, neighbor-expansion queries).</p>
+
+        <h3>The Hot-Cell Problem</h3>
+        <p>A major weather event concentrated over a densely-populated area (a hurricane approaching New York City, for example) can drive one shard's traffic far above every neighboring shard's &mdash; the capacity math above showed a single hot cell absorbing tens of thousands of requests per TTL window. Left unmitigated, this can saturate a single cache node or database partition even while the rest of the cluster sits idle.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="wx-fig6-title">
+            <title id="wx-fig6-title">Hot-cell mitigation during a major weather event</title>
+            <defs>
+              <marker id="arrow-wx-6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path>
+              </marker>
+            </defs>
+            <rect x="30" y="30" width="220" height="70" rx="8" fill="#fdeceb" stroke="#c0392b" stroke-width="1.8"></rect>
+            <text x="140" y="58" text-anchor="middle" font-size="12.5" fill="#8e2418" font-weight="600">Hot cell detected</text>
+            <text x="140" y="74" text-anchor="middle" font-size="10.5" fill="#8e2418">QPS on one shard &gt;&gt; threshold</text>
+            <text x="140" y="88" text-anchor="middle" font-size="10.5" fill="#8e2418">(e.g. NYC ahead of a hurricane)</text>
+
+            <rect x="290" y="200" width="180" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="380" y="223" text-anchor="middle" font-size="12" fill="var(--color-primary)">Dedicated / pinned</text>
+            <text x="380" y="239" text-anchor="middle" font-size="12" fill="var(--color-primary)">cache capacity</text>
+
+            <rect x="500" y="30" width="180" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="590" y="53" text-anchor="middle" font-size="12" fill="var(--color-primary)">Added read-replica</text>
+            <text x="590" y="69" text-anchor="middle" font-size="12" fill="var(--color-primary)">fan-out</text>
+
+            <rect x="500" y="130" width="180" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="590" y="153" text-anchor="middle" font-size="12" fill="var(--color-primary)">Pre-warm cells inside</text>
+            <text x="590" y="169" text-anchor="middle" font-size="12" fill="var(--color-primary)">the forecast cone</text>
+
+            <rect x="500" y="230" width="180" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="590" y="253" text-anchor="middle" font-size="12" fill="var(--color-primary)">CDN short-TTL edge</text>
+            <text x="590" y="269" text-anchor="middle" font-size="12" fill="var(--color-primary)">cache + request coalescing</text>
+
+            <line x1="250" y1="65" x2="285" y2="220" stroke="var(--color-accent)" stroke-width="1.5" marker-end="url(#arrow-wx-6)"></line>
+            <line x1="250" y1="65" x2="495" y2="60" stroke="var(--color-accent)" stroke-width="1.5" marker-end="url(#arrow-wx-6)"></line>
+            <line x1="250" y1="65" x2="495" y2="155" stroke="var(--color-accent)" stroke-width="1.5" marker-end="url(#arrow-wx-6)"></line>
+            <line x1="250" y1="90" x2="495" y2="255" stroke="var(--color-accent)" stroke-width="1.5" marker-end="url(#arrow-wx-6)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 6. When traffic-monitoring detects a hot cell (or cluster of cells) far above normal, four mitigations fire in parallel: dedicated cache capacity for the affected cells, added read-replica fan-out, ingestion pre-warming ahead of the forecast/storm cone, and short-TTL CDN edge caching with request coalescing.</div>
+        </div>
+
+        <h3>Mitigations, in Detail</h3>
+        <ul>
+          <li><strong>Dedicated / pinned cache capacity:</strong> route known hot cells (identified ahead of time from a forecast cone, e.g. NOAA's hurricane "cone of uncertainty") to isolated Redis nodes so their load can't degrade the shared cluster.</li>
+          <li><strong>Read-replica fan-out:</strong> dynamically add read replicas for the affected shard, so read traffic scales horizontally without touching write/refresh capacity.</li>
+          <li><strong>Pre-warming ahead of the event:</strong> once a storm's forecast cone is known, proactively refresh and pin the cells it covers before traffic actually spikes, rather than reacting only after a stampede of misses.</li>
+          <li><strong>CDN edge caching + request coalescing:</strong> absorb the very largest spikes before they reach our infrastructure at all, and ensure that even a burst of near-simultaneous misses collapses into one origin fetch (see single-flight, above).</li>
+        </ul>
+
+        <h3>Cache and Durable-Store Replication</h3>
+        <ul>
+          <li>Each Redis shard is replicated (primary + at least one replica) across availability zones; a replica promotion on node failure is instant enough that clients see, at worst, a brief latency bump &mdash; never an outage.</li>
+          <li>The durable store is replicated 3&times; across AZs (and, for multi-region deployments, asynchronously across regions) purely for durability and read scaling &mdash; there is no write-path correctness requirement here as strict as, say, a payment ledger, so asynchronous replication is an easy, defensible choice.</li>
+          <li>Because the read path already tolerates staleness by design, cache/store replication failures degrade gracefully: a replica lagging by a few seconds, or even a full replica failover, is invisible to the "last-known-good with an age indicator" contract the API already makes.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging, and Analytics</h2>
+        <ul>
+          <li><strong>Cache hit ratio per geocell:</strong> the single most important operational metric &mdash; a sustained drop signals either a TTL misconfiguration, a cold-start after deploy, or an emerging hot-cell event worth pre-warming for.</li>
+          <li><strong>Upstream API cost/quota tracking:</strong> real-time dashboards of calls made vs. the provider's rate-limit ceiling and the running dollar cost, broken out per provider and per region, so a runaway ingestion bug (or an unexpectedly popular new region) is caught before it blows through a monthly quota.</li>
+          <li><strong>Alert-delivery latency during severe weather:</strong> track p50/p95/p99 time from "alert ingested" to "push delivered," with a hard SLO (e.g. p95 &lt; 60 seconds) &mdash; this is the one latency number in the whole system that genuinely has life-safety stakes.</li>
+          <li><strong>Most-requested locations:</strong> a rolling top-N feeds pre-warming decisions directly &mdash; if a location is trending (e.g. a wildfire or a storm making news), proactively refresh and pin it ahead of the traffic surge rather than reacting to it.</li>
+          <li><strong>Staleness distribution:</strong> track what fraction of served responses are marked <code>is_stale</code> and their age distribution &mdash; this is the direct signal for whether the circuit-breaker fallback path is being exercised more than expected.</li>
+          <li><strong>Provider disagreement rate:</strong> when running multiple upstream providers, track how often and by how much they disagree, to catch a provider quietly degrading in quality before users notice.</li>
+        </ul>
+
+        <h2 id="security-and-cost-considerations">Security and Cost Considerations</h2>
+        <ul>
+          <li><strong>Protect the upstream API key:</strong> the upstream provider's key is a paid, rate-limited, high-value credential &mdash; it lives only inside the Forecast Ingestion Service (never shipped to clients, never exposed through our own public API), stored in a secrets manager with rotation.</li>
+          <li><strong>Rate-limit our own public-facing API</strong> per API key / per client, independent of the upstream's limits &mdash; this is what actually protects the expensive upstream dependency from abuse: a malicious or buggy client hammering our endpoint should never be able to translate 1:1 into upstream calls, and thanks to the cache-refill design, it structurally can't (a flood of requests for the same cell just hits the cache).</li>
+          <li><strong>Cost attribution:</strong> tag ingestion calls and cache-refill events with the triggering region/tenant (if the API is offered to third-party integrators) so upstream API spend can be attributed and, if needed, billed back or capped per integrator.</li>
+          <li><strong>Input validation:</strong> bound-check lat/long ranges, reject absurd values, and normalize location queries before geocoding to avoid wasted lookups against the search index.</li>
+          <li><strong>Transport security:</strong> TLS everywhere; device push tokens and any PII in <code>alert_subscriptions</code> encrypted at rest.</li>
+          <li><strong>Abuse via scraping:</strong> a public "get forecast for every geocell" scraping campaign would be indistinguishable from legitimate hot-cell traffic to the cache (a good thing &mdash; it just gets served from cache) but could still be used to reconstruct the full grid; apply standard per-key rate limiting and anomaly detection on request patterns as an extra layer.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>A load-balancing layer sits at three points, same as most read-heavy web-facing systems:</p>
+        <ol>
+          <li>Between clients and the CDN/API Gateway (typically DNS/anycast-based).</li>
+          <li>Between the Weather Service fleet and the Redis cache tier &mdash; routed by consistent hashing on <code>geocell_id</code> so a given cell's traffic reliably lands on the shard that holds it.</li>
+          <li>Between the Weather Service and the durable store's shards, similarly routed by <code>geocell_id</code>.</li>
+        </ol>
+        <p>Start with simple round-robin/consistent-hash routing; if hot-cell events show up as uneven load on specific nodes despite the mitigations above, evolve to a latency-weighted strategy so the balancer itself reacts to a node under pressure, not just to raw connection count.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Run each region active-active with its own Weather Service fleet, cache cluster, and durable-store replica set, so reads are always served from the region closest to the requester for the lowest latency (Geo-DNS or anycast routing).</li>
+          <li>Ingestion can also be regionalized: use NOAA/NWS as the primary upstream for US locations and a global commercial provider elsewhere, with the normalization layer in the Ingestion Service reconciling both into one internal schema.</li>
+          <li>Replicate the durable store across regions asynchronously; a new observation written in one region propagating to others within a few seconds is a non-issue, since forecasts for a US city are read almost exclusively from the US region anyway.</li>
+          <li>Run the Alerting Service per-region against that region's own upstream alert feed, since severe weather alerts are inherently local &mdash; there's no reason a hurricane warning for Florida needs to route through an unrelated region's infrastructure.</li>
+          <li>Analytics can roll up per-region metrics into a global dashboard on a slower, asynchronous cadence &mdash; there's no correctness reason for cross-region analytics aggregation to be synchronous.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Upstream provider down or rate-limiting us</td><td>Circuit breaker; serve last-known-good with a staleness indicator; secondary provider fail-over</td></tr>
+          <tr><td>A single metro's hot cells overwhelm one cache/DB shard during a severe event</td><td>Dedicated pinned cache capacity, read-replica fan-out, pre-warming ahead of the forecast cone, CDN edge caching, request coalescing</td></tr>
+          <tr><td>Thundering herd on TTL expiry for a hot key</td><td>Single-flight / request coalescing so only one request per key triggers a real refill</td></tr>
+          <tr><td>Upstream API cost overrun</td><td>Real-time cost/quota dashboards, token-bucketed ingestion scheduler, tiered TTL (longer for long-tail cells)</td></tr>
+          <tr><td>Alert delivery too slow during a life-safety event</td><td>Dedicated fan-out pipeline (bypasses the normal cache/TTL cycle entirely), sharded push workers, hard p95 latency SLO</td></tr>
+          <tr><td>Two providers disagree on conditions/forecast</td><td>Reconciliation policy (prefer higher-accuracy source per region, or blend), monitored disagreement-rate metric</td></tr>
+          <tr><td>Region-wide outage</td><td>Multi-region active-active with independent regional ingestion and alerting</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>This system leans almost entirely toward availability + partition tolerance (AP), far more so than a typical CRUD system: there is essentially no operation in this design where showing slightly-stale data is worse than showing an error or nothing at all &mdash; that's true for current conditions, forecasts, and even (within a bounded, monitored latency budget) severe alerts. The one place a stricter guarantee matters is the alert-subscription write path (a user's subscription must reliably be recorded before the next event, or they silently miss a life-safety notification) &mdash; that piece alone benefits from a conventional ACID-backed relational store, exactly as discussed in the data model section.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Geospatial bucketing</td><td>Geohash length 5 (&asymp;4.9 km cells); S2/H3 as equally valid alternatives</td></tr>
+          <tr><td>Cache / refresh TTL</td><td>10&ndash;15 minutes (12 min assumed), matched to upstream's own update cadence</td></tr>
+          <tr><td>Read path</td><td>CDN edge cache &rarr; Weather Service &rarr; Redis (cache-aside) &rarr; Forecast Aggregator &rarr; durable store (never a live upstream call inline with a user request)</td></tr>
+          <tr><td>Ingestion</td><td>Scheduled Forecast Ingestion Service, only component calling upstream; circuit breaker + secondary provider fail-over</td></tr>
+          <tr><td>Primary datastore</td><td>Wide-column/time-series store (current conditions, forecasts, history) + relational store (accounts, favorites, subscriptions)</td></tr>
+          <tr><td>Partitioning</td><td>Hash-based (durable store) / prefix-based (cache, radar tiling) on geocell_id, echoing Uber's quadtree-style geo-indexing</td></tr>
+          <tr><td>Hot-cell mitigation</td><td>Dedicated cache capacity, read-replica fan-out, event-driven pre-warming, request coalescing</td></tr>
+          <tr><td>Severe alerts</td><td>Dedicated fan-out pipeline from the same upstream CAP feed, bypassing the normal TTL cycle, p95 &lt; 60 sec delivery SLO</td></tr>
+          <tr><td>Fault tolerance philosophy</td><td>Always serve last-known-good with an age indicator; never show an error for an upstream outage</td></tr>
+          <tr><td>Consistency model</td><td>AP almost everywhere; strict consistency only for alert-subscription writes</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>These are organized by theme &mdash; use them to rehearse, or expect a real interview to pick a handful as "and then what?" follow-ups on whatever you present first.</p>
+
+        <h3>Geospatial Design</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Why bucket weather data by geohash/grid-cell instead of exact lat/long coordinates?</div>
+          <div class="qa-a">Two reasons, both load-bearing: upstream providers themselves publish forecasts per grid cell (their models run on a grid, not per infinitely-precise point), so bucketing mirrors the source data; and it's what makes caching effective at all &mdash; many nearby users round to the same cell and share one cache entry, instead of each generating a distinct, uncacheable key.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you handle a user who is exactly on the boundary between two grid cells?</div>
+          <div class="qa-a">The encoding function (geohash/S2) deterministically assigns any coordinate to exactly one containing cell &mdash; there's no ambiguity to resolve at read time. Since cells are &asymp;5 km wide and weather doesn't change discontinuously at an arbitrary grid line (the underlying model itself is smoothed at that resolution), the boundary effect is negligible; if a product wants smoother transitions, blend the nearest 2&ndash;4 cells with inverse-distance weighting, but this is rarely worth the added complexity.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Geohash, S2, or H3 &mdash; how would you choose, and does it matter?</div>
+          <div class="qa-a">Geohash is simplest and prefix-shardable; S2 gives more uniform cell area globally (geohash cells distort away from the equator); H3's hexagons give uniform adjacency, which is convenient for radar/neighbor-expansion queries. Any of the three is defensible &mdash; state the trade-off and pick one rather than treating it as a solved/unsolved binary.</div>
+        </div>
+
+        <h3>Caching and Freshness</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you choose the cache TTL, and what's the trade-off?</div>
+          <div class="qa-a">Match it to the upstream provider's own update cadence (typically 10&ndash;15 minutes) &mdash; caching longer than the source refreshes costs nothing in real freshness, while a shorter TTL just burns upstream call budget for no benefit. The trade-off is entirely about upstream cost/rate-limit headroom vs. how current the data feels, not about correctness.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you test that stale data is never worse than no data?</div>
+          <div class="qa-a">Chaos-test the ingestion path in staging by killing the mocked upstream provider and asserting the public API never returns a 5xx and always returns a payload with correct <code>is_stale</code>/<code>as_of_age_seconds</code> metadata; add contract tests that fail the build if any response path can omit the staleness fields; alert in production on the fraction of stale responses served, with a target ceiling.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you design the cache-refill algorithm to avoid a thundering herd on TTL expiry?</div>
+          <div class="qa-a">Single-flight / request coalescing: the first request to see a miss for a given geocell acquires the refill, and every concurrent request for that same key waits on and shares that one result instead of independently re-fetching.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the right consistency model here, and how does it differ from something like the URL shortener?</div>
+          <div class="qa-a">Almost pure AP: unlike a URL shortener's key-generation path (which must never double-issue a key), there is no operation here where strong consistency is required for correctness &mdash; weather data is inherently a few minutes stale from the source already. The one exception is the alert-subscription write path, which benefits from ACID guarantees so a user's opt-in is never silently lost.</div>
+        </div>
+
+        <h3>Scaling and the Upstream Dependency</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">What happens during a hurricane when millions of users in one metro all query at once (the hot-cell problem)?</div>
+          <div class="qa-a">The CDN edge cache and Redis absorb the overwhelming majority of it, since all those users collapse onto a few hundred shared geocells; for the small number of cells that still run hot, dedicated pinned cache capacity, added read-replica fan-out, and ingestion pre-warming ahead of the forecast cone keep any single shard from becoming a bottleneck.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you handle the upstream provider being down?</div>
+          <div class="qa-a">A circuit breaker trips after sustained failures, at which point the system serves the durable store's last-known-good value (with an age indicator) for every affected cell and stops calling upstream until a cooldown-gated half-open probe succeeds; if a secondary provider is configured, ingestion for that region fails over to it.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you keep costs down against a rate-limited, paid upstream API?</div>
+          <div class="qa-a">The cache-refill design bounds upstream calls to roughly (active cells) &times; (day length &divide; TTL), completely decoupled from user request volume &mdash; the capacity estimation above shows this collapses 200 million daily client requests into roughly 8 million upstream calls, a &asymp;24:1 offload ratio system-wide and far higher for any individual hot cell.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support multiple weather data providers and reconcile conflicting forecasts?</div>
+          <div class="qa-a">A normalization layer in the Ingestion Service maps every provider's proprietary schema into one internal representation; when providers disagree meaningfully, apply a per-region "preferred source" policy or a blending rule for less consequential fields, and emit a monitored disagreement-rate metric so systematic quality drift in either provider is caught early.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you handle historical data storage growth?</div>
+          <div class="qa-a">Partition by geocell + date so old partitions can be independently compacted, downsampled (e.g. keep hourly granularity for 2 years, then roll up to daily aggregates beyond that), or moved to cold storage; time-series columnar compression alone typically cuts the effective footprint 5&ndash;8&times;.</div>
+        </div>
+
+        <h3>Alerting</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you push severe weather alerts to potentially millions of affected users quickly?</div>
+          <div class="qa-a">A dedicated fan-out pipeline, separate from the normal read path: map the alert's affected polygon to overlapping geocells, resolve subscribers via a geocell-to-subscriber reverse index, and fan out across sharded push workers to APNs/FCM &mdash; with a hard delivery-latency SLO (e.g. p95 under 60 seconds) tracked as a first-class metric.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What if a user is subscribed to a location far from where the alert's polygon technically ends?</div>
+          <div class="qa-a">Buffer the affected-cell computation by one ring of neighboring cells beyond the literal polygon boundary before resolving subscribers &mdash; erring toward over-notifying near a hard geographic edge is the safer failure mode for a life-safety alert.</div>
+        </div>
+
+        <h3>Product and API Design</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you implement location search/autocomplete for city names and zip codes?</div>
+          <div class="qa-a">A separate, denormalized <code>locations</code> search index (prefix/full-text search on display name and postal code) that resolves a user's query to a <code>location_id</code> and its <code>geocell_id</code> &mdash; kept independent from the weather data tables since it's a different access pattern (text search, not time-keyed lookup) and changes far less often.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you handle unit conversion (Celsius/Fahrenheit) &mdash; server-side or client-side?</div>
+          <div class="qa-a">Store and cache everything in one canonical unit (metric) internally so cached payloads are unit-agnostic and shareable across users regardless of preference; convert to the requesting user's preferred unit at the API response layer, which is cheap, stateless, and keeps the cache from fragmenting by unit preference.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support radar/precipitation map data efficiently?</div>
+          <div class="qa-a">Treat rendered map tiles as their own cacheable, geocell-adjacent artifact (often literally supplied as pre-rendered tiles by the upstream provider or a map-tile CDN) rather than trying to compute them per request; cache at the CDN edge with the same TTL discipline as other forecast data, and use a hexagonal/H3-style neighbor expansion if blending several cells' data into one continuous overlay.</div>
+        </div>
+
+        <h3>Extensions</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support minute-by-minute "nowcasting" (e.g. "rain starting in 10 minutes")?</div>
+          <div class="qa-a">Nowcasting typically comes from a different upstream feed (short-range radar extrapolation, refreshed far more often than the 10&ndash;15 minute forecast cadence) &mdash; add it as its own ingestion stream with its own, much shorter TTL, scoped to a finer grid resolution near the user's precise location, without changing the TTL/caching strategy for the rest of the system.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you decide which geocells to proactively pre-warm versus lazily refresh on next request?</div>
+          <div class="qa-a">Rank cells by a rolling popularity score from the Analytics pipeline (most-requested locations) plus any known upcoming event (a forecast cone, a trending news event); pre-warm the top tier on a tight schedule and leave the long tail on lazy, on-demand refresh &mdash; this is exactly the "hot vs. long-tail" split used in the capacity estimation above.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support a user with many favorited locations, each potentially subscribed to alerts?</div>
+          <div class="qa-a">Fan the subscription out per favorited location at write time (one row per user+location in <code>alert_subscriptions</code>) rather than trying to evaluate a user's full favorites list at alert time &mdash; this keeps the hot alert fan-out path a simple reverse-index lookup instead of a fan-out-on-read scan of every user's favorites.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This is a read-heavy caching and data-freshness problem, not a sensor-network problem &mdash; the app doesn't own weather stations, it stands between a huge read audience and a small, expensive, rate-limited upstream provider. Every major design decision follows from that framing: bucket by geocell (not exact coordinate) because that's both how the source data is shaped and what makes caching effective; choose a TTL that matches the upstream's own refresh cadence, since fresher-than-source caching buys nothing; and treat "never show an error for an upstream outage" as a hard requirement, not a nice-to-have &mdash; always serve last-known-good with a visible age indicator. The capacity math (&asymp;24:1 system-wide offload, &asymp;40,000:1 for a single hot cell during a severe event) is the same shape of argument as any cache-offload calculation, just keyed by geospatial grid cell instead of a URL or an object ID. Keep severe weather alerting on its own dedicated, low-latency fan-out path, fully decoupled from the normal TTL cycle, since it's the one place in this design where seconds have real safety stakes.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>National Weather Service, <a href="https://www.weather.gov/documentation/services-web-api" target="_blank" rel="noopener">"NWS Web Services API Documentation"</a></li>
+          <li>OpenWeatherMap, <a href="https://openweathermap.org/api" target="_blank" rel="noopener">"Weather API"</a> (example of a commercial, rate-limited upstream provider)</li>
+          <li>Uber Engineering, <a href="https://www.uber.com/blog/h3/" target="_blank" rel="noopener">"H3: Uber's Hexagonal Hierarchical Spatial Index"</a></li>
+          <li>Wikipedia, <a href="https://en.wikipedia.org/wiki/Geohash" target="_blank" rel="noopener">"Geohash"</a></li>
+          <li>Google, <a href="https://s2geometry.io/" target="_blank" rel="noopener">"S2 Geometry Library"</a></li>
+          <li>FEMA / NOAA, "Common Alerting Protocol (CAP)" specification, used as the model for the severe weather alerts feed</li>
+          <li>Community write-ups on circuit breaker patterns, cache-aside with request coalescing, and CDN cache-offload economics for read-heavy systems</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="notification-service.html"><span class="dir">Previous</span>Notification Service</a>
+          <a class="next" href="oncall-escalation-system.html"><span class="dir">Next</span>On-Call Escalation System</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

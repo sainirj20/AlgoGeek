@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing Google Docs — Real-Time Collaborative Editing | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Google Docs</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design">Low-Level Design</a></li>
+        <li><a href="#deep-dive-the-jupiter-model-centralized-operational-transformation">Deep Dive — The Jupiter Model: Centralized Operational Transformation</a></li>
+        <li><a href="#deep-dive-real-time-transport-websockets-optimistic-local-apply-and-the-op-queue">Deep Dive — Real-Time Transport: WebSockets, Optimistic Local Apply, and the Op Queue</a></li>
+        <li><a href="#deep-dive-rich-formatting-crdts-and-structural-edits">Deep Dive — Rich Formatting, CRDTs, and Structural Edits</a></li>
+        <li><a href="#deep-dive-presence-cursors-history-and-offline-editing">Deep Dive — Presence, Cursors, History, and Offline Editing</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing Google Docs — Real-Time Collaborative Editing</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough: requirements, capacity estimation, the WebSocket operation contract, data model, architecture, the Jupiter model of centralized Operational Transformation, real-time transport, CRDT-assisted rich formatting, presence and offline reconciliation, sharding, fault tolerance, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a real-time collaborative document editor &mdash; a system like Google Docs &mdash; where many users can open the same document and type into it simultaneously, and every collaborator's screen converges on the exact same final content. The core hard problem is concurrency: two people can press keys at nearly the same instant, each starting from the same version of the document, and the system has to reconcile both edits into one coherent, shared result without losing a single keystroke and without requiring either user to wait for the other before they can keep typing.</p>
+        <p>The experience bar is high and mostly invisible when done well: a keystroke must feel instantaneous to the person typing it (no perceptible lag, no lock icon, no "someone else is editing &mdash; please wait"), and it must show up on every other open collaborator's screen within a sub-second window. Comparable real systems include Google Docs, Sheets and Slides, Microsoft 365 co-authoring, Notion, and Figma's multiplayer canvas.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It is one of the few system-design prompts where the interesting problem is concurrency and correctness rather than raw scale. It rewards candidates who can reason precisely about what it means for two edits to conflict and how the system guarantees every replica converges, rather than candidates who jump straight into sharding a database.</p>
+
+        <h3>Why is this categorically different from a typical CRUD system?</h3>
+        <ul>
+          <li>Most systems assume writes are naturally serialized by the client or that the last writer simply wins; here, concurrent writers are the normal case, not the exception.</li>
+          <li>The unit of correctness is not "the row was updated" but "every replica's document state provably converges to the same bytes," even though different clients observe events in different orders and at different times.</li>
+          <li>Latency requirements are asymmetric and strict: the local echo of your own keystroke must be instant, while global convergence across collaborators only needs to be fast (sub-second), not synchronous.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Always narrow the problem before designing. Spend the first few minutes on scope, not on drawing boxes.</p>
+        <ol>
+          <li>Should the editor support plain-text collaboration only, or also rich formatting, tables, images, and comments?</li>
+          <li>Do we need to support fully offline editing (extended periods with no network), or just brief connectivity blips?</li>
+          <li>What is the expected maximum document size, and how far back does version/revision history need to reach?</li>
+          <li>How many simultaneous editors do we need to support on a single document &mdash; a handful of teammates, or hundreds on a viral public doc?</li>
+          <li>Are live cursor positions and collaborator presence (who's online, where they're typing) in scope for this design?</li>
+          <li>Do we need granular sharing permissions (owner/editor/commenter/viewer), or is "anyone with the link can edit" acceptable for a first version?</li>
+          <li>Should edits be attributed per user in history for audit and undo, or is a single merged history acceptable?</li>
+          <li>Is this a single-region deployment, or does it need to support globally distributed editors with low latency everywhere?</li>
+          <li>Do we need a suggestion/track-changes mode, or is direct editing the only mode in scope?</li>
+          <li>What end-to-end latency budget is acceptable from one user's keystroke to another collaborator seeing it?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't stall waiting for every answer &mdash; state a reasonable assumption out loud ("I'll assume rich formatting is in scope but comments are extended-only, offline editing must be supported, and we're targeting tens of simultaneous editors per document") and keep moving. That shows judgment, not indecision.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Any number of users can open the same document and edit it concurrently; all edits must converge to one identical final document across every replica.</li>
+          <li>Live cursor position and basic presence (who is currently viewing or editing) are visible to every collaborator in real time.</li>
+          <li>The document keeps a version/revision history that can be inspected and, in a fuller build, restored.</li>
+          <li>A client that goes offline can keep editing locally; on reconnect, its queued edits are reconciled against everything that happened while it was disconnected, with no edits silently dropped.</li>
+          <li>(Extended) Documents can be shared with specific collaborators at different permission levels.</li>
+          <li>(Extended) Collaborators can leave comments and use a suggestion/track-changes mode without directly mutating the canonical text.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Low-latency propagation of keystrokes</strong> &mdash; feels instant to the typer, near-instant to others.</li>
+          <li><strong>Strong eventual consistency</strong> &mdash; every replica converges to the same document state, regardless of the order in which operations were observed.</li>
+          <li><strong>Availability over strict consistency during a network partition</strong> &mdash; a disconnected collaborator keeps typing locally rather than being blocked; full convergence waits for reconnection.</li>
+          <li><strong>Durability</strong> &mdash; once an operation is acknowledged as committed, it must never be lost, even if the authoritative server crashes immediately afterward.</li>
+          <li><strong>Horizontal scalability</strong> &mdash; both in the number of concurrently active documents and in the number of simultaneous editors on any single hot document.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on the operational-transform core &mdash; real-time edit propagation, ordering, and convergence guarantees &mdash; and touch on presence, history, and offline reconciliation. We explicitly call out, but don't build in depth, a full comment/suggestion-mode workflow (a parallel annotation layer with its own resolve/accept lifecycle) or a granular permission model (owner/editor/commenter/viewer ACLs) &mdash; both are real, sizable sub-systems in the actual product but orthogonal to the core convergence problem this design focuses on.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>Assume a large collaborative-editing user base: hundreds of millions of documents exist, and only a small fraction of them are actively co-edited at any given moment &mdash; but the ones that are can have tens of simultaneous editors during a live session (a company all-hands notes doc, a shared classroom worksheet, a viral publicly-editable doc).</p>
+
+        <h3>Active-Document Assumptions</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          500 million documents exist in the corpus at any time
+          <br>Assume &asymp;0.05% are actively being co-edited concurrently &rarr; 500,000,000 &times; 0.0005 = 250,000 concurrently active documents
+          <br>Assume an average of 3 concurrent editors per active document, with hot documents spiking to 50+ simultaneous editors
+        </div>
+
+        <h3>Operations per Second &mdash; a Single Hot Document</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          During a fast multi-user typing session, assume each active editor's client batches keystrokes into &asymp;4 operations/sec (client-side debounce, e.g. flushed roughly every 250 ms) rather than one operation per raw keystroke
+          <br>Hot document with 50 simultaneous editors: 50 &times; 4 &asymp; 200 ops/sec arriving at that document's single OT server shard
+          <br>Each committed op is only transformed against the small number of concurrently in-flight ops (not the document's entire history), so per-document CPU cost scales with concurrent editor count, not history length
+        </div>
+
+        <h3>Platform-Wide Fan-Out</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          250,000 active documents &times; 3 average concurrent editors &times; 4 ops/sec/editor &asymp; 3,000,000 ops/sec generated platform-wide
+          <br>Each committed op is broadcast to every other collaborator on that document (average &asymp;2 other collaborators) &rarr; fan-out multiplier &asymp; 2&times; &rarr; &asymp;6,000,000 broadcast messages/sec platform-wide
+          <br>Peak traffic (overlapping business/school hours across time zones) can run 2&ndash;3&times; average &rarr; design for &asymp;10&ndash;20M broadcast messages/sec at peak
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Concurrently active documents</td><td>&asymp;250,000</td></tr>
+          <tr><td>Avg / peak concurrent editors per hot doc</td><td>~3 avg, 50+ peak</td></tr>
+          <tr><td>Ops/sec on a single hot document</td><td>&asymp;200</td></tr>
+          <tr><td>Platform-wide ops/sec generated</td><td>&asymp;3,000,000</td></tr>
+          <tr><td>Platform-wide fan-out messages/sec (peak)</td><td>&asymp;10&ndash;20 million</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>The write path is a persistent, bidirectional WebSocket contract rather than a request/response REST call &mdash; operations must be ordered and broadcast continuously, which a stateless HTTP call cannot do efficiently.</p>
+
+        <h3>Submitting an Operation (Client &rarr; OT Server)</h3>
+        <pre><code>WS message, client -> server
+{
+  "type": "submit_op",
+  "doc_id": "doc_9f3ac2e1",
+  "client_id": "client_4471",
+  "base_revision": 128,
+  "op": [
+    { "retain": 42 },
+    { "insert": "collaborative " },
+    { "retain": 908 }
+  ]
+}</code></pre>
+
+        <h3>Committed Operation Broadcast (Server &rarr; Every Collaborator)</h3>
+        <pre><code>WS message, server -> every connected client (including the sender)
+{
+  "type": "committed_op",
+  "doc_id": "doc_9f3ac2e1",
+  "revision": 129,
+  "client_id": "client_4471",
+  "op": [
+    { "retain": 42 },
+    { "insert": "collaborative " },
+    { "retain": 908 }
+  ],
+  "server_ts": "2026-07-19T14:02:11.483Z"
+}</code></pre>
+
+        <h3>Stale Revision &rarr; Catch-Up Required</h3>
+        <pre><code>WS message, server -> client (client's base_revision is behind current_revision)
+{
+  "type": "reject_stale_revision",
+  "doc_id": "doc_9f3ac2e1",
+  "client_current_base": 128,
+  "server_current_revision": 131,
+  "missing_ops": [
+    { "revision": 129, "op": [ "..." ] },
+    { "revision": 130, "op": [ "..." ] },
+    { "revision": 131, "op": [ "..." ] }
+  ]
+}
+// Client transforms its pending local op(s) against missing_ops, then resubmits with base_revision = 131</code></pre>
+
+        <h3>Opening a Document (REST &mdash; Snapshot + Catch-Up)</h3>
+        <pre><code>GET /api/v1/docs/{doc_id}/open
+
+Response 200:
+{
+  "doc_id": "doc_9f3ac2e1",
+  "snapshot_revision": 100,
+  "snapshot_ref": "gs://doc-snapshots/doc_9f3ac2e1/rev-100.snap",
+  "ops_since_snapshot": [ { "revision": 101, "op": ["..."] }, "...", { "revision": 128, "op": ["..."] } ],
+  "current_revision": 128
+}
+// Client loads the snapshot, replays only the ops since that snapshot, then opens the live WebSocket at base_revision = 128</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          The <code>base_revision</code> field is the load-bearing piece of this whole contract &mdash; it's exactly how the server knows which already-committed operations a newly-submitted op needs to be transformed against before being assigned the next revision number.
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>Two very different access patterns living side by side: a tiny, frequently-updated pointer record per document (current_revision, snapshot_ref), and a huge, append-only, sequential log of every operation ever applied.</li>
+          <li>The operation log is written once and never updated &mdash; a natural fit for an append-only, log-structured store &mdash; and is read sequentially by revision far more often than it is read randomly.</li>
+          <li>The document pointer record, by contrast, is read constantly (every open, every reconnect) and updated on every single committed operation, so it benefits from being small and cacheable in memory on the OT server that owns that document's shard.</li>
+        </ul>
+
+        <h3>Document Record</h3>
+        <table>
+          <tr><th colspan="2">Table: document</th></tr>
+          <tr><td>doc_id (PK)</td><td>varchar(32)</td></tr>
+          <tr><td>owner</td><td>bigint (FK &rarr; user_id)</td></tr>
+          <tr><td>current_revision</td><td>bigint</td></tr>
+          <tr><td>snapshot_ref</td><td>varchar(256) &mdash; pointer to the latest compacted snapshot blob</td></tr>
+          <tr><td>title</td><td>varchar(256)</td></tr>
+          <tr><td>created_at</td><td>datetime</td></tr>
+          <tr><td>updated_at</td><td>datetime</td></tr>
+        </table>
+
+        <h3>Operation Log Record</h3>
+        <table>
+          <tr><th colspan="2">Table: operation_log</th></tr>
+          <tr><td>doc_id (composite PK)</td><td>varchar(32)</td></tr>
+          <tr><td>revision (composite PK)</td><td>bigint &mdash; monotonically increasing per doc_id</td></tr>
+          <tr><td>client_id</td><td>varchar(32)</td></tr>
+          <tr><td>op_payload</td><td>json / blob &mdash; the transformed, committed operation</td></tr>
+          <tr><td>applied_at</td><td>datetime</td></tr>
+        </table>
+
+        <h3>Database Choice</h3>
+        <p>The operation_log table's access pattern &mdash; append-only, partitioned by doc_id, read back sequentially by increasing revision &mdash; is the textbook case for a wide-column / log-structured store. The document pointer table is small, hot, and needs strict consistency on current_revision, since it's effectively the watermark the OT server checks on every incoming operation, which favors a strongly-consistent store co-located with (or cached in memory by) the OT server owning that shard.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Clients hold open a persistent WebSocket connection into a Collaboration / OT Server tier. Each server in that tier is the single source of truth for operation ordering on whichever documents it currently holds authority over &mdash; every operation for a given doc_id is funneled through exactly one authoritative server at a time. Committed operations are appended to a durable Operation Log store, and a background process periodically compacts the log into a Snapshot, so a newly-opened document loads by fetching the latest snapshot plus a short tail of recent ops rather than replaying the document's entire history from revision zero.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-gdoc-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-gdoc-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="250" y="10" width="200" height="55" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="350" y="33" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">Clients (Editors A, B, C&#8230;)</text>
+            <text x="350" y="49" text-anchor="middle" fill="#cbd8ef" font-size="10">optimistic local apply</text>
+
+            <rect x="220" y="150" width="260" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="176" text-anchor="middle" fill="var(--color-primary)" font-size="13" font-weight="600">Collaboration / OT Server Tier</text>
+            <text x="350" y="193" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">single source of truth for op ordering, per doc_id</text>
+            <text x="350" y="208" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">sharded by doc_id (see Data Partitioning)</text>
+
+            <rect x="60" y="300" width="230" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="175" y="328" text-anchor="middle" fill="var(--color-primary)" font-size="13" font-weight="600">Operation Log Store</text>
+            <text x="175" y="345" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">durable, append-only, replicated</text>
+            <text x="175" y="360" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">source of truth on server crash</text>
+
+            <rect x="410" y="300" width="230" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="525" y="328" text-anchor="middle" fill="var(--color-primary)" font-size="13" font-weight="600">Snapshot Storage</text>
+            <text x="525" y="345" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">periodic compacted snapshots</text>
+            <text x="525" y="360" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">fast doc load, skip full replay</text>
+
+            <line x1="345" y1="65" x2="345" y2="147" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-gdoc-1)" marker-start="url(#arrow-gdoc-1)"></line>
+            <text x="352" y="108" fill="var(--color-text-muted)" font-size="9.5">persistent WebSocket: submit op / broadcast</text>
+
+            <line x1="300" y1="220" x2="190" y2="297" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-gdoc-1)"></line>
+            <text x="150" y="265" fill="var(--color-text-muted)" font-size="10">commit ordered op</text>
+
+            <line x1="290" y1="335" x2="410" y2="335" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-gdoc-1m)"></line>
+            <text x="300" y="325" fill="var(--color-text-muted)" font-size="9.5">periodic compaction</text>
+
+            <line x1="620" y1="300" x2="430" y2="67" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrow-gdoc-1m)"></line>
+            <text x="480" y="180" fill="var(--color-text-muted)" font-size="9.5">doc open: fetch latest snapshot (fast load)</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; clients hold a persistent WebSocket into the Collaboration/OT Server tier, which commits ordered operations to a durable Operation Log and periodically compacts history into Snapshots for fast document loads.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Sticky, per-document authority:</strong> a document's ordering must be decided by one server at a time, so client connections for that doc are routed to whichever shard currently owns it (see Load Balancing below).</li>
+          <li><strong>Durability is decoupled from serving latency:</strong> an operation is acknowledged once committed to the Operation Log, not once every collaborator has received the broadcast.</li>
+          <li><strong>Snapshots are a pure performance optimization, not a correctness requirement:</strong> the log alone is always sufficient to reconstruct any revision; the snapshot just avoids replaying it in full on every open.</li>
+        </ul>
+
+        <h2 id="low-level-design">Low-Level Design</h2>
+        <p>Walk through the moment two users type at nearly the same instant &mdash; this is the core mechanic the entire design exists to support.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-gdoc-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <text x="350" y="10" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-style="italic">Two users type at nearly the same instant</text>
+
+            <rect x="30" y="15" width="190" height="65" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="125" y="40" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">Client A</text>
+            <text x="125" y="56" text-anchor="middle" fill="#cbd8ef" font-size="9.5">local optimistic apply:</text>
+            <text x="125" y="70" text-anchor="middle" fill="#cbd8ef" font-size="9.5">insert "Hello" @ base_rev N</text>
+
+            <rect x="480" y="15" width="190" height="65" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="575" y="40" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">Client B</text>
+            <text x="575" y="56" text-anchor="middle" fill="#cbd8ef" font-size="9.5">local optimistic apply:</text>
+            <text x="575" y="70" text-anchor="middle" fill="#cbd8ef" font-size="9.5">insert "World" @ base_rev N</text>
+
+            <rect x="225" y="155" width="250" height="95" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="180" text-anchor="middle" fill="var(--color-primary)" font-size="13" font-weight="600">OT Server</text>
+            <text x="350" y="198" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">assigns total order: A's op committed as rev N+1</text>
+            <text x="350" y="212" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">transforms B's op vs A's -> op', committed as rev N+2</text>
+            <text x="350" y="230" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">single canonical order per doc_id</text>
+
+            <rect x="30" y="320" width="640" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="345" text-anchor="middle" fill="var(--color-primary)" font-size="13" font-weight="600">Broadcast Committed Ops to Every Collaborator</text>
+            <text x="350" y="362" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">A, B, and any other open collaborator (C, D&#8230;) each apply rev N+1 then rev N+2</text>
+            <text x="350" y="377" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">every replica ends up byte-identical, regardless of raw typing order</text>
+
+            <line x1="145" y1="80" x2="280" y2="153" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-gdoc-2)"></line>
+            <line x1="555" y1="80" x2="420" y2="153" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-gdoc-2)"></line>
+            <line x1="350" y1="250" x2="350" y2="317" stroke="var(--color-primary)" stroke-width="1.8" marker-end="url(#arrow-gdoc-2)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 2. Core concurrent-edit flow &mdash; two clients optimistically apply their own keystrokes locally; the OT server assigns a total order and transforms the second op against the first, then broadcasts both transformed ops to every collaborator so all replicas converge.</div>
+        </div>
+
+        <ol>
+          <li>User A and User B each have the document open at revision N and type at nearly the same instant.</li>
+          <li>Each client optimistically applies its own keystroke to its local in-memory document immediately &mdash; the typer never waits on the network.</li>
+          <li>Each client ships its operation to the OT Server as <code>{doc_id, base_revision: N, op}</code>.</li>
+          <li>The OT server, which processes one document's incoming operations one at a time, picks whichever operation arrives first (say A's) and commits it unchanged as revision N+1.</li>
+          <li>B's operation was authored against revision N but must now sit on top of revision N+1, so the server transforms B's op against A's already-committed op &mdash; producing an equivalent op that preserves B's intent while accounting for A's change &mdash; and commits it as revision N+2.</li>
+          <li>The server broadcasts both committed operations to every connected collaborator, including A and B themselves.</li>
+          <li>A's client applies B's transformed op on top of its own local state; B's client applies its own server-transformed op (replacing its speculative local version) plus A's op. Every client ends up with byte-identical document state, regardless of which raw keystroke physically happened first.</li>
+        </ol>
+
+        <h2 id="deep-dive-the-jupiter-model-centralized-operational-transformation">Deep Dive — The Jupiter Model: Centralized Operational Transformation</h2>
+        <p>Google Docs' real, documented architecture is commonly referred to as the "Jupiter model," named after a 1995 collaborative system (Nichols, Curtis, Dixon, and Lamping) that first described this specific centralized-OT architecture. The key simplifying move: rather than a fully peer-to-peer OT system, where every client must be able to transform its operations against every other client's concurrent operations &mdash; a combinatorial explosion of transform-function cases as the number of simultaneous editors grows &mdash; a single central server defines the one canonical ordering of all operations for a given document.</p>
+
+        <h3>Two Streams, Not Every Pairwise Combination</h3>
+        <p>Under this model, each client only ever has to reason about two operation streams: its own pending local operations (not yet acknowledged by the server) and the stream of already-ordered operations arriving from the server. The server, symmetrically, only has to transform each client's incoming operation against server history &mdash; never against another client's operations directly, and never against another client's in-flight, not-yet-ordered operation.</p>
+
+        <h3>Why This Collapses Complexity</h3>
+        <p>In a fully peer-to-peer OT system with N simultaneous editors, a naive design needs to reason about transform interactions across pairs (and higher-order combinations) of concurrently in-flight operations from every client &mdash; complexity that grows sharply with N. Under the Jupiter model, the transform function only ever needs to handle "my pending op versus the server's next committed op(s)," a fixed, small problem regardless of how many other collaborators are connected. This is the single biggest reason the centralized model is what actually shipped in production, rather than a theoretically more symmetric peer-to-peer design.</p>
+
+        <table class="sortable">
+          <tr><th>Property</th><th>Peer-to-Peer OT</th><th>Jupiter (Centralized) Model</th></tr>
+          <tr><td>What each client must transform against</td><td>Every other client's concurrent operations, in every possible arrival order</td><td>Only the server's ordered history</td></tr>
+          <tr><td>Transform-case growth as editor count increases</td><td>Grows sharply with the number of simultaneous editors</td><td>Stays roughly constant &mdash; one client versus one server, always</td></tr>
+          <tr><td>Single source of truth for ordering</td><td>Emergent / negotiated across peers</td><td>Explicit &mdash; the server</td></tr>
+          <tr><td>Production track record</td><td>Rare in large, shipped systems</td><td>Google Wave, Google Docs</td></tr>
+        </table>
+
+        <h2 id="deep-dive-real-time-transport-websockets-optimistic-local-apply-and-the-op-queue">Deep Dive — Real-Time Transport: WebSockets, Optimistic Local Apply, and the Op Queue</h2>
+        <p>The "fast path" is what makes typing feel instant. Every keystroke is applied optimistically to the local in-memory document the moment it happens &mdash; there is no network round-trip on the critical path between a user pressing a key and the character appearing on screen. Simultaneously, the same operation is shipped over a persistent WebSocket connection to the OT server.</p>
+        <p>The OT server transforms the incoming operation against any operations that arrived concurrently (i.e. committed after the base_revision the client's operation was authored against), commits the transformed operation to the durable operation log, and fans the final, transformed operation out to every other connected collaborator on that document &mdash; who apply it to their own local copy, exactly as described in the Jupiter model above.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-gdoc-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="25" width="160" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="100" y="55" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Keystroke Typed</text>
+            <text x="100" y="72" text-anchor="middle" fill="#cbd8ef" font-size="9.5">by the local user</text>
+
+            <rect x="205" y="25" width="170" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="290" y="53" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Optimistic Local Apply</text>
+            <text x="290" y="70" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">instant, no network wait</text>
+
+            <rect x="400" y="25" width="170" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="485" y="53" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Ship Over WebSocket</text>
+            <text x="485" y="70" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">{doc_id, base_revision, op}</text>
+
+            <rect x="595" y="25" width="145" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="667" y="53" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">OT Server</text>
+            <text x="667" y="70" text-anchor="middle" fill="#cbd8ef" font-size="9.5">transform + next revision</text>
+
+            <rect x="205" y="195" width="170" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="290" y="223" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Operation Log</text>
+            <text x="290" y="240" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">durable append-only commit</text>
+
+            <rect x="400" y="195" width="170" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="485" y="223" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Broadcast Fan-Out</text>
+            <text x="485" y="240" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">transformed op -> every collaborator</text>
+
+            <rect x="595" y="195" width="145" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="667" y="223" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Remote Clients</text>
+            <text x="667" y="240" text-anchor="middle" fill="#cbd8ef" font-size="9.5">apply -> converge</text>
+
+            <line x1="180" y1="60" x2="205" y2="60" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-gdoc-3)"></line>
+            <line x1="375" y1="60" x2="400" y2="60" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-gdoc-3)"></line>
+            <line x1="570" y1="60" x2="595" y2="60" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-gdoc-3)"></line>
+            <line x1="640" y1="95" x2="310" y2="193" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-gdoc-3)"></line>
+            <line x1="667" y1="95" x2="500" y2="193" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-gdoc-3)"></line>
+            <line x1="570" y1="230" x2="595" y2="230" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-gdoc-3)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 3. The fast path &mdash; a keystroke is applied locally and instantly, shipped over a persistent WebSocket, transformed and committed by the OT server, then fanned out to every other collaborator.</div>
+        </div>
+
+        <h3>Why an Operation Queue, Not a Single In-Flight Op</h3>
+        <p>A client doesn't wait for the server to acknowledge one operation before accepting the next keystroke &mdash; it maintains a small local queue of not-yet-acknowledged pending operations, so a burst of fast typing is never throttled by round-trip latency. When the server's committed-op broadcast catches up and acknowledges the oldest pending operation, it's popped off the local queue; if the server instead responds with a stale-revision rejection, the entire pending queue is transformed against the missing history and resubmitted as a batch.</p>
+
+        <h2 id="deep-dive-rich-formatting-crdts-and-structural-edits">Deep Dive — Rich Formatting, CRDTs, and Structural Edits</h2>
+        <p>Plain-text OT transform functions (insert/delete/retain against another insert/delete/retain) are well-understood and have been formally studied in the literature. Real documents, though, are far more than a flat character stream: they have formatting runs (bold, italic, font, color) layered on top of text, embedded objects (images, tables, drawings), and comment threads anchored to a range of text that itself might move as the document is edited.</p>
+        <p>Production collaborative editors commonly split the problem: keep OT for the core linear text stream, where its transform functions are simplest and best understood, and layer CRDT-like (Conflict-free Replicated Data Type) structures on top for the more tree-shaped or set-shaped auxiliary state &mdash; formatting spans, embedded object metadata, comment anchors. A CRDT is specifically designed so replicas can apply updates in any order, or even apply the same update twice, and still converge &mdash; without needing a central authority to define one canonical ordering, which is exactly the property that's awkward to obtain for tree-shaped state out of a straight character-stream OT model.</p>
+
+        <h3>OT vs. CRDT — Two Answers to "How Do Concurrent Edits Converge?"</h3>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Operational Transformation (OT)</th><th>CRDT</th></tr>
+          <tr><td>Coordination</td><td>Needs a central server (Jupiter model) or a full peer-to-peer transform matrix</td><td>None required &mdash; convergence is a mathematical property of the merge function</td></tr>
+          <tr><td>Best fit</td><td>Linear, ordered structures &mdash; the core text stream</td><td>Tree/set-shaped structures &mdash; formatting spans, object metadata, comments</td></tr>
+          <tr><td>Server role</td><td>Load-bearing &mdash; defines the canonical order</td><td>Optional &mdash; can relay only, without transforming anything</td></tr>
+          <tr><td>Typical production use</td><td>Google Docs' core text engine (Jupiter-derived)</td><td>Often combined with OT for auxiliary state, not a full replacement</td></tr>
+        </table>
+        <p>The practical takeaway for an interview: don't present OT and CRDTs as competing answers to the same question &mdash; the strongest answer is that real systems combine them, using each where its guarantees are the easiest to obtain.</p>
+
+        <h2 id="deep-dive-presence-cursors-history-and-offline-editing">Deep Dive — Presence, Cursors, History, and Offline Editing</h2>
+        <p>Several features here are related to, but not identical with, the core OT convergence problem, and it's worth being explicit about which ones ride on the authoritative operation log and which ones don't.</p>
+
+        <h3>Presence and Live Cursors</h3>
+        <p>Live cursor position and collaborator-presence indicators (who's viewing, who's actively typing, and where) are broadcast as lightweight, non-authoritative side-channel messages &mdash; separate from the authoritative operation log entirely. They're never committed, never need to be durable, and can be safely dropped or superseded by a newer cursor position with no correctness impact, which is exactly why they don't need to go through the same commit-then-broadcast pipeline as document text.</p>
+
+        <h3>Version History via Snapshots</h3>
+        <p>Periodic snapshots (see Feature-Specific Logic below) do double duty: they let a newly-opened document load instantly instead of replaying its entire operation history from revision zero, and they also form the natural basis for a user-facing version history feature &mdash; each retained snapshot (or a labeled subset of them) is a restorable point in time.</p>
+
+        <h3>Offline Editing and Reconnect Reconciliation</h3>
+        <p>An offline client keeps accepting local keystrokes into its optimistic local document and its local pending-operation queue exactly as it would if briefly disconnected mid-session &mdash; there's no special "offline mode" at the editing layer. On reconnect, the client replays its queued operations against the server using precisely the same OT machinery used for live concurrent edits: it resubmits with its now-stale base_revision, the server transforms the queued operations against everything committed while the client was disconnected, and broadcasts the results.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-gdoc-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-gdoc-4m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="25" width="190" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="115" y="55" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client Goes Offline</text>
+            <text x="115" y="72" text-anchor="middle" fill="#cbd8ef" font-size="9.5">network drops mid-edit</text>
+
+            <rect x="245" y="25" width="190" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="340" y="55" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Local Operation Queue</text>
+            <text x="340" y="72" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">buffers keystrokes locally</text>
+
+            <rect x="470" y="25" width="270" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="605" y="55" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Server Revision Keeps Advancing</text>
+            <text x="605" y="72" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">other collaborators keep committing ops</text>
+
+            <rect x="20" y="225" width="190" height="80" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="115" y="258" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client Reconnects</text>
+            <text x="115" y="275" text-anchor="middle" fill="#cbd8ef" font-size="9.5">network restored</text>
+
+            <rect x="245" y="225" width="190" height="80" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="340" y="255" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">Replay Queue</text>
+            <text x="340" y="272" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">resubmit w/ stale base_revision</text>
+
+            <rect x="470" y="225" width="270" height="80" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="605" y="255" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="600">OT Server Transforms + Rebases</text>
+            <text x="605" y="272" text-anchor="middle" fill="var(--color-text-muted)" font-size="9.5">vs. all missed history; commits &amp; broadcasts</text>
+
+            <line x1="210" y1="60" x2="245" y2="60" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-gdoc-4)"></line>
+            <line x1="435" y1="60" x2="470" y2="60" stroke="var(--color-text-muted)" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#arrow-gdoc-4m)" marker-start="url(#arrow-gdoc-4m)"></line>
+
+            <line x1="115" y1="95" x2="115" y2="222" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-gdoc-4)"></line>
+            <text x="122" y="165" fill="var(--color-text-muted)" font-size="9">reconnect</text>
+            <line x1="340" y1="95" x2="340" y2="222" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-gdoc-4)"></line>
+            <text x="347" y="165" fill="var(--color-text-muted)" font-size="9">replay on reconnect</text>
+            <line x1="605" y1="95" x2="605" y2="222" stroke="var(--color-text-muted)" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#arrow-gdoc-4m)"></line>
+            <text x="612" y="165" fill="var(--color-text-muted)" font-size="9">missed history</text>
+
+            <line x1="210" y1="265" x2="245" y2="265" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-gdoc-4)"></line>
+            <line x1="435" y1="265" x2="470" y2="265" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-gdoc-4)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 4. Offline-queue reconciliation &mdash; a disconnected client keeps buffering local edits while the server's revision keeps advancing from other collaborators; on reconnect, the queued ops are transformed against the missed history and rebased into the converged document.</div>
+        </div>
+
+        <p>The only meaningful difference between being offline for 2 seconds versus 2 hours is the size of missing_ops the server has to transform the queue against &mdash; the correctness mechanism is identical at both time scales, which is a nice validation that the core OT design generalizes rather than needing bespoke offline-specific logic.</p>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <p>Shard the Collaboration/OT server tier and the Operation Log by doc_id: every operation for a given document is routed to, ordered by, and logged under exactly one shard at a time. This is the load-bearing design choice that makes a single canonical ordering per document tractable at all &mdash; it sidesteps needing any cross-shard coordination protocol for ordering, at the cost of concentrating all of one document's activity onto one shard (addressed below under Bottlenecks).</p>
+        <ul>
+          <li>Hash doc_id to a shard for an even distribution across the OT server fleet.</li>
+          <li>A shard can hold authority for many low-activity documents simultaneously; a single very hot document effectively borrows a disproportionate share of its shard's capacity, which is why hot-document detection and rebalancing matter operationally.</li>
+          <li>Shard reassignment (during scale-out, failover, or rebalancing a hot doc onto its own dedicated shard) must hand off cleanly: drain in-flight ops, ensure the new shard picks up from the exact last committed revision, and only then let clients reconnect to the new owner.</li>
+        </ul>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <p>The Operation Log is the one dataset that can never lose a committed keystroke, so it's durably replicated (e.g. 3&times; across availability zones) before an operation is acknowledged as committed back to clients. If the OT server holding authority for a document crashes, a standby takes over: it replays the operation log from the last durable revision, reconstructs the in-memory ordering state, and resumes accepting new operations at exactly current_revision + 1 &mdash; clients reconnect, discover the new revision via the stale-revision/catch-up path (see System/API Design above), and continue seamlessly.</p>
+        <ul>
+          <li>Because ordering state can be fully reconstructed from the log, the OT server itself can be treated as disposable on crash &mdash; the log, not the server process, is the actual source of truth.</li>
+          <li>Snapshot storage is likewise replicated, though it's a pure performance optimization: if a snapshot were ever lost, the full operation log since document creation is still sufficient (just slower) to reconstruct current state.</li>
+        </ul>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <ul>
+          <li>Every operation carries the base_revision it was authored against; the OT server compares that to current_revision to know exactly which already-committed operations (if any) it must transform the incoming op against before assigning it the next revision number.</li>
+          <li>A client that has been offline or slow to flush simply resubmits with an older base_revision; the server's transform step is identical whether the concurrent operations were milliseconds old or minutes old &mdash; there's no special-cased offline path at the transform layer itself.</li>
+          <li>The operation log would grow without bound for a long-lived, heavily-edited document, so a background compaction job periodically materializes a full-document snapshot at some revision and lets older raw operations age out of hot storage (moved to cold storage for audit/history purposes, or dropped per retention policy).</li>
+          <li>Snapshot compaction cadence trades off replay cost on open (fewer, older snapshots mean more ops to replay) against compaction overhead (too-frequent snapshotting wastes storage/IO on a document nobody re-opens for a while) &mdash; a reasonable default is snapshotting every N committed operations or every T minutes of continuous editing, whichever comes first.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Per-document access control:</strong> owner, editor, commenter, viewer &mdash; enforced both at the REST layer (opening/loading a document) and, critically, on every single incoming WebSocket operation, not just at initial connection time.</li>
+          <li><strong>Permissions can change mid-session</strong> (an owner downgrades a collaborator from editor to viewer while they're actively connected); the OT server must re-check the caller's current permission on every submitted op and reject or disconnect if it's no longer sufficient, rather than trusting a permission check performed only when the socket was first opened.</li>
+          <li><strong>Transport security:</strong> TLS on every WebSocket and REST call; operations and snapshots encrypted at rest.</li>
+          <li><strong>Audit trail:</strong> since every committed operation records a client_id and timestamp, the operation log doubles as a tamper-evident audit log of exactly who changed what and when.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Unlike a stateless CRUD API, routing here cannot be simple round-robin: once a document's ordering authority lives on a specific OT server (see Data Partitioning above), every client editing that document must have its WebSocket routed to that same server &mdash; otherwise two different servers could each think they're the source of truth for the same doc_id, which breaks the entire ordering guarantee. A connection-routing layer (a consistent-hashing-aware proxy, or a lookup service backed by a fast in-memory directory of doc_id &rarr; owning server) directs each client's WebSocket handshake to the correct shard. Only the initial handshake / shard-lookup step is load-balanced in the traditional sense; once connected, the client is sticky to that server for the life of the session.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Place a document's authoritative OT shard in the region closest to its most active editors, to minimize the perceived typing-to-broadcast latency for the majority of that document's collaborators.</li>
+          <li>A collaborator connecting from a distant region still has their WebSocket routed back to the document's single authoritative shard, since ordering can't be split across regions &mdash; cross-region collaborators trade off some added latency, an explicit and acceptable cost given that the alternative (multiple simultaneous orderings) breaks correctness entirely.</li>
+          <li>The durable Operation Log is replicated cross-region asynchronously for disaster recovery, so a regional outage doesn't lose committed history, even though live editing on documents authoritative in that region is briefly unavailable during failover.</li>
+          <li>If a document's center of gravity shifts (a team relocates, or a doc goes viral in a new region), its authoritative shard can be migrated to a closer region during a low-activity window.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li>Per-document operation throughput and P50/P95/P99 transform latency &mdash; the direct proxy for whether typing feels instant.</li>
+          <li>WebSocket connect/disconnect/reconnect rates, and offline-replay op counts &mdash; spikes here often correlate with client-side or network issues before they show up as user complaints.</li>
+          <li>Snapshot-compaction lag (how far behind the latest revision the newest snapshot is) &mdash; a growing lag means document-open latency is quietly getting worse for that document.</li>
+          <li>Per-shard hot-document detection: alert when a single doc_id's op rate or connected-editor count crosses a threshold, since that's the leading indicator of the single-shard hotspot described below.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>A single document's OT authority lives on one server &mdash; natural hotspot for a very large simultaneous-editor session (a viral public doc)</td><td>Cap/monitor concurrent editors per doc; consider a read-mostly "presenter mode" for extreme fan-out; fast shard rebalancing</td></tr>
+          <tr><td>The central-server model that makes OT tractable is itself a single point of ordering authority per document</td><td>Durable, replicated operation log plus fast failover to a standby that replays from the last durable point</td></tr>
+          <tr><td>Snapshot compaction falling behind on a very hot, long-lived document</td><td>Monitor compaction lag; scale compaction frequency to activity rather than a fixed schedule</td></tr>
+          <tr><td>Cross-region collaborators anchored to a shard far from them</td><td>Migrate the authoritative shard toward the document's actual usage center of gravity</td></tr>
+          <tr><td>Offline client accumulates a very large queued-edit backlog</td><td>Bound local queue size and warn the user; replay cost is still bounded by history since disconnect, not total document history</td></tr>
+        </table>
+
+        <h3>Consistency Model, Explicitly</h3>
+        <p>Favor availability on the write path from the typer's perspective: a disconnected or lagging client keeps accepting local keystrokes rather than blocking. Favor strict, centralized ordering for the one specific decision that must never be ambiguous &mdash; which operation counts as "first" on a given document at a given revision &mdash; since two servers disagreeing on that would break convergence outright.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Concurrency model</td><td>Centralized Operational Transformation (Jupiter model) &mdash; one authoritative server per doc_id</td></tr>
+          <tr><td>Transport</td><td>Persistent WebSocket; optimistic local apply plus a local pending-op queue</td></tr>
+          <tr><td>Ordering authority</td><td>Single OT server shard per doc_id, sticky-routed</td></tr>
+          <tr><td>Durability</td><td>Replicated, append-only Operation Log; acknowledge only after durable commit</td></tr>
+          <tr><td>Fast document load</td><td>Periodic Snapshots plus replay of only the tail since the last snapshot</td></tr>
+          <tr><td>Partitioning</td><td>Hash by doc_id across the OT server / operation log fleet</td></tr>
+          <tr><td>Rich content (formatting, images, comments)</td><td>CRDT-like structures layered alongside core-text OT</td></tr>
+          <tr><td>Presence / live cursors</td><td>Lightweight, non-authoritative side-channel, decoupled from the operation log</td></tr>
+          <tr><td>Offline editing</td><td>Local optimistic queue, replayed/transformed against missed history on reconnect &mdash; same machinery as live concurrency</td></tr>
+          <tr><td>Fault tolerance</td><td>Standby OT server replays the durable log from the last committed revision on failover</td></tr>
+          <tr><td>Consistency model</td><td>Strong eventual consistency; availability favored for the typer, strict ordering favored for commit authority</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Beyond the core design, interviewers love to pressure-test one component at a time. Use these to rehearse, or expect a real interview to pick 3&ndash;5 as "and then what?" follow-ups.</p>
+
+        <h3>Scaling and Performance</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">A single public document goes viral and thousands of people open it to watch (mostly read-only) while a handful actively edit &mdash; how do you handle the read-heavy fan-out without overloading the OT server?</div>
+          <div class="qa-a">Separate "read/observe" connections from "edit" connections at the transport layer; observers can be served the broadcast stream from a lightweight fan-out tier without ever touching the OT server's per-op transform path, which stays reserved for actual editors.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you scale the OT server tier when one document suddenly has 200 simultaneous editors instead of the usual 3?</div>
+          <div class="qa-a">Detect the hot document via per-shard op-rate/connection-count monitoring, and either give it a dedicated shard sized to its load or apply light backpressure/batching on the transform loop; the single-authority-per-doc constraint doesn't change, only how much capacity that one authority is given.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the CPU cost of the transform step as a document's total history grows into the millions of operations?</div>
+          <div class="qa-a">Bounded and independent of total history &mdash; an incoming op is only ever transformed against operations committed since its base_revision (typically a handful), not against the document's entire lifetime of edits; this is exactly why revision numbers matter (see Feature-Specific Logic).</div>
+        </div>
+
+        <h3>Correctness and Convergence</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Two operations arrive at the OT server in the same millisecond &mdash; how do you decide which one is "first"?</div>
+          <div class="qa-a">The server processes its incoming operation queue for a given document strictly one at a time; the point isn't fairness, it's that there is exactly one authority making that call, so every replica agrees with it by construction.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you prove the resulting document is actually the same on every client, not just "probably" the same?</div>
+          <div class="qa-a">OT transform functions are typically accompanied by formal properties (often called TP1/TP2 in the literature) guaranteeing that applying transformed operations in the server-assigned order always yields the same result regardless of a client's original local ordering; production systems also validate this with extensive property-based and fuzz testing of the transform function itself.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if the transform function has a subtle bug that produces divergent state for one rare operation combination?</div>
+          <div class="qa-a">This is the scariest failure mode in the whole design, since it silently corrupts a shared document rather than throwing a visible error; mitigations include exhaustive transform-function test suites, periodic background consistency checks that hash-compare client and server document state, and a manual "force resync from server snapshot" recovery path.</div>
+        </div>
+
+        <h3>Product and API Design</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you support commenting without letting comments interfere with the core text OT stream?</div>
+          <div class="qa-a">Model comments as a separate, anchor-based auxiliary structure (a CRDT-like set keyed by a stable position reference into the text) rather than literal characters in the document body, so comment operations never need to be transformed against text insert/delete operations at all.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you add a "suggestion mode" / track-changes feature?</div>
+          <div class="qa-a">Represent a suggestion as metadata wrapping an operation (an insert/delete tagged "proposed, not yet accepted") rather than a different operation type &mdash; the underlying OT/transform machinery for ordering and convergence stays identical; only the rendering layer and an accept/reject action differ.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you let a user restore the document to a version from an hour ago?</div>
+          <div class="qa-a">Roll forward from the nearest snapshot before that point in time by replaying the retained operation log up to the target revision, then apply that reconstructed state as a new operation (a large diff) at the current revision &mdash; restoring is itself just another committed operation, never a special-cased mutation of history.</div>
+        </div>
+
+        <h3>Security and Permissions</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">A collaborator's edit permission is revoked while they're actively typing &mdash; what should happen?</div>
+          <div class="qa-a">The OT server must re-validate permission on every incoming operation, not just at connection time; once revoked, subsequent operations from that client are rejected and the WebSocket can be closed, though operations already committed before the revocation remain part of history.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent a malicious client from submitting operations for a document it was never granted access to?</div>
+          <div class="qa-a">Every operation submission is authenticated and authorized against that specific doc_id server-side before it's even considered for ordering or transformation &mdash; permission checks happen strictly before the op enters the transform pipeline, not after.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support end-to-end encrypted documents, where even the server can't read the content?</div>
+          <div class="qa-a">This is fundamentally in tension with server-side OT, since the server needs to inspect operation content at least structurally to transform it correctly; real designs either accept that the OT server sees plaintext (the common, trusted-server model) or move to structural-only transforms and CRDT merges that operate on encrypted-but-structured blobs without needing to interpret their content.</div>
+        </div>
+
+        <h3>Reliability and Operations</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">The OT server holding authority for a document crashes mid-session &mdash; what does the user experience?</div>
+          <div class="qa-a">A brief connection drop and reconnect; the standby replays the operation log from the last durable revision, resumes accepting ops, and clients catch up via the same stale-revision/catch-up path used for any reconnect &mdash; no data loss, just a short availability blip.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you detect that convergence has silently broken for some document?</div>
+          <div class="qa-a">Periodic background jobs that hash-compare the server's authoritative document state (reconstructed from the log) against what a sample of connected clients report as their local state, alerting on any mismatch well before a user notices garbled content.</div>
+        </div>
+
+        <h3>Extensions</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to real-time collaborative spreadsheets, where "operations" are cell edits rather than character inserts?</div>
+          <div class="qa-a">The same centralized-ordering, transform-against-history model applies; the transform function changes shape (cell-range shift or formula-reference rewrite on row/column insert/delete, rather than character-offset retain/insert/delete), but the OT server, operation log, and snapshot/broadcast machinery are structurally identical.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support a "presenter follows me" mode where all viewers' scroll position snaps to the presenter's cursor?</div>
+          <div class="qa-a">This rides entirely on the existing non-authoritative presence/cursor side-channel described above &mdash; broadcast the presenter's cursor position at a modest rate and have following clients scroll to it locally; it never touches the operation log or the transform pipeline at all.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The single defining fact about this system is that concurrent, conflicting edits are the normal case, not an edge case &mdash; every other decision (centralized ordering authority, revision numbers, transform-against-history, sharding by doc_id) flows from needing a precise, provable answer to how all replicas end up identical. The Jupiter model's big insight is collapsing peer-to-peer transform complexity down to "each client versus one server" by making a single server the canonical source of ordering &mdash; state this trade-off explicitly, since "why not full peer-to-peer OT?" is a near-guaranteed follow-up. Keep the fast path (local optimistic apply, WebSocket, transform, broadcast) narrowly focused on correctness and latency, and push presence, version history, and rich-formatting concerns onto adjacent, non-authoritative structures &mdash; side-channel presence messages, periodic snapshots, CRDT-like formatting layers &mdash; rather than overloading the core text-operation stream with all of it.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>David A. Nichols, Pavel Curtis, Michael Dixon, and John Lamping, <a href="https://www.semanticscholar.org/paper/High-latency,-low-bandwidth-windowing-in-the-system-Nichols-Curtis/369c52d8214b73a86b1e3f31d287823ea91884d6" target="_blank" rel="noopener">"High-Latency, Low-Bandwidth Windowing in the Jupiter Collaboration System"</a> (UIST '95) &mdash; the original paper describing the centralized operational-transformation architecture behind Google Docs' "Jupiter model."</li>
+          <li>Google Drive Blog, <a href="https://drive.googleblog.com/2010/09/whats-different-about-new-google-docs.html" target="_blank" rel="noopener">"What's different about the new Google Docs: Making collaboration fast"</a> &mdash; Google's own account of the real-time collaboration engine.</li>
+          <li>Apache Wave (incubator), <a href="https://svn.apache.org/repos/asf/incubator/wave/whitepapers/operational-transform/operational-transform.html" target="_blank" rel="noopener">"Google Wave Operational Transformation"</a> whitepaper &mdash; a detailed treatment of client/server OT as implemented for Google Wave, a close relative of the Docs architecture.</li>
+          <li>Marc Shapiro, Nuno Pregui&ccedil;a, Carlos Baquero, and Marek Zawirski, <a href="https://hal.science/inria-00609399" target="_blank" rel="noopener">"Conflict-free Replicated Data Types"</a> (INRIA Research Report RR-7687, 2011) &mdash; the foundational CRDT paper referenced in the OT-vs-CRDT deep dive above.</li>
+          <li>Community write-ups on operational-transformation fundamentals (transform-function properties, peer-to-peer vs. centralized OT trade-offs) and on combining OT with CRDT-like structures for rich-text formatting.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="google-calendar.html"><span class="dir">Previous</span>Google Calendar</a>
+          <a class="next" href="flickr.html"><span class="dir">Next</span>Flickr</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

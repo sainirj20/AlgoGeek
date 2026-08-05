@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ETA Service &amp; Location Sharing | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">ETA &amp; Location Sharing</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-map-matching-noisy-gps-to-the-road-network">Deep Dive — Map-Matching Noisy GPS to the Road Network</a></li>
+        <li><a href="#deep-dive-hybrid-eta-computation">Deep Dive — Hybrid ETA Computation</a></li>
+        <li><a href="#deep-dive-real-time-push-delivery-per-trip-channel">Deep Dive — Real-Time Push Delivery per Trip Channel</a></li>
+        <li><a href="#deep-dive-client-side-interpolation-between-sparse-pings">Deep Dive — Client-Side Interpolation Between Sparse Pings</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#feature-specific-logic-handling-gps-gaps">Feature-Specific Logic: Handling GPS Gaps</a></li>
+        <li><a href="#rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>ETA Service and Live Location Sharing</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for the post-match live-tracking pipeline: GPS ping ingestion, Hidden-Markov-Model map-matching onto the road network, hybrid graph + traffic + ML ETA computation, WebSocket fan-out per trip, client-side dead-reckoning interpolation, sharding, privacy, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the system that takes over the instant a ride or delivery has been <strong>matched</strong> — a driver has already been assigned to a rider — and keeps the rider (and, in most modern products, the driver too) continuously informed of where the other party is and how long until they arrive. Concretely: ingest a stream of GPS pings from the driver's phone every few seconds, "snap" each noisy raw coordinate onto the actual road the driver is on, continuously recompute an estimated time of arrival first to the pickup point and then to the destination, and push the combined <code>{location, eta}</code> update to the rider's app in near real time so the little car icon glides smoothly across the map.</p>
+        <p><strong>Explicitly out of scope:</strong> how the driver and rider were paired in the first place — nearest-driver search, dispatch, acceptance/decline, surge — is a separate problem with its own design (see the Rider Matching System page). This page starts from the assumption "a trip_id now exists, linking one driver and one rider, and the driver is physically en route," and ends when the trip completes and location sharing is torn down.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It's a deceptively "simple-sounding" feature — "just show a moving dot and a number of minutes" — that hides several genuinely hard sub-problems: how do you turn noisy, sparse GPS samples into a road-accurate position (map-matching)? How do you produce an ETA that's actually useful rather than a naive straight-line guess? How do you fan out a location update to potentially millions of concurrent, open tracking screens with sub-second latency without either polling everyone or building a bespoke connection-per-trip system that falls over at scale? And how do you keep the dot moving smoothly when real data only arrives once every few seconds? A strong candidate treats the write path (ingest), the compute path (map-match + ETA), and the fan-out path (push) as three independently scalable pipelines, not one monolithic loop.</p>
+
+        <h3>Why is this harder than "just show the driver's GPS coordinate"?</h3>
+        <ul>
+          <li>Raw GPS is noisy — urban canyons, tunnels, and multipath reflection routinely place a driver's reported coordinate on the wrong street or even inside a building; showing it raw would make the rider distrust the whole feature.</li>
+          <li>ETA is not a fixed number — it must continuously react to the driver's actual progress, live traffic conditions, and the driver taking a different route than originally computed.</li>
+          <li>The fan-out side has to serve however many riders currently have the tracking screen open, system-wide, every few seconds, without falling back to expensive full-page polling.</li>
+          <li>Pings only arrive every 3&ndash;5 seconds, but rider expectations (and competitors) demand a dot that appears to move continuously, not one that jumps and pauses.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope before drawing boxes — this problem has several dimensions that materially change the design.</p>
+        <ol>
+          <li>Matching has already happened — should I assume a single active <code>trip_id</code> with exactly one driver and one rider, and design purely the tracking/ETA pipeline?</li>
+          <li>Is location sharing bidirectional — does the driver also see the rider's live location (e.g. walking to a pickup point), or is it driver-to-rider only?</li>
+          <li>What precision do we actually need on the rider's screen — is a several-meter map-matched position sufficient, or do we need lane-level accuracy?</li>
+          <li>Is handling GPS gaps (tunnels, underground parking, dense urban canyons) in scope for this design, or can I treat that as a follow-up deep dive?</li>
+          <li>What's the acceptable end-to-end latency from a driver's phone emitting a ping to the rider's screen updating — is sub-second the bar, or is 1&ndash;2 seconds acceptable?</li>
+          <li>Do we need to persist the full location history per trip (for post-trip receipts, support disputes, replay), or is only the current position needed?</li>
+          <li>Should the ETA be a single point estimate, or a range/confidence band, and does it need to account for the driver stopping for gas, a second pickup, etc.?</li>
+          <li>Is this single-region or does the design need to anticipate global scale (millions of concurrent trips across many countries) from day one?</li>
+          <li>What happens when the richer traffic/ML ETA service is degraded or unavailable — is a naive fallback acceptable, or must the product hide the ETA entirely rather than show a bad one?</li>
+          <li>Does location sharing need to stop the instant the trip ends, or is there a legitimate "share my post-trip location for N minutes" use case (e.g. safety features)?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          State your scope decision out loud immediately: "I'll treat matching as already solved and given to me as a <code>trip_id</code> plus a driver_id and rider_id — my job starts at 'driver is en route' and ends at 'trip completed, stop sharing.'" This single sentence prevents you from accidentally spending 15 minutes re-deriving dispatch, which is the most common way candidates run out of time on this problem.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Continuously ingest the driver's GPS location for the duration of a matched trip (ping interval ~3&ndash;5 seconds).</li>
+          <li>Map-match each raw GPS ping onto the underlying road network so the reported position is always a plausible on-road location.</li>
+          <li>Continuously share the driver's live, map-matched location with the rider for the duration of the trip.</li>
+          <li>Compute and continuously refresh an ETA — first to the pickup point, then, once the rider is picked up, to the destination.</li>
+          <li>Recompute the ETA on a reroute, a traffic incident, or any material deviation from the previously assumed path.</li>
+          <li>Push combined <code>{location, eta}</code> updates to the rider's app in near real time, without the client having to poll.</li>
+          <li>Stop sharing location and tear down the tracking channel the instant the trip is marked complete or cancelled.</li>
+          <li><em>(If bidirectional, per clarifying question)</em> share the rider's live location with the driver during the pre-pickup phase, on the same infrastructure.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Low end-to-end latency:</strong> from a driver's phone emitting a GPS ping to the corresponding update rendering on the rider's screen, well under 500ms&ndash;1s — this is the single defining NFR of the whole design.</li>
+          <li><strong>High write throughput:</strong> hundreds of thousands of location writes per second system-wide at steady state, driven purely by (active drivers) &divide; (ping interval).</li>
+          <li><strong>High fan-out read throughput:</strong> most riders with an active trip keep the tracking screen open, so reads roughly track writes 1:1 per trip, not a small fraction of it.</li>
+          <li><strong>ETA accuracy</strong> good enough to be trustworthy — a naive straight-line estimate that's routinely off by minutes actively damages user trust in the product.</li>
+          <li><strong>Support millions of concurrent active trips</strong> globally, each an independent, isolated tracking session.</li>
+          <li><strong>Graceful degradation:</strong> if the rich traffic/ML ETA service is unavailable, still produce a reasonable (if less accurate) ETA rather than showing nothing.</li>
+          <li><strong>At-least-once ping delivery is acceptable</strong> (mobile networks retry), but duplicate or out-of-order pings must never corrupt the displayed position or ETA.</li>
+          <li><strong>Horizontal scalability</strong> of ingestion, map-matching/ETA compute, and the push/fan-out tier independently, since each has a very different load profile.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on ingestion, map-matching, hybrid ETA computation, real-time push fan-out, and client-side interpolation. We explicitly do not re-derive driver-rider matching/dispatch (a separate design), turn-by-turn voice navigation, or the full routing-graph build/update pipeline (we treat "a road-network graph with live traffic weights exists and is queryable" as a given input, the same way the notification service treats "Kafka exists").</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly and let them drive every downstream decision — this problem's math is refreshingly simple and worth working through out loud.</p>
+
+        <h3>Ping Ingestion Throughput</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          1,000,000 active drivers system-wide, each on an active trip and emitting a GPS ping every ~4 seconds
+          <br>Writes/sec = 1,000,000 &divide; 4 &asymp; 250,000 location writes/second at steady state
+          <br>At a 3-second interval instead: 1,000,000 &divide; 3 &asymp; 333,000/sec &mdash; the design should comfortably tolerate the 3&ndash;5s range, i.e. ~200K&ndash;330K/sec
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Generalizing</span>
+          Writes/sec &asymp; (active drivers) &divide; (ping interval in seconds)
+          <br>At 5&times; growth (5,000,000 active drivers): 5,000,000 &divide; 4 &asymp; 1.25 million writes/sec &mdash; the ingestion and location-store tiers must scale roughly linearly with active-driver count, not with rider count
+        </div>
+
+        <h3>Concurrent Active Trips and Fan-Out Reads</h3>
+        <div class="formula-box">
+          <span class="formula-label">Fan-out</span>
+          Assume ~80% of active drivers are mid-trip (rest are idle/positioning) &rarr; ~800,000 concurrent active trips
+          <br>If ~90% of riders on an active trip keep the tracking screen open: ~720,000 concurrently subscribed tracking channels
+          <br>Each channel receives one push per driver ping (~4s cadence) &rarr; fan-out reads/sec &asymp; 720,000 &divide; 4 &asymp; 180,000 pushes/sec &mdash; same order of magnitude as the write side, because this is fundamentally a 1:1 write-to-read pipeline per trip, not a broadcast/celebrity fan-out problem
+        </div>
+
+        <h3>Storage Sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Ephemeral current-location store</span>
+          800,000 active trips &times; ~150 bytes (trip_id, driver_id, lat, lng, heading, speed, road_segment_id, sequence_no, ts) &asymp; 120 MB resident &mdash; trivially small, and exactly why this belongs in an in-memory store, not a durable database
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Durable location-history store</span>
+          250,000 writes/sec &times; ~150 bytes &asymp; 37.5 MB/sec &asymp; 3.2 TB/day raw
+          <br>Retained 90 days for trip receipts, support disputes, and replay &asymp; 290 TB raw; &times;3 replication (RF=3) &asymp; &asymp;870 TB &mdash; the dominant storage cost, and the reason this needs a wide-column, time-series-friendly, horizontally-shardable store, not a relational one
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Active drivers system-wide</td><td>~1,000,000</td></tr>
+          <tr><td>GPS ping interval</td><td>~3&ndash;5 sec (baseline: 4s)</td></tr>
+          <tr><td>Location writes/sec (steady state)</td><td>~250,000</td></tr>
+          <tr><td>Concurrent active trips</td><td>~800,000</td></tr>
+          <tr><td>Concurrently subscribed tracking channels</td><td>~720,000</td></tr>
+          <tr><td>Push fan-out/sec</td><td>~180,000</td></tr>
+          <tr><td>Target end-to-end latency</td><td>&lt; ~500ms&ndash;1s</td></tr>
+          <tr><td>Ephemeral current-location footprint</td><td>~120 MB (in-memory)</td></tr>
+          <tr><td>Durable history footprint, 90-day retention (RF=3)</td><td>~870 TB</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Two narrow, high-frequency contracts dominate this system: the driver app pushes pings in, and the rider app subscribes to a per-trip stream out. Both are deliberately minimal — every extra field on the hot path costs latency and bandwidth at hundreds of thousands of QPS.</p>
+
+        <h3>Driver Location Ping (Ingestion)</h3>
+        <pre><code>POST /v1/trips/{trip_id}/location-pings
+(or, more commonly in production: a persistent gRPC/WebSocket stream from the driver app,
+ with one message per ping rather than a new HTTP request per ping)
+
+Request body:
+{
+  "trip_id": string,
+  "driver_id": string,
+  "sequence_no": integer,       // monotonically increasing per driver session, for de-dup/ordering
+  "lat": float,
+  "lng": float,
+  "heading": float,             // degrees, compass bearing
+  "speed": float,               // meters/sec, from device GPS
+  "accuracy": float,            // device-reported horizontal accuracy, meters
+  "client_ts": string           // ISO-8601, device clock at capture time
+}
+
+Response 202 Accepted: { "status": "accepted" }
+Errors: 400 malformed payload &middot; 404 unknown/expired trip_id &middot; 410 trip already completed</code></pre>
+
+        <h3>Subscribe to Live Trip Status (Rider)</h3>
+        <pre><code>WS /v1/trips/{trip_id}/live  (WebSocket upgrade, one connection per trip per subscriber)
+
+Server &rarr; client push, sent on every map-matched update:
+{
+  "trip_id": string,
+  "matched_lat": float,
+  "matched_lng": float,
+  "heading": float,
+  "road_segment_id": string,
+  "eta_seconds": integer,
+  "eta_confidence": "high" | "degraded",   // degraded = naive fallback ETA in use
+  "phase": "TO_PICKUP" | "TO_DESTINATION",
+  "server_ts": string
+}
+
+Fallback for clients that can't hold a WebSocket:
+GET /v1/trips/{trip_id}/live   // short-poll snapshot, same payload, higher latency</code></pre>
+
+        <h3>Trip Lifecycle Hooks (consumed from the matching/dispatch system)</h3>
+        <pre><code>POST /internal/trips/{trip_id}/tracking-start   { "driver_id", "rider_id", "pickup", "destination" }
+POST /internal/trips/{trip_id}/tracking-stop    { "reason": "completed" | "cancelled" }</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Call out <code>sequence_no</code> explicitly: mobile networks retry, so the same ping can arrive twice, or a delayed ping can arrive after a newer one. The Location Ingestion Service must treat <code>sequence_no</code> (monotonic per driver session) as the real ordering key and silently drop/ignore any ping whose sequence number is not greater than the last one accepted for that trip &mdash; never trust arrival order alone.
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>Two very different access patterns living side by side: "what is the current position of trip X, right now" (single-row, latest-value, extremely hot, ephemeral) versus "give me every position sample for trip X over its lifetime" (append-only time series, cold after the trip ends, read rarely and in bulk).</li>
+          <li>The current-location read/write pattern is a pure key-value lookup keyed by <code>trip_id</code> — no joins, no secondary indexes needed on the hot path.</li>
+          <li>The history pattern is exactly the write-heavy, rarely-updated, naturally time-ordered shape that a wide-column/time-series store is built for.</li>
+        </ul>
+
+        <h3>Two Stores, Not One</h3>
+        <p>An <strong>ephemeral, in-memory current-location store</strong> (Redis or an equivalent in-memory KV store), keyed by <code>trip_id</code>, holds only the single latest map-matched position + ETA for each active trip. It's fast (sub-millisecond), and its data is disposable by design — if a node restarts, the next ping simply repopulates the key; there is no need to recover "yesterday's current location." This is the store the Location Sharing Service reads on every push.</p>
+        <p>A <strong>durable, append-only time-series history store</strong> (Cassandra or a similar wide-column store, partitioned by <code>trip_id</code> and clustered by timestamp) retains every ping for the life of the trip plus a retention window afterward, for post-trip receipts ("here's your route"), support/dispute investigation, and replay/analytics. It is never on the hot push path — it's written asynchronously and read only after the fact.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If asked "why not just one database for both": the current-location store needs to answer "give me trip X's latest row" in well under a millisecond, hundreds of thousands of times per second, and doesn't care about durability across a restart. The history store needs to survive forever (well, 90 days) and is written far more than it's read. Optimizing one store for both access patterns means compromising on both — this is the same "hot cache vs. durable system of record" split used in the notification service's rate-limit counters, applied to location instead of counts.
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>The Driver app streams GPS pings to a <strong>Location Ingestion Service</strong>, which validates and de-duplicates them (via <code>sequence_no</code>) and hands each ping to a <strong>Map-Matching</strong> stage that snaps the raw coordinate onto the road network. The map-matched position is written to the <strong>Location Store</strong> (both the ephemeral current-position keyed store and, asynchronously, the durable history store) and handed to the <strong>ETA Service</strong>, which combines a road-network shortest-path calculation, a live traffic layer, and an ML refinement model to produce a continuously updated ETA. The <strong>Location Sharing Service</strong> combines the latest <code>{location, eta}</code> and pushes it down the Rider app's open per-trip channel.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Driver app streams GPS pings to a Location Ingestion Service, which validates and de-duplicates them then hands each ping to a map-matching stage that snaps it onto the road network. The map-matched position writes to an ephemeral current-location store and asynchronously to a durable history store. The ETA Service reads the map-matched position, combines a road graph, live traffic, and an ML model, and writes an ETA. The Location Sharing Service combines location and ETA and pushes the update over a per-trip channel to the Rider app.">
+            <style>
+              .eta-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .eta-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .eta-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .eta-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .eta-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .eta-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .eta-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+              .eta-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-eta-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-eta-1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="290" y="10" width="180" height="45" rx="6" class="eta-box"></rect>
+            <text x="380" y="28" text-anchor="middle" class="eta-title">Driver app</text>
+            <text x="380" y="42" text-anchor="middle" class="eta-sub">GPS ping every ~4s</text>
+
+            <line x1="380" y1="55" x2="380" y2="84" class="eta-arrow" marker-end="url(#arrow-eta-1)"></line>
+
+            <rect x="230" y="85" width="300" height="50" rx="6" class="eta-box-strong"></rect>
+            <text x="380" y="105" text-anchor="middle" class="eta-title">Location Ingestion Service</text>
+            <text x="380" y="120" text-anchor="middle" class="eta-sub">validates + de-dups via sequence_no</text>
+
+            <line x1="380" y1="135" x2="380" y2="164" class="eta-arrow" marker-end="url(#arrow-eta-1)"></line>
+
+            <rect x="230" y="165" width="300" height="50" rx="6" class="eta-box-strong"></rect>
+            <text x="380" y="185" text-anchor="middle" class="eta-title">Map-Matching</text>
+            <text x="380" y="200" text-anchor="middle" class="eta-sub">snaps noisy GPS onto road-network graph (HMM)</text>
+
+            <line x1="300" y1="215" x2="150" y2="254" class="eta-arrow" marker-end="url(#arrow-eta-1)"></line>
+            <line x1="460" y1="215" x2="610" y2="254" class="eta-arrow" marker-end="url(#arrow-eta-1)"></line>
+
+            <rect x="20" y="255" width="260" height="55" rx="6" class="eta-box"></rect>
+            <text x="150" y="276" text-anchor="middle" class="eta-title">Current-Location Store</text>
+            <text x="150" y="290" text-anchor="middle" class="eta-sub">in-memory, keyed by trip_id, ephemeral</text>
+            <text x="150" y="302" text-anchor="middle" class="eta-label">read by ETA Service + Sharing Service</text>
+
+            <rect x="480" y="255" width="260" height="55" rx="6" class="eta-box-store"></rect>
+            <text x="610" y="276" text-anchor="middle" class="eta-title">Location History Store</text>
+            <text x="610" y="290" text-anchor="middle" class="eta-sub">durable, time-series, partitioned by trip_id</text>
+            <text x="610" y="302" text-anchor="middle" class="eta-label">async write &mdash; receipts / replay / support</text>
+
+            <line x1="150" y1="310" x2="150" y2="339" class="eta-arrow" marker-end="url(#arrow-eta-1)"></line>
+
+            <rect x="20" y="340" width="260" height="60" rx="6" class="eta-box-strong"></rect>
+            <text x="150" y="361" text-anchor="middle" class="eta-title">ETA Service</text>
+            <text x="150" y="375" text-anchor="middle" class="eta-sub">road graph + live traffic + ML refinement</text>
+            <text x="150" y="388" text-anchor="middle" class="eta-label">falls back to haversine/avg-speed if degraded</text>
+
+            <line x1="280" y1="370" x2="349" y2="370" class="eta-arrow" marker-end="url(#arrow-eta-1)"></line>
+
+            <rect x="350" y="340" width="260" height="60" rx="6" class="eta-box-strong"></rect>
+            <text x="480" y="361" text-anchor="middle" class="eta-title">Location Sharing Service</text>
+            <text x="480" y="375" text-anchor="middle" class="eta-sub">combines {location, eta} for the trip</text>
+            <text x="480" y="388" text-anchor="middle" class="eta-label">pushes over the trip's live channel</text>
+
+            <line x1="480" y1="400" x2="480" y2="429" class="eta-arrow" marker-end="url(#arrow-eta-1)"></line>
+
+            <rect x="360" y="430" width="240" height="25" rx="12" class="eta-box"></rect>
+            <text x="480" y="447" text-anchor="middle" class="eta-title">Rider app (live push)</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; ingestion, map-matching, dual-write to an ephemeral current-location store and a durable history store, hybrid ETA computation, and a push service that fans the combined update out to the rider.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Map-matching happens once, immediately after ingestion</strong> — every downstream consumer (ETA Service, Location Sharing Service, history store) reads or stores the corrected, road-accurate position, never the raw noisy coordinate.</li>
+          <li><strong>The ephemeral store and the durable store are two different systems serving two different questions</strong> — "what's the position right now" versus "what was the position at any point in the past" — deliberately decoupled so neither's constraints (latency vs. durability) compromise the other.</li>
+          <li><strong>The ETA Service is an independent, horizontally scalable compute tier</strong>, not embedded inline in the ingestion path — it can be scaled, degraded, or fall back to a naive mode without affecting whether the ping itself is durably recorded.</li>
+          <li><strong>The push side is fully decoupled from the write side</strong> — the Location Sharing Service reads the latest state on its own cadence and pushes it, so a slow rider connection never backs up ingestion.</li>
+        </ul>
+
+        <h2 id="deep-dive-map-matching-noisy-gps-to-the-road-network">Deep Dive — Map-Matching Noisy GPS to the Road Network</h2>
+        <p>A raw GPS fix from a phone routinely has 5&ndash;20 meters of error — worse in "urban canyons" between tall buildings, worse still near tunnels or overpasses. Plotted directly, a sequence of raw fixes would show the driver's dot weaving on and off the road, crossing into buildings, or briefly appearing on a parallel street. <strong>Map-matching</strong> is the process of taking that noisy stream and inferring the most probable path the vehicle actually took along the real road network.</p>
+
+        <h3>The Hidden Markov Model Formulation</h3>
+        <p>The standard technique treats this as inference over a <strong>Hidden Markov Model (HMM)</strong>:</p>
+        <ul>
+          <li><strong>Hidden states</strong> = candidate road segments (edges in the road-network graph) near the raw GPS fix. At each timestep, the "true" state is which segment (and roughly where along it) the vehicle is actually on.</li>
+          <li><strong>Observations</strong> = the raw, noisy GPS fixes themselves (lat/lng, accuracy radius).</li>
+          <li><strong>Emission probability</strong> = how likely a given raw GPS fix is, given a candidate road segment as the true state — modeled as a function of the perpendicular distance from the fix to the segment (closer = more likely), weighted by the device's reported accuracy.</li>
+          <li><strong>Transition probability</strong> = how likely the vehicle is to move from one candidate segment to another between two consecutive timesteps — modeled by comparing the great-circle distance between consecutive fixes against the actual road-network shortest-path distance between the two candidate segments (if they're wildly different, that transition is unlikely; road connectivity itself also gates which transitions are even possible, since a vehicle can't teleport across segments with no connecting edge).</li>
+          <li><strong>Inference</strong>: the Viterbi algorithm finds the single most probable sequence of hidden states (road segments) across the whole window of recent observations, which is the map-matched path — this is what makes map-matching robust to a single noisy outlier fix, since one bad observation doesn't derail the whole inferred path.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Map-matching as a Hidden Markov Model: three consecutive raw noisy GPS fixes sit slightly off the road network. For each fix, several nearby road segments are candidate hidden states, connected by transition edges weighted by road-network distance. The Viterbi algorithm picks the most probable sequence of segments, snapping the noisy points onto a single continuous path along the road.">
+            <style>
+              .eta-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .eta-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .eta-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .eta-road{stroke:var(--color-border);stroke-width:6;fill:none;stroke-linecap:round;}
+              .eta-fix{fill:var(--color-formula-border);stroke:var(--color-formula-bg);stroke-width:1;}
+              .eta-cand{fill:var(--color-bg);stroke:var(--color-accent);stroke-width:1.5;}
+              .eta-cand-best{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+              .eta-trans{stroke:var(--color-border);stroke-width:1;stroke-dasharray:2 2;fill:none;}
+              .eta-trans-best{stroke:var(--color-accent-dark);stroke-width:2.5;fill:none;}
+              .eta-emit{stroke:var(--color-text-muted);stroke-width:1;stroke-dasharray:1 2;fill:none;}
+            </style>
+
+            <text x="12" y="18" class="eta-title">Observations (noisy GPS fixes)</text>
+            <circle cx="120" cy="55" r="6" class="eta-fix"></circle>
+            <circle cx="380" cy="42" r="6" class="eta-fix"></circle>
+            <circle cx="640" cy="60" r="6" class="eta-fix"></circle>
+            <text x="120" y="40" text-anchor="middle" class="eta-label">t1</text>
+            <text x="380" y="27" text-anchor="middle" class="eta-label">t2</text>
+            <text x="640" y="45" text-anchor="middle" class="eta-label">t3</text>
+
+            <text x="12" y="100" class="eta-title">Road network (hidden state candidates)</text>
+            <path d="M40,140 C200,120 300,150 380,135 C460,120 560,150 720,140" class="eta-road"></path>
+
+            <line x1="120" y1="55" x2="90" y2="138" class="eta-emit"></line>
+            <line x1="120" y1="55" x2="150" y2="132" class="eta-emit"></line>
+            <circle cx="90" cy="138" r="7" class="eta-cand-best"></circle>
+            <circle cx="150" cy="132" r="7" class="eta-cand"></circle>
+            <text x="90" y="165" text-anchor="middle" class="eta-label">Main St</text>
+            <text x="150" y="165" text-anchor="middle" class="eta-label">Side Ave</text>
+
+            <line x1="380" y1="42" x2="355" y2="132" class="eta-emit"></line>
+            <line x1="380" y1="42" x2="410" y2="126" class="eta-emit"></line>
+            <circle cx="355" cy="132" r="7" class="eta-cand-best"></circle>
+            <circle cx="410" cy="126" r="7" class="eta-cand"></circle>
+            <text x="355" y="165" text-anchor="middle" class="eta-label">Main St</text>
+            <text x="410" y="180" text-anchor="middle" class="eta-label">Ramp</text>
+
+            <line x1="640" y1="60" x2="610" y2="140" class="eta-emit"></line>
+            <line x1="640" y1="60" x2="670" y2="136" class="eta-emit"></line>
+            <circle cx="610" cy="140" r="7" class="eta-cand"></circle>
+            <circle cx="670" cy="136" r="7" class="eta-cand-best"></circle>
+            <text x="610" y="165" text-anchor="middle" class="eta-label">Old Rd</text>
+            <text x="670" y="165" text-anchor="middle" class="eta-label">Main St</text>
+
+            <line x1="97" y1="138" x2="145" y2="133" class="eta-trans-best"></line>
+            <line x1="97" y1="138" x2="405" y2="128" class="eta-trans"></line>
+            <line x1="155" y1="133" x2="352" y2="133" class="eta-trans"></line>
+            <line x1="362" y1="133" x2="663" y2="137" class="eta-trans-best"></line>
+            <line x1="362" y1="133" x2="605" y2="141" class="eta-trans"></line>
+            <line x1="415" y1="127" x2="605" y2="141" class="eta-trans"></line>
+
+            <text x="380" y="205" text-anchor="middle" class="eta-title">Viterbi selects the most probable sequence: Main St &rarr; Main St &rarr; Main St</text>
+            <text x="380" y="222" text-anchor="middle" class="eta-sub">(weighs emission distance against transition plausibility along real road-network connectivity)</text>
+
+            <rect x="140" y="250" width="480" height="50" rx="6" style="fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;"></rect>
+            <text x="380" y="272" text-anchor="middle" class="eta-title">Result: one continuous, road-snapped path</text>
+            <text x="380" y="288" text-anchor="middle" class="eta-sub">shown to the rider instead of the raw, jumping GPS fixes</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Map-matching as HMM inference &mdash; road segments near each raw fix are candidate hidden states; the Viterbi algorithm picks the most probable segment sequence, giving a continuous on-road path instead of noisy jumps.</div>
+        </div>
+
+        <h3>Why This Matters Beyond "the Dot Looks Nicer"</h3>
+        <p>Map-matching isn't cosmetic — the ETA Service needs a real starting road segment to run a graph shortest-path calculation against; feeding it a raw, off-road coordinate would make the routing query itself ambiguous or wrong (which side of a divided highway is the driver on? which of two parallel one-way streets?). Map-matching is the bridge between "a noisy sensor reading" and "a queryable position in the routing graph."</p>
+
+        <h2 id="deep-dive-hybrid-eta-computation">Deep Dive — Hybrid ETA Computation</h2>
+        <p>A naive ETA — straight-line (haversine) distance divided by an assumed average speed — is easy to compute but routinely wrong by a wide margin: it ignores the actual road path (a river or highway median can force a large detour), ignores current traffic, and ignores the fact that different road types (highway vs. residential street) have very different realistic speeds. Production ETA services use a <strong>hybrid</strong> approach layered from cheapest/least-accurate to most expensive/most-accurate.</p>
+
+        <h3>Layer 1 — Road-Network Shortest Path</h3>
+        <p>Run a shortest-path algorithm (Dijkstra or, more commonly at this scale, a precomputed hierarchical/contraction-hierarchy technique for speed) over the road-network graph from the driver's current map-matched segment to the destination, using each edge's baseline (free-flow) travel time as the edge weight. This alone is already far better than haversine distance, since it respects actual road connectivity, one-ways, and turn restrictions.</p>
+
+        <h3>Layer 2 — Live Traffic Layer</h3>
+        <p>Overlay live, continuously updated per-segment speed data (aggregated from the very GPS pings this system is already ingesting from every other driver on the road, plus any third-party traffic feed) as dynamic edge weights on top of the static graph. A shortest-path calculation using live weights instead of free-flow weights captures "this highway is currently jammed" in a way the static graph alone cannot.</p>
+
+        <h3>Layer 3 — ML Refinement</h3>
+        <p>A machine-learned model, trained on historical trip data (millions of past trips' predicted-vs-actual arrival times), takes the Layer 1+2 estimate plus contextual features — time of day, day of week, weather, local events, historical variance on this specific route/segment — and outputs a refined ETA. This is the layer that captures patterns too subtle or too locally specific for a general graph+traffic calculation (e.g. "this specific left turn reliably takes an extra 90 seconds at 5pm due to a poorly timed signal").</p>
+
+        <h3>Fallback Mode</h3>
+        <p>If the traffic layer or the ML service is degraded or unavailable, the ETA Service degrades gracefully rather than failing the request: it falls back first to Layer 1 alone (graph shortest-path on free-flow weights), and if even the road graph service is unavailable, to the naive haversine-distance &divide; assumed-average-speed estimate as a last resort — always returning <em>something</em> reasonable, flagged with a lower confidence, rather than blocking the rider's screen on an ETA it can't currently compute well.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hybrid ETA computation as three layers: road-network shortest path using free-flow weights, a live traffic layer overlaying dynamic edge weights, and an ML refinement model incorporating historical and contextual features, producing a final ETA. A fallback path shows that if the traffic layer or ML model is unavailable, the system degrades to the graph-only estimate, and if the graph itself is unavailable, to a naive haversine distance over average speed.">
+            <style>
+              .eta-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .eta-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .eta-box-warn{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .eta-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .eta-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .eta-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .eta-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .eta-arrow-dash{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+            </style>
+            <defs>
+              <marker id="arrow-eta-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-eta-2w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="30" y="20" width="220" height="60" rx="6" class="eta-box"></rect>
+            <text x="140" y="42" text-anchor="middle" class="eta-title">Layer 1: Road-Network</text>
+            <text x="140" y="55" text-anchor="middle" class="eta-title">Shortest Path</text>
+            <text x="140" y="70" text-anchor="middle" class="eta-sub">graph + free-flow edge weights</text>
+
+            <line x1="250" y1="50" x2="279" y2="50" class="eta-arrow" marker-end="url(#arrow-eta-2)"></line>
+
+            <rect x="280" y="20" width="220" height="60" rx="6" class="eta-box"></rect>
+            <text x="390" y="42" text-anchor="middle" class="eta-title">Layer 2: Live Traffic</text>
+            <text x="390" y="55" text-anchor="middle" class="eta-title">Overlay</text>
+            <text x="390" y="70" text-anchor="middle" class="eta-sub">dynamic per-segment speed weights</text>
+
+            <line x1="500" y1="50" x2="529" y2="50" class="eta-arrow" marker-end="url(#arrow-eta-2)"></line>
+
+            <rect x="530" y="20" width="210" height="60" rx="6" class="eta-box-strong"></rect>
+            <text x="635" y="42" text-anchor="middle" class="eta-title">Layer 3: ML Refinement</text>
+            <text x="635" y="55" text-anchor="middle" class="eta-sub">historical trips, time-of-day,</text>
+            <text x="635" y="68" text-anchor="middle" class="eta-sub">weather, events</text>
+
+            <line x1="635" y1="80" x2="635" y2="109" class="eta-arrow" marker-end="url(#arrow-eta-2)"></line>
+
+            <rect x="510" y="110" width="250" height="50" rx="6" class="eta-box-strong"></rect>
+            <text x="635" y="130" text-anchor="middle" class="eta-title">Final ETA (high confidence)</text>
+            <text x="635" y="144" text-anchor="middle" class="eta-sub">served to Location Sharing Service</text>
+
+            <text x="30" y="200" class="eta-title">Degraded fallback path</text>
+
+            <path d="M635,109 C635,180 390,180 390,89" class="eta-arrow-dash" marker-end="url(#arrow-eta-2w)"></path>
+            <text x="510" y="195" text-anchor="middle" class="eta-label">traffic/ML unavailable &rarr; use graph-only estimate</text>
+
+            <rect x="60" y="220" width="230" height="50" rx="6" class="eta-box-warn"></rect>
+            <text x="175" y="240" text-anchor="middle" class="eta-title">Graph-only ETA</text>
+            <text x="175" y="254" text-anchor="middle" class="eta-sub">free-flow speeds, lower confidence</text>
+
+            <path d="M140,89 C140,150 175,180 175,219" class="eta-arrow-dash" marker-end="url(#arrow-eta-2w)"></path>
+
+            <line x1="175" y1="270" x2="175" y2="299" class="eta-arrow-dash" marker-end="url(#arrow-eta-2w)"></line>
+            <text x="230" y="290" text-anchor="middle" class="eta-label">graph itself unavailable</text>
+
+            <rect x="60" y="300" width="230" height="35" rx="6" class="eta-box-warn"></rect>
+            <text x="175" y="322" text-anchor="middle" class="eta-title">Naive: haversine &divide; avg speed</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Hybrid ETA computation &mdash; road-graph shortest path, live traffic overlay, and ML refinement stack for the high-confidence estimate; a degraded fallback path drops to graph-only, then to naive haversine/avg-speed, so an ETA is always returned.</div>
+        </div>
+
+        <h2 id="deep-dive-real-time-push-delivery-per-trip-channel">Deep Dive — Real-Time Push Delivery per Trip Channel</h2>
+        <p>The rider's app must receive an update within well under a second of the driver's phone emitting the corresponding ping, for potentially hundreds of thousands of concurrent trips. Polling ("ask the server every second, per rider") wastes enormous request volume on "nothing changed yet" responses and still adds up to a full polling-interval's worth of latency. The right primitive is a persistent, bidirectional connection — a <strong>WebSocket</strong> (or a platform-native equivalent push channel) opened once per trip, per rider, and kept open for the trip's duration.</p>
+
+        <h3>Trip-Scoped Channels, Not User-Scoped Broadcast</h3>
+        <p>Each active trip gets its own logical channel, addressed by <code>trip_id</code>. This is a fundamentally different shape from a social-media-style fan-out problem (one producer, many consumers, a "celebrity" broadcasting to millions): here it's a 1:1 (or occasionally 1:2 for bidirectional sharing) relationship — one driver's location feeds exactly one rider's open connection. The scaling challenge isn't fan-out breadth per message, it's the sheer <em>count</em> of simultaneously open, independent channels (hundreds of thousands to millions) each carrying a low but steady trickle of updates.</p>
+
+        <h3>Connection Gateway + Pub/Sub Backbone</h3>
+        <p>A tier of stateless <strong>WebSocket gateway servers</strong> holds the actual open client connections; because a rider's connection can land on any gateway instance, gateways don't talk to each other directly. Instead, the Location Sharing Service publishes each <code>{location, eta}</code> update to a lightweight pub/sub topic keyed by <code>trip_id</code> (backed by, e.g., Redis Pub/Sub or a dedicated messaging layer), and whichever gateway instance is holding that rider's connection is subscribed to that trip's topic and forwards the message down the socket it owns. A connection-registry service (mapping <code>trip_id</code> &rarr; which gateway instance holds the rider's socket) lets the system route correctly even as gateway instances scale up/down or a rider's app reconnects after a network blip.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Real-time push delivery: the Location Sharing Service publishes a location-plus-eta update to a per-trip pub/sub topic. A connection registry tracks which WebSocket gateway instance currently holds each rider's open socket. The relevant gateway instance, subscribed to that trip's topic, receives the message and forwards it down the open WebSocket connection to the rider's app.">
+            <style>
+              .eta-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .eta-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .eta-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .eta-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .eta-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .eta-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .eta-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .eta-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:#dbe6ff;}
+              .eta-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .eta-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .eta-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+            </style>
+            <defs>
+              <marker id="arrow-eta-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-eta-3s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="30" y="20" width="220" height="50" rx="6" class="eta-box-strong"></rect>
+            <text x="140" y="40" text-anchor="middle" class="eta-title">Location Sharing Service</text>
+            <text x="140" y="54" text-anchor="middle" class="eta-sub">has new {location, eta} for trip_id=T</text>
+
+            <line x1="140" y1="70" x2="140" y2="99" class="eta-arrow" marker-end="url(#arrow-eta-3)"></line>
+
+            <rect x="30" y="100" width="220" height="50" rx="6" class="eta-box-bus"></rect>
+            <text x="140" y="120" text-anchor="middle" class="eta-title-inv">Pub/Sub topic: trip.T</text>
+            <text x="140" y="136" text-anchor="middle" class="eta-sub-inv">Redis Pub/Sub or equivalent</text>
+
+            <line x1="250" y1="45" x2="279" y2="45" class="eta-arrow-store" marker-end="url(#arrow-eta-3s)"></line>
+            <text x="265" y="35" text-anchor="middle" class="eta-label">lookup</text>
+
+            <rect x="280" y="20" width="220" height="50" rx="6" class="eta-box-store"></rect>
+            <text x="390" y="40" text-anchor="middle" class="eta-title">Connection Registry</text>
+            <text x="390" y="54" text-anchor="middle" class="eta-sub">trip_id &rarr; gateway instance holding rider's socket</text>
+
+            <line x1="250" y1="125" x2="279" y2="125" class="eta-arrow" marker-end="url(#arrow-eta-3)"></line>
+
+            <rect x="280" y="100" width="220" height="50" rx="6" class="eta-box-strong"></rect>
+            <text x="390" y="120" text-anchor="middle" class="eta-title">Gateway Instance #7</text>
+            <text x="390" y="134" text-anchor="middle" class="eta-sub">subscribed to trip.T, holds rider's socket</text>
+
+            <line x1="500" y1="125" x2="529" y2="125" class="eta-arrow" marker-end="url(#arrow-eta-3)"></line>
+
+            <rect x="530" y="100" width="200" height="50" rx="6" class="eta-box"></rect>
+            <text x="630" y="120" text-anchor="middle" class="eta-title">Rider app</text>
+            <text x="630" y="134" text-anchor="middle" class="eta-sub">open WebSocket, live-updates the map</text>
+
+            <text x="30" y="195" class="eta-title">Why not one gateway talking to all riders directly?</text>
+            <text x="30" y="215" class="eta-sub">Gateway instances scale horizontally and are stateless about routing &mdash; any instance may hold any given</text>
+            <text x="30" y="229" class="eta-sub">rider's socket. Pub/sub plus the registry decouples "who has this update" from "who holds that connection,"</text>
+            <text x="30" y="243" class="eta-sub">so gateways can be added/removed/rebalanced without the Location Sharing Service needing to know or care.</text>
+
+            <rect x="30" y="270" width="700" height="70" rx="6" class="eta-box"></rect>
+            <text x="380" y="292" text-anchor="middle" class="eta-title">On reconnect (network blip, app backgrounded)</text>
+            <text x="380" y="308" text-anchor="middle" class="eta-sub">Rider app resubscribes to trip.T on a fresh socket; registry is updated to the new gateway instance;</text>
+            <text x="380" y="322" text-anchor="middle" class="eta-sub">it immediately receives the latest snapshot from the current-location store (not a backlog of missed pings) so it catches up instantly</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Push delivery: updates publish to a per-trip pub/sub topic; a connection registry routes to whichever gateway instance holds the rider's live WebSocket, decoupling compute from connection ownership.</div>
+        </div>
+
+        <h2 id="deep-dive-client-side-interpolation-between-sparse-pings">Deep Dive — Client-Side Interpolation Between Sparse Pings</h2>
+        <p>Even at a healthy 3&ndash;5 second cadence with sub-second push latency, a driver icon that only moves when a new message arrives looks jerky and unnatural — it appears to teleport every few seconds and sit still in between, which reads as "broken" to users conditioned by every modern map app to expect fluid motion.</p>
+
+        <h3>Dead Reckoning on the Client</h3>
+        <p>The rider app doesn't just re-render the dot at the new coordinate on each push — it <strong>interpolates</strong> between the previous known position and the newly received one over the interval since the last update, animating the icon smoothly along that path (and, ideally, snapped to the road geometry between the two matched points rather than a straight line through the map). When a new update arrives before the previous animation finishes, the client blends into the new target rather than snapping abruptly. If an update is late or missed, the client can extrapolate briefly forward using the last known heading and speed ("dead reckoning") to keep the motion continuous, then reconcile smoothly once the next real update arrives.</p>
+        <p>This interpolation is a pure client-side, presentation-layer concern — the server-side pipeline (ingestion, map-matching, ETA, push) has no need to know about it, and it adds no additional load to the backend. It is, however, an essential requirement to call out in an interview: without it, even a technically perfect backend pipeline produces a visibly inferior rider experience.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Client-side interpolation: the server pushes discrete position updates roughly every four seconds. Instead of jumping the icon directly between points, the rider app's renderer animates a smooth path between the previous and current matched position over the interval, and briefly dead-reckons forward using last known heading and speed if the next update is late.">
+            <style>
+              .eta-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .eta-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .eta-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .eta-axis{stroke:var(--color-border);stroke-width:1.5;fill:none;}
+              .eta-tick{stroke:var(--color-text-muted);stroke-width:1;}
+              .eta-server{fill:var(--color-formula-border);stroke:var(--color-formula-bg);stroke-width:1;}
+              .eta-smooth{stroke:var(--color-accent);stroke-width:2.5;fill:none;}
+              .eta-dr{stroke:var(--color-accent);stroke-width:2.5;fill:none;stroke-dasharray:5 3;}
+            </style>
+
+            <line x1="40" y1="70" x2="720" y2="70" class="eta-axis"></line>
+            <text x="40" y="55" class="eta-label">server pushes (~4s apart)</text>
+
+            <line x1="120" y1="63" x2="120" y2="77" class="eta-tick"></line>
+            <circle cx="120" cy="70" r="6" class="eta-server"></circle>
+            <text x="120" y="90" text-anchor="middle" class="eta-label">t=0s</text>
+
+            <line x1="320" y1="63" x2="320" y2="77" class="eta-tick"></line>
+            <circle cx="320" cy="70" r="6" class="eta-server"></circle>
+            <text x="320" y="90" text-anchor="middle" class="eta-label">t=4s</text>
+
+            <line x1="520" y1="63" x2="520" y2="77" class="eta-tick"></line>
+            <circle cx="520" cy="70" r="6" class="eta-server"></circle>
+            <text x="520" y="90" text-anchor="middle" class="eta-label">t=8s</text>
+
+            <line x1="680" y1="63" x2="680" y2="77" class="eta-tick"></line>
+            <circle cx="680" cy="70" r="6" class="eta-server"></circle>
+            <text x="680" y="90" text-anchor="middle" class="eta-label">t=12s (late)</text>
+
+            <text x="40" y="140" class="eta-title">Rendered icon position on the rider's map</text>
+            <path d="M120,160 C220,158 260,162 320,160" class="eta-smooth"></path>
+            <path d="M320,160 C400,158 460,162 520,160" class="eta-smooth"></path>
+            <path d="M520,160 C580,158 620,160 650,159" class="eta-dr"></path>
+            <text x="185" y="180" text-anchor="middle" class="eta-label">smooth interpolation between real updates</text>
+            <text x="595" y="200" text-anchor="middle" class="eta-label">dead-reckoned using last heading/speed &mdash; update is late</text>
+
+            <rect x="40" y="215" width="680" height="35" rx="6" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;"></rect>
+            <text x="380" y="237" text-anchor="middle" class="eta-sub">Result: continuous, natural-looking motion despite receiving only one real position update every ~4 seconds</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Client-side interpolation &mdash; the app animates smoothly between real server pushes and briefly dead-reckons forward with last known heading/speed if an update is late, so the dot never appears to jump or freeze.</div>
+        </div>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+        <p>Sharding follows the same principle throughout: keep everything for one trip together, and co-locate compute with the data it needs to minimize cross-node hops on the latency-critical path.</p>
+        <ul>
+          <li><strong>Current-location store</strong> is sharded by <code>trip_id</code> (consistent hashing across the in-memory cluster) — every ping write and every push read for a given trip lands on the same shard/replica set, with no cross-shard coordination needed.</li>
+          <li><strong>ETA compute clusters are regionally sharded</strong> by geography — conceptually similar to Uber's approach of dividing the map into small geographic cells with unique IDs for fast nearby-lookup, except here the purpose is routing each trip's ETA computation to the compute cluster that holds the relevant regional road graph and traffic data, not to solve driver-rider matching (that lookup problem is out of scope for this page). A trip physically located in Chicago should have its shortest-path and traffic-overlay queries served by a Chicago-region cluster, not one on the other side of the country.</li>
+          <li><strong>History store</strong> is partitioned by <code>trip_id</code> and clustered by timestamp within each partition (the same pattern as a wide-column time-series table), so "give me trip X's full path" is a single-partition range scan, and replicated (RF=3) for durability since this is the system of record for receipts and disputes.</li>
+          <li><strong>Pub/sub topics and WebSocket gateway assignment</strong> follow <code>trip_id</code> as well, so a connection registry lookup and a topic subscription are both single, predictable operations rather than a broadcast search.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: the current-location store and history store are both sharded consistently by trip_id, so all data for one trip lands on the same shard. Right panel: ETA compute is split into regional clusters, each responsible for a geographic area's road graph and traffic data, and a trip's ETA queries are routed to the cluster covering its current location, similar in spirit to Uber's geographic cell decomposition but applied to ETA compute routing rather than matching.">
+            <style>
+              .eta-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+              .eta-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .eta-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .eta-node{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1.5;}
+              .eta-node-active{fill:var(--color-accent-dark);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .eta-nodelabel{font-family:var(--font-sans);font-weight:700;font-size:8px;fill:var(--color-primary);}
+              .eta-nodelabel-inv{font-family:var(--font-sans);font-weight:700;font-size:8px;fill:#ffffff;}
+              .eta-cell{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1;}
+              .eta-cell-active{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+            </style>
+            <text x="20" y="20" class="eta-title">Current-location &amp; history: sharded by trip_id</text>
+
+            <circle cx="140" cy="150" r="90" fill="none" stroke="var(--color-border)" stroke-dasharray="3 3"></circle>
+            <circle cx="220" cy="150" r="13" class="eta-node"></circle>
+            <text x="220" y="153" text-anchor="middle" class="eta-nodelabel">N0</text>
+            <circle cx="195" cy="210" r="13" class="eta-node"></circle>
+            <text x="195" y="213" text-anchor="middle" class="eta-nodelabel">N1</text>
+            <circle cx="140" cy="235" r="13" class="eta-node-active"></circle>
+            <text x="140" y="238" text-anchor="middle" class="eta-nodelabel-inv">N2</text>
+            <circle cx="85" cy="210" r="13" class="eta-node-active"></circle>
+            <text x="85" y="213" text-anchor="middle" class="eta-nodelabel-inv">N3</text>
+            <circle cx="60" cy="150" r="13" class="eta-node-active"></circle>
+            <text x="60" y="153" text-anchor="middle" class="eta-nodelabel-inv">N4</text>
+            <circle cx="85" cy="90" r="13" class="eta-node"></circle>
+            <text x="85" y="93" text-anchor="middle" class="eta-nodelabel">N5</text>
+            <circle cx="140" cy="65" r="13" class="eta-node"></circle>
+            <text x="140" y="68" text-anchor="middle" class="eta-nodelabel">N6</text>
+            <circle cx="195" cy="90" r="13" class="eta-node"></circle>
+            <text x="195" y="93" text-anchor="middle" class="eta-nodelabel">N7</text>
+            <text x="140" y="270" text-anchor="middle" class="eta-sub">hash(trip_id) &rarr; primary N3, replicated N2/N4</text>
+
+            <line x1="270" y1="20" x2="270" y2="290" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <text x="300" y="20" class="eta-title">ETA compute: regionally sharded clusters</text>
+            <rect x="300" y="45" width="90" height="60" rx="4" class="eta-cell"></rect>
+            <text x="345" y="72" text-anchor="middle" class="eta-sub">Cell A1</text>
+            <text x="345" y="86" text-anchor="middle" class="eta-sub">Seattle</text>
+            <rect x="395" y="45" width="90" height="60" rx="4" class="eta-cell-active"></rect>
+            <text x="440" y="72" text-anchor="middle" style="font-family:var(--font-sans);font-weight:700;font-size:9px;fill:#ffffff;">Cell A2</text>
+            <text x="440" y="86" text-anchor="middle" style="font-family:var(--font-sans);font-weight:400;font-size:9px;fill:#ffffff;">Chicago</text>
+            <rect x="490" y="45" width="90" height="60" rx="4" class="eta-cell"></rect>
+            <text x="535" y="72" text-anchor="middle" class="eta-sub">Cell A3</text>
+            <text x="535" y="86" text-anchor="middle" class="eta-sub">Boston</text>
+            <rect x="300" y="110" width="90" height="60" rx="4" class="eta-cell"></rect>
+            <text x="345" y="137" text-anchor="middle" class="eta-sub">Cell B1</text>
+            <text x="345" y="151" text-anchor="middle" class="eta-sub">Austin</text>
+            <rect x="395" y="110" width="90" height="60" rx="4" class="eta-cell"></rect>
+            <text x="440" y="137" text-anchor="middle" class="eta-sub">Cell B2</text>
+            <text x="440" y="151" text-anchor="middle" class="eta-sub">Atlanta</text>
+            <rect x="490" y="110" width="90" height="60" rx="4" class="eta-cell"></rect>
+            <text x="535" y="137" text-anchor="middle" class="eta-sub">Cell B3</text>
+            <text x="535" y="151" text-anchor="middle" class="eta-sub">Miami</text>
+
+            <text x="300" y="200" class="eta-sub">Trip currently in Chicago &rarr; ETA queries routed to Cell A2's</text>
+            <text x="300" y="214" class="eta-sub">cluster, which holds that region's road graph + live traffic</text>
+            <text x="300" y="228" class="eta-sub">weights &mdash; not a matching lookup, purely ETA-compute locality</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. Left: current-location and history data shard consistently by trip_id (RF=3). Right: ETA compute is split into regional cells so each cluster only needs the road graph and traffic data for its own geography.</div>
+        </div>
+
+        <table>
+          <tr><th>Data / Component</th><th>Sharded by</th><th>Replication</th></tr>
+          <tr><td>Current-location store (ephemeral)</td><td>hash(trip_id)</td><td>In-memory, 1 primary + 1&ndash;2 replicas, no durability guarantee needed</td></tr>
+          <tr><td>Location history store (durable)</td><td>trip_id (partition), clustered by timestamp</td><td>RF=3</td></tr>
+          <tr><td>ETA compute clusters</td><td>regional geo-cell</td><td>Active-active within region; independent per region</td></tr>
+          <tr><td>Pub/sub topics + connection registry</td><td>trip_id</td><td>RF=2&ndash;3 for the registry; pub/sub topics are ephemeral</td></tr>
+        </table>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>Three tables anchor the model: the trip itself, the ephemeral current position, and the durable history log.</p>
+        <table>
+          <tr><th colspan="2">Table: trips (PK: trip_id)</th></tr>
+          <tr><td>trip_id (PK)</td><td>uuid</td></tr>
+          <tr><td>driver_id / rider_id</td><td>bigint / bigint</td></tr>
+          <tr><td>pickup_lat / pickup_lng</td><td>float / float</td></tr>
+          <tr><td>destination_lat / destination_lng</td><td>float / float</td></tr>
+          <tr><td>phase</td><td>enum(MATCHED, EN_ROUTE_TO_PICKUP, IN_PROGRESS, COMPLETED, CANCELLED)</td></tr>
+          <tr><td>bidirectional_sharing_enabled</td><td>boolean</td></tr>
+          <tr><td>created_at / completed_at</td><td>timestamp</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: driver_location_current (in-memory, ephemeral; PK: trip_id)</th></tr>
+          <tr><td>trip_id (PK)</td><td>uuid</td></tr>
+          <tr><td>raw_lat / raw_lng</td><td>float / float</td></tr>
+          <tr><td>matched_lat / matched_lng</td><td>float / float (map-matched position)</td></tr>
+          <tr><td>road_segment_id</td><td>text</td></tr>
+          <tr><td>heading / speed</td><td>float / float</td></tr>
+          <tr><td>eta_seconds</td><td>int</td></tr>
+          <tr><td>eta_confidence</td><td>enum(HIGH, DEGRADED)</td></tr>
+          <tr><td>sequence_no</td><td>bigint (for dedup / staleness rejection)</td></tr>
+          <tr><td>updated_at</td><td>timestamp</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: location_history (Cassandra-style, PK: trip_id, clustering key: ts)</th></tr>
+          <tr><td>trip_id (partition key)</td><td>uuid</td></tr>
+          <tr><td>ts (clustering key)</td><td>timestamp</td></tr>
+          <tr><td>raw_lat / raw_lng</td><td>float / float</td></tr>
+          <tr><td>matched_lat / matched_lng</td><td>float / float</td></tr>
+          <tr><td>road_segment_id</td><td>text</td></tr>
+          <tr><td>eta_seconds</td><td>int</td></tr>
+          <tr><td>sequence_no</td><td>bigint</td></tr>
+        </table>
+
+        <h2 id="feature-specific-logic-handling-gps-gaps">Feature-Specific Logic: Handling GPS Gaps</h2>
+        <p>Tunnels, dense urban canyons between skyscrapers, and underground parking structures routinely block or badly degrade GPS reception for seconds to a couple of minutes. The design must not let a rider's screen freeze on a stale dot indefinitely, nor let the ETA silently go wrong without any indication.</p>
+        <ul>
+          <li><strong>Detect the gap:</strong> if the Location Ingestion Service hasn't received a ping for a trip within ~2&ndash;3&times; the expected interval (e.g. &gt;10&ndash;12 seconds at a 4s cadence), flag the trip as "GPS-degraded" rather than waiting indefinitely.</li>
+          <li><strong>Dead-reckoning fallback on the server side:</strong> while degraded, the ETA Service and current-location store extrapolate the driver's position forward using the last known heading, speed, and road segment — continuing along the map-matched road path rather than freezing — while marking <code>eta_confidence</code> as <code>DEGRADED</code> so the client can (optionally) show a subtle "location may be approximate" indicator.</li>
+          <li><strong>Bound the extrapolation:</strong> dead reckoning is only trusted for a short window (a handful of tens of seconds); beyond that, confidence in the extrapolated position decays too much to be useful, and the UI should communicate that more explicitly (e.g. "reconnecting to driver's location") rather than keep confidently animating a guess.</li>
+          <li><strong>Snap back cleanly on recovery:</strong> when GPS reception resumes, the next real map-matched fix simply becomes the new authoritative position; if it differs meaningfully from the last dead-reckoned guess, the client-side interpolation (see the deep dive above) smooths the correction over a short animation instead of a jarring jump.</li>
+          <li><strong>Don't let a gap corrupt the history store:</strong> the interpolated/dead-reckoned positions used for live display are clearly flagged as such (or simply not persisted) in <code>location_history</code>, so a post-trip receipt or replay reflects only real observed samples, not guesses.</li>
+        </ul>
+
+        <h2 id="rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</h2>
+        <ul>
+          <li><strong>Per-driver-device ping rate cap:</strong> the Location Ingestion Service enforces a sane upper bound on ping frequency per <code>trip_id</code>/device (e.g. reject anything faster than roughly once per second) so a buggy or malicious client can't flood the ingestion tier or the pub/sub fan-out with an artificially high-frequency stream.</li>
+          <li><strong>Authenticated, trip-scoped tokens:</strong> a driver's ping-submitting credential and a rider's subscribe-to-channel credential are both scoped to a specific, currently-active <code>trip_id</code> — a token doesn't work before the trip starts or after it ends, and doesn't work for any other trip.</li>
+          <li><strong>Reject pings for unknown or completed trips</strong> immediately at the edge (404/410), so a stale or replayed ping can't resurrect tracking for a trip that's already finished.</li>
+          <li><strong>WebSocket connection caps per client/IP</strong> at the gateway tier, to prevent a single abusive client from opening an excessive number of subscription channels.</li>
+          <li><strong>Anomaly detection on implausible movement:</strong> a reported speed or jump distance that's physically implausible (e.g. "moved 50km in 4 seconds") is flagged and excluded from map-matching input rather than trusted outright — protects against both GPS-spoofing attempts and simple device bugs.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Location sharing stops the instant the trip ends:</strong> on a <code>tracking-stop</code> event (completed or cancelled), the current-location entry is deleted, the pub/sub topic is torn down, and any open WebSocket subscription for that trip is force-closed server-side — a rider must never be able to continue watching a driver's location after the trip concludes (and vice versa, for bidirectional sharing), even if their app doesn't explicitly disconnect.</li>
+          <li><strong>Scoped visibility:</strong> only the matched rider (and, for bidirectional sharing, the matched driver) can subscribe to a given trip's channel — enforced by the trip-scoped token, not just by "security through obscurity" of an unguessable trip_id.</li>
+          <li><strong>No raw location in general logs:</strong> operational/application logs reference <code>trip_id</code> and coarse status only; precise lat/lng only lives in the current-location store and the access-controlled history store.</li>
+          <li><strong>Anonymization for downstream analytics:</strong> if trip-level location history feeds traffic-model training or aggregate analytics, it should be stripped of any direct rider/driver identifiers and aggregated at a road-segment level rather than joined back to individual users.</li>
+          <li><strong>Post-trip retention limits:</strong> the durable history store's retention window (e.g. 90 days) should be the actual maximum any individual trip's raw path is kept, after which it's deleted or further anonymized, consistent with data-minimization principles.</li>
+          <li><strong>Bidirectional sharing consent:</strong> if the rider's location is also shared with the driver pre-pickup, that should be an explicit, narrow-purpose grant (visible only during the "en route to pickup" phase, not for the whole trip or afterward), not an implicit side effect of matching.</li>
+          <li><strong>Transport security:</strong> TLS on every leg — driver-to-ingestion, ingestion-to-store, and the WebSocket push channel to the rider — with mutual authentication on the driver-app ping channel to prevent spoofed location submissions.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <ol>
+          <li>Between driver apps and the Location Ingestion Service — an L4/L7 load balancer distributing ping traffic (or persistent stream connections) across ingestion instances, health-checked, with connections rebalanced as instances scale.</li>
+          <li>Across map-matching and ETA compute instances within a region — since these are the most CPU-intensive stages (graph search, HMM inference), scale them independently of the lighter-weight ingestion tier, and load-balance by current CPU/queue depth rather than blind round-robin.</li>
+          <li>Across WebSocket gateway instances — new rider connections are load-balanced at connect time; because a connection is long-lived, rebalancing an already-open connection means a graceful reconnect handshake (see the push deep dive above), not a mid-flight migration.</li>
+          <li>Across the connection-registry and pub/sub tier — sharded by <code>trip_id</code> hash so no single registry/pub-sub node becomes a hot spot regardless of which trips happen to be most active.</li>
+        </ol>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Run each geographic region active-active, and always process a trip's pings, map-matching, and ETA computation in the region physically closest to where the trip is happening — a driver in Tokyo should never have their location round-trip to a compute cluster in Virginia, given the sub-second latency target.</li>
+          <li>ETA compute is naturally regional already (see "Data Partitioning" above) since road graphs and traffic data are inherently local; there's no need for cross-region ETA queries in the steady state.</li>
+          <li>The durable history store replicates across regions asynchronously for disaster recovery and global support/dispute tooling, but never sits on the live tracking path — a cross-region write would blow the latency budget.</li>
+          <li>WebSocket gateways and pub/sub are deployed per region and matched to wherever the rider's app is actually connecting from (typically the same region as the trip, since driver and rider are physically co-located), avoiding any need for cross-region push traffic in the common case.</li>
+          <li>For rare cross-border trips or a region-wide outage, fail over to the nearest healthy region with a brief service degradation (e.g. temporarily coarser ETA confidence) rather than a full outage.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Rich ETA service (traffic layer / ML model) degraded or down</td><td>Graceful multi-layer fallback: graph-only ETA, then naive haversine/avg-speed, always flagged with lower confidence rather than blocking</td></tr>
+          <tr><td>Duplicate or out-of-order pings from at-least-once mobile delivery</td><td>Monotonic sequence_no per driver session; ingestion drops any ping not strictly newer than the last accepted one</td></tr>
+          <tr><td>GPS signal loss (tunnels, urban canyons)</td><td>Bounded server-side dead reckoning using last known heading/speed, flagged as DEGRADED, with a hard cutoff before confidence decays too far</td></tr>
+          <tr><td>WebSocket gateway instance crash mid-trip</td><td>Rider app auto-reconnects, resubscribes via trip_id, immediately gets a fresh snapshot from the current-location store &mdash; no missed-message replay needed since only the latest state matters</td></tr>
+          <tr><td>Hot shard from an unusually GPS-chatty or long-running trip</td><td>Sharding by trip_id spreads load evenly across the cluster; a single trip's ping rate is capped (see rate limiting) so it can't monopolize its shard</td></tr>
+          <tr><td>Map-matching failure (no plausible road segment nearby, e.g. off-road/parking lot)</td><td>Fall back to showing the raw GPS point with a lower-confidence indicator rather than forcing a wrong on-road snap</td></tr>
+          <tr><td>Regional compute cluster outage</td><td>Active-active regions; failover to nearest healthy region with temporary degraded confidence</td></tr>
+          <tr><td>History store write backlog under a traffic spike</td><td>History writes are async and off the hot path; a backlog delays receipts/analytics, never live tracking</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor availability (AP) almost everywhere on the live path: a slightly stale ETA or a briefly dead-reckoned position is far better than blocking the rider's screen on a consistency guarantee. The one place strict correctness matters is per-trip channel authorization (a rider must never see a different trip's location) — that's an access-control property enforced by scoped tokens, not a consistency trade-off, so it doesn't force the rest of the system away from AP.</p>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Ping-loss rate:</strong> the fraction of expected pings (based on cadence) that never arrive within a reasonable window — the leading indicator of GPS/network trouble at scale, and the trigger for the dead-reckoning fallback path.</li>
+          <li><strong>End-to-end location-to-display latency:</strong> instrumented from driver-device ping timestamp through to rider-client render acknowledgment (p50/p95/p99) — the single most important SLO for this system, directly tied to the sub-second requirement.</li>
+          <li><strong>ETA prediction error:</strong> predicted-vs-actual arrival time, tracked continuously (not just at trip completion) and broken out by confidence tier (HIGH vs. DEGRADED) so a silent accuracy regression in the ML layer is caught before it erodes trust.</li>
+          <li><strong>Map-matching failure/low-confidence rate:</strong> how often the HMM inference can't confidently snap a fix to any nearby road segment — a spike often signals a road-graph data gap (new road not yet mapped) or a GPS quality issue in a specific area.</li>
+          <li><strong>WebSocket connection health:</strong> concurrent open connections, reconnect rate, and time-to-first-update after reconnect — surfaces gateway-tier capacity issues before they show up as user complaints.</li>
+          <li><strong>Pub/sub and registry lookup latency:</strong> since every push traverses this path, even small regressions here compound directly into the end-to-end SLO above.</li>
+          <li><strong>Per-region dashboards</strong> for all of the above, since traffic patterns, road density, and GPS quality vary enormously by geography, and a global average can hide a badly-regressed region.</li>
+        </ul>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Scope</td><td>Post-match live tracking + ETA only; matching/dispatch is a separate, out-of-scope design</td></tr>
+          <tr><td>Ingestion</td><td>Location Ingestion Service, ~3&ndash;5s ping cadence, monotonic sequence_no for dedup/ordering</td></tr>
+          <tr><td>Map-matching</td><td>Hidden Markov Model over the road-network graph, Viterbi decoding for the most probable segment path</td></tr>
+          <tr><td>Current position storage</td><td>In-memory, ephemeral, keyed by trip_id</td></tr>
+          <tr><td>History storage</td><td>Durable, wide-column, time-series, partitioned by trip_id, RF=3, 90-day retention</td></tr>
+          <tr><td>ETA computation</td><td>Hybrid: road graph shortest path + live traffic overlay + ML refinement; graceful fallback to graph-only, then naive haversine/avg-speed</td></tr>
+          <tr><td>Push delivery</td><td>Per-trip WebSocket channel via stateless gateways + pub/sub topic + connection registry, keyed by trip_id</td></tr>
+          <tr><td>Client experience</td><td>Client-side interpolation/dead-reckoning between sparse server pushes for smooth motion</td></tr>
+          <tr><td>GPS gaps</td><td>Bounded server-side dead reckoning, flagged DEGRADED, snap-back on recovery</td></tr>
+          <tr><td>Partitioning</td><td>trip_id hash for location/history/pub-sub; regional geo-cells for ETA compute</td></tr>
+          <tr><td>Privacy</td><td>Trip-scoped tokens, hard stop on trip completion, anonymized analytics, bounded retention</td></tr>
+          <tr><td>Multi-region</td><td>Active-active, region-local compute co-located with the trip, async cross-region history replication only</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect a real interview to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Map-Matching</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why can't you just show the raw GPS coordinate on the map?</div>
+          <div class="qa-a">Raw GPS routinely has 5&ndash;20 meters of error, worse in urban canyons or near tunnels, so a driver's dot would visibly weave on and off roads, cross into buildings, or jump between parallel streets. Beyond looking wrong, an unmatched coordinate is also ambiguous input for the ETA Service's routing query (which of two parallel one-way streets is the driver actually on?).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What map-matching technique would you use, and why?</div>
+          <div class="qa-a">A Hidden Markov Model over the road graph: candidate nearby road segments are hidden states, raw GPS fixes are noisy observations, emission probability scores how close a fix is to a candidate segment, and transition probability scores how plausible moving between two candidate segments is given real road connectivity. The Viterbi algorithm finds the single most probable segment sequence across a window of recent fixes, which makes the result robust to one noisy outlier reading rather than snapping incorrectly on every single bad sample.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens when map-matching can't confidently find a nearby road segment (e.g. a parking lot, a private driveway)?</div>
+          <div class="qa-a">Fall back to displaying the raw GPS point with a lower-confidence flag rather than forcing an incorrect snap to a nearby but wrong road; this is also a useful monitoring signal (see Monitoring section) that can point at a road-graph data gap.</div>
+        </div>
+
+        <h3>ETA Computation</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why not just use haversine (straight-line) distance divided by average speed for the ETA?</div>
+          <div class="qa-a">Straight-line distance ignores actual road connectivity (a river, highway, or one-way system can force a large detour), ignores current traffic conditions, and treats all road types as equally fast. It's cheap and a reasonable degraded-mode fallback, but as a primary estimate it's routinely off by a wide margin and erodes user trust; production systems layer a road-graph shortest path, a live traffic overlay, and ML refinement on top instead.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Walk me through the hybrid ETA model design.</div>
+          <div class="qa-a">Layer 1 runs shortest path over the road-network graph using free-flow (baseline) edge weights. Layer 2 overlays live, continuously updated per-segment traffic speeds as dynamic weights on the same graph. Layer 3 is an ML model trained on historical trip data that refines the Layer 1+2 estimate using contextual features like time of day, weather, and local events. Each layer is a strict improvement in accuracy at the cost of more infrastructure and more failure modes to manage, which motivates the fallback chain.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's your graceful-degradation strategy if the traffic layer or ML model is unavailable?</div>
+          <div class="qa-a">Fall back one layer at a time rather than failing outright: if ML refinement is down, serve the graph+traffic estimate; if the traffic layer is also down, serve the graph-only free-flow estimate; if even the road graph is unreachable, fall back to naive haversine distance over an assumed average speed. Every fallback tier is flagged with a lower confidence (eta_confidence: DEGRADED) so the client can optionally communicate that, but the rider is never left with no ETA at all.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">When should the ETA be recomputed rather than just updated incrementally?</div>
+          <div class="qa-a">Recompute the full shortest-path/traffic/ML pipeline whenever the driver's map-matched position deviates meaningfully from the previously assumed route (a reroute), or when a new traffic incident materially changes the live weights on the remaining path &mdash; not on every single ping, since re-running a full route computation on a 3&ndash;5 second cadence for every active trip would be wasteful; a lightweight "remaining distance along the already-computed path" update is often sufficient between full recomputes.</div>
+        </div>
+
+        <h3>Push Delivery and Real-Time Infrastructure</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you scale push delivery to millions of concurrent trip channels?</div>
+          <div class="qa-a">This isn't a broadcast fan-out problem (one producer, many consumers) &mdash; it's closer to a very large number of independent 1:1 channels. Stateless WebSocket gateway instances hold the actual open connections; a pub/sub topic keyed by trip_id plus a connection registry (trip_id &rarr; gateway instance) lets any gateway forward the right update to the right open socket, so gateways scale horizontally by adding instances, not by any single instance needing to know about every trip.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why WebSockets instead of the rider's app polling every second?</div>
+          <div class="qa-a">Polling wastes enormous request volume on "nothing changed yet" responses at this scale and still bakes in up to a full polling-interval of latency. A persistent connection lets the server push the instant a new map-matched position and ETA are ready, which is what the sub-second end-to-end latency target requires.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if the rider's app loses connectivity and reconnects mid-trip?</div>
+          <div class="qa-a">The app resubscribes to the same trip_id on a fresh WebSocket; the connection registry is updated to the new gateway instance, and the rider immediately receives the latest snapshot from the current-location store rather than a backlog of missed pings &mdash; only the most recent state matters for a live-tracking use case.</div>
+        </div>
+
+        <h3>Client Experience</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you make the driver's icon appear to move smoothly when GPS pings only arrive every few seconds?</div>
+          <div class="qa-a">Client-side interpolation: the rider app animates the icon along a path between the previous and newly received map-matched position over the interval since the last update, rather than snapping directly to the new point. If the next update is late, it briefly dead-reckons forward using the last known heading and speed to avoid the icon visibly freezing, then reconciles smoothly once a real update arrives.</div>
+        </div>
+
+        <h3>Scaling and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you detect an ETA accuracy regression before users start complaining?</div>
+          <div class="qa-a">Continuously log predicted-vs-actual arrival time for every trip (not just at completion), broken out by confidence tier (HIGH vs. DEGRADED) and by region, and dashboard the error distribution's p50/p90 over time. A silent regression in the ML refinement layer or a stale traffic feed shows up as a widening error band before it becomes a wave of support tickets, especially if alerting is scoped per region since road/traffic patterns vary enough that a global average can mask a badly regressed city.</div>
+        </div>
+
+        <h3>GPS Gaps and Reliability</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you handle a driver going through a tunnel or dense urban canyon where GPS drops out?</div>
+          <div class="qa-a">Detect the gap when no ping arrives within roughly 2&ndash;3&times; the expected interval, then dead-reckon the position forward on the server side using the last known heading, speed, and road segment, flagging eta_confidence as DEGRADED. Extrapolation is bounded to a short window since confidence decays quickly; beyond that, the UI should communicate uncertainty more explicitly rather than keep confidently animating a guess. When GPS resumes, the next real fix becomes authoritative and the client smooths any correction rather than jumping.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you guarantee a duplicate or out-of-order ping (from at-least-once mobile delivery) doesn't corrupt the displayed position?</div>
+          <div class="qa-a">Every ping carries a monotonically increasing sequence_no per driver session; the ingestion service (or the write path into the current-location store) only accepts a ping whose sequence_no is strictly greater than the last accepted one for that trip, silently dropping duplicates and stale/out-of-order arrivals.</div>
+        </div>
+
+        <h3>Privacy and Product</h3>
+        <div class="qa-item">
+          <div class="qa-q">What privacy considerations does live location sharing raise, and how do you address them?</div>
+          <div class="qa-a">Location sharing must be strictly scoped to the active trip and the matched counterpart: access is enforced via trip-scoped tokens (not just an unguessable trip_id), sharing is force-terminated the instant the trip ends, raw coordinates never appear in general logs, and any location data feeding analytics or model training is anonymized/aggregated at a road-segment level rather than tied back to an individual. If sharing is bidirectional, the rider's location should only be visible to the driver during the pre-pickup phase, as an explicit, narrow-purpose grant.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Is location sharing bidirectional, and how would that change the design?</div>
+          <div class="qa-a">If the driver also needs to see the rider's live location (typically only useful during the pre-pickup phase, e.g. the rider walking to a meeting point), the same ingestion/map-matching/push pipeline applies symmetrically, but scoped to that phase only &mdash; the trip's phase field gates whether the rider's location feed is active at all, and it should be torn down the moment pickup is confirmed, not left running for the rest of the trip.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you regionally shard the ETA compute tier, and why is that different from sharding for matching?</div>
+          <div class="qa-a">Similar in spirit to how a geographic cell decomposition (unique IDs for small map cells) helps a matching system do fast nearby-driver lookups, an ETA system benefits from regional compute clusters that each hold one geography's road graph and live traffic data &mdash; but the purpose here is purely locality for routing/traffic queries (avoiding a cross-region round-trip on a latency-critical path), not solving the driver-discovery problem that cell decomposition is used for in matching.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Scope the problem explicitly as starting after matching: a trip_id, driver_id, and rider_id are given inputs, and the job is ingest &rarr; map-match &rarr; compute ETA &rarr; push, ending the moment the trip completes. Map-matching is not cosmetic — it's the HMM-based bridge that turns noisy sensor data into a queryable road-network position, and it's a prerequisite for a correct ETA, not just a nicer-looking dot. ETA computation should be explicitly hybrid and explicitly degradable: road graph, then live traffic, then ML refinement, with a defined fallback chain down to naive haversine/avg-speed so an ETA is always available, just at varying confidence. Treat the current-location store and the history store as two different systems for two different questions — ephemeral and blazing fast for "now," durable and time-ordered for "the whole trip." Push delivery at this scale is a very-large-number-of-independent-channels problem, solved with stateless gateways plus a trip_id-keyed pub/sub and connection registry, not a broadcast fan-out problem. And client-side interpolation is a small, backend-invisible addition that has an outsized effect on perceived quality — always mention it, since a technically correct backend with a jerky dot still feels broken to users.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Newson &amp; Krumm, "Hidden Markov Map Matching Through Noise and Sparseness" &mdash; the foundational HMM map-matching paper</li>
+          <li>Educative &mdash; "Grokking the System Design Interview": Designing Uber Backend / ETA and location-tracking components (course material)</li>
+          <li>Martin Kleppmann, <em>Designing Data-Intensive Applications</em> &mdash; chapters on partitioning, replication, and stream processing</li>
+          <li>Uber Engineering blog &mdash; posts on geographic cell indexing (H3), ETA prediction, and real-time infrastructure</li>
+          <li>Redis documentation &mdash; Pub/Sub, and in-memory data structures for ephemeral, high-throughput key-value workloads</li>
+          <li>Apache Cassandra documentation &mdash; wide-column time-series modeling, replication factor, and clustering keys</li>
+          <li>Community write-ups on WebSocket connection-registry patterns for per-session real-time push at scale</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="price-alert-system.html"><span class="dir">Previous</span>Price Alert System</a>
+          <a class="next" href="job-scheduler.html"><span class="dir">Next</span>Job Scheduler</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

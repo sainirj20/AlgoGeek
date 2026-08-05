@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Window Functions | SQL Prep | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">SQL Prep</a><span class="sep">/</span><span class="current">Window Functions</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to SQL Prep overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#over-partition-by-order-by">OVER, PARTITION BY, ORDER BY</a></li>
+        <li><a href="#rownumber-vs-rank-vs-denserank">ROW_NUMBER vs. RANK vs. DENSE_RANK</a></li>
+        <li><a href="#lag-lead"><code>LAG</code> / <code>LEAD</code></a></li>
+        <li><a href="#running-totals-with-sum-over-and-frame-clauses">Running Totals with <code>SUM() OVER</code> and Frame Clauses</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SQL PREP</span>
+          <h1>Window Functions</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Window functions compute a value across a set of related rows <em>without</em> collapsing them into a single output row the way <code>GROUP BY</code> does — each input row keeps its identity, but gains access to aggregate/ranking context from its "window" of peer rows. This is the tool interviewers reach for to test whether you can express running totals, rankings, and row-to-row comparisons (like "previous month's value") declaratively instead of with self-joins or procedural loops.</p>
+
+        <h2 id="over-partition-by-order-by">OVER, PARTITION BY, ORDER BY</h2>
+        <p>Every window function uses an <code>OVER (...)</code> clause to define its window:</p>
+        <ul>
+          <li><strong><code>PARTITION BY</code></strong> — splits rows into independent groups (like <code>GROUP BY</code>, but rows aren't collapsed); the function resets for each partition.</li>
+          <li><strong><code>ORDER BY</code></strong> (inside <code>OVER</code>) — defines the row order within each partition, which matters for ranking functions, <code>LAG</code>/<code>LEAD</code>, and running aggregates.</li>
+        </ul>
+        <pre><code>SELECT
+    employee_id,
+    department,
+    salary,
+    AVG(salary) OVER (PARTITION BY department) AS dept_avg_salary
+FROM employees;
+-- every employee row keeps its own salary, plus its department's average alongside it
+</code></pre>
+
+        <h2 id="rownumber-vs-rank-vs-denserank">ROW_NUMBER vs. RANK vs. DENSE_RANK</h2>
+        <table>
+          <tr><th>Function</th><th>Behavior on ties</th><th>Gaps after ties?</th></tr>
+          <tr><td><code>ROW_NUMBER()</code></td><td>Assigns a unique, arbitrary sequential number even to tied rows</td><td>N/A — never repeats a number</td></tr>
+          <tr><td><code>RANK()</code></td><td>Tied rows get the same rank</td><td>Yes — next rank skips (e.g. 1,1,3)</td></tr>
+          <tr><td><code>DENSE_RANK()</code></td><td>Tied rows get the same rank</td><td>No gap — next rank is sequential (e.g. 1,1,2)</td></tr>
+        </table>
+        <pre><code>SELECT name, score,
+    ROW_NUMBER() OVER (ORDER BY score DESC) AS row_num,
+    RANK()       OVER (ORDER BY score DESC) AS rnk,
+    DENSE_RANK() OVER (ORDER BY score DESC) AS dense_rnk
+FROM exam_results;
+
+-- name    score  row_num  rnk  dense_rnk
+-- Ana     95     1        1    1
+-- Ben     95     2        1    1
+-- Cy      90     3        3    2
+-- Dee     88     4        4    3
+</code></pre>
+
+        <h2 id="lag-lead"><code>LAG</code> / <code>LEAD</code></h2>
+        <p><code>LAG(column, n)</code> looks back <code>n</code> rows (default 1) within the current partition's order; <code>LEAD(column, n)</code> looks forward <code>n</code> rows. Both accept an optional default value to return when there's no such row (e.g. the very first row has no previous row to look back to).</p>
+        <pre><code>SELECT
+    month,
+    revenue,
+    LAG(revenue, 1, 0) OVER (ORDER BY month) AS prev_month_revenue,
+    revenue - LAG(revenue, 1, 0) OVER (ORDER BY month) AS month_over_month_change
+FROM monthly_revenue;
+</code></pre>
+
+        <h2 id="running-totals-with-sum-over-and-frame-clauses">Running Totals with <code>SUM() OVER</code> and Frame Clauses</h2>
+        <p>A window <strong>frame</strong> narrows the set of peer rows a function considers, relative to the current row, using <code>ROWS BETWEEN ... AND ...</code> (or the value-based <code>RANGE</code>). The default frame when <code>ORDER BY</code> is present but no frame is specified is <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code> — which is exactly what produces a running total.</p>
+        <pre><code>-- Running total of revenue per month
+SELECT
+    month,
+    revenue,
+    SUM(revenue) OVER (
+        ORDER BY month
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS running_total
+FROM monthly_revenue;
+
+-- Top-2 highest-paid employees per department
+SELECT department, name, salary
+FROM (
+    SELECT
+        department, name, salary,
+        ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) AS rn
+    FROM employees
+) ranked
+WHERE rn &lt;= 2;
+</code></pre>
+        <div class="formula-box">
+          <span class="formula-label">Frame clause reference</span>
+          ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW &rarr; running total from the start of the partition to the current row
+          <br>ROWS BETWEEN 2 PRECEDING AND CURRENT ROW &rarr; moving sum/average over the current row plus the 2 preceding rows (a 3-row window)
+          <br>ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING &rarr; reverse running total, from the current row to the end of the partition
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you find the top-3 highest-paid employees in each department?</div>
+          <div class="qa-a">Wrap a <code>ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC)</code> in a subquery or CTE, then filter the outer query with <code>WHERE rn &lt;= 3</code>. <code>ROW_NUMBER</code> is preferred over <code>RANK</code> here when you want exactly 3 rows per department even if there are salary ties; use <code>RANK</code> instead if ties should all be included (which could return more than 3 rows for a department).</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the key difference between a window function and <code>GROUP BY</code>?</div>
+          <div class="qa-a"><code>GROUP BY</code> collapses multiple rows into one output row per group, losing row-level detail. A window function computes its result over a window of peer rows but returns one output row per <em>input</em> row, so you keep every original column alongside the computed aggregate/ranking value — enabling things like "this row's value alongside its group's average" in a single row.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why might a running total computed with <code>SUM() OVER (ORDER BY date)</code> give unexpected duplicate totals for rows on the same date?</div>
+          <div class="qa-a">The default frame for <code>ORDER BY</code> without an explicit <code>ROWS</code>/<code>RANGE</code> clause is <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>, and <code>RANGE</code> groups by <em>value</em>, not row position — so all rows sharing the same <code>date</code> value are treated as a single peer group and get the same cumulative total (the total through the end of that date). Switching to <code>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code> makes it strictly row-by-row instead.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you compute month-over-month percentage growth using window functions?</div>
+          <div class="qa-a">Use <code>LAG(revenue) OVER (ORDER BY month)</code> to pull the previous month's value onto the same row, then compute <code>(revenue - prev_revenue) / prev_revenue</code> in the outer <code>SELECT</code> (guarding against division by zero/NULL for the first row with <code>NULLIF</code> or a default in <code>LAG</code>'s third argument).</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Can you use a window function's result directly in the same query's <code>WHERE</code> clause?</div>
+          <div class="qa-a">No — window functions are evaluated after <code>WHERE</code>/<code>GROUP BY</code>/<code>HAVING</code> in logical processing order (alongside <code>SELECT</code>), so their results aren't available yet in <code>WHERE</code>. You must wrap the query in a subquery or CTE and filter on the window function's output column in the outer query.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Window functions preserve row-level granularity while adding group-aware context — use <code>PARTITION BY</code> to reset per group and <code>ORDER BY</code> to control ranking/running behavior. Pick <code>ROW_NUMBER</code>/<code>RANK</code>/<code>DENSE_RANK</code> based on how you want ties handled, and be explicit about the frame clause (<code>ROWS BETWEEN ...</code>) whenever row-by-row semantics matter, since the default <code>RANGE</code> frame groups by value on ties.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="aggregations-grouping.html"><span class="dir">Previous</span>Aggregations &amp; Grouping</a>
+          <a class="next" href="indexing-optimization.html"><span class="dir">Next</span>Indexing &amp; Query Optimization</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

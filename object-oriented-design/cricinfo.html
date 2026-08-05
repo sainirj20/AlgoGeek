@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cricinfo | Object Oriented Design | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Object Oriented Design</a><span class="sep">/</span><span class="current">Cricinfo</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Object Oriented Design overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#actors-and-use-cases">Actors &amp; Use Cases</a></li>
+        <li><a href="#key-classes">Key Classes</a></li>
+        <li><a href="#class-diagram">Class Diagram</a></li>
+        <li><a href="#key-flow-activity-diagram">Key Flow: Recording a Ball</a></li>
+        <li><a href="#key-flow-sequence-diagram">Key Flow: Live Score Fan-Out</a></li>
+        <li><a href="#design-patterns-applied">Design Patterns Applied</a></li>
+        <li><a href="#code-skeleton">Code Skeleton</a></li>
+        <li><a href="#extensibility-and-edge-cases">Extensibility &amp; Edge Cases</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">OBJECT ORIENTED DESIGN</span>
+          <h1>Design Cricinfo</h1>
+        </div>
+
+        <p><em>Where the Hotel Management System and Movie Ticket Booking pages in this section are about correctly checking whether a resource is free, Cricinfo is about something structurally different: how a tiny stream of atomic facts &mdash; one per ball bowled &mdash; rolls up into everything else the system shows, from a live score, to a full scorecard, to a player's career batting average. None of those higher-level views is ever its own source of truth. Get that rollup design right and the live score, the scorecard, and the stats are all trivially, permanently consistent with the ball-by-ball record, because they're all just different folds/projections over the same append-only log. Get it wrong &mdash; model the score as a field you increment directly &mdash; and you've built a second source of truth that a missed edge case (a corrected no-ball, a race between two updates) will eventually desynchronize from the actual sequence of deliveries. Layered on top is a classic fan-out problem: thousands of viewers watching one match need the score the instant it changes, which is the textbook use case for Observer's push model over any kind of polling.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the core domain model for a live cricket scoring and statistics platform, ESPN Cricinfo-style: recording a cricket match ball-by-ball as it happens, computing and broadcasting a live score to fans in real time, and maintaining historical player and team statistics alongside a tournament schedule. A Scorer sitting at the ground enters what just happened on every single delivery &mdash; runs, extras, a wicket if one fell &mdash; and that one atomic fact has to instantly and correctly update the live score every fan's app is showing, eventually feed into the finalized scorecard once the innings ends, and permanently nudge two players' career statistics. Interviewers use this problem to see whether you'll model the live score as genuinely derived state computed by folding over an event log (rather than an independently mutated counter that can silently drift out of sync), and whether you reach for a push-based fan-out mechanism (Observer) instead of having every client repeatedly poll for updates.</p>
+
+        <h2 id="requirements">Requirements</h2>
+        <ol>
+          <li>A <strong>Tournament</strong> (or Series) has a schedule of <strong>Matches</strong>, each between two <strong>Teams</strong>.</li>
+          <li>A <strong>Match</strong> consists of one or more <strong>Innings</strong> &mdash; exactly one per team for a limited-overs match (T20/ODI), up to two per team for a <strong>Test</strong> match.</li>
+          <li>An Innings consists of a sequence of <strong>Overs</strong>, and each Over is a sequence of <strong>6 legal Balls</strong> (deliveries) bowled by one Bowler to one Batsman.</li>
+          <li>Every delivery is recorded as a <strong>BallEvent</strong>: runs scored, any extras (wide, no-ball, bye, leg-bye), and wicket information (type of dismissal) if a batsman got out.</li>
+          <li>The current score (runs/wickets/overs) for an Innings must always be <strong>derivable as a rollup/aggregate over its BallEvents</strong> &mdash; appending a BallEvent updates the score automatically, rather than the score being an independently-mutated field that could drift out of sync with the ball-by-ball record.</li>
+          <li>The system must support <strong>live subscribers</strong> (web/app clients) receiving real-time score updates the instant BallEvents are recorded, <strong>without polling</strong>.</li>
+          <li>The system maintains <strong>cumulative Player statistics</strong> (runs scored, wickets taken, batting/bowling averages), updated incrementally as matches progress rather than recomputed from scratch.</li>
+          <li>The system supports different match <strong>Formats</strong> &mdash; T20, ODI, Test &mdash; each with its own over-limits and innings-count rules.</li>
+        </ol>
+
+        <h2 id="actors-and-use-cases">Actors &amp; Use Cases</h2>
+        <p>Four actors touch the system, each initiating at least one use case none of the others can:</p>
+        <ul>
+          <li><strong>Scorer / Umpire-input</strong> &mdash; records every ball live as it's bowled. The only actor who actually creates BallEvents.</li>
+          <li><strong>Viewer / Fan</strong> &mdash; follows the live score, subscribes to real-time updates, and browses scorecards and player stats after the fact.</li>
+          <li><strong>Commentator</strong> &mdash; optionally attaches textual commentary to a ball alongside the Scorer's numeric record; secondary to the Scorer on the same use case rather than owning one of its own.</li>
+          <li><strong>Admin</strong> &mdash; schedules matches and tournaments and manages teams/players. Never touches a single ball or score.</li>
+        </ul>
+        <p>Primary use cases: <strong>Record Ball</strong>, <strong>View Live Score</strong>, <strong>Subscribe to Match Updates</strong>, <strong>View Scorecard</strong>, <strong>View Player Stats</strong>, and <strong>Schedule Match</strong> (admin).</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 840 620" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Use case diagram: Scorer, Viewer/Fan, Commentator, and Admin actors connected to six use cases inside the Cricinfo Live Scoring Platform boundary">
+            <rect x="150" y="50" width="520" height="520" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+            <text x="410" y="74" text-anchor="middle" font-size="14" font-weight="700" fill="var(--color-primary-dark)">Cricinfo Live Scoring Platform</text>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="72" y1="144" x2="165" y2="110"/>
+
+              <line x1="72" y1="264" x2="165" y2="190"/>
+              <line x1="72" y1="264" x2="165" y2="270"/>
+              <line x1="72" y1="264" x2="165" y2="350"/>
+              <line x1="72" y1="264" x2="435" y2="110"/>
+
+              <line x1="72" y1="384" x2="165" y2="110"/>
+
+              <line x1="72" y1="504" x2="435" y2="230"/>
+            </g>
+
+            <g font-size="12" fill="var(--color-text)">
+              <circle cx="55" cy="110" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="120" x2="55" y2="154" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="134" x2="70" y2="134" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="42" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="68" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="196" text-anchor="middle">Scorer /</text>
+              <text x="55" y="210" text-anchor="middle">Umpire-input</text>
+
+              <circle cx="55" cy="230" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="240" x2="55" y2="274" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="254" x2="70" y2="254" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="274" x2="42" y2="299" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="274" x2="68" y2="299" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="316" text-anchor="middle">Viewer /</text>
+              <text x="55" y="330" text-anchor="middle">Fan</text>
+
+              <circle cx="55" cy="350" r="10" fill="none" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="360" x2="55" y2="394" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="40" y1="374" x2="70" y2="374" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="394" x2="42" y2="419" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="394" x2="68" y2="419" stroke="var(--color-accent)" stroke-width="2"/>
+              <text x="55" y="436" text-anchor="middle" fill="var(--color-accent-dark)">Commentator</text>
+
+              <circle cx="55" cy="470" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="480" x2="55" y2="514" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="494" x2="70" y2="494" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="514" x2="42" y2="539" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="514" x2="68" y2="539" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="556" text-anchor="middle">Admin</text>
+            </g>
+
+            <g font-size="11" fill="var(--color-text)">
+              <ellipse cx="275" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="114" text-anchor="middle">Record Ball</text>
+
+              <ellipse cx="275" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="194" text-anchor="middle">View Live Score</text>
+
+              <ellipse cx="275" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="266" text-anchor="middle">Subscribe to Match</text>
+              <text x="275" y="280" text-anchor="middle">Updates</text>
+
+              <ellipse cx="275" cy="350" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="354" text-anchor="middle">View Scorecard</text>
+
+              <ellipse cx="545" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="114" text-anchor="middle">View Player Stats</text>
+
+              <ellipse cx="545" cy="230" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="226" text-anchor="middle">Schedule Match</text>
+              <text x="545" y="240" text-anchor="middle">/ Tournament</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 1. Use-case diagram: the Scorer and Commentator both participate in Record Ball (the Commentator's contribution is optional textual color alongside the Scorer's numeric record); Viewer/Fan is the main consumer of everything the Scorer produces; Admin owns scheduling and never touches an individual ball or score.</div>
+        </div>
+
+        <h2 id="key-classes">Key Classes</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td>Tournament</td><td>Aggregate root for a series; owns a schedule of Matches between registered Teams.</td></tr>
+            <tr><td>Match</td><td>A single fixture; carries a Format (T20/ODI/Test); composes one or more Innings, references the two competing Teams, and holds the list of live MatchSubscribers to notify.</td></tr>
+            <tr><td>Team</td><td>A competing side; owns its squad of Players for the tournament.</td></tr>
+            <tr><td>Player</td><td>An individual cricketer; the target of a BallEvent's batsman/bowler roles and the subject of cumulative PlayerMatchStats and career statistics.</td></tr>
+            <tr><td>Innings</td><td>One team's turn at batting; owns the ordered sequence of Overs and exposes <code>getCurrentScore()</code> as a rollup over BallEvents &mdash; never a stored counter.</td></tr>
+            <tr><td>Over</td><td>Six legal deliveries bowled by one Bowler; owns the ordered BallEvents bowled within it and knows when it <code>isComplete()</code>.</td></tr>
+            <tr><td>BallEvent</td><td>Immutable record of a single delivery: runs scored, extras type (wide/no-ball/bye/leg-bye), wicket info if any, and the batsman/bowler involved. The atomic unit of truth for the entire match.</td></tr>
+            <tr><td>Scorecard</td><td>A <strong>derived/computed view</strong> assembled on demand from BallEvents (via the Innings/Over rollup) for display purposes &mdash; deliberately never a separately-maintained source of truth of its own.</td></tr>
+            <tr><td>PlayerMatchStats</td><td>Cumulative per-player figures (runs, balls faced, wickets, overs bowled) for one match, incrementally updated as each relevant BallEvent is recorded, and folded into career-long Player statistics.</td></tr>
+            <tr><td>MatchSubscriber</td><td>Observer interface implemented by live clients (web/app); receives a push callback (<code>onScoreUpdate</code>) every time a BallEvent changes the Innings score.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="class-diagram">Class Diagram</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1000 1120" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="UML class diagram for Cricinfo">
+            <defs>
+              <marker id="ciDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-primary-dark)" stroke="var(--color-primary-dark)" stroke-width="1"/>
+              </marker>
+              <marker id="ciArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)"/>
+              </marker>
+              <marker id="ciNotifyArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,1 L8,5 L0,9" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.6"/>
+              </marker>
+            </defs>
+
+            <!-- composition backbone: Tournament -> Match -> Innings -> Over -> BallEvent -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="500" y1="150" x2="500" y2="210" marker-start="url(#ciDiamond)"/>
+              <line x1="500" y1="410" x2="500" y2="470" marker-start="url(#ciDiamond)"/>
+              <line x1="500" y1="640" x2="500" y2="700" marker-start="url(#ciDiamond)"/>
+              <line x1="500" y1="850" x2="500" y2="910" marker-start="url(#ciDiamond)"/>
+              <line x1="190" y1="330" x2="190" y2="910" marker-start="url(#ciDiamond)"/>
+            </g>
+
+            <!-- plain associations -->
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="370" y1="260" x2="300" y2="260" marker-end="url(#ciArrow)"/>
+              <line x1="630" y1="260" x2="700" y2="260" marker-end="url(#ciArrow)"/>
+              <line x1="350" y1="970" x2="300" y2="970" marker-end="url(#ciArrow)"/>
+              <line x1="350" y1="1000" x2="300" y2="1000" marker-end="url(#ciArrow)"/>
+            </g>
+
+            <!-- Observer: Match "notifies" MatchSubscriber (dashed, open arrow) -->
+            <g stroke="var(--color-accent-dark)" stroke-width="1.4" fill="none" stroke-dasharray="6,4">
+              <line x1="630" y1="380" x2="700" y2="410" marker-end="url(#ciNotifyArrow)"/>
+            </g>
+
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="510" y="168">1</text>
+              <text x="510" y="200">1..*</text>
+              <text x="510" y="428">1</text>
+              <text x="510" y="460">2..4</text>
+              <text x="510" y="658">1</text>
+              <text x="510" y="690">1..*</text>
+              <text x="510" y="868">1</text>
+              <text x="510" y="900">0..*</text>
+              <text x="200" y="342">1</text>
+              <text x="200" y="896">11..15</text>
+              <text x="352" y="254">2</text>
+              <text x="308" y="254">1</text>
+              <text x="644" y="254">1</text>
+              <text x="706" y="254">1</text>
+              <text x="330" y="964">batsman</text>
+              <text x="330" y="994">bowler</text>
+              <text x="640" y="386">1</text>
+              <text x="706" y="404">0..*</text>
+              <text x="642" y="400" font-style="italic" fill="var(--color-accent-dark)">notifies</text>
+            </g>
+
+            <!-- Tournament -->
+            <g>
+              <rect x="370" y="20" width="260" height="130" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="370" y1="54" x2="630" y2="54" stroke="var(--color-primary)"/>
+              <line x1="370" y1="96" x2="630" y2="96" stroke="var(--color-primary)"/>
+              <text x="500" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Tournament</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="380" y="70">- tournamentId, name: String</text>
+                <text x="380" y="84">- schedule: List&lt;Match&gt;</text>
+                <text x="380" y="112">+ scheduleMatch(a, b, date): Match</text>
+                <text x="380" y="126">+ getMatches(): List&lt;Match&gt;</text>
+              </g>
+            </g>
+
+            <!-- Team -->
+            <g>
+              <rect x="80" y="210" width="220" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="80" y1="244" x2="300" y2="244" stroke="var(--color-accent-dark)"/>
+              <line x1="80" y1="288" x2="300" y2="288" stroke="var(--color-accent-dark)"/>
+              <text x="190" y="232" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Team</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="90" y="260">- teamId, name: String</text>
+                <text x="90" y="274">- players: List&lt;Player&gt;</text>
+                <text x="90" y="304">+ getPlayers(): List&lt;Player&gt;</text>
+              </g>
+            </g>
+
+            <!-- Match -->
+            <g>
+              <rect x="370" y="210" width="260" height="200" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="370" y1="244" x2="630" y2="244" stroke="var(--color-primary)"/>
+              <line x1="370" y1="330" x2="630" y2="330" stroke="var(--color-primary)"/>
+              <text x="500" y="232" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Match</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="380" y="260">- matchId: String</text>
+                <text x="380" y="274">- format: Format // T20|ODI|TEST</text>
+                <text x="380" y="288">- teams: Team[2]</text>
+                <text x="380" y="302">- innings: List&lt;Innings&gt;</text>
+                <text x="380" y="316">- subscribers: List&lt;MatchSubscriber&gt;</text>
+                <text x="380" y="346">+ recordBall(event: BallEvent): void</text>
+                <text x="380" y="360">+ currentInnings(): Innings</text>
+                <text x="380" y="374">+ subscribe(sub: MatchSubscriber): void</text>
+              </g>
+            </g>
+
+            <!-- Format enum -->
+            <g>
+              <rect x="700" y="210" width="230" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="700" y1="244" x2="930" y2="244" stroke="var(--color-accent-dark)"/>
+              <text x="815" y="226" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;enum&raquo;</text>
+              <text x="815" y="238" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">Format</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="710" y="260">T20</text>
+                <text x="710" y="274">ODI</text>
+                <text x="710" y="288">TEST</text>
+                <text x="710" y="308" font-style="italic" fill="var(--color-text-muted)">// oversLimit + inningsPerTeam</text>
+              </g>
+            </g>
+
+            <!-- MatchSubscriber interface -->
+            <g>
+              <rect x="700" y="410" width="230" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="700" y1="454" x2="930" y2="454" stroke="var(--color-accent-dark)"/>
+              <text x="815" y="436" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;interface&raquo;</text>
+              <text x="815" y="448" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">MatchSubscriber</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="710" y="474">+ onScoreUpdate(innings: Innings): void</text>
+                <text x="710" y="494" font-style="italic" fill="var(--color-text-muted)">// impl. by WebClient, mobile push, etc.</text>
+              </g>
+            </g>
+
+            <!-- Innings -->
+            <g>
+              <rect x="370" y="470" width="260" height="170" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="370" y1="504" x2="630" y2="504" stroke="var(--color-primary)"/>
+              <line x1="370" y1="562" x2="630" y2="562" stroke="var(--color-primary)"/>
+              <text x="500" y="492" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Innings</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="380" y="520">- inningsId: String</text>
+                <text x="380" y="534">- battingTeam, bowlingTeam: Team</text>
+                <text x="380" y="548">- overs: List&lt;Over&gt;</text>
+                <text x="380" y="578" font-style="italic" fill="var(--color-text-muted)">// score = fold(overs &rarr; ballEvents)</text>
+                <text x="380" y="594">+ getCurrentScore(): Score</text>
+                <text x="380" y="608">+ isComplete(): boolean</text>
+              </g>
+            </g>
+
+            <!-- Over -->
+            <g>
+              <rect x="370" y="700" width="260" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="370" y1="734" x2="630" y2="734" stroke="var(--color-primary)"/>
+              <line x1="370" y1="792" x2="630" y2="792" stroke="var(--color-primary)"/>
+              <text x="500" y="722" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Over</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="380" y="750">- overNumber: int</text>
+                <text x="380" y="764">- bowler: Player</text>
+                <text x="380" y="778">- balls: List&lt;BallEvent&gt;</text>
+                <text x="380" y="808">+ isComplete(): boolean // 6 legal balls</text>
+                <text x="380" y="822">+ legalBallCount(): int</text>
+              </g>
+            </g>
+
+            <!-- BallEvent -->
+            <g>
+              <rect x="350" y="910" width="300" height="180" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="350" y1="944" x2="650" y2="944" stroke="var(--color-primary)"/>
+              <line x1="350" y1="1030" x2="650" y2="1030" stroke="var(--color-primary)"/>
+              <text x="500" y="926" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;immutable value object&raquo;</text>
+              <text x="500" y="938" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">BallEvent</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="360" y="960">- runs: int</text>
+                <text x="360" y="974">- extraType: ExtraType // NONE|WIDE|NO_BALL|BYE|LEG_BYE</text>
+                <text x="360" y="988">- wicket: WicketInfo // nullable</text>
+                <text x="360" y="1002">- batsman: Player</text>
+                <text x="360" y="1016">- bowler: Player</text>
+                <text x="360" y="1046">+ isLegalDelivery(): boolean</text>
+                <text x="360" y="1060">+ isWicket(): boolean</text>
+              </g>
+            </g>
+
+            <!-- Player -->
+            <g>
+              <rect x="80" y="910" width="220" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="80" y1="944" x2="300" y2="944" stroke="var(--color-accent-dark)"/>
+              <line x1="80" y1="988" x2="300" y2="988" stroke="var(--color-accent-dark)"/>
+              <text x="190" y="932" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Player</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="90" y="960">- playerId, name: String</text>
+                <text x="90" y="974">- role: PlayerRole</text>
+                <text x="90" y="1004">+ getCareerStats(): PlayerCareerStats</text>
+              </g>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 2. Tournament &mdash;filled diamond&rarr; Match &mdash;filled diamond&rarr; Innings &mdash;filled diamond&rarr; Over &mdash;filled diamond&rarr; BallEvent: a strict composition chain, each level owning the one below it. Team &mdash;filled diamond&rarr; Player is a second, independent composition. BallEvent associates with Player twice, once per role (batsman, bowler). Match's relationship to MatchSubscriber is drawn distinctly &mdash; a dashed line with an open arrow labeled "notifies" &mdash; because it is not ownership at all, it's the Observer pattern's push-notification channel.</div>
+        </div>
+        <p><strong>The single most important modeling idea on this page: a Scorecard, and an Innings's current score, are never independently stored &mdash; they are always <em>derived</em> by folding over the BallEvent list.</strong> <code>Innings.getCurrentScore()</code> doesn't read a <code>runs</code> field that some other code path incremented; it walks every Over it owns, every BallEvent each Over owns, and computes runs/wickets/overs fresh (or from an incrementally-maintained cache that's mathematically guaranteed equal to that fold) every time it's asked. Treat the ordered list of BallEvents as the single source of truth for the entire match &mdash; an append-only event log &mdash; and everything else (live score, scorecard, even player stats) is a view computed over it. This is precisely the modeling instinct behind event sourcing: instead of storing "current state" and mutating it in place, you store the sequence of things that happened and derive current state on demand. The payoff is exactly the same one interviewers are probing for: a mutable "score" counter and the BallEvent log are two sources of truth that can disagree the moment one update path is missed (a wicket recorded but the counter not incremented, a race between two concurrent writers); a derived score computed from the log can never disagree with the log, by construction.</p>
+
+        <h2 id="key-flow-activity-diagram">Key Flow: Recording a Ball and Updating the Live Score (Activity Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 800 960" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Activity diagram for recording a ball event, updating over/innings state, recomputing the rollup score, and notifying subscribers">
+            <defs>
+              <marker id="ciActArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#ciActArrow)" fill="none">
+              <line x1="300" y1="30" x2="300" y2="54"/>
+              <line x1="300" y1="109" x2="300" y2="133"/>
+              <line x1="300" y1="183" x2="300" y2="207"/>
+              <line x1="300" y1="303" x2="300" y2="335"/>
+              <line x1="415" y1="255" x2="478" y2="255"/>
+              <line x1="300" y1="530" x2="300" y2="585"/>
+              <line x1="415" y1="482" x2="478" y2="482"/>
+              <line x1="300" y1="609" x2="300" y2="609"/>
+              <line x1="300" y1="665" x2="300" y2="689"/>
+              <line x1="300" y1="739" x2="300" y2="763"/>
+              <line x1="415" y1="811" x2="478" y2="811"/>
+            </g>
+            <circle cx="300" cy="20" r="10" fill="var(--color-primary)"/>
+
+            <rect x="170" y="54" width="260" height="55" rx="22" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="77" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Scorer records a new BallEvent</text>
+            <text x="300" y="92" text-anchor="middle" font-size="10.5" fill="var(--color-text)">(runs, extras, wicket-or-not)</text>
+
+            <rect x="170" y="133" width="260" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="153" text-anchor="middle" font-size="10" fill="var(--color-text)">Append BallEvent to the current</text>
+            <text x="300" y="167" text-anchor="middle" font-size="10" fill="var(--color-text)">Over's ball list (append-only)</text>
+
+            <polygon points="300,207 415,255 300,303 185,255" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="250" text-anchor="middle" font-size="10" fill="var(--color-text)">Legal delivery?</text>
+            <text x="300" y="264" text-anchor="middle" font-size="10" fill="var(--color-text)">(not wide / no-ball)</text>
+            <text x="330" y="231" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="240" y="309" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="170" y="335" width="260" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="365" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Increment the Over's legal ball count</text>
+
+            <rect x="478" y="227" width="270" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="613" y="248" text-anchor="middle" font-size="10" fill="var(--color-text)">Extra delivery (wide/no-ball):</text>
+            <text x="613" y="262" text-anchor="middle" font-size="10" fill="var(--color-text)">legal ball count stays unchanged</text>
+
+            <path d="M385,385 Q300,410 300,410" fill="none" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#ciActArrow)"/>
+            <polyline points="613,283 613,410 300,410" fill="none" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#ciActArrow)"/>
+            <line x1="300" y1="410" x2="300" y2="434" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#ciActArrow)"/>
+
+            <polygon points="300,434 415,482 300,530 185,482" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="477" text-anchor="middle" font-size="10" fill="var(--color-text)">6 legal balls bowled</text>
+            <text x="300" y="491" text-anchor="middle" font-size="10" fill="var(--color-text)">in this Over?</text>
+            <text x="330" y="458" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+            <text x="238" y="536" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+
+            <rect x="478" y="454" width="270" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="613" y="475" text-anchor="middle" font-size="10" fill="var(--color-text)">Close Over; start new Over;</text>
+            <text x="613" y="489" text-anchor="middle" font-size="10" fill="var(--color-text)">rotate strike/bowler as needed</text>
+
+            <polyline points="613,510 613,585 300,585" fill="none" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#ciActArrow)"/>
+            <line x1="300" y1="585" x2="300" y2="609" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#ciActArrow)"/>
+
+            <rect x="170" y="609" width="260" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="631" text-anchor="middle" font-size="10" fill="var(--color-text)">Recompute the Innings score:</text>
+            <text x="300" y="645" text-anchor="middle" font-size="10" fill="var(--color-text)">fold over all BallEvents so far</text>
+
+            <rect x="170" y="689" width="260" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="709" text-anchor="middle" font-size="10" fill="var(--color-text)">Notify all MatchSubscribers</text>
+            <text x="300" y="723" text-anchor="middle" font-size="10" fill="var(--color-text)">with the updated live score</text>
+
+            <polygon points="300,763 415,811 300,859 185,811" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="806" text-anchor="middle" font-size="10" fill="var(--color-text)">10 wickets down or overs</text>
+            <text x="300" y="820" text-anchor="middle" font-size="10" fill="var(--color-text)">limit reached?</text>
+            <text x="330" y="787" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+            <text x="238" y="865" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+
+            <rect x="478" y="783" width="270" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="613" y="805" text-anchor="middle" font-size="10" fill="var(--color-text)">End the Innings</text>
+            <text x="613" y="819" text-anchor="middle" font-size="10" fill="var(--color-text)">(and the Match, if applicable)</text>
+
+            <line x1="613" y1="839" x2="613" y2="900" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#ciActArrow)"/>
+            <circle cx="613" cy="918" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="613" cy="918" r="6" fill="var(--color-primary)"/>
+
+            <polyline points="300,859 300,900 40,900 40,80 170,80" fill="none" stroke="var(--color-text-muted)" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#ciActArrow)"/>
+            <text x="46" y="490" font-size="10" fill="var(--color-text-muted)" transform="rotate(-90 46 490)" text-anchor="middle">loop: next ball</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Every single delivery &mdash; including a dot ball with no runs and no wicket &mdash; runs the full recompute-and-notify path: the rollup and the subscriber push happen on every ball, not just at over or innings boundaries, since a live viewer needs the over/ball counter to advance in real time too.</div>
+        </div>
+
+        <h2 id="key-flow-sequence-diagram">Key Flow: Live Score Fan-Out to Subscribers (Sequence Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1040 660" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Sequence diagram: Match.recordBall appends a BallEvent, recomputes the rollup score via a ScoreCalculator, then pushes the updated score to every subscribed client">
+            <defs>
+              <marker id="ciSeqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-border)" stroke-width="1.3" stroke-dasharray="4,4">
+              <line x1="70" y1="60" x2="70" y2="610"/>
+              <line x1="250" y1="60" x2="250" y2="610"/>
+              <line x1="410" y1="60" x2="410" y2="610"/>
+              <line x1="580" y1="60" x2="580" y2="610"/>
+              <line x1="760" y1="60" x2="760" y2="610"/>
+              <line x1="930" y1="60" x2="930" y2="610"/>
+            </g>
+            <g fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5">
+              <rect x="15" y="20" width="110" height="40"/>
+              <rect x="190" y="20" width="120" height="40"/>
+              <rect x="350" y="20" width="120" height="40"/>
+              <rect x="510" y="20" width="140" height="40"/>
+              <rect x="700" y="20" width="120" height="40"/>
+              <rect x="870" y="20" width="120" height="40"/>
+            </g>
+            <g font-size="10" font-weight="700" fill="var(--color-text)" text-anchor="middle">
+              <text x="70" y="44">Scorer</text>
+              <text x="250" y="44">Match</text>
+              <text x="410" y="44">BallEvent</text>
+              <text x="580" y="38">ScoreCalculator</text>
+              <text x="580" y="50">(rollup)</text>
+              <text x="760" y="44">WebClientA</text>
+              <text x="930" y="44">WebClientB</text>
+            </g>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#ciSeqArrow)">
+              <line x1="70" y1="95" x2="250" y2="95"/>
+              <line x1="250" y1="130" x2="410" y2="130"/>
+              <line x1="250" y1="165" x2="580" y2="165"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#ciSeqArrow)">
+              <line x1="580" y1="200" x2="250" y2="200"/>
+            </g>
+            <g font-size="10" fill="var(--color-text)">
+              <text x="80" y="90">recordBall(event: BallEvent)</text>
+              <text x="260" y="125">append(event) &rarr; current Over</text>
+              <text x="260" y="160">computeScore(currentInnings)</text>
+              <text x="270" y="195">return updatedScore</text>
+            </g>
+
+            <rect x="230" y="245" width="720" height="100" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M230,245 L280,245 L280,258 L230,258 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="236" y="255" font-size="9" fill="var(--color-text)">loop</text>
+            <text x="286" y="255" font-size="9" fill="var(--color-text)">[for each subscriber in subscribers]</text>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#ciSeqArrow)">
+              <line x1="250" y1="285" x2="760" y2="285"/>
+              <line x1="250" y1="315" x2="930" y2="315"/>
+            </g>
+            <g font-size="10" fill="var(--color-text)">
+              <text x="260" y="280">onScoreUpdate(currentInnings)</text>
+              <text x="260" y="310">onScoreUpdate(currentInnings)</text>
+            </g>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#ciSeqArrow)">
+              <line x1="250" y1="385" x2="70" y2="385"/>
+            </g>
+            <text x="80" y="380" font-size="10" fill="var(--color-text)">ack (ball recorded)</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Push model: <code>Match.recordBall</code> appends the event, recomputes the score once, and iterates its subscriber list &mdash; each WebClient receives the update the instant the rollup finishes, with zero requests of its own. Contrast this with polling: every client would have to repeatedly ask "anything new?" on some fixed interval regardless of whether a ball was actually bowled, wasting requests during the long gaps between deliveries while still adding up to a full poll-interval of latency exactly when a wicket falls &mdash; the moment freshness matters most.</div>
+        </div>
+
+        <h2 id="design-patterns-applied">Design Patterns Applied</h2>
+        <p>Name the pattern (or algorithm) and the forcing function together, not just the label:</p>
+        <ul>
+          <li><strong>Observer</strong> (the central, most important pattern on this page) &mdash; <code>Match</code> is the subject; every registered <code>MatchSubscriber</code> is an observer. The instant <code>recordBall()</code> finishes appending and recomputing, <code>Match</code> iterates its subscriber list and calls <code>onScoreUpdate(innings)</code> on each one &mdash; a <strong>push</strong> model, where the subject actively delivers the update. This beats the alternative &mdash; every WebClient polling "has anything changed?" on a timer &mdash; on both axes that matter: efficiency (no wasted requests during the long stretches between deliveries) and latency (an update arrives the instant it happens, not up to one poll-interval later, which is precisely when a viewer cares most, e.g. the ball a wicket falls on). <code>Match</code> also never needs to know whether a subscriber is a browser WebSocket, a mobile push service, or a scoreboard display &mdash; it only knows the <code>MatchSubscriber</code> interface.</li>
+          <li><strong>Rollup-over-a-log (event-sourcing analogy)</strong> &mdash; Tournament/Match/Innings/Over/BallEvent is a nested structure where every "score" at any level is always computed by folding over the lower-level event log, never stored as an independently-mutated field. This is the same core idea as event sourcing in the broader architecture sense: instead of persisting "current state" and mutating it, you persist the append-only sequence of things that happened (BallEvents) and derive every view &mdash; live score, scorecard, even a rain-rule recalculation &mdash; from that sequence. The practical payoff: the log can be replayed to reconstruct any past score, and a bug in one view's computation can never corrupt the underlying facts.</li>
+          <li><strong>Strategy</strong> &mdash; T20, ODI, and Test have materially different rules: over-limits per innings, how many innings each team gets, and even how a result is determined (Test matches can end in a draw; limited-overs matches can't). Model <code>Format</code> as a pluggable strategy (an enum backing a small rules object, or a full interface if the rules get more elaborate) exposing <code>getOversLimit()</code>, <code>getInningsPerTeam()</code>, and <code>determineResult(match)</code>, rather than branching on a Format flag scattered through <code>Match</code>, <code>Innings</code>, and result-calculation code.</li>
+          <li><strong>Factory</strong> &mdash; constructing a <code>Match</code> correctly means wiring up the right number of Innings slots and the right over-limit for its Format up front (a T20 match should never be able to accumulate a third innings). A small <code>MatchFactory.createMatch(format, teamA, teamB)</code> centralizes that Format-specific setup in one place instead of leaving every call site responsible for getting the innings-count and over-limit right.</li>
+        </ul>
+
+        <h2 id="code-skeleton">Code Skeleton</h2>
+        <p>Fields and method signatures only &mdash; not a runnable program. <code>Innings.getCurrentScore()</code> is worked out in full, since the rollup-over-the-event-log logic is exactly what interviewers probe on.</p>
+
+        <pre><code>public enum Format {
+    T20(20, 1), ODI(50, 1), TEST(90, 2);   // (oversLimit per innings, inningsPerTeam)
+
+    private final int oversLimit;
+    private final int inningsPerTeam;
+
+    Format(int oversLimit, int inningsPerTeam) {
+        this.oversLimit = oversLimit;
+        this.inningsPerTeam = inningsPerTeam;
+    }
+
+    public int getOversLimit() { return oversLimit; }
+    public int getInningsPerTeam() { return inningsPerTeam; }
+}
+
+public enum ExtraType {
+    NONE, WIDE, NO_BALL, BYE, LEG_BYE
+}
+
+public enum WicketType {
+    BOWLED, CAUGHT, LBW, RUN_OUT, STUMPED, HIT_WICKET, RETIRED_HURT
+}
+
+public final class WicketInfo {
+    private final WicketType type;
+    private final Player batsmanOut;
+    private final Player fielder;   // nullable: not every wicket type credits a fielder
+
+    public WicketInfo(WicketType type, Player batsmanOut, Player fielder) { /* ... */ }
+
+    public WicketType getType() { return type; }
+    public Player getBatsmanOut() { return batsmanOut; }
+}</code></pre>
+
+        <pre><code>// Immutable value object -- one row in the append-only ball-by-ball log.
+public final class BallEvent {
+    private final Player batsman;
+    private final Player bowler;
+    private final int runsScored;       // runs off the bat
+    private final ExtraType extraType;
+    private final int extraRuns;        // e.g. 1 for a wide/no-ball, or byes/leg-byes scored
+    private final WicketInfo wicket;    // nullable: most balls have no wicket
+    private final Instant recordedAt;
+
+    public BallEvent(Player batsman, Player bowler, int runsScored,
+                      ExtraType extraType, int extraRuns, WicketInfo wicket) {
+        this.batsman = batsman;
+        this.bowler = bowler;
+        this.runsScored = runsScored;
+        this.extraType = extraType;
+        this.extraRuns = extraRuns;
+        this.wicket = wicket;
+        this.recordedAt = Instant.now();
+    }
+
+    public boolean isLegalDelivery() {
+        return extraType != ExtraType.WIDE &amp;&amp; extraType != ExtraType.NO_BALL;
+    }
+
+    public int totalRuns() { return runsScored + extraRuns; }
+    public boolean isWicket() { return wicket != null; }
+    public Player getBatsman() { return batsman; }
+    public Player getBowler() { return bowler; }
+}</code></pre>
+
+        <pre><code>public class Over {
+    private final int overNumber;
+    private final Player bowler;
+    private final List&lt;BallEvent&gt; balls = new ArrayList&lt;&gt;();   // append-only
+
+    public Over(int overNumber, Player bowler) { /* ... */ }
+
+    public void addBall(BallEvent event) {
+        balls.add(event);   // never mutate or remove an existing entry
+    }
+
+    public int legalBallCount() {
+        return (int) balls.stream().filter(BallEvent::isLegalDelivery).count();
+    }
+
+    public boolean isComplete() {
+        return legalBallCount() &gt;= 6;
+    }
+
+    public List&lt;BallEvent&gt; getBalls() { return Collections.unmodifiableList(balls); }
+}</code></pre>
+
+        <pre><code>public class Innings {
+    private final String inningsId;
+    private final Team battingTeam;
+    private final Team bowlingTeam;
+    private final List&lt;Over&gt; overs = new ArrayList&lt;&gt;();   // append-only
+
+    public Innings(String inningsId, Team battingTeam, Team bowlingTeam) { /* ... */ }
+
+    public Over currentOver() { /* returns last Over, starting a new one if the last is complete */ }
+
+    // THE central rollup: the score is always *computed*, never separately stored.
+    public Score getCurrentScore() {
+        int runs = 0;
+        int wickets = 0;
+        int legalBalls = 0;
+
+        for (Over over : overs) {
+            for (BallEvent ball : over.getBalls()) {
+                runs += ball.totalRuns();
+                if (ball.isWicket()) wickets++;
+                if (ball.isLegalDelivery()) legalBalls++;
+            }
+        }
+
+        int completedOvers = legalBalls / 6;
+        int ballsIntoOver = legalBalls % 6;
+        return new Score(runs, wickets, completedOvers, ballsIntoOver);
+    }
+
+    public List&lt;Over&gt; getOvers() { return Collections.unmodifiableList(overs); }
+}
+
+// Simple immutable rollup result -- e.g. "142/3 (14.3 overs)"
+public final class Score {
+    private final int runs;
+    private final int wickets;
+    private final int completedOvers;
+    private final int ballsIntoOver;
+
+    public Score(int runs, int wickets, int completedOvers, int ballsIntoOver) { /* ... */ }
+
+    @Override
+    public String toString() {
+        return runs + "/" + wickets + " (" + completedOvers + "." + ballsIntoOver + " overs)";
+    }
+}</code></pre>
+
+        <pre><code>public class Match {
+    private final String matchId;
+    private final Format format;
+    private final Team[] teams;                     // exactly two
+    private final List&lt;Innings&gt; innings = new ArrayList&lt;&gt;();
+    private final List&lt;MatchSubscriber&gt; subscribers = new CopyOnWriteArrayList&lt;&gt;();
+
+    public Match(String matchId, Format format, Team teamA, Team teamB) { /* ... */ }
+
+    public void subscribe(MatchSubscriber subscriber) {
+        subscribers.add(subscriber);
+    }
+
+    // Append-then-notify: the only way a BallEvent enters the system.
+    public void recordBall(BallEvent event) {
+        Innings current = currentInnings();
+        current.currentOver().addBall(event);        // append to the log -- never mutate history
+
+        for (MatchSubscriber subscriber : subscribers) {
+            subscriber.onScoreUpdate(current);         // push model: Match calls out, clients never poll
+        }
+    }
+
+    public Innings currentInnings() { /* last non-complete Innings for this Match */ }
+}
+
+// Observer callback -- implemented by WebSocket clients, mobile push services, scoreboards, etc.
+public interface MatchSubscriber {
+    void onScoreUpdate(Innings innings);
+}</code></pre>
+
+        <h2 id="extensibility-and-edge-cases">Extensibility &amp; Edge Cases</h2>
+        <ul>
+          <li><strong>Test matches spanning multiple days.</strong> A Test Innings can span several days of play, each ending with an explicit "close of play" (the current batsmen's not-out scores, the bowling side's remaining review count, etc.). Model this as a snapshot taken at end-of-day &mdash; itself just a cached read of the same rollup, timestamped &mdash; rather than a special "day" field threaded through Innings/Over; the underlying BallEvent log doesn't change shape at all across day boundaries.</li>
+          <li><strong>Duckworth&ndash;Lewis&ndash;Stern (DLS) recalculation.</strong> A rain-shortened limited-overs match needs a revised target based on overs lost and resources remaining. This is naturally a pluggable, Strategy-based scoring-adjustment rule &mdash; a <code>ResultRule</code> (or similar) that a Format can swap in when overs are curtailed &mdash; layered on top of the same BallEvent-derived score rather than a special case baked into <code>Innings</code> itself. (Full DLS mechanics are out of scope here; the modeling point is that it plugs in as a strategy, not a fork in the core rollup.)</li>
+          <li><strong>A ball retrospectively corrected (e.g. a no-ball overturned by third-umpire review).</strong> Because the BallEvent log is append-only, history is never mutated in place &mdash; the original BallEvent stays exactly as recorded. A correction is itself appended as a new, distinct <strong>compensating event</strong> (e.g. a <code>BallCorrectionEvent</code> referencing the original BallEvent's id and the corrected fields) that the rollup knows how to fold in &mdash; net effect the same as if the original had been recorded correctly, but the log honestly shows both what was first called and that it was later overturned. This is the direct event-sourcing-consistent answer: never edit or delete a past event; append a new one that supersedes it.</li>
+          <li><strong>Career-long Player statistics across thousands of matches.</strong> Recomputing a batting average from every ball a player has ever faced, on every request, doesn't scale. PlayerMatchStats is updated incrementally as each relevant BallEvent is recorded (a running total, not a recompute-from-scratch), and folded into the career aggregate the same way &mdash; the log for a single in-progress match is small enough to fold cheaply, but a career total is maintained as an incrementally-updated aggregate precisely because its underlying event count is not.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">Why should the live score be a derived rollup over BallEvents rather than an independently mutated counter, and what bug class does that design choice prevent?</div>
+          <div class="qa-a">If <code>Innings</code> stored <code>runs</code>/<code>wickets</code> as fields that get incremented by whatever code path handles a delivery, then the BallEvent log and that counter are <em>two separate sources of truth</em> that must be kept in lockstep by hand. Any code path that appends a BallEvent but forgets (or races on) the corresponding increment leaves the counter permanently wrong &mdash; and because the log itself still looks fine, the bug is silent and can persist until someone notices the score doesn't match the scorecard. Deriving the score by folding over the BallEvent list on every read makes this class of bug structurally impossible: there is only one source of truth (the log), so the score can never disagree with it. The trade-off is compute cost, which is why a real implementation still maintains an incrementally-updated cache &mdash; the point is that the cache is mathematically defined as equal to the fold, not an independent variable someone has to remember to update correctly.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does Observer's push model beat client polling for live score updates at scale, concretely?</div>
+          <div class="qa-a">With polling, every one of N connected clients issues a request on some fixed interval regardless of whether anything actually changed &mdash; during the 30&ndash;40 seconds between deliveries that's almost entirely wasted load on the server, and it still adds up to a full poll-interval of staleness right when a wicket falls, which is exactly the moment freshness matters most. With push (Observer), the server does work exactly once per BallEvent &mdash; one fold, one iteration over the subscriber list &mdash; and each client is notified the instant that happens, with zero requests of its own in between. The cost shifts from "N clients times poll-frequency requests" to "one fan-out per real event," which is why every serious live-score product uses WebSockets/push notifications rather than polling under the hood.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you model different match Formats (T20/ODI/Test) cleanly, without if/else branches scattered across the codebase?</div>
+          <div class="qa-a">Give <code>Format</code> the shape of a Strategy: a small type (enum-backed is fine here since the set of formats is closed and doesn't change at runtime) that exposes the behavior that actually differs &mdash; <code>getOversLimit()</code>, <code>getInningsPerTeam()</code>, and a <code>determineResult(match)</code> hook for format-specific result rules (a Test can end in a draw; a T20 can't). <code>Match</code> and <code>Innings</code> then ask the Format object for these numbers/decisions instead of switching on a Format flag themselves. A <code>MatchFactory</code> uses the chosen Format up front to configure the right number of Innings slots and the right per-innings over-limit, so an invalid state (a T20 accumulating a third innings) is prevented by construction rather than caught later.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A no-ball call gets overturned by the third umpire two overs later. How should that correction be handled in an append-only ball-event log?</div>
+          <div class="qa-a">Never mutate or delete the original BallEvent &mdash; that would falsify history and break replayability. Instead, append a new <strong>compensating event</strong> (e.g. a <code>BallCorrectionEvent</code> that references the original BallEvent's id and carries the corrected fields) and teach the rollup fold to apply corrections when they're present &mdash; the net effect on the current score is the same as if the ball had been recorded correctly the first time, but the log itself is an honest, permanent record of what was originally called <em>and</em> that it was later overturned. This is the standard event-sourcing answer to "the past turned out to be wrong": you can't edit the past, so you record the correction as a new fact layered on top of it.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you correctly compute the "overs" part of a score display, like "14.3 overs", from the BallEvent log?</div>
+          <div class="qa-a">Count only <em>legal</em> deliveries &mdash; balls where <code>isLegalDelivery()</code> is true, i.e. not a wide or no-ball (byes and leg-byes still count as legal deliveries; only wides and no-balls don't). Divide the total legal-ball count by 6 for completed overs and take the remainder for balls into the current over: <code>completedOvers = legalBalls / 6</code>, <code>ballsIntoOver = legalBalls % 6</code>. Getting this wrong &mdash; counting every BallEvent including wides/no-balls &mdash; is a classic off-by-a-few bug that makes the over counter advance faster than it should whenever extras are bowled.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Two scorers (or a scorer and an auto-correction service) submit conflicting BallEvents for what should be the same delivery at nearly the same instant. How do you prevent a corrupted log?</div>
+          <div class="qa-a">Give every delivery a deterministic sequence position (innings id + over number + ball-within-over index) and treat appends to that position as needing a single, consistent writer &mdash; in practice, either restrict live scoring to one authoritative Scorer session per match (simplest, and matches how it works in practice) or accept concurrent submissions but resolve conflicts with an atomic conditional append (only the first write for a given ball-index commits; a later one for the same index is treated as a correction, not a fresh event, and goes through the compensating-event path instead).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you reconstruct a match's full scorecard, or its score at any earlier point, purely from stored data?</div>
+          <div class="qa-a">Replay: load the ordered BallEvent log for the Innings in question and fold over it up to whatever point you want the score "as of" &mdash; the same <code>getCurrentScore()</code> logic, just applied to a prefix of the log instead of all of it. This is only possible because the log is append-only and ordered; if the score were stored as a single mutable counter, there would be no way to ask "what was the score after over 12?" short of having separately snapshotted it at the time. Replayability is one of the concrete payoffs of treating BallEvents as the source of truth.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is Scorecard modeled as a derived view rather than its own persisted entity that gets updated as the match progresses?</div>
+          <div class="qa-a">If Scorecard were a separately-persisted, separately-updated entity, it would become a third thing (alongside the BallEvent log and any score cache) that could drift out of sync &mdash; exactly the redundant-mutable-state problem this whole design avoids at the Innings level. Instead, Scorecard is assembled on demand (or cached and invalidated) from the same Innings/Over rollup: batting lines, bowling figures, and the fall-of-wickets sequence are all just different projections of the identical BallEvent log, computed by different folds rather than maintained by different update paths.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would career-long Player statistics stay efficient across a player's thousands of career deliveries, given the "always derive from the log" philosophy applied elsewhere?</div>
+          <div class="qa-a">The "derive on read" approach that's correct for a single in-progress Innings (a few hundred BallEvents at most) doesn't scale to a career (tens of thousands of deliveries across hundreds of matches) &mdash; folding the entire career log on every profile view would be needlessly expensive. So PlayerMatchStats and career stats are maintained as an <em>incrementally-updated aggregate</em>: each relevant BallEvent recorded during a live match immediately updates that match's PlayerMatchStats (a running total, O(1) per ball), and once the match completes, its final PlayerMatchStats folds into the career aggregate exactly once. The per-match numbers are still fully derivable/re-verifiable from that match's BallEvent log if ever needed &mdash; the incremental update is an optimization on top of a design that could, in principle, always fall back to replay.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Key Takeaways</div>
+          <ul>
+            <li><strong>The live score is a derived rollup over the BallEvent log, never an independently mutated counter</strong> &mdash; this single decision is what makes the score, the scorecard, and player stats structurally incapable of drifting out of sync with the ball-by-ball record.</li>
+            <li>Observer, in its push form, is the correct fan-out mechanism for live updates: <code>Match.recordBall()</code> notifies every <code>MatchSubscriber</code> the instant the score changes, which beats polling on both efficiency and latency.</li>
+            <li>Tournament/Match/Innings/Over/BallEvent is a nested composition chain where every higher level's "score" is computed by folding over the level below &mdash; the same instinct as event sourcing, and it extends naturally to a compensating-event answer for retrospective corrections instead of mutating history.</li>
+            <li>Different match Formats (T20/ODI/Test) are cleanly captured as a Strategy &mdash; over-limits, innings-count, and result rules pulled from the Format object rather than branched on inline &mdash; with a Factory ensuring a Match is configured correctly for its Format from construction.</li>
+            <li>Per-match stats update incrementally as each BallEvent is recorded, and roll into career stats the same way, precisely because a career's BallEvent volume is too large to fold from scratch on every read.</li>
+          </ul>
+        </div>
+
+        <h2 id="references">References</h2>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Observer_pattern" target="_blank" rel="noopener">"Observer pattern"</a> &mdash; general reference for the push-based subscriber notification design discussed above.</p>
+        <p>Martin Fowler, <a href="https://martinfowler.com/eaaDev/EventSourcing.html" target="_blank" rel="noopener">"Event Sourcing"</a> &mdash; general background on treating an append-only event log as the source of truth and deriving current state by folding over it, the core idea behind the score-as-rollup design discussed above.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Duckworth%E2%80%93Lewis%E2%80%93Stern_method" target="_blank" rel="noopener">"Duckworth&ndash;Lewis&ndash;Stern method"</a> &mdash; general reference for the rain-rule recalculation mentioned in the Extensibility &amp; Edge Cases section.</p>
+
+        <div class="page-nav">
+          <a class="prev" href="linkedin.html"><span class="dir">Previous</span>LinkedIn</a>
+          <a class="next" href="facebook.html"><span class="dir">Next</span>Facebook &mdash; A Social Network</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

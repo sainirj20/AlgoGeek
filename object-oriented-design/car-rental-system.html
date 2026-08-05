@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Car Rental System | Object Oriented Design | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Object Oriented Design</a><span class="sep">/</span><span class="current">Car Rental System</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Object Oriented Design overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#actors-and-use-cases">Actors &amp; Use Cases</a></li>
+        <li><a href="#key-classes">Key Classes</a></li>
+        <li><a href="#class-diagram">Class Diagram</a></li>
+        <li><a href="#key-flow-activity-diagram">Key Flow: Reserve &amp; Pick Up</a></li>
+        <li><a href="#key-flow-sequence-diagram">Key Flow: Return &amp; Billing</a></li>
+        <li><a href="#design-patterns-applied">Design Patterns Applied</a></li>
+        <li><a href="#code-skeleton">Code Skeleton</a></li>
+        <li><a href="#extensibility-and-edge-cases">Extensibility &amp; Edge Cases</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">OBJECT ORIENTED DESIGN</span>
+          <h1>Design a Car Rental System</h1>
+        </div>
+
+        <p><em>This page is a deliberate mashup of two problems already covered elsewhere in this section. The core availability question &mdash; "is this physical resource free for an entire date range" &mdash; is exactly the interval-overlap check from the Hotel Management System, just keyed by <strong>Vehicle</strong> instead of Room. And the "what category of resource, versus which literal physical unit" question is exactly the modeling tension explored in the Parking Lot page's Vehicle-hierarchy-versus-SpotType debate, except here it shows up on the <em>rental</em> side rather than the parking side: a customer books an Economy car (a category), and only gets handed a specific VIN at the counter. Layered on top of both is Hotel's other big idea, reused almost verbatim: a Reservation (a promise about a future category and date range) and a RentalAgreement (what actually happened, bound to one physical car) are deliberately two different classes, for the same reason a hotel keeps Reservation and Stay apart &mdash; a reservation that never gets fulfilled, and a walk-up rental that never had one, both need to exist cleanly. Treat this page as a worked example of composing prior patterns rather than inventing new ones: that compositional instinct is itself a strong interview signal.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the vehicle rental and return system for a car rental company that operates across multiple locations (branches). Each Location holds its own fleet of Vehicles, and each Vehicle belongs to a VehicleType/category &mdash; Economy, SUV, Luxury, or Van &mdash; that carries its own daily rate. A customer searches availability by date range, category, and pickup location; places a Reservation that holds a category (not yet a specific car) for a pickup/return window, optionally naming a different drop-off Location for a one-way rental; and eventually shows up to <strong>pick up</strong> the vehicle (at which point a specific physical car is finally bound to the booking) and later to <strong>return</strong> it (closing out the rental and settling the bill). Along the way a Vehicle also carries a <strong>status</strong> &mdash; it can be out on rent, in the shop for service, or flagged damaged, and none of those states should ever let it be double-booked. Interviewers use this problem to see whether you reuse the interval-overlap skill correctly when the key changes from a room to a vehicle instance, whether you separate a <em>category-level promise</em> (Reservation) from a <em>specific-vehicle realized event</em> (RentalAgreement) instead of collapsing them, and whether you proactively raise the operational wrinkle unique to this domain: a one-way rental changes which Location ends up with too many, or too few, cars.</p>
+
+        <h2 id="requirements">Requirements</h2>
+        <ol>
+          <li>A <strong>RentalCompany</strong> operates multiple <strong>Locations/Branches</strong>, each with its own fleet of <strong>Vehicles</strong>.</li>
+          <li>Each Vehicle belongs to a <strong>VehicleType/Category</strong> &mdash; Economy, SUV, Luxury, or Van &mdash; and every category carries its own daily rate.</li>
+          <li>A customer <strong>reserves a Vehicle of a given category</strong> for a date range at a pickup Location, and optionally a <em>different</em> drop-off Location (a one-way rental).</li>
+          <li>The system must <strong>never double-book the same physical Vehicle</strong> over overlapping date ranges &mdash; the same interval-overlap idea used in the Hotel Management System, now keyed by Vehicle instead of Room.</li>
+          <li>A Reservation confirms only a <strong>category and availability</strong> in advance; the physical Vehicle is bound only at <strong>pickup time</strong> &mdash; the same Reservation-vs-realized-event split as Hotel's Reservation-vs-Stay.</li>
+          <li>Billing is based on <strong>days rented &times; the category's daily rate</strong>, plus additional charges: a <strong>late-return fee</strong>, a <strong>damage fee</strong>, an <strong>additional-driver fee</strong>, and a <strong>one-way drop-off fee</strong> when the return Location differs from the pickup Location.</li>
+          <li>A Reservation can be <strong>modified or cancelled</strong>, subject to a cancellation policy.</li>
+          <li><strong>Admin</strong> manages the fleet (add/remove/service Vehicles) and per-category pricing.</li>
+        </ol>
+
+        <h2 id="actors-and-use-cases">Actors &amp; Use Cases</h2>
+        <p>Three actors touch the system, each initiating at least one use case none of the others can:</p>
+        <ul>
+          <li><strong>Customer</strong> &mdash; searches availability, creates a Reservation, picks up a Vehicle, and returns it. The only actor actually driving the car.</li>
+          <li><strong>Branch Staff</strong> &mdash; checks the customer's identity and license, hands over keys at pickup (binding the specific Vehicle), and inspects the Vehicle at return &mdash; assessing any damage and late fees. Also handles walk-ins with no prior Reservation, and modifications at the counter.</li>
+          <li><strong>Admin</strong> &mdash; manages the fleet across Locations and sets per-category pricing. Never touches a single customer's Reservation or RentalAgreement.</li>
+        </ul>
+        <p>Primary use cases: <strong>Search Availability</strong>, <strong>Create Reservation</strong>, <strong>Pick Up Vehicle</strong>, <strong>Return Vehicle</strong>, <strong>Cancel/Modify Reservation</strong>, and <strong>Manage Fleet</strong> (admin).</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 840 480" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Use case diagram: Customer, Branch Staff, and Admin actors connected to six use cases inside the Car Rental System boundary">
+            <rect x="150" y="50" width="520" height="300" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+            <text x="410" y="74" text-anchor="middle" font-size="14" font-weight="700" fill="var(--color-primary-dark)">Car Rental System</text>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="55" y1="154" x2="165" y2="110"/>
+              <line x1="55" y1="154" x2="165" y2="190"/>
+              <line x1="55" y1="154" x2="165" y2="270"/>
+              <line x1="55" y1="154" x2="435" y2="110"/>
+              <line x1="55" y1="154" x2="435" y2="190"/>
+
+              <line x1="55" y1="274" x2="435" y2="110"/>
+              <line x1="55" y1="274" x2="435" y2="190"/>
+              <line x1="55" y1="274" x2="165" y2="270"/>
+
+              <line x1="55" y1="394" x2="435" y2="270"/>
+            </g>
+
+            <g font-size="12" fill="var(--color-text)">
+              <circle cx="55" cy="110" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="120" x2="55" y2="154" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="134" x2="70" y2="134" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="42" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="68" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="196" text-anchor="middle">Customer</text>
+
+              <circle cx="55" cy="230" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="240" x2="55" y2="274" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="254" x2="70" y2="254" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="274" x2="42" y2="299" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="274" x2="68" y2="299" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="316" text-anchor="middle">Branch</text>
+              <text x="55" y="330" text-anchor="middle">Staff</text>
+
+              <circle cx="55" cy="350" r="10" fill="none" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="360" x2="55" y2="394" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="40" y1="374" x2="70" y2="374" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="394" x2="42" y2="419" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="394" x2="68" y2="419" stroke="var(--color-accent)" stroke-width="2"/>
+              <text x="55" y="436" text-anchor="middle" fill="var(--color-accent-dark)">Admin</text>
+            </g>
+
+            <g font-size="11" fill="var(--color-text)">
+              <ellipse cx="275" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="106" text-anchor="middle">Search</text>
+              <text x="275" y="120" text-anchor="middle">Availability</text>
+
+              <ellipse cx="275" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="194" text-anchor="middle">Create Reservation</text>
+
+              <ellipse cx="275" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="266" text-anchor="middle">Cancel / Modify</text>
+              <text x="275" y="280" text-anchor="middle">Reservation</text>
+
+              <ellipse cx="545" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="114" text-anchor="middle">Pick Up Vehicle</text>
+
+              <ellipse cx="545" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="194" text-anchor="middle">Return Vehicle</text>
+
+              <ellipse cx="545" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="266" text-anchor="middle">Manage Fleet</text>
+              <text x="545" y="280" text-anchor="middle">&amp; Pricing</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 1. Use-case diagram: Customer and Branch Staff share Pick Up Vehicle, Return Vehicle, and Cancel/Modify Reservation (staff act on the customer's behalf, and also handle walk-ins that skip Create Reservation entirely); Admin owns Manage Fleet &amp; Pricing, a use case neither of the others can initiate.</div>
+        </div>
+
+        <h2 id="key-classes">Key Classes</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td>RentalCompany</td><td>Top-level aggregate root; owns its Locations; entry point for cross-location availability search.</td></tr>
+            <tr><td>Location (Branch)</td><td>A single physical branch; owns its fleet of Vehicles; can be a pickup Location, a drop-off Location, or both.</td></tr>
+            <tr><td>VehicleType</td><td>Economy/SUV/Luxury/Van category plus its daily rate. Modeled as a class (not a hardcoded enum) for the same reason as Hotel's RoomType &mdash; Admin edits the rate constantly, and price is business-configurable data, not a fixed physical property.</td></tr>
+            <tr><td>Vehicle</td><td>A single physical car; holds a reference to its VehicleType and a VehicleStatus; availability for a date range is derived by checking Reservations and RentalAgreements for overlap, not stored redundantly.</td></tr>
+            <tr><td>VehicleStatus</td><td>Available/Reserved/Rented/InService/Damaged/OutOfService; flips as the Vehicle moves through the pickup&ndash;return&ndash;service lifecycle.</td></tr>
+            <tr><td>Customer (Account)</td><td>The person booking and driving; owns contact info, a driver's license on file, and reservation/rental history.</td></tr>
+            <tr><td>Reservation</td><td>A <strong>category-level promise</strong>: customer, VehicleType (not yet a specific Vehicle), date range, pickup Location, optional drop-off Location, and a status. Exists before any physical car is touched.</td></tr>
+            <tr><td>RentalAgreement</td><td>The <strong>realized</strong> pickup-to-return record, created at pickup. Distinct from Reservation on purpose &mdash; mirrors Hotel's Reservation-vs-Stay split: a Reservation is a future intent that can simply expire, while a RentalAgreement is what actually happened, bound to one specific Vehicle, including walk-up rentals that never had a prior Reservation.</td></tr>
+            <tr><td>Driver / License Info</td><td>License number, issuing state/country, and expiry, recorded for the primary renter and any additional drivers listed on a RentalAgreement; validated at pickup before keys change hands.</td></tr>
+            <tr><td>DamageReport</td><td>Recorded by Branch Staff at return if the Vehicle was damaged during the rental; feeds a damage-fee line item on the Bill and can flip the Vehicle's status to Damaged instead of back to Available.</td></tr>
+            <tr><td>Bill / Invoice</td><td>Finalized at return; composed of line items &mdash; the base rental charge plus any late/damage/additional-driver/one-way fees &mdash; and exposes a running total.</td></tr>
+            <tr><td>LineItem (Charge)</td><td>A single charge on a Bill &mdash; rental days, late fee, damage fee, additional-driver fee, or one-way drop-off fee &mdash; added without the Bill class needing to know each charge type in advance.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="class-diagram">Class Diagram</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 980 1300" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="UML class diagram for the Car Rental System">
+            <defs>
+              <marker id="crDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-primary-dark)" stroke="var(--color-primary-dark)" stroke-width="1"/>
+              </marker>
+              <marker id="crArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)"/>
+              </marker>
+            </defs>
+
+            <!-- composition relationships -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="495" y1="130" x2="495" y2="190" marker-start="url(#crDiamond)"/>
+              <line x1="495" y1="310" x2="495" y2="370" marker-start="url(#crDiamond)"/>
+              <line x1="620" y1="1170" x2="690" y2="1170" marker-start="url(#crDiamond)"/>
+            </g>
+
+            <!-- associations / dependencies -->
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="620" y1="440" x2="690" y2="430" marker-end="url(#crArrow)"/>
+              <line x1="390" y1="440" x2="300" y2="440" marker-end="url(#crArrow)"/>
+              <line x1="390" y1="640" x2="300" y2="640" marker-end="url(#crArrow)"/>
+              <polyline points="620,660 860,660 860,490" marker-end="url(#crArrow)"/>
+              <polyline points="390,700 40,700 40,250 390,250" marker-end="url(#crArrow)"/>
+              <line x1="505" y1="830" x2="505" y2="780" marker-end="url(#crArrow)"/>
+              <polyline points="620,900 660,900 660,445 620,445" marker-end="url(#crArrow)"/>
+              <line x1="505" y1="1100" x2="505" y2="1050" marker-end="url(#crArrow)"/>
+            </g>
+
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="505" y="148">1</text>
+              <text x="505" y="178">1..*</text>
+              <text x="505" y="328">1</text>
+              <text x="505" y="358">0..*</text>
+              <text x="628" y="1160">1</text>
+              <text x="660" y="1160">1..*</text>
+              <text x="630" y="432">*</text>
+              <text x="660" y="424">1</text>
+              <text x="345" y="434">1</text>
+              <text x="360" y="634">1..*</text>
+              <text x="310" y="634">1</text>
+              <text x="870" y="600">1</text>
+              <text x="630" y="655">1</text>
+              <text x="46" y="480">1..2</text>
+              <text x="515" y="810">0..1</text>
+              <text x="665" y="700">1</text>
+              <text x="628" y="455">0..*</text>
+              <text x="515" y="1080">1</text>
+            </g>
+
+            <!-- RentalCompany -->
+            <g>
+              <rect x="390" y="20" width="210" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="390" y1="54" x2="600" y2="54" stroke="var(--color-primary)"/>
+              <line x1="390" y1="92" x2="600" y2="92" stroke="var(--color-primary)"/>
+              <text x="495" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">RentalCompany</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="400" y="68">- companyId: String</text>
+                <text x="400" y="82">- name: String</text>
+                <text x="400" y="106">+ searchAvailability(type, range, locId)</text>
+                <text x="400" y="120">+ getLocations(): List&lt;Location&gt;</text>
+              </g>
+            </g>
+
+            <!-- Location -->
+            <g>
+              <rect x="390" y="190" width="210" height="120" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="390" y1="224" x2="600" y2="224" stroke="var(--color-primary)"/>
+              <line x1="390" y1="266" x2="600" y2="266" stroke="var(--color-primary)"/>
+              <text x="495" y="212" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Location (Branch)</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="400" y="238">- locationId: String</text>
+                <text x="400" y="252">- name, address, city: String</text>
+                <text x="400" y="282">+ getVehicles(): List&lt;Vehicle&gt;</text>
+                <text x="400" y="296">+ searchAvailability(type, range)</text>
+              </g>
+            </g>
+
+            <!-- Vehicle -->
+            <g>
+              <rect x="390" y="370" width="230" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="390" y1="404" x2="620" y2="404" stroke="var(--color-primary)"/>
+              <line x1="390" y1="474" x2="620" y2="474" stroke="var(--color-primary)"/>
+              <text x="505" y="392" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Vehicle</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="400" y="418">- vehicleId (VIN): String</text>
+                <text x="400" y="432">- licensePlate: String</text>
+                <text x="400" y="446">- vehicleType: VehicleType</text>
+                <text x="400" y="460">- status: VehicleStatus</text>
+                <text x="400" y="490">+ isAvailableFor(range, ...): boolean</text>
+                <text x="400" y="504">+ setStatus(status): void</text>
+              </g>
+            </g>
+
+            <!-- VehicleType -->
+            <g>
+              <rect x="690" y="370" width="200" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="690" y1="404" x2="890" y2="404" stroke="var(--color-accent-dark)"/>
+              <line x1="690" y1="458" x2="890" y2="458" stroke="var(--color-accent-dark)"/>
+              <text x="790" y="392" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">VehicleType</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="700" y="418">- typeId: String</text>
+                <text x="700" y="432">- name: String // ECONOMY|SUV|LUXURY|VAN</text>
+                <text x="700" y="446">- dailyRate: Money</text>
+                <text x="700" y="472">+ getDailyRate(): Money</text>
+              </g>
+            </g>
+
+            <!-- VehicleStatus enum -->
+            <g>
+              <rect x="90" y="370" width="210" height="150" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="90" y1="404" x2="300" y2="404" stroke="var(--color-accent-dark)"/>
+              <text x="195" y="386" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;enum&raquo;</text>
+              <text x="195" y="398" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">VehicleStatus</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="100" y="420">AVAILABLE</text>
+                <text x="100" y="436">RESERVED</text>
+                <text x="100" y="452">RENTED</text>
+                <text x="100" y="468">IN_SERVICE</text>
+                <text x="100" y="484">DAMAGED</text>
+                <text x="100" y="500">OUT_OF_SERVICE</text>
+              </g>
+            </g>
+
+            <!-- Customer -->
+            <g>
+              <rect x="90" y="570" width="210" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="90" y1="604" x2="300" y2="604" stroke="var(--color-accent-dark)"/>
+              <line x1="90" y1="660" x2="300" y2="660" stroke="var(--color-accent-dark)"/>
+              <text x="195" y="592" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Customer (Account)</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="100" y="618">- customerId: String</text>
+                <text x="100" y="632">- name, email, phone: String</text>
+                <text x="100" y="646">- licenseNumber, licenseExpiry</text>
+                <text x="100" y="676">+ getReservationHistory()</text>
+              </g>
+            </g>
+
+            <!-- Reservation -->
+            <g>
+              <rect x="390" y="570" width="230" height="210" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="390" y1="604" x2="620" y2="604" stroke="var(--color-primary)"/>
+              <line x1="390" y1="702" x2="620" y2="702" stroke="var(--color-primary)"/>
+              <text x="505" y="592" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Reservation</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="400" y="618">- reservationId: String</text>
+                <text x="400" y="632">- customerId: String</text>
+                <text x="400" y="646">- vehicleType: VehicleType</text>
+                <text x="400" y="660">- dateRange: DateRange</text>
+                <text x="400" y="674">- pickupLocationId, dropoffLocationId</text>
+                <text x="400" y="688">- status: ReservationStatus</text>
+                <text x="400" y="716">+ overlaps(other: DateRange): boolean</text>
+                <text x="400" y="730">+ cancel(): void</text>
+                <text x="400" y="744">+ modify(newRange): void</text>
+              </g>
+            </g>
+
+            <!-- ReservationStatus enum -->
+            <g>
+              <rect x="690" y="570" width="200" height="150" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="690" y1="604" x2="890" y2="604" stroke="var(--color-accent-dark)"/>
+              <text x="790" y="586" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;enum&raquo;</text>
+              <text x="790" y="598" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">ReservationStatus</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="700" y="622">CONFIRMED</text>
+                <text x="700" y="638">FULFILLED</text>
+                <text x="700" y="654">CANCELLED</text>
+                <text x="700" y="670">EXPIRED</text>
+              </g>
+            </g>
+
+            <!-- RentalAgreement -->
+            <g>
+              <rect x="390" y="830" width="230" height="220" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="390" y1="864" x2="620" y2="864" stroke="var(--color-primary)"/>
+              <line x1="390" y1="962" x2="620" y2="962" stroke="var(--color-primary)"/>
+              <text x="505" y="852" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">RentalAgreement</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="400" y="878">- agreementId: String</text>
+                <text x="400" y="892">- reservation: Reservation (0..1)</text>
+                <text x="400" y="906">- vehicle: Vehicle</text>
+                <text x="400" y="920">- actualPickup/expectedReturn/</text>
+                <text x="400" y="934">&#160;&#160;actualReturn: LocalDateTime</text>
+                <text x="400" y="948">- additionalDrivers: List&lt;String&gt;</text>
+                <text x="400" y="978">+ close(actualReturn, damage): Bill</text>
+                <text x="400" y="992">+ isLate(): boolean</text>
+              </g>
+            </g>
+
+            <!-- Bill -->
+            <g>
+              <rect x="390" y="1100" width="230" height="170" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="390" y1="1134" x2="620" y2="1134" stroke="var(--color-primary)"/>
+              <line x1="390" y1="1188" x2="620" y2="1188" stroke="var(--color-primary)"/>
+              <text x="505" y="1122" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Bill</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="400" y="1148">- billId: String</text>
+                <text x="400" y="1162">- agreement: RentalAgreement</text>
+                <text x="400" y="1176">- lineItems: List&lt;LineItem&gt;</text>
+                <text x="400" y="1204">+ addLineItem(item): void</text>
+                <text x="400" y="1218">+ computeLateFee(agreement)</text>
+                <text x="400" y="1232">+ computeDamageFee(report)</text>
+                <text x="400" y="1246">+ getTotal(): Money</text>
+              </g>
+            </g>
+
+            <!-- LineItem -->
+            <g>
+              <rect x="690" y="1100" width="200" height="140" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="690" y1="1134" x2="890" y2="1134" stroke="var(--color-accent-dark)"/>
+              <line x1="690" y1="1188" x2="890" y2="1188" stroke="var(--color-accent-dark)"/>
+              <text x="790" y="1122" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">LineItem (Charge)</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="700" y="1148">- description: String</text>
+                <text x="700" y="1162">- amount: Money</text>
+                <text x="700" y="1176">- kind: ChargeKind</text>
+                <text x="700" y="1204">+ getAmount(): Money</text>
+              </g>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 2. RentalCompany &mdash;filled diamond&rarr; Location (composition) &mdash;filled diamond&rarr; Vehicle (composition). Vehicle associates with VehicleType and VehicleStatus. Reservation associates with Customer, with VehicleType (a category, not yet a specific Vehicle), and with a pickup/drop-off Location. RentalAgreement associates with a Reservation (0..1, walk-up rentals have none) and with a specific Vehicle. Bill &mdash;filled diamond&rarr; LineItem (composition) and associates with the RentalAgreement it closes out.</div>
+        </div>
+        <p><strong>The Reservation-vs-RentalAgreement split is the central modeling decision of this page</strong> &mdash; lifted directly from Hotel's Reservation-vs-Stay reasoning. A Reservation only ever guarantees a <em>category</em> (Economy, SUV, Luxury, or Van) and a date range at a Location; it deliberately does <strong>not</strong> point at any specific Vehicle, because doing so would create a correctness problem the moment reality gets messy. A specific car could still be out with the previous renter, stuck in the shop, or written off in an accident right up until the moment a customer walks up to the counter. If a Reservation locked in VIN #4471 three weeks in advance, an unexpected late return of that exact car would leave the system with no clean way to honor the promise &mdash; it would have to silently swap cars anyway, exposing that the "specific vehicle" binding was fake all along. By keeping the Reservation category-level and only creating a RentalAgreement (with a real Vehicle reference) at the moment of actual pickup, the design only has to guarantee "a category exists and has capacity," which the system can always satisfy by checking that <em>at least one</em> physical Vehicle of that category is free right now &mdash; not that one particular VIN survived three weeks of operational reality untouched.</p>
+
+        <h2 id="key-flow-activity-diagram">Key Flow: Reserving and Picking Up a Vehicle (Activity Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 760" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Activity diagram for reserving a vehicle category and later picking up a specific vehicle at the reserved location">
+            <defs>
+              <marker id="crActArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#crActArrow)" fill="none">
+              <line x1="300" y1="30" x2="300" y2="54"/>
+              <line x1="300" y1="110" x2="300" y2="139"/>
+              <line x1="300" y1="190" x2="300" y2="204"/>
+              <line x1="300" y1="305" x2="300" y2="344"/>
+              <line x1="300" y1="410" x2="300" y2="449"/>
+              <line x1="300" y1="500" x2="300" y2="509"/>
+              <line x1="300" y1="610" x2="300" y2="614"/>
+              <line x1="420" y1="255" x2="480" y2="255"/>
+              <line x1="605" y1="288" x2="605" y2="322"/>
+              <line x1="420" y1="560" x2="480" y2="560"/>
+              <line x1="605" y1="593" x2="605" y2="627"/>
+            </g>
+            <circle cx="300" cy="20" r="10" fill="var(--color-primary)"/>
+
+            <rect x="170" y="55" width="260" height="55" rx="22" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="77" text-anchor="middle" font-size="11" fill="var(--color-text)">Customer requests a VehicleType</text>
+            <text x="300" y="91" text-anchor="middle" font-size="11" fill="var(--color-text)">for [pickup, return) at a Location</text>
+
+            <rect x="170" y="140" width="260" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="160" text-anchor="middle" font-size="10" fill="var(--color-text)">System scans Vehicles of that type</text>
+            <text x="300" y="174" text-anchor="middle" font-size="10" fill="var(--color-text)">at the requested Location</text>
+
+            <polygon points="300,205 420,255 300,305 180,255" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="249" text-anchor="middle" font-size="9.5" fill="var(--color-text)">Any Vehicle of that type with NO</text>
+            <text x="300" y="263" text-anchor="middle" font-size="9.5" fill="var(--color-text)">overlapping Reservation/RentalAgreement</text>
+            <text x="300" y="277" text-anchor="middle" font-size="9.5" fill="var(--color-text)">for the requested dates?</text>
+            <text x="335" y="231" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="252" y="325" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="480" y="227" width="250" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="605" y="248" text-anchor="middle" font-size="10" fill="var(--color-text)">Show no availability; suggest</text>
+            <text x="605" y="262" text-anchor="middle" font-size="10" fill="var(--color-text)">another category or Location</text>
+
+            <circle cx="605" cy="337" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="605" cy="337" r="6" fill="var(--color-primary)"/>
+
+            <rect x="170" y="345" width="260" height="65" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="366" text-anchor="middle" font-size="10" fill="var(--color-text)">Create Reservation &mdash; category-level</text>
+            <text x="300" y="380" text-anchor="middle" font-size="10" fill="var(--color-text)">hold, no specific Vehicle bound yet</text>
+            <text x="300" y="396" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">status = CONFIRMED</text>
+
+            <line x1="15" y1="430" x2="745" y2="430" stroke="var(--color-border)" stroke-width="1" stroke-dasharray="4,4"/>
+            <text x="300" y="424" text-anchor="middle" font-size="9.5" font-style="italic" fill="var(--color-text-muted)">time passes &mdash; customer returns on the reserved pickup date</text>
+
+            <rect x="170" y="450" width="260" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="480" text-anchor="middle" font-size="11" fill="var(--color-text)">Customer arrives for pickup</text>
+
+            <polygon points="300,510 420,560 300,610 180,560" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="546" text-anchor="middle" font-size="9.5" fill="var(--color-text)">At least one physical Vehicle of</text>
+            <text x="300" y="560" text-anchor="middle" font-size="9.5" fill="var(--color-text)">that category actually available</text>
+            <text x="300" y="574" text-anchor="middle" font-size="9.5" fill="var(--color-text)">right now (not out, not in service)?</text>
+            <text x="335" y="536" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="252" y="630" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="480" y="532" width="250" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="605" y="553" text-anchor="middle" font-size="10" fill="var(--color-text)">Offer an upgrade to another</text>
+            <text x="605" y="567" text-anchor="middle" font-size="10" fill="var(--color-text)">category, or apologize and rebook</text>
+
+            <circle cx="605" cy="642" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="605" cy="642" r="6" fill="var(--color-primary)"/>
+
+            <rect x="170" y="615" width="260" height="60" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="636" text-anchor="middle" font-size="10" fill="var(--color-text)">Bind a specific Vehicle to a new</text>
+            <text x="300" y="650" text-anchor="middle" font-size="10" fill="var(--color-text)">RentalAgreement; hand over keys</text>
+
+            <circle cx="300" cy="712" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="300" cy="712" r="6" fill="var(--color-primary)"/>
+          </svg>
+          <div class="diagram-caption">Figure 3. Two decision points, two different questions: at search/reservation time the question is "does this category have any free Vehicle at all," while at pickup time it's the same question re-asked against the current instant, because the answer can change between booking and arrival &mdash; a car promised three weeks ago can be late, damaged, or in the shop today.</div>
+        </div>
+
+        <h2 id="key-flow-sequence-diagram">Key Flow: Returning a Vehicle and Billing (Sequence Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1080 620" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Sequence diagram for returning a vehicle, recording any damage, computing fees, and finalizing the bill">
+            <defs>
+              <marker id="crSeqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-border)" stroke-width="1.3" stroke-dasharray="4,4">
+              <line x1="70" y1="60" x2="70" y2="580"/>
+              <line x1="250" y1="60" x2="250" y2="580"/>
+              <line x1="430" y1="60" x2="430" y2="580"/>
+              <line x1="610" y1="60" x2="610" y2="580"/>
+              <line x1="790" y1="60" x2="790" y2="580"/>
+              <line x1="970" y1="60" x2="970" y2="580"/>
+            </g>
+            <g fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5">
+              <rect x="15" y="20" width="110" height="40"/>
+              <rect x="185" y="20" width="130" height="40"/>
+              <rect x="350" y="20" width="160" height="40"/>
+              <rect x="545" y="20" width="130" height="40"/>
+              <rect x="710" y="20" width="160" height="40"/>
+              <rect x="915" y="20" width="110" height="40"/>
+            </g>
+            <g font-size="10" font-weight="700" fill="var(--color-text)" text-anchor="middle">
+              <text x="70" y="44">Customer</text>
+              <text x="250" y="38">Branch</text>
+              <text x="250" y="50">Staff</text>
+              <text x="430" y="44">RentalAgreement</text>
+              <text x="610" y="44">Vehicle</text>
+              <text x="790" y="44">DamageReport</text>
+              <text x="970" y="44">Bill</text>
+            </g>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#crSeqArrow)">
+              <line x1="70" y1="100" x2="250" y2="100"/>
+              <line x1="250" y1="130" x2="430" y2="130"/>
+              <line x1="250" y1="180" x2="610" y2="180"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#crSeqArrow)">
+              <line x1="430" y1="150" x2="250" y2="150"/>
+            </g>
+            <g font-size="10" fill="var(--color-text)">
+              <text x="80" y="95">returnVehicle(agreementId)</text>
+              <text x="260" y="125">getDetails()</text>
+              <text x="270" y="145">vehicle, expectedReturn, status=ACTIVE</text>
+              <text x="260" y="175">inspect()</text>
+            </g>
+
+            <rect x="230" y="200" width="440" height="70" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M230,200 L270,200 L270,212 L230,212 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="236" y="209" font-size="9" fill="var(--color-text)">opt</text>
+            <text x="276" y="209" font-size="9" fill="var(--color-text)">[damage found during inspection]</text>
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#crSeqArrow)">
+              <line x1="250" y1="230" x2="790" y2="230"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#crSeqArrow)">
+              <line x1="790" y1="255" x2="250" y2="255"/>
+            </g>
+            <text x="260" y="225" font-size="10" fill="var(--color-text)">create(description, estimatedCost)</text>
+            <text x="500" y="250" font-size="10" fill="var(--color-text)">reportId</text>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#crSeqArrow)">
+              <line x1="250" y1="300" x2="430" y2="300"/>
+              <line x1="430" y1="330" x2="970" y2="330"/>
+            </g>
+            <text x="260" y="295" font-size="10" fill="var(--color-text)">close(actualReturnTime, damageReport)</text>
+            <text x="440" y="325" font-size="10" fill="var(--color-text)">addLineItem(rentalCharge)</text>
+
+            <rect x="410" y="350" width="480" height="40" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M410,350 L450,350 L450,362 L410,362 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="416" y="359" font-size="9" fill="var(--color-text)">opt</text>
+            <text x="456" y="359" font-size="9" fill="var(--color-text)">[actualReturnTime &gt; expectedReturnTime]</text>
+            <line x1="430" y1="380" x2="970" y2="380" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#crSeqArrow)"/>
+            <text x="440" y="376" font-size="10" fill="var(--color-text)">addLineItem(lateFee)</text>
+
+            <rect x="410" y="400" width="480" height="40" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M410,400 L450,400 L450,412 L410,412 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="416" y="409" font-size="9" fill="var(--color-text)">opt</text>
+            <text x="456" y="409" font-size="9" fill="var(--color-text)">[damageReport present]</text>
+            <line x1="430" y1="430" x2="970" y2="430" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#crSeqArrow)"/>
+            <text x="440" y="426" font-size="10" fill="var(--color-text)">addLineItem(damageFee)</text>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#crSeqArrow)">
+              <line x1="430" y1="465" x2="610" y2="465"/>
+              <line x1="250" y1="495" x2="970" y2="495"/>
+              <line x1="250" y1="545" x2="70" y2="545"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#crSeqArrow)">
+              <line x1="970" y1="520" x2="250" y2="520"/>
+            </g>
+            <text x="440" y="460" font-size="10" fill="var(--color-text)">setStatus(AVAILABLE | DAMAGED)</text>
+            <text x="260" y="490" font-size="10" fill="var(--color-text)">getTotal()</text>
+            <text x="600" y="515" font-size="10" fill="var(--color-text)">total</text>
+            <text x="90" y="540" font-size="10" fill="var(--color-text)">present final bill</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Return closes the RentalAgreement and, critically, decides the Vehicle's next status based on the inspection outcome &mdash; back to Available if clean, or Damaged if a DamageReport was filed &mdash; before the Bill is finalized with whatever combination of rental, late, and damage charges actually applied.</div>
+        </div>
+
+        <h2 id="design-patterns-applied">Design Patterns Applied</h2>
+        <p>Name the pattern (or algorithm) and the forcing function together, not just the label:</p>
+        <ul>
+          <li><strong>Interval-overlap check, reused from Hotel Management</strong> &mdash; every "is this Vehicle free?" question reduces to the exact same half-open-range test used for Rooms: <code>startA &lt; endB &amp;&amp; startB &lt; endA</code>. It's the identical <em>shape</em> of problem, just keyed by Vehicle instead of Room &mdash; there it's "does this room have a conflicting Reservation/Stay," here it's "does this car have a conflicting Reservation/RentalAgreement." No new algorithm is invented for this page on purpose.</li>
+          <li><strong>Strategy</strong> &mdash; pricing varies by VehicleType (Economy vs. Luxury) and can additionally vary by rental duration or season (a weekly rate that undercuts 7&times;daily, a peak-season surcharge). Swapping the pricing strategy per category or date window doesn't touch Reservation, RentalAgreement, or Bill at all.</li>
+          <li><strong>State</strong> &mdash; two cooperating state machines: <em>VehicleStatus</em> (Available &rarr; Reserved/Rented &rarr; InService/Damaged &rarr; back to Available) and <em>RentalAgreement status</em> (Active &rarr; Closed). Encoding both as enums with guarded transitions is what stops, say, a Damaged Vehicle from silently being handed out again before Admin has cleared it for service.</li>
+          <li><strong>Factory</strong> &mdash; a VehicleFactory constructs a new Vehicle already wired to the correct VehicleType (and its daily rate, seating defaults, allowed add-ons) from a category code, so callers never assemble that association by hand. Worth contrasting explicitly with the Parking Lot page: there, Vehicle genuinely <em>is</em> subclassed (Car, Truck, Van, Motorcycle, Electric each override <code>allowedSpotTypes()</code> with different behavior). Here, Economy/SUV/Luxury/Van Vehicles don't differ in behavior &mdash; they differ only in the data attached via VehicleType (rate, capacity) &mdash; which is exactly the composition-over-inheritance signal that made RoomType a class in Hotel Management rather than five Room subclasses. The Factory earns its keep on the construction/defaulting side, not by standing in for a class hierarchy the requirements haven't asked for.</li>
+          <li><strong>Composition for Bill line items</strong> &mdash; a Bill doesn't hardcode "rental charge + late fee + damage fee + additional-driver fee + one-way fee" as fixed fields; it holds a <code>List&lt;LineItem&gt;</code> and exposes <code>addLineItem()</code>/<code>getTotal()</code>. A brand-new fee type (say, a fuel-refill charge) becomes one more LineItem, with zero changes to Bill itself.</li>
+        </ul>
+
+        <div class="formula-box">
+          <span class="formula-label">Interval overlap (same formula as Hotel, keyed by Vehicle)</span>
+          Two half-open ranges <strong>[startA, endA)</strong> and <strong>[startB, endB)</strong> overlap exactly when <strong>startA &lt; endB &amp;&amp; startB &lt; endA</strong>. Worked example: an existing RentalAgreement holding a specific SUV for [Jun&nbsp;10, Jun&nbsp;14) and a new Reservation request for [Jun&nbsp;13, Jun&nbsp;16) at the same Location &mdash; 10&nbsp;&lt;&nbsp;16 is true and 13&nbsp;&lt;&nbsp;14 is true, so they <strong>overlap</strong> and that specific car can't cover the new request. A request for [Jun&nbsp;14, Jun&nbsp;16) against that same booking does <strong>not</strong> overlap: 10&nbsp;&lt;&nbsp;16 holds, but 14&nbsp;&lt;&nbsp;14 is false &mdash; the return day is free for the next renter's pickup, exactly why the range is modeled half-open.
+        </div>
+
+        <h2 id="code-skeleton">Code Skeleton</h2>
+        <p>Fields and method signatures only &mdash; not a runnable program. <code>DateRange.overlaps</code> is fully implemented, since it's the same short, high-value formula reused from Hotel Management (see comment below).</p>
+
+        <pre><code>public final class DateRange {
+    private final LocalDate start;   // inclusive, e.g. pickup date
+    private final LocalDate end;     // exclusive, e.g. return date
+
+    public DateRange(LocalDate start, LocalDate end) {
+        if (!start.isBefore(end)) {
+            throw new IllegalArgumentException("start must be before end");
+        }
+        this.start = start;
+        this.end = end;
+    }
+
+    // Half-open interval overlap: [start, end) vs [other.start, other.end)
+    // Identical formula to the Hotel Management System's DateRange.overlaps,
+    // just applied against a Vehicle's Reservations/RentalAgreements instead
+    // of a Room's Reservations/Stays.
+    public boolean overlaps(DateRange other) {
+        return this.start.isBefore(other.end) &amp;&amp; other.start.isBefore(this.end);
+    }
+
+    public LocalDate getStart() { return start; }
+    public LocalDate getEnd() { return end; }
+}
+
+public enum VehicleStatus {
+    AVAILABLE, RESERVED, RENTED, IN_SERVICE, DAMAGED, OUT_OF_SERVICE
+}
+
+public enum ReservationStatus {
+    CONFIRMED, FULFILLED, CANCELLED, EXPIRED
+}
+
+public enum AgreementStatus {
+    ACTIVE, CLOSED
+}
+
+public enum ChargeKind {
+    RENTAL, LATE_FEE, DAMAGE_FEE, ADDITIONAL_DRIVER_FEE, ONE_WAY_FEE
+}</code></pre>
+
+        <pre><code>public class Vehicle {
+    private final String vehicleId;       // VIN
+    private final String licensePlate;
+    private final VehicleType vehicleType;
+    private volatile VehicleStatus status;
+    private volatile String currentLocationId;
+
+    public Vehicle(String vehicleId, String licensePlate, VehicleType vehicleType,
+                    String currentLocationId) { /* ... */ }
+
+    // "Available" for a range is derived, not stored: true only if no
+    // CONFIRMED Reservation or ACTIVE RentalAgreement for this vehicle
+    // overlaps the requested range, and status isn't IN_SERVICE/DAMAGED/OUT_OF_SERVICE.
+    public boolean isAvailableFor(DateRange range,
+                                   List&lt;Reservation&gt; reservations,
+                                   List&lt;RentalAgreement&gt; agreements) {
+        boolean statusOk = status == VehicleStatus.AVAILABLE || status == VehicleStatus.RESERVED;
+        boolean noReservationOverlap = reservations.stream()
+                .filter(r -&gt; r.getStatus() == ReservationStatus.CONFIRMED)
+                .noneMatch(r -&gt; r.overlaps(range));
+        boolean noAgreementOverlap = agreements.stream()
+                .filter(a -&gt; a.getStatus() == AgreementStatus.ACTIVE)
+                .noneMatch(a -&gt; a.overlaps(range));
+        return statusOk &amp;&amp; noReservationOverlap &amp;&amp; noAgreementOverlap;
+    }
+
+    public VehicleType getVehicleType();
+    public VehicleStatus getStatus();
+    public synchronized void setStatus(VehicleStatus status);
+}</code></pre>
+
+        <pre><code>public class Reservation {
+    private final String reservationId;
+    private final String customerId;
+    private final VehicleType vehicleType;     // category only &mdash; NOT a specific Vehicle
+    private final DateRange dateRange;
+    private final String pickupLocationId;
+    private final String dropoffLocationId;    // may equal pickupLocationId (round-trip)
+    private volatile ReservationStatus status;
+
+    public Reservation(String reservationId, String customerId, VehicleType vehicleType,
+                        DateRange dateRange, String pickupLocationId,
+                        String dropoffLocationId) { /* ... */ }
+
+    public boolean overlaps(DateRange other) {
+        return dateRange.overlaps(other);
+    }
+
+    public DateRange getDateRange();
+    public ReservationStatus getStatus();
+    public void cancel();
+    public void modify(DateRange newRange);
+    public void markFulfilled();   // called when a RentalAgreement is created from this Reservation
+}</code></pre>
+
+        <pre><code>public class RentalAgreement {
+    private final String agreementId;
+    private final Reservation reservation;     // nullable: walk-ups have no prior reservation
+    private final Vehicle vehicle;              // the ONE specific car bound at pickup
+    private final String customerId;
+    private final LocalDateTime actualPickupTime;
+    private final LocalDateTime expectedReturnTime;
+    private LocalDateTime actualReturnTime;
+    private final List&lt;String&gt; additionalDriverLicenseNumbers;
+    private volatile AgreementStatus status;
+
+    public RentalAgreement(String agreementId, Reservation reservation, Vehicle vehicle,
+                            String customerId, LocalDateTime actualPickupTime,
+                            LocalDateTime expectedReturnTime) { /* ... */ }
+
+    public boolean overlaps(DateRange other) {
+        return new DateRange(actualPickupTime.toLocalDate(), expectedReturnTime.toLocalDate())
+                .overlaps(other);
+    }
+
+    public boolean isLate() {
+        return actualReturnTime != null &amp;&amp; actualReturnTime.isAfter(expectedReturnTime);
+    }
+
+    public Bill close(LocalDateTime actualReturnTime, DamageReport damageReport) {
+        this.actualReturnTime = actualReturnTime;
+        this.status = AgreementStatus.CLOSED;
+        vehicle.setStatus(damageReport != null ? VehicleStatus.DAMAGED : VehicleStatus.AVAILABLE);
+        Bill bill = new Bill(agreementId, this);
+        bill.addLineItem(bill.computeRentalCharge(this));
+        if (isLate()) {
+            bill.addLineItem(bill.computeLateFee(this));
+        }
+        if (damageReport != null) {
+            bill.addLineItem(bill.computeDamageFee(damageReport));
+        }
+        return bill;
+    }
+
+    public AgreementStatus getStatus();
+    public Optional&lt;Reservation&gt; getReservation();
+    public Vehicle getVehicle();
+}</code></pre>
+
+        <pre><code>public class DamageReport {
+    private final String reportId;
+    private final String agreementId;
+    private final String description;
+    private final Money estimatedCost;
+    private final String reportedByStaffId;
+
+    public DamageReport(String agreementId, String description, Money estimatedCost,
+                         String reportedByStaffId) { /* ... */ }
+
+    public Money getEstimatedCost() { return estimatedCost; }
+}
+
+public class Bill {
+    private final String billId;
+    private final RentalAgreement agreement;
+    private final List&lt;LineItem&gt; lineItems = new ArrayList&lt;&gt;();
+
+    public Bill(String billId, RentalAgreement agreement) { /* ... */ }
+
+    public void addLineItem(LineItem item) {
+        lineItems.add(item);
+    }
+
+    public LineItem computeRentalCharge(RentalAgreement agreement) {
+        // days rented (rounded up) &times; agreement.getVehicle().getVehicleType().getDailyRate()
+        return new LineItem("Rental charge", /* computed */ Money.ZERO, ChargeKind.RENTAL);
+    }
+
+    public LineItem computeLateFee(RentalAgreement agreement) {
+        // (actualReturn - expectedReturn), rounded up to whole days, &times; a late-fee rate
+        return new LineItem("Late return fee", /* computed */ Money.ZERO, ChargeKind.LATE_FEE);
+    }
+
+    public LineItem computeDamageFee(DamageReport report) {
+        return new LineItem("Damage fee", report.getEstimatedCost(), ChargeKind.DAMAGE_FEE);
+    }
+
+    public Money getTotal() {
+        return lineItems.stream()
+                .map(LineItem::getAmount)
+                .reduce(Money.ZERO, Money::add);
+    }
+}
+
+public class LineItem {
+    private final String description;
+    private final Money amount;
+    private final ChargeKind kind;
+
+    public LineItem(String description, Money amount, ChargeKind kind) { /* ... */ }
+    public Money getAmount() { return amount; }
+}</code></pre>
+
+        <h2 id="extensibility-and-edge-cases">Extensibility &amp; Edge Cases</h2>
+        <ul>
+          <li><strong>One-way rentals and fleet balancing.</strong> Picking up at Location A and dropping off at Location B is a first-class feature, but it's also an operational headache: every one-way rental silently moves inventory from A to B. Left unmanaged, popular one-way routes (airport &rarr; downtown, say) drain some Locations of cars while flooding others. This doesn't change the object model &mdash; a Reservation and RentalAgreement already carry independent pickup/drop-off Location fields &mdash; but it does mean Admin needs fleet-distribution reporting per Location, and the one-way fee itself is partly there to price in the cost of eventually trucking cars back.</li>
+          <li><strong>Loyalty-tier upgrades.</strong> A high-tier loyalty customer arriving for pickup might be given a free upgrade to a better category than what their Reservation named (an Economy reservation upgraded to an SUV at the counter, subject to that SUV clearing its own overlap check). Exactly like Hotel's room-upgrade case: the Reservation still records what was booked and at what rate for billing purposes; only the RentalAgreement's Vehicle (and its VehicleType) reflects what was actually handed over.</li>
+          <li><strong>A specific reserved car running late.</strong> Because Reservation is category-level, not VIN-level, this is a non-event until pickup: if the last renter of an Economy car is running behind, the system simply keeps searching for <em>any other</em> Economy Vehicle at that Location that clears the pickup-time availability check. Only if the entire category is genuinely exhausted does it become a real problem (handled by the upgrade-or-rebook branch in Figure 3) &mdash; the category-level promise absorbs individual-vehicle delays gracefully by design, not by luck.</li>
+          <li><strong>Fleet rebalancing between locations.</strong> Admin (or an automated job) periodically moves Vehicles between Locations to correct the imbalance one-way rentals create. Modeling Location&ndash;Vehicle as composition (Figure 2) doesn't mean a transferred car is destroyed and recreated: a transfer is simply removing the Vehicle from one Location's fleet and adding it to another's, updating <code>currentLocationId</code> &mdash; composition governs "who currently owns this Vehicle's record," not "this Vehicle can never move."</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">Why is Reservation category-level (a VehicleType, not a specific Vehicle), while RentalAgreement binds one specific Vehicle? What problem would collapsing them into one class cause?</div>
+          <div class="qa-a">A Reservation is made in advance and has to survive weeks of operational reality it can't predict &mdash; the previous renter of any specific car could return late, that car could get damaged, or it could be pulled for scheduled service. If a Reservation locked in a specific VIN, the system would have no clean way to honor a late-arriving or damaged car's promise; it would have to quietly substitute a different car anyway, which proves the "specific vehicle" binding was never real. By keeping Reservation category-level, the only guarantee it has to make is "a Vehicle of this type will be available," which the system re-verifies at the moment that matters &mdash; pickup &mdash; when a RentalAgreement finally binds one real, currently-available Vehicle. Merging the two would force every Reservation to either fib about which car it means, or force awkward re-assignment logic into a class that's supposed to represent a stable promise.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">State the date-range-overlap formula precisely, and explain why it has to be checked per-Vehicle rather than per-category.</div>
+          <div class="qa-a">Model each range as half-open, [start, end), so a return on day N and a pickup on day N for a <em>different</em> car don't falsely conflict. Two ranges [startA, endA) and [startB, endB) overlap exactly when <code>startA &lt; endB &amp;&amp; startB &lt; endA</code> &mdash; both conditions have to hold for there to be any shared moment. It's checked per-Vehicle (not per-category) because the thing that can actually be double-booked is one physical car; "the Economy category is free" really means "at least one specific Economy Vehicle has no overlapping Reservation/RentalAgreement," which is why availability search iterates every Vehicle of the requested type at a Location and asks the per-Vehicle overlap question for each one.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Late fees, damage fees, additional-driver fees, one-way fees &mdash; how do all of these get modeled onto the Bill without RentalAgreement turning into a God class that knows about every charge type?</div>
+          <div class="qa-a">RentalAgreement's only job at close-time is to gather the raw facts &mdash; actual vs. expected return time, whether a DamageReport exists, how many additional drivers were listed, whether pickup and drop-off Locations differ &mdash; and hand them to Bill, which owns the fee-computation methods (<code>computeLateFee</code>, <code>computeDamageFee</code>, and so on) and turns each applicable fact into one more LineItem via <code>addLineItem()</code>. RentalAgreement never hardcodes fee amounts or fee logic; it just triggers Bill's computation methods conditionally (see the <code>close()</code> skeleton above). Adding a brand-new fee type later &mdash; a fuel-refill charge, say &mdash; means adding one more <code>compute...Fee</code> method to Bill and one more conditional call in <code>close()</code>, not touching RentalAgreement's fields or its state machine at all.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A customer books a pickup in Chicago and a drop-off in Denver. How does that complicate fleet distribution, and how would you address it at a design level?</div>
+          <div class="qa-a">Every one-way rental is a permanent, one-directional transfer of inventory from the pickup Location to the drop-off Location. At scale, popular one-way corridors systematically drain some Locations and flood others, so an airport branch might run short of SUVs every weekend while a downtown branch accumulates a surplus it can't rent out fast enough. The object model itself doesn't need to change &mdash; Reservation and RentalAgreement already carry independent pickup/drop-off Location references &mdash; but Admin needs a fleet-distribution view across Locations (current counts by category, net one-way flow) to trigger manual or automated rebalancing transfers, and the one-way fee charged to the customer is partly there to offset the eventual cost of trucking cars back to where demand actually is.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is VehicleType modeled as a class with a mutable daily rate instead of a hardcoded enum, given that Economy/SUV/Luxury/Van is a small, fixed set of categories?</div>
+          <div class="qa-a">The category names are stable, but the daily rate attached to each one changes constantly &mdash; seasonal demand, local competition, promotions, and per-Location pricing all mean Admin needs to edit rates without a code deploy. This is the exact same reasoning that made RoomType a class in Hotel Management rather than a priced enum, and it's the mirror image of the Parking Lot page's SpotType decision: there, a class-per-type would have been over-engineering because the types share identical behavior with no price attached; here, a hardcoded enum would under-engineer because the types carry genuinely mutable business data (the rate) that changes far more often than the category list itself does.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Two customers hit "confirm" for the last available Economy car at the same Location and overlapping dates at nearly the same instant. How do you stop both from succeeding?</div>
+          <div class="qa-a">The overlap check has to run against a consistent, locked view of that Location's fleet, not a read-then-write race in application code. In practice this means an atomic, conditional operation at the persistence layer &mdash; a transaction (or row lock) that only commits a new Reservation if, at commit time, at least one Vehicle of the requested type still has no overlapping CONFIRMED Reservation or ACTIVE RentalAgreement for the range. Whichever request commits first "wins" the last available car; the second either fails the check and is told the category is sold out for those dates, or is routed back to search availability, possibly at a different Location.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A customer wants to extend their rental by two more days while the car is already checked out. How would you support that without risking a double-booking?</div>
+          <div class="qa-a">Treat the extension exactly like a fresh availability request scoped to the one specific Vehicle already bound by the RentalAgreement: build the additional-days DateRange (current expectedReturnTime through the new requested return time) and run the identical overlaps() check against every other CONFIRMED Reservation and ACTIVE RentalAgreement for that same Vehicle. If it clears, update expectedReturnTime on the RentalAgreement (and the linked Reservation's date range, if one exists) and recompute the projected rental charge. If it fails &mdash; because that Vehicle is already promised to the next customer &mdash; the extension is rejected, and the customer is offered a different Vehicle for the extra days or told to return on schedule. Being physically in possession of the car today grants no special claim on tomorrow.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">The customer disputes the damage fee, insisting the scratch was already there at pickup. What does that imply about DamageReport and the pickup process?</div>
+          <div class="qa-a">This is really an argument for capturing a documented vehicle condition at <em>both</em> ends of the rental, not just at return. In practice that means RentalAgreement should reference a lightweight pickup-time condition record (photos, a pre-existing-damage checklist signed off by both Branch Staff and the customer) in addition to the return-time DamageReport, so a dispute becomes "compare condition-at-pickup vs. condition-at-return" rather than a he-said/she-said. Design-wise, this doesn't change the Bill/DamageReport relationship at all &mdash; computeDamageFee() still only fires when a return-time DamageReport exists &mdash; it just means DamageReport-style records need an explicit pickup-time counterpart to make the return-time one defensible.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does the design favor a Factory for constructing Vehicles instead of subclassing Vehicle per category, when the Parking Lot page does subclass Vehicle (Car, Truck, Van, Motorcycle, Electric)?</div>
+          <div class="qa-a">Subclassing earns its cost when subtypes have genuinely different <em>behavior</em>. In Parking Lot, Vehicle subclasses each override <code>allowedSpotTypes()</code> with a different answer &mdash; a Motorcycle fits in a Motorcycle spot, a Truck needs Large &mdash; so the behavioral divergence justifies a hierarchy. Here, an Economy Vehicle and a Luxury Vehicle don't behave differently at all; they only carry different <em>data</em> via their VehicleType reference (daily rate, seating capacity). That's the textbook signal to prefer composition/data over inheritance, exactly like RoomType in Hotel Management. A VehicleFactory still earns a place in the design, just for a narrower job: encapsulating the construction-time logic that wires a new Vehicle to the right VehicleType and any category-specific defaults, without requiring a class per category.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Key Takeaways</div>
+          <ul>
+            <li>The Reservation-vs-RentalAgreement split &mdash; a category-level promise vs. a specific-Vehicle realized event, linked by an optional 0..1 reference &mdash; is the headline decision on this page, lifted directly from Hotel's Reservation-vs-Stay reasoning, and it's what lets a late or damaged car be absorbed gracefully instead of breaking a three-week-old promise.</li>
+            <li>The interval-overlap check &mdash; <code>startA &lt; endB &amp;&amp; startB &lt; endA</code> on half-open ranges &mdash; is reused verbatim from Hotel Management, just keyed by Vehicle instead of Room; no new algorithm was invented for this problem on purpose.</li>
+            <li>VehicleType is modeled as a class with a mutable daily rate, not a hardcoded enum, because price is exactly the kind of data Admin needs to change without a deploy &mdash; the same reasoning as Hotel's RoomType, and the opposite call from Parking Lot's behaviorally-identical SpotType.</li>
+            <li>Vehicle itself is <em>not</em> subclassed per category, unlike Parking Lot's Vehicle hierarchy &mdash; Economy/SUV/Luxury/Van differ only in data (via VehicleType), not behavior, so composition wins over inheritance here.</li>
+            <li>One-way rentals are a first-class feature of the object model (independent pickup/drop-off Locations) but a real operational concern in practice &mdash; fleet distribution across Locations has to be actively managed, not assumed away.</li>
+          </ul>
+        </div>
+
+        <h2 id="references">References</h2>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Interval_scheduling" target="_blank" rel="noopener">"Interval scheduling"</a> &mdash; general background on interval/date-range overlap reasoning, the same algorithmic core reused from the Hotel Management System's availability check.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/State_pattern" target="_blank" rel="noopener">"State pattern"</a> &mdash; general reference for the VehicleStatus and RentalAgreement status lifecycles discussed in the Design Patterns section.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Factory_method_pattern" target="_blank" rel="noopener">"Factory method pattern"</a> &mdash; general reference for the VehicleFactory construction discussed above, and for the composition-over-inheritance contrast with the Parking Lot page's Vehicle hierarchy.</p>
+
+        <div class="page-nav">
+          <a class="prev" href="online-stock-brokerage-system.html"><span class="dir">Previous</span>Online Stock Brokerage System</a>
+          <a class="next" href="linkedin.html"><span class="dir">Next</span>LinkedIn</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workflow Orchestration &amp; Job Scheduling | System Design — Building Units | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Building Units</a><span class="sep">/</span><span class="current">Workflow Orchestration &amp; Job Scheduling</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Building Units overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#apache-airflow">Apache Airflow</a></li>
+        <li><a href="#temporal">Temporal</a></li>
+        <li><a href="#aws-step-functions">AWS Step Functions</a></li>
+        <li><a href="#orchestrator-comparison">Comparative Summary</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN — BUILDING UNITS</span>
+          <h1>Workflow Orchestration &amp; Job Scheduling</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Orchestration tools solve a different problem than a message queue or a compute engine: given a set of steps with dependencies — some that must run in sequence, some that can run in parallel, some that depend on external conditions like a file landing — how do you schedule, retry, monitor, and recover them reliably? A plain cron job can trigger a script at a fixed time, but it has no concept of upstream dependencies, retries, partial failure, backfills, or observability. Real data, ML, and business pipelines are DAGs (Directed Acyclic Graphs) of steps with dependencies — "run the Spark aggregation job only after today's ingestion job has landed data, and only if yesterday's partition succeeded" — and they need automatic retries with backoff, alerting on failure, backfill support for historical runs, and a UI/API for humans and other systems to inspect status. Workflow orchestrators exist to coordinate exactly this: multi-step, dependency-having jobs, reliably — not just "run X at time Y."</p>
+
+        <h3 id="apache-airflow">Apache Airflow</h3>
+        <p>Apache Airflow is an open-source, Python-based platform for authoring, scheduling, and monitoring workflows defined as DAGs of tasks. Originated at Airbnb, it's the de facto standard for data-pipeline and ETL orchestration.</p>
+        <p>Workflows ("DAGs") are written as Python code specifying tasks and their dependencies. A persistent Scheduler process reads serialized DAGs from a metadata database and decides when each DAG run or task should trigger, based on schedule and dependency state; a pluggable Executor (Local, Celery, Kubernetes) decides how and where each task actually runs; the metadata database persists DAG definitions, run history, task states, and connections; and a web UI visualizes DAG graphs, run history, and logs, letting operators retry or clear failed tasks by hand. Airflow ships rich scheduling support — cron-like schedules plus sensors that wait for external conditions such as a file landing or an upstream DAG completing — along with built-in per-task retry/alerting, backfill support for historical runs, a large library of pre-built operators for common systems (Spark, BigQuery, S3, Kubernetes, dbt), and plugin-based extensibility.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="24" font-size="13" font-weight="700" fill="#0f2545">Example Airflow DAG &#8212; task dependency graph</text>
+
+            <rect x="20" y="110" width="100" height="44" rx="6" fill="#0f2545"/>
+            <text x="70" y="137" text-anchor="middle" font-size="11" fill="#fff">extract</text>
+
+            <rect x="170" y="110" width="110" height="44" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="225" y="137" text-anchor="middle" font-size="11" font-weight="700" fill="#1d4ed8">transform</text>
+
+            <rect x="340" y="45" width="110" height="44" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="395" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#6b4a10">load_a</text>
+
+            <rect x="340" y="175" width="110" height="44" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="395" y="202" text-anchor="middle" font-size="11" font-weight="700" fill="#6b4a10">load_b</text>
+
+            <rect x="510" y="110" width="110" height="44" rx="6" fill="#f0fdf4" stroke="#166534"/>
+            <text x="565" y="137" text-anchor="middle" font-size="11" font-weight="700" fill="#166534">validate</text>
+
+            <line x1="120" y1="132" x2="170" y2="132" stroke="#334155" marker-end="url(#a3)"/>
+            <line x1="280" y1="118" x2="340" y2="75" stroke="#334155" marker-end="url(#a3)"/>
+            <line x1="280" y1="146" x2="340" y2="190" stroke="#334155" marker-end="url(#a3)"/>
+            <line x1="450" y1="75" x2="510" y2="118" stroke="#334155" marker-end="url(#a3)"/>
+            <line x1="450" y1="190" x2="510" y2="146" stroke="#334155" marker-end="url(#a3)"/>
+
+            <text x="340" y="238" text-anchor="middle" font-size="9.5" fill="#5a6472">load_a and load_b run in parallel once transform succeeds; validate waits for both to complete</text>
+
+            <defs><marker id="a3" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">A DAG encodes both order and parallelism: extract runs first, transform runs next, load_a/load_b fan out in parallel, and validate is scheduled only once every upstream dependency has succeeded.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> Managed offerings — Amazon MWAA, Google Cloud Composer, Astronomer; self-hosted on Kubernetes via the official Helm chart.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Classic data-engineering/ETL/ML-pipeline orchestration with relatively short-lived, batch-oriented steps — wait for the nightly file drop, trigger a Spark job, load results into a warehouse, trigger a dbt run, refresh a BI dashboard, alert on-call on any failure. The default choice when the orchestration domain is primarily data/ETL/ML pipelines.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Huge ecosystem of pre-built operators and integrations</li><li>Mature scheduling model (cron schedules, sensors, backfills) purpose-built for data pipelines</li><li>Large community, extensive documentation, easy to hire for</li></ul></td>
+            <td><ul><li>DAGs are batch/schedule-oriented, not a natural fit for long-lived or event-driven business processes</li><li>Scheduler/metadata-database can become an operational bottleneck at very high DAG/task volume</li><li>Workflow structure is still a fixed graph defined ahead of time, less flexible than fully dynamic code-as-workflow models</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="temporal">Temporal</h3>
+        <p>Temporal is a durable execution platform for writing and running workflows as ordinary code — Go, Java, TypeScript, Python, .NET, PHP — guaranteeing that a workflow's logic runs to completion across process crashes, deployments, or infrastructure failures, without the developer manually implementing retry or state-persistence logic.</p>
+        <p>Developers write workflow logic as normal functions; Temporal's runtime automatically records every step and event into a durable "event history," so a crashed worker's progress can be resumed exactly where it left off by replaying that history — no manually built checkpointing required. Long-running "activities" (calls to external services) get automatic retry policies, timeouts, and backoff declared rather than hand-coded, and workflows can run for seconds or literally years, holding state — such as waiting on a human approval or an external signal — without consuming compute while idle. Because workflows are real code with full IDE support, unit testing, and version control, Temporal isn't limited to data pipelines; it's widely used for business-process orchestration (order fulfillment, onboarding, payment processing) and increasingly for multi-step AI/agentic workflows.</p>
+        <p><strong>Popular tools:</strong> Temporal Cloud (managed), self-hosted Temporal Server; client SDKs for Go, Java, TypeScript, Python, .NET, PHP.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Long-running, stateful business processes that must survive failures and can span seconds to months or years — an e-commerce order-fulfillment saga (payment → inventory → shipping → possible refund/compensation), multi-day onboarding with human-in-the-loop steps, distributed transaction/saga patterns across microservices, or chains of external API calls each needing independent retry/timeout handling. Less commonly the first choice purely for scheduled batch data pipelines — that's Airflow's niche — and the two are sometimes used together: Temporal for operational logic, Airflow for downstream analytics scheduling.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Workflow-as-real-code — full IDE support, unit testing, version control, no YAML/visual DSL</li><li>Automatic retries and durable state across failures without hand-built checkpointing</li><li>Strong fit for very long-running, stateful processes (seconds to years)</li></ul></td>
+            <td><ul><li>Not purpose-built for classic scheduled batch/ETL pipelines the way Airflow is</li><li>Requires developers to think in terms of durable-execution semantics (determinism constraints on workflow code)</li><li>Smaller footprint in traditional data-engineering teams versus Airflow's dominance there</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="aws-step-functions">AWS Step Functions</h3>
+        <p>AWS Step Functions is a fully managed, serverless state-machine orchestration service for coordinating AWS-native workflows, defined declaratively in Amazon States Language — a JSON-based DSL.</p>
+        <p>You define a state machine — steps, branching, parallel execution, error handling/retries, wait states — that Step Functions executes, invoking AWS services (Lambda, ECS/Fargate, Glue, SageMaker, SNS/SQS, DynamoDB) as steps while tracking state itself. Standard Workflows are exactly-once, durable, and auditable, run up to a year, support roughly 2,000 executions per second, and are billed per state transition — good for long-running, auditable processes. Express Workflows are at-least-once, run up to five minutes, support 100,000+ executions per second, and are billed by duration/memory — good for high-volume, idempotent event processing such as streaming ETL or IoT ingestion, further split into synchronous (wait for the result) and asynchronous (fire-and-forget, poll logs) variants.</p>
+        <p><strong>Popular tools:</strong> AWS Step Functions (Standard and Express Workflows); commonly paired with Lambda, Glue, ECS/Fargate, SageMaker, SNS/SQS, and DynamoDB as the invoked steps.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Orchestrating multi-step, AWS-native serverless applications or pipelines without operating any orchestration infrastructure yourself — for example a pipeline that triggers a Glue/EMR job, waits for completion, then invokes a Lambda to validate output and a SageMaker job to retrain a model; coordinating microservice call sequences; or high-throughput real-time event processing (Express) like IoT telemetry transformation. Best fit when already AWS-centric and wanting minimal operational overhead versus self-hosting Airflow or Temporal.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Fully managed — no orchestration infrastructure to run or scale</li><li>Deep native integration across the AWS service catalog</li><li>Built-in error handling/retry/catch per state plus pay-per-use pricing</li></ul></td>
+            <td><ul><li>Tied to the AWS ecosystem — poor fit for multi-cloud or on-prem orchestration</li><li>Amazon States Language is a JSON DSL, less expressive/testable than workflow-as-code platforms</li><li>Standard Workflows' per-state-transition billing can get costly at very high step counts</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="orchestrator-comparison">Comparative Summary</h3>
+        <p>The three orchestrators above solve overlapping but distinct problems — the table below summarizes when each is the natural fit.</p>
+        <table>
+          <tr><th>Orchestrator</th><th>Best for</th><th>Model</th></tr>
+          <tr><td>Airflow</td><td>Data/ETL/ML pipeline scheduling with batch-job dependencies</td><td>Python DAGs, scheduler + pluggable executor</td></tr>
+          <tr><td>Temporal</td><td>Long-running, stateful, code-driven business processes needing durability</td><td>Workflow-as-code with automatic durable execution</td></tr>
+          <tr><td>AWS Step Functions</td><td>AWS-native orchestration with zero infrastructure to manage</td><td>Declarative JSON state machines</td></tr>
+        </table>
+
+        <div class="page-nav">
+          <a class="prev" href="bigdata-processing.html"><span class="dir">Previous</span>Big-Data Batch &amp; Stream Processing</a>
+          <a class="next" href="building-units-index.html"><span class="dir">Next</span>Index</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

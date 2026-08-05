@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indexing &amp; Query Optimization | SQL Prep | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">SQL Prep</a><span class="sep">/</span><span class="current">Indexing &amp; Query Optimization</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to SQL Prep overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#b-tree-index-structure">B-Tree Index Structure</a></li>
+        <li><a href="#clustered-vs-non-clustered-indexes">Clustered vs. Non-Clustered Indexes</a></li>
+        <li><a href="#composite-index-column-order">Composite Index Column Order</a></li>
+        <li><a href="#when-a-query-cant-use-an-index">When a Query Can't Use an Index</a></li>
+        <li><a href="#reading-an-explain-plan-conceptually">Reading an <code>EXPLAIN</code> Plan (Conceptually)</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SQL PREP</span>
+          <h1>Indexing &amp; Query Optimization</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Indexing questions separate candidates who've only written queries from candidates who've had to make a slow one fast. You should be able to explain what a B-tree index actually looks like on disk, why some predicates can't use an index at all, how to read an <code>EXPLAIN</code> plan at a conceptual level, and why column order in a composite index isn't arbitrary.</p>
+
+        <h2 id="b-tree-index-structure">B-Tree Index Structure</h2>
+        <p>The default index type in almost every relational database is a balanced <strong>B-tree</strong> (or B+tree). Internal nodes hold only routing keys used to navigate; the actual indexed key values and pointers to the corresponding table rows (or, for a clustered index, the row data itself) live in the leaf nodes, which are linked together to support efficient range scans. Because the tree is balanced, every lookup traverses the same number of levels regardless of which key you search for, and that depth grows only logarithmically as the table grows.</p>
+        <pre><code>                [ 50 ]
+              /        \
+         [ 20 ]        [ 80 ]
+        /     \        /     \
+     [10]   [30,40]  [60,70] [90,99]   &lt;- leaf nodes, linked left-to-right
+       |       |        |       |
+     row ptrs (or row data, if clustered)
+</code></pre>
+
+        <div class="formula-box">
+          <span class="formula-label">Lookup complexity</span>
+          B-tree index lookup: O(log n) — tree depth grows logarithmically with row count
+          <br>Full table scan (no usable index): O(n) — every row must be read and evaluated
+          <br>Example: 1,000,000 rows &rarr; indexed lookup touches roughly log&#8322;(1,000,000) &asymp; 20 levels/comparisons vs. up to 1,000,000 row reads for a full scan
+        </div>
+
+        <h2 id="clustered-vs-non-clustered-indexes">Clustered vs. Non-Clustered Indexes</h2>
+        <table>
+          <tr><th>Aspect</th><th>Clustered</th><th>Non-clustered</th></tr>
+          <tr><td>Data storage</td><td>Table rows are physically stored in index key order — the leaf level <em>is</em> the data</td><td>A separate structure; leaves store the key plus a pointer/row-locator back to the actual row</td></tr>
+          <tr><td>Per table</td><td>At most one (defines the physical row order)</td><td>Many allowed</td></tr>
+          <tr><td>Lookup cost</td><td>Direct — reaching the leaf gives you the full row</td><td>Extra hop: index lookup, then a "bookmark lookup" to fetch the row unless it's a covering index</td></tr>
+          <tr><td>Typical default</td><td>Primary key, in most engines (e.g. InnoDB)</td><td>Any other indexed column(s)</td></tr>
+        </table>
+
+        <h2 id="composite-index-column-order">Composite Index Column Order</h2>
+        <p>A composite (multi-column) index is only efficiently searchable as a left-to-right prefix — like a phone book sorted by (last name, first name): you can jump straight to "Smith, John," but you can't efficiently find everyone named "John" regardless of last name without scanning. An index on <code>(a, b, c)</code> can serve queries filtering on <code>a</code>, or <code>a AND b</code>, or <code>a AND b AND c</code> efficiently, but generally cannot be used efficiently to filter on <code>b</code> alone or <code>c</code> alone. Put the column with an equality filter and/or highest selectivity first, and match the column order to your most common query patterns — or to the <code>ORDER BY</code> clause if you want the index to also avoid a separate sort step.</p>
+
+        <h2 id="when-a-query-cant-use-an-index">When a Query Can't Use an Index</h2>
+        <ul>
+          <li><strong>Leading wildcard <code>LIKE</code></strong> — <code>LIKE '%smith'</code> can't use a standard B-tree index because the tree is sorted by the string's leading characters, which are unknown; <code>LIKE 'smith%'</code> (no leading wildcard) can still use it as a prefix range scan.</li>
+          <li><strong>Functions/expressions on an indexed column</strong> — <code>WHERE YEAR(order_date) = 2024</code> or <code>WHERE UPPER(email) = 'X'</code> prevents the optimizer from using a plain index on <code>order_date</code>/<code>email</code>, because the stored index values don't match the transformed values being searched; rewriting as a sargable range (<code>order_date &gt;= '2024-01-01' AND order_date &lt; '2025-01-01'</code>) or adding a functional/expression index fixes this.</li>
+          <li><strong>Implicit type conversion</strong> — comparing an indexed numeric column against a string literal (or vice versa) can silently force a conversion on every row, disabling the index.</li>
+          <li><strong>Low selectivity</strong> — if a column has very few distinct values (e.g. a boolean flag matching 40% of rows), the optimizer may reasonably prefer a full scan over an index, since scanning that many rows through the index would cost more than reading the table directly.</li>
+          <li><strong><code>OR</code> across differently-indexed columns</strong> — some optimizers won't combine two single-column indexes efficiently for an <code>OR</code> condition and fall back to a full scan; rewriting as a <code>UNION</code> of two indexed queries can help.</li>
+        </ul>
+
+        <h2 id="reading-an-explain-plan-conceptually">Reading an <code>EXPLAIN</code> Plan (Conceptually)</h2>
+        <p>An <code>EXPLAIN</code> (or <code>EXPLAIN ANALYZE</code>) plan shows the sequence of operations the optimizer chose to satisfy a query — read it from the innermost/deepest step outward, or bottom-to-top depending on the engine's formatting. Key things to look for:</p>
+        <ul>
+          <li><strong>Scan type</strong> — an "index scan"/"index seek" is generally good; a "sequential scan"/"table scan" on a large table is a red flag unless the table is small or you're intentionally reading most of it.</li>
+          <li><strong>Estimated vs. actual rows</strong> (in <code>ANALYZE</code> output) — a large gap usually means stale statistics, which can cause the optimizer to pick a bad plan.</li>
+          <li><strong>Join algorithm and order</strong> — nested loop joins are efficient when one side is small/well-indexed; hash or merge joins tend to appear for larger, unindexed joins.</li>
+          <li><strong>Cost estimates</strong> — relative, unit-less numbers used to compare candidate plans against each other, not an absolute time prediction.</li>
+        </ul>
+        <div class="callout">
+          <div class="callout-title">Practical tip</div>
+          When diagnosing a slow query, look first for any full table/sequential scan on a large table in the plan — that's almost always where an index would help most. Then check whether a composite index's column order actually matches the query's filter and sort columns.
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">Why can't <code>WHERE last_name LIKE '%son'</code> use a standard index on <code>last_name</code>, while <code>LIKE 'John%'</code> can?</div>
+          <div class="qa-a">A B-tree index on a string column is sorted by the string's characters left to right, so it can efficiently jump to the range starting with "John" for a trailing wildcard. A leading wildcard means the unknown part comes first, so there's no way to use the sorted order to narrow the search — the engine must inspect every value. Some databases offer trigram or full-text indexes specifically to handle this case.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">If you have a composite index on <code>(last_name, first_name)</code>, will a query filtering only on <code>first_name</code> use it?</div>
+          <div class="qa-a">Generally no, or only very inefficiently — the index is sorted by <code>last_name</code> first, so without a <code>last_name</code> filter the engine can't narrow down a contiguous range for <code>first_name</code> alone and would have to scan the whole index. If <code>first_name</code>-only lookups are common, you'd want a separate index on <code>first_name</code> (or lead the composite index with it instead, depending on which query pattern matters more).</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between a clustered and non-clustered index in terms of lookup cost?</div>
+          <div class="qa-a">A clustered index's leaf nodes contain the actual row data, so once you reach the leaf, you have everything — one traversal. A non-clustered index's leaf nodes contain only the key and a pointer back to the row, so satisfying the query (unless it's a "covering" index containing every needed column) requires a second lookup to fetch the full row, sometimes called a bookmark lookup or key lookup.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why might the query optimizer choose a full table scan even though an index exists on the filtered column?</div>
+          <div class="qa-a">If the filter matches a large fraction of the table (low selectivity — e.g. a status column where 90% of rows are "active"), reading the index and then bouncing back to the table for each matching row can cost more overall than simply scanning the table sequentially. The optimizer's cost estimate, based on table statistics, drives this choice — stale statistics can cause it to guess wrong in either direction.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">You wrote <code>WHERE UPPER(email) = 'JANE@EXAMPLE.COM'</code> against an indexed <code>email</code> column and the query is slow. Why, and how do you fix it?</div>
+          <div class="qa-a">Wrapping the indexed column in a function makes the predicate non-sargable — the index stores raw <code>email</code> values, not their upper-cased form, so the optimizer can't map the search value back to a sorted range in the index and falls back to scanning every row. Fixes: store/compare using a normalized case consistently (e.g. always lower-case emails at write time and compare against a lower-cased literal), or create a function-based/expression index on <code>UPPER(email)</code> if the database supports it.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          B-tree indexes give O(log n) lookups versus O(n) for a full scan, but only for sargable predicates — leading wildcards, functions on indexed columns, and implicit type conversions all defeat that benefit. Composite index column order must match your query's filter/sort pattern as a left-to-right prefix. Read <code>EXPLAIN</code> plans by hunting for full scans on large tables first.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="window-functions.html"><span class="dir">Previous</span>Window Functions</a>
+          <a class="next" href="transactions-acid.html"><span class="dir">Next</span>Transactions &amp; ACID</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

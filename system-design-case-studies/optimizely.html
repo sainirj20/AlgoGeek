@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimizely — Designing an A/B Testing System | System Design — Case Studies | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Case Studies</a><span class="sep">/</span><span class="current">A/B Testing Platform (Optimizely)</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Case Studies overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design">Low-Level Design</a></li>
+        <li><a href="#deep-dive-experiment-configuration-and-the-targetingrollout-rules-engine">Deep Dive &mdash; Experiment Configuration and the Targeting/Rollout Rules Engine</a></li>
+        <li><a href="#deep-dive-deterministic-bucketing-hashing-users-into-variations">Deep Dive &mdash; Deterministic Bucketing: Hashing Users into Variations</a></li>
+        <li><a href="#deep-dive-mutual-exclusion-via-layersnamespaces">Deep Dive &mdash; Mutual Exclusion via Layers/Namespaces</a></li>
+        <li><a href="#deep-dive-event-collection-and-the-metrics-pipeline">Deep Dive &mdash; Event Collection and the Metrics Pipeline</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Optimizely — Designing an A/B Testing System</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for an Optimizely-style experimentation platform: requirements, capacity estimation, SDK/event API design, data model, the datafile-driven architecture, deterministic hash-bucketing, mutual exclusion via layers/namespaces, the event-collection and metrics pipeline, the sequential-testing statistical engine and guardrail metrics, sharding, fault tolerance, security, multi-region scaling, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design an experimentation (A/B testing) platform, in the style of Optimizely, that lets many independent product teams run hundreds of concurrent experiments across web, mobile, and server surfaces. The platform must deterministically and consistently bucket each user into a variation of every experiment they're eligible for — the same user must always see the same variation, on every surface, on every subsequent visit — while adding effectively zero latency to the page render or API response the bucketing decision is attached to. Once bucketed, the platform must reliably capture exposure events ("user X saw variation Y of experiment Z") and conversion/metric events (clicks, purchases, custom events), and report statistically valid, near-real-time results — including whether it's safe to call a winner yet — back to the teams running each experiment.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It looks like a small feature ("randomly show half of users a blue button") but is actually a deep systems problem once you scale it: hundreds of experiments must run <em>simultaneously</em> without interfering with each other, bucketing must be computed with no database lookup and no added latency, and the statistics have to survive people looking at results every day without the classic false-positive inflation that comes from that. A strong candidate treats determinism and statelessness of bucketing as the load-bearing requirement — everything else (targeting, layers, the event pipeline, the stats engine) is designed around the fact that assignment must be computable identically, anywhere, from nothing but a user id and an experiment id.</p>
+
+        <h3>Why build one shared platform instead of every team hard-coding a coin flip?</h3>
+        <ul>
+          <li>One place to guarantee bucketing consistency — without it, a user could see the control on web and the treatment on mobile, silently corrupting every experiment's results.</li>
+          <li>One place to prevent experiments from colliding with each other (the mutual-exclusion / layers problem) so hundreds can run at once without interaction effects nobody notices until the data is already unusable.</li>
+          <li>One place to build (and get right, once) the statistical engine — sequential testing, guardrail metrics, sample-ratio-mismatch detection — instead of every team reinventing ad hoc, often statistically invalid, significance checks.</li>
+          <li>One place to enforce targeting, staged rollouts, and kill-switches consistently, and to make the event pipeline durable and idempotent so no team loses exposure or conversion data under load.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope before drawing boxes.</p>
+        <ol>
+          <li>Which surfaces need bucketing at launch — server-side only, or also client-side web and native mobile SDKs, including offline mobile scenarios?</li>
+          <li>Do we need mutual exclusion between experiments (layers/namespaces), or can experiments freely overlap for this version?</li>
+          <li>Is a stable, pre-existing user id always available, or do we also need to bucket anonymous/logged-out visitors by a device or cookie id, and reconcile identities after login?</li>
+          <li>Do we need staged/progressive traffic-allocation rollouts (1% &rarr; 100%) and a kill switch, or is traffic allocation fixed for the life of an experiment?</li>
+          <li>What statistical approach does the org expect — classic fixed-horizon significance testing, or an "always valid," peek-anytime sequential-testing approach?</li>
+          <li>Do we need automatically tracked guardrail metrics (page-load time, error rate, revenue), or only the single primary metric a team explicitly configures?</li>
+          <li>What's the acceptable staleness for the datafile SDKs use to bucket — seconds, or is a few minutes of propagation delay acceptable after a config change?</li>
+          <li>Do we need multi-armed-bandit style dynamic traffic allocation as an alternative to fixed-split A/B testing, or is that out of scope?</li>
+          <li>Is this single-tenant (one company's experiments) or multi-tenant SaaS serving many independent projects/teams with isolated configs and permissions?</li>
+          <li>Single region to start, or do we need to anticipate global, multi-region traffic from day one?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't wait for every answer before drawing anything — state a reasonable assumption out loud ("I'll assume we need both client-side and server-side SDKs and mutual exclusion via layers, since those are the two properties that make this problem interesting rather than a coin flip") and keep moving. Interviewers want to see you make and defend judgment calls.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Let a team define an experiment: one or more variations (a control plus treatments), each with a traffic-allocation percentage, plus audience-attribute targeting rules that determine eligibility.</li>
+          <li>Deterministically bucket a given user/device id into the same variation of a given experiment, every time, on every surface (web, mobile, server), with no database lookup on the hot path.</li>
+          <li>Support mutual exclusion: group experiments into layers/namespaces so a user can be bucketed into at most one experiment per layer, enabling hundreds of concurrent, non-interacting experiments.</li>
+          <li>Support staged/progressive traffic-allocation rollouts (e.g. 1% &rarr; 5% &rarr; 25% &rarr; 100%) and an immediate kill switch that pauses an experiment without redeploying any application code.</li>
+          <li>Distribute experiment/targeting configuration ("the datafile") to SDKs at the edge, client, and server so bucketing happens locally, with zero added request latency.</li>
+          <li>Capture exposure events ("user X was bucketed into variation Y of experiment Z") and conversion/metric events (clicks, purchases, custom events), deduplicated and tolerant of out-of-order/late arrival.</li>
+          <li>Compute per-variation metric aggregates and statistical significance in near real time, using a methodology that stays valid even when users check results repeatedly (sequential testing).</li>
+          <li>Automatically track guardrail metrics (e.g. page-load time, error rate, revenue) alongside each experiment's primary metric, and alert on regressions.</li>
+          <li>Support per-project/per-team access control over experiment configuration, and maintain an audit trail of changes to a live experiment (e.g. who changed traffic allocation, and when).</li>
+          <li>Be multi-tenant: isolate configuration, permissions, and results per project/team on a shared deployment.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Zero added latency for bucketing:</strong> evaluating "which variation does this user see" must never add a network round trip to a page render or API call — this is the entire reason for the local, datafile-driven SDK architecture.</li>
+          <li><strong>Strong determinism:</strong> the same (user id, experiment id) pair must always resolve to the same variation, computed identically regardless of which SDK, region, or surface performs the computation.</li>
+          <li><strong>High throughput at both ends:</strong> hundreds of millions of local bucketing evaluations per day (effectively free, in-memory), and hundreds of millions of exposure/conversion events per day (the real infrastructure cost).</li>
+          <li><strong>Statistical validity under repeated peeking:</strong> a team must be able to check a running experiment's results at any time without inflating the platform's advertised false-positive rate.</li>
+          <li><strong>Availability over strict freshness for the datafile:</strong> an SDK that can't reach the config/CDN tier must keep bucketing correctly from its last-known-good cached copy rather than fail open/closed.</li>
+          <li><strong>Durability for events:</strong> an exposure or conversion event must never be silently lost, even if the stats-computation pipeline lags or crashes — the raw event log is the source of truth and must be replayable.</li>
+          <li><strong>Horizontal scalability</strong> of the event-ingestion pipeline and the per-experiment results-computation jobs, independently, since experiment size and traffic vary enormously.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on the datafile/SDK bucketing architecture, deterministic hashing, layers/namespaces, the event pipeline, and the statistical engine. We call out but don't build the internals of a full visual-editor/WYSIWYG experiment-authoring UI, a general feature-flag management console, or an ML-driven personalization/recommendation engine — real, adjacent products, but layered on top of this core experimentation substrate.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly and let them drive every downstream decision.</p>
+
+        <h3>Traffic and Bucketing Load</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          200 concurrent experiments running across 50 million monthly active users (MAU); ~40% are active on a given day &asymp; 20 million daily active users (DAU)
+          <br>Average user is eligible for &asymp; 5 concurrently-running experiments per day (their layer/namespace memberships), across &asymp; 8 page views / app opens per day
+          <br>Local SDK bucketing evaluations/day &asymp; 20,000,000 &times; 5 &times; 8 &asymp; 800 million/day &mdash; every one of these is a pure in-memory hash computation: zero network calls, zero backend load
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Exposure &amp; conversion event volume</span>
+          Exposure events are deduplicated per (user, experiment) per day at the SDK/collector layer before counting toward stats, collapsing the 800M raw evaluations down to: 20,000,000 users &times; 5 experiments/day &asymp; 100 million deduped exposure events/day
+          <br>Conversion/metric events (clicks, page-loads, purchases, custom events) average &asymp; 8 per active user/day &asymp; 20,000,000 &times; 8 &asymp; 160 million conversion events/day
+          <br>Total event-pipeline volume &asymp; 260 million events/day &rarr; average QPS = 260,000,000 &divide; 86,400 &asymp; 3,000/sec, peaking (&asymp;3&times;, e.g. a flash-sale experiment) at &asymp; 9,000/sec
+        </div>
+
+        <h3>Datafile Size and Poll/Push Frequency</h3>
+        <div class="formula-box">
+          <span class="formula-label">Datafile sizing</span>
+          Each experiment's config (variations, traffic-allocation splits, audience rule tree, layer/namespace id) &asymp; 1.5 KB serialized JSON
+          <br>200 experiments &times; 1.5 KB &asymp; 300 KB, plus shared audience definitions and rollout metadata &asymp; 750 KB&ndash;1 MB total datafile size, &asymp;150&ndash;200 KB gzip-compressed over the wire
+          <br>Client/mobile SDKs fetch the datafile once per session (long CDN edge-cache, invalidated on publish) &asymp; 20M DAU &times; 3 sessions/day &asymp; 60 million CDN reads/day (&asymp;700/sec average), trivially served at the edge
+          <br>Server-side SDKs (a fleet of, say, 5,000 app-server instances) poll for a fresh revision every 60 seconds &asymp; 5,000 &divide; 60 &asymp; 83 requests/sec sustained &mdash; negligible, and each instance falls back to its cached last-known-good copy if a fetch fails
+        </div>
+
+        <h3>Event and Config Storage Sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Event log</span>
+          Exposure + conversion event log: 260,000,000/day &times; &asymp;300 bytes (visitor_id, experiment_id, variation_id, event_key, timestamp, attributes) &asymp; 78 GB/day raw
+          <br>Retained 90 days for stats-engine recomputation and audit &asymp; 7 TB raw; &times;3 replication &asymp; &asymp;21 TB &mdash; the dominant storage cost, sharded across the event store
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Config store</span>
+          Experiment/variation/audience config store: 200 experiments &times; &asymp;50 KB (including version history) &asymp; 10 MB &mdash; small enough to fit entirely in memory on the Config/Rules Service, and in every SDK's cached datafile
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Total users / daily active users</td><td>50M MAU / ~20M DAU</td></tr>
+          <tr><td>Concurrent running experiments</td><td>~200</td></tr>
+          <tr><td>Local SDK bucketing evaluations/day</td><td>~800 million (zero network cost)</td></tr>
+          <tr><td>Deduped exposure events/day</td><td>~100 million</td></tr>
+          <tr><td>Conversion/metric events/day</td><td>~160 million</td></tr>
+          <tr><td>Average / peak event-pipeline QPS</td><td>~3,000/sec / ~9,000/sec</td></tr>
+          <tr><td>Datafile size (raw / gzip)</td><td>~750 KB&ndash;1 MB / ~150&ndash;200 KB</td></tr>
+          <tr><td>Event log footprint, 90-day retention (RF=3)</td><td>~21 TB</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>The design has two very different API surfaces: an SDK-facing bucketing call that must never touch the network, and an event-tracking call that does — deliberately taking the network cost only after the user has already been shown their variation.</p>
+
+        <h3>SDK-Facing Bucketing API (No Network Call)</h3>
+        <p>The SDK method that answers "which variation does this user see" runs entirely against the locally cached datafile — it is a pure function of (datafile revision, experiment key, user id, attributes), with no I/O.</p>
+        <pre><code>// Runs entirely client-side / server-side against the cached datafile.
+// No network call, no database lookup — pure in-memory computation.
+
+variation_key = client.get_variation(
+    experiment_key: "checkout_button_color",
+    user_id: "user_12345",
+    attributes: { "plan": "premium", "country": "US", "device": "ios" }
+)
+// Returns e.g. "variation_blue", "control", or null if the user
+// doesn't match the audience targeting rules / isn't in the
+// experiment's traffic allocation.
+
+// A "decide" style call additionally returns the reason and
+// automatically queues the exposure event:
+decision = client.decide(
+    flag_key: "checkout_button_color",
+    user_id: "user_12345",
+    attributes: { "plan": "premium", "country": "US" }
+)
+// decision.variation_key, decision.rule_key, decision.enabled,
+// decision.reasons (e.g. "TARGETING_MATCH", "TRAFFIC_ALLOCATION")</code></pre>
+
+        <h3>Exposure and Conversion Event-Tracking API</h3>
+        <p>Once the application has rendered the assigned variation, the SDK asynchronously flushes exposure and conversion events in small batches to the ingestion tier — this is the one place the design does pay a network cost, and it's off the critical path of the response the user is waiting on.</p>
+        <pre><code>POST /v1/events
+
+Request body:
+{
+  "account_id": "acct_882f...",
+  "visitor_id": "user_12345",
+  "client_version": "web-sdk/4.2.0",
+  "events": [
+    {
+      "type": "exposure",
+      "experiment_id": "exp_991",
+      "variation_id": "var_blue",
+      "layer_id": "layer_checkout_flow",
+      "timestamp": 1737158400123,
+      "dedup_key": "sha256(user_12345:exp_991:2026-07-18)",
+      "attributes": { "plan": "premium", "country": "US" }
+    },
+    {
+      "type": "conversion",
+      "event_key": "purchase_completed",
+      "timestamp": 1737158461981,
+      "tags": { "revenue": 4999, "currency": "USD" },
+      "attributes": { "plan": "premium", "country": "US" }
+    }
+  ]
+}
+
+Response 202 Accepted: { "events_accepted": 2 }
+
+Errors: 400 malformed event batch &middot; 401 invalid account/SDK key
+        413 batch too large (client should split &amp; retry)</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Call out explicitly that the bucketing call and the tracking call are architecturally decoupled on purpose: bucketing must be synchronous and free (it gates the render), while tracking must be asynchronous, batched, and retryable (it feeds the stats engine, not the user). Conflating the two — e.g. making <code>get_variation</code> itself call the network to log the exposure — is the single most common design mistake candidates make here.
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>A small, low-write-volume config plane (experiments, variations, audiences, layers) that is read constantly but changes rarely — a great fit for an in-memory/cacheable store with strong versioning.</li>
+          <li>A huge, high-write-volume event plane (exposures, conversions) with no joins on the hot write path — a textbook wide-column / append-only log workload.</li>
+          <li>Configuration and events are joined only downstream, by the stats engine, never synchronously.</li>
+        </ul>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">Table: experiments (Config Store; PK: project_id + experiment_id)</th></tr>
+          <tr><td>project_id + experiment_id (composite PK)</td><td>text + text</td></tr>
+          <tr><td>key</td><td>text (human-readable, e.g. "checkout_button_color")</td></tr>
+          <tr><td>status</td><td>enum(DRAFT, RUNNING, PAUSED, CONCLUDED)</td></tr>
+          <tr><td>layer_id</td><td>text &mdash; the mutual-exclusion group this experiment belongs to</td></tr>
+          <tr><td>audience_id</td><td>text &mdash; references the targeting rule tree</td></tr>
+          <tr><td>traffic_allocation_pct</td><td>int &mdash; percentage of the layer's traffic eligible for this experiment</td></tr>
+          <tr><td>primary_metric / guardrail_metrics</td><td>text / list&lt;text&gt;</td></tr>
+          <tr><td>created_at / updated_at / concluded_at</td><td>timestamp</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: variations (Config Store; PK: experiment_id + variation_id)</th></tr>
+          <tr><td>experiment_id + variation_id (composite PK)</td><td>text + text</td></tr>
+          <tr><td>key</td><td>text (e.g. "control", "variation_blue")</td></tr>
+          <tr><td>is_control</td><td>boolean</td></tr>
+          <tr><td>traffic_split_pct</td><td>int &mdash; share of the experiment's allocated traffic (splits sum to 100)</td></tr>
+          <tr><td>feature_overrides</td><td>json &mdash; config/feature-flag payload delivered when this variation is assigned</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: audiences (Config Store; PK: project_id + audience_id)</th></tr>
+          <tr><td>project_id + audience_id (composite PK)</td><td>text + text</td></tr>
+          <tr><td>name</td><td>text</td></tr>
+          <tr><td>conditions</td><td>json &mdash; logical AND/OR/NOT tree over user attributes, e.g. {"and": [{"country": "US"}, {"plan": "premium"}]}</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: layers (Config Store; PK: project_id + layer_id)</th></tr>
+          <tr><td>project_id + layer_id (composite PK)</td><td>text + text</td></tr>
+          <tr><td>name</td><td>text (e.g. "checkout_flow")</td></tr>
+          <tr><td>experiment_ids</td><td>list&lt;text&gt; &mdash; mutually-exclusive experiments sharing this layer's traffic</td></tr>
+          <tr><td>layer_traffic_allocation_pct</td><td>int &mdash; share of overall traffic entering this layer at all</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: exposure_events (Event Store; PK: event_id, secondary index on visitor_id + experiment_id)</th></tr>
+          <tr><td>event_id (PK)</td><td>uuid</td></tr>
+          <tr><td>visitor_id / experiment_id / variation_id</td><td>text / text / text</td></tr>
+          <tr><td>layer_id</td><td>text</td></tr>
+          <tr><td>dedup_key (unique per visitor+experiment+day)</td><td>text</td></tr>
+          <tr><td>sdk_source</td><td>enum(web, ios, android, server)</td></tr>
+          <tr><td>attributes</td><td>json</td></tr>
+          <tr><td>timestamp</td><td>timestamp</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: conversion_events (Event Store; PK: event_id, secondary index on visitor_id + event_key)</th></tr>
+          <tr><td>event_id (PK)</td><td>uuid</td></tr>
+          <tr><td>visitor_id / event_key</td><td>text / text (e.g. "purchase_completed")</td></tr>
+          <tr><td>tags</td><td>json &mdash; numeric metric values, e.g. {"revenue": 4999}</td></tr>
+          <tr><td>attributes</td><td>json</td></tr>
+          <tr><td>timestamp</td><td>timestamp</td></tr>
+        </table>
+
+        <h3>Config Store vs. Event Store — Why Two Different Systems</h3>
+        <p>The config plane (experiments, variations, audiences, layers) is small, read-dominant, and needs strong consistency on publish — a relational or strongly-consistent document store, fully cached in memory by the Config/Rules Service and compiled into the datafile, is the right fit. The event plane (exposures, conversions) is enormous, write-dominant, append-only, and needs horizontal scalability far more than it needs joins or strong consistency at write time — a wide-column or log-structured store (Cassandra-style, or a streaming platform's own durable log) is the right fit there instead. Trying to force both into one database either cripples the event plane's write throughput or gives the config plane far more consistency machinery than it needs.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>A Config &amp; Rules Service is where teams define experiments, variations, audience-targeting rules, and layer/namespace assignments. Every published change is compiled into a versioned, immutable "datafile" — a compact JSON snapshot of every active experiment's rules. The datafile is pushed to a CDN / edge distribution tier, from which Web, Mobile, and Server SDKs fetch and cache it. Application code calls into the SDK, which evaluates targeting and bucketing entirely locally against the cached datafile and returns a variation synchronously, with no network round trip. The SDK then asynchronously batches exposure and conversion events into an Event Ingestion Pipeline, which feeds a Stats Engine that computes per-variation metric aggregates using sequential-testing methodology, surfaced on a Results Dashboard.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 660" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Experimentation Dashboard feeds the Config and Rules Service, which compiles a datafile distributed via CDN to Web, Mobile, and Server SDKs. SDKs bucket users locally with zero added latency, then asynchronously send exposure and conversion events to an Event Ingestion Pipeline, which feeds a Stats Engine and a Results Dashboard.">
+            <style>
+              .opt-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .opt-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .opt-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .opt-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .opt-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .opt-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .opt-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .opt-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:#dbe6ff;}
+              .opt-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .opt-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-opt-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="270" y="10" width="220" height="45" rx="6" class="opt-box"></rect>
+            <text x="380" y="29" text-anchor="middle" class="opt-title">Experimentation Dashboard</text>
+            <text x="380" y="43" text-anchor="middle" class="opt-sub">team defines experiment, variations, audiences</text>
+
+            <line x1="380" y1="55" x2="380" y2="84" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+
+            <rect x="190" y="85" width="380" height="55" rx="6" class="opt-box-strong"></rect>
+            <text x="380" y="106" text-anchor="middle" class="opt-title">Config &amp; Rules Service</text>
+            <text x="380" y="120" text-anchor="middle" class="opt-sub">validates targeting rules + traffic allocation</text>
+            <text x="380" y="132" text-anchor="middle" class="opt-sub">compiles + versions a new datafile revision</text>
+
+            <line x1="380" y1="140" x2="380" y2="169" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+
+            <rect x="270" y="170" width="220" height="45" rx="6" class="opt-box-store"></rect>
+            <text x="380" y="189" text-anchor="middle" class="opt-title">Datafile (JSON snapshot)</text>
+            <text x="380" y="203" text-anchor="middle" class="opt-sub">~750 KB&ndash;1 MB, versioned, immutable per revision</text>
+
+            <line x1="380" y1="215" x2="380" y2="239" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+
+            <rect x="250" y="240" width="260" height="40" rx="6" class="opt-box-bus"></rect>
+            <text x="380" y="256" text-anchor="middle" class="opt-title-inv">CDN / Edge Distribution</text>
+            <text x="380" y="270" text-anchor="middle" class="opt-sub-inv">long cache, invalidated on publish</text>
+
+            <line x1="330" y1="280" x2="120" y2="319" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+            <line x1="380" y1="280" x2="380" y2="319" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+            <line x1="430" y1="280" x2="640" y2="319" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+
+            <rect x="20" y="320" width="200" height="55" rx="6" class="opt-box"></rect>
+            <text x="120" y="341" text-anchor="middle" class="opt-title">Web SDK</text>
+            <text x="120" y="355" text-anchor="middle" class="opt-sub">fetches + caches datafile</text>
+            <text x="120" y="367" text-anchor="middle" class="opt-sub">evaluates bucketing locally</text>
+
+            <rect x="280" y="320" width="200" height="55" rx="6" class="opt-box"></rect>
+            <text x="380" y="341" text-anchor="middle" class="opt-title">Mobile SDK</text>
+            <text x="380" y="355" text-anchor="middle" class="opt-sub">caches datafile on-device</text>
+            <text x="380" y="367" text-anchor="middle" class="opt-sub">works offline from last copy</text>
+
+            <rect x="540" y="320" width="200" height="55" rx="6" class="opt-box"></rect>
+            <text x="640" y="341" text-anchor="middle" class="opt-title">Server SDK</text>
+            <text x="640" y="355" text-anchor="middle" class="opt-sub">polls origin every ~60s</text>
+            <text x="640" y="367" text-anchor="middle" class="opt-sub">shared in-process cache</text>
+
+            <line x1="120" y1="375" x2="300" y2="409" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+            <line x1="380" y1="375" x2="380" y2="409" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+            <line x1="640" y1="375" x2="460" y2="409" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+
+            <rect x="140" y="410" width="480" height="45" rx="6" class="opt-box-strong"></rect>
+            <text x="380" y="428" text-anchor="middle" class="opt-title">Variation Returned &mdash; Zero Added Latency</text>
+            <text x="380" y="442" text-anchor="middle" class="opt-sub">application renders the assigned variation synchronously</text>
+
+            <line x1="380" y1="455" x2="380" y2="479" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+            <text x="480" y="470" text-anchor="middle" class="opt-label">async, batched exposure + conversion events</text>
+
+            <rect x="90" y="480" width="580" height="45" rx="6" class="opt-box-bus"></rect>
+            <text x="380" y="497" text-anchor="middle" class="opt-title-inv">Event Ingestion Pipeline (Kafka)</text>
+            <text x="380" y="511" text-anchor="middle" class="opt-sub-inv">exposure + conversion events, partitioned by experiment/user</text>
+
+            <line x1="380" y1="525" x2="380" y2="549" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+
+            <rect x="230" y="550" width="300" height="45" rx="6" class="opt-box-strong"></rect>
+            <text x="380" y="568" text-anchor="middle" class="opt-title">Stats Engine</text>
+            <text x="380" y="582" text-anchor="middle" class="opt-sub">sequential testing + guardrail metrics, per-variation aggregates</text>
+
+            <line x1="380" y1="595" x2="380" y2="609" class="opt-arrow" marker-end="url(#arrow-opt-1)"></line>
+
+            <rect x="250" y="610" width="260" height="40" rx="6" class="opt-box-store"></rect>
+            <text x="380" y="627" text-anchor="middle" class="opt-title">Results Dashboard</text>
+            <text x="380" y="641" text-anchor="middle" class="opt-sub">significance, lift, guardrail alerts</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; a Config &amp; Rules Service compiles a datafile distributed via CDN to Web/Mobile/Server SDKs, which bucket locally with zero added latency, then feed the event pipeline and Stats Engine.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Bucketing is a pure, local function:</strong> every SDK computes the same thing from the same inputs — the datafile is the only "config" it ever needs, and it never calls back to any service to bucket a user.</li>
+          <li><strong>The event pipeline is decoupled from the bucketing decision:</strong> exposure/conversion tracking happens after the render, asynchronously, so a slow or briefly unavailable event pipeline never blocks or delays the user-facing response.</li>
+          <li><strong>Publishing a config change is the only synchronous, centralized step</strong> — everything downstream of the datafile (CDN, SDKs, bucketing) fans out and scales independently of it.</li>
+          <li><strong>The Stats Engine is the single place statistics are computed</strong>, so every team gets the same statistically valid methodology instead of ad hoc per-team significance checks.</li>
+        </ul>
+
+        <h2 id="low-level-design">Low-Level Design</h2>
+        <h3>Core Bucketing and Exposure Flow Walkthrough</h3>
+        <p>The sequence below is what happens, end to end, the moment a user's request needs a bucketing decision — from the SDK's perspective, every one of steps 1&ndash;7 is synchronous and effectively instantaneous; only step 8 touches the network.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Eight numbered steps: a request arrives, the SDK loads its cached datafile, evaluates audience targeting, checks layer and namespace membership, computes a deterministic hash bucket, maps the bucket to a variation, returns the variation synchronously, and finally queues an exposure event to be flushed asynchronously.">
+            <style>
+              .opt-circle{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+              .opt-num{font-family:var(--font-sans);font-weight:700;font-size:13px;fill:#ffffff;}
+              .opt-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .opt-sub{font-family:var(--font-sans);font-weight:400;font-size:10px;fill:var(--color-text-muted);}
+              .opt-line{stroke:var(--color-border);stroke-width:2;}
+            </style>
+            <line x1="40" y1="40" x2="40" y2="425" class="opt-line"></line>
+
+            <circle cx="40" cy="40" r="16" class="opt-circle"></circle>
+            <text x="40" y="45" text-anchor="middle" class="opt-num">1</text>
+            <text x="75" y="34" class="opt-title">Request arrives at the app</text>
+            <text x="75" y="49" class="opt-sub">page view or app open, carrying a stable user/device id</text>
+
+            <circle cx="40" cy="95" r="16" class="opt-circle"></circle>
+            <text x="40" y="100" text-anchor="middle" class="opt-num">2</text>
+            <text x="75" y="89" class="opt-title">SDK loads the cached datafile</text>
+            <text x="75" y="104" class="opt-sub">last-known-good revision already resident in memory</text>
+
+            <circle cx="40" cy="150" r="16" class="opt-circle"></circle>
+            <text x="40" y="155" text-anchor="middle" class="opt-num">3</text>
+            <text x="75" y="144" class="opt-title">SDK evaluates audience targeting</text>
+            <text x="75" y="159" class="opt-sub">matches user attributes against the experiment's rule tree</text>
+
+            <circle cx="40" cy="205" r="16" class="opt-circle"></circle>
+            <text x="40" y="210" text-anchor="middle" class="opt-num">4</text>
+            <text x="75" y="199" class="opt-title">SDK checks layer/namespace membership</text>
+            <text x="75" y="214" class="opt-sub">ensures the user isn't already claimed by another experiment in this layer</text>
+
+            <circle cx="40" cy="260" r="16" class="opt-circle"></circle>
+            <text x="40" y="265" text-anchor="middle" class="opt-num">5</text>
+            <text x="75" y="254" class="opt-title">Deterministic hash-bucketing</text>
+            <text x="75" y="269" class="opt-sub">MurmurHash(user_id + experiment/layer id) mod 10,000 &rarr; bucket value</text>
+
+            <circle cx="40" cy="315" r="16" class="opt-circle"></circle>
+            <text x="40" y="320" text-anchor="middle" class="opt-num">6</text>
+            <text x="75" y="309" class="opt-title">Bucket mapped to a variation</text>
+            <text x="75" y="324" class="opt-sub">cumulative traffic-allocation ranges decide control vs. treatment</text>
+
+            <circle cx="40" cy="370" r="16" class="opt-circle"></circle>
+            <text x="40" y="375" text-anchor="middle" class="opt-num">7</text>
+            <text x="75" y="364" class="opt-title">Variation returned synchronously</text>
+            <text x="75" y="379" class="opt-sub">zero network round trip; the application renders it immediately</text>
+
+            <circle cx="40" cy="425" r="16" class="opt-circle"></circle>
+            <text x="40" y="430" text-anchor="middle" class="opt-num">8</text>
+            <text x="75" y="419" class="opt-title">Exposure event queued</text>
+            <text x="75" y="434" class="opt-sub">batched and flushed asynchronously to the event-ingestion pipeline</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. The core bucketing and exposure flow &mdash; steps 1&ndash;7 are synchronous, in-memory, and effectively free; only step 8, firing the exposure event, touches the network, and it does so off the response's critical path.</div>
+        </div>
+
+        <h2 id="deep-dive-experiment-configuration-and-the-targetingrollout-rules-engine">Deep Dive &mdash; Experiment Configuration and the Targeting/Rollout Rules Engine</h2>
+
+        <h3>Audience-Attribute Targeting Rules</h3>
+        <p>Each experiment references an audience: a logical AND/OR/NOT tree over user attributes supplied by the caller at bucketing time (e.g. <code>country = "US" AND plan = "premium"</code>, or <code>device = "ios" OR device = "android"</code>). Targeting evaluation happens first and is purely a filter: a user who fails the audience check is never bucketed into that experiment at all, and no exposure event fires for them — they're simply outside the experiment's population, not "in the control by default."</p>
+
+        <h3>Staged Traffic-Allocation Rollout</h3>
+        <p>An experiment's traffic-allocation percentage (the share of the layer's eligible traffic that actually gets bucketed into it, as opposed to passing through untouched) is itself just a field in the datafile, so ramping an experiment from 1% &rarr; 5% &rarr; 25% &rarr; 100% is a config-only change: the Config &amp; Rules Service publishes a new datafile revision, and every SDK picks it up on its next fetch — no application redeploy. Because bucketing is a deterministic function of (user id, experiment id), raising the allocation percentage never re-buckets a user who was already included at the lower percentage into a different variation; it only ever adds newly-eligible users at the margin. A kill switch (setting status to <code>PAUSED</code>) works the same way: it's a one-line config publish, propagating to every SDK within one fetch cycle.</p>
+
+        <h3>The Datafile Push/Poll Model and Cached Last-Known-Good Fallback</h3>
+        <p>SDKs get a fresh datafile in one of two ways: a poll on a fixed interval (e.g. every 60 seconds for server-side SDKs), or a push notification (e.g. a webhook or streaming update) that tells a long-lived process "a new revision is ready, fetch it now" for near-instant propagation. Either way, every SDK keeps its most recently successfully fetched datafile cached in memory (and, for mobile, on local disk) and keeps using it if a subsequent fetch fails — a CDN blip, a network partition, or a cold app start with no connectivity yet all degrade gracefully to "keep bucketing with the last known-good rules" rather than failing bucketing outright or blocking the user's request waiting for a fresh copy.</p>
+
+        <h2 id="deep-dive-deterministic-bucketing-hashing-users-into-variations">Deep Dive &mdash; Deterministic Bucketing: Hashing Users into Variations</h2>
+        <p>The core trick that makes bucketing stateless is: hash a stable identifier (the user id, or a device id for anonymous visitors) together with the experiment's id — or, when the experiment belongs to a layer, the layer id, so that a user's hash used for mutual-exclusion is independent from the hash used inside the chosen experiment — through a fast, well-distributed, non-cryptographic consistent hash function such as MurmurHash. The output is reduced into a fixed bucket range, e.g. <code>[0, 10000)</code>, via a modulo operation. The experiment's variations then simply claim contiguous sub-ranges of that space proportional to their traffic-allocation percentages: a 50/30/20 split claims buckets <code>[0, 5000)</code>, <code>[5000, 8000)</code>, and <code>[8000, 10000)</code> respectively.</p>
+        <p>Because the hash is a pure function with no external state, the same (user id, experiment id) pair always produces the same bucket value, and therefore the same variation — computed identically whether the call happens in a browser, a mobile app, or a backend service, with no lookup and no coordination between them required.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A stable user id and experiment id are combined and passed through a MurmurHash function, producing a bucket value in the range zero to nine thousand nine hundred ninety nine. The bucket range is partitioned into three contiguous segments by traffic allocation percentage: fifty percent control, thirty percent treatment A, twenty percent treatment B. An example bucket value of six thousand four hundred twenty one falls in the treatment A segment.">
+            <style>
+              .opt-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .opt-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .opt-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .opt-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .opt-label{font-family:var(--font-sans);font-weight:400;font-size:9.5px;font-style:italic;fill:var(--color-text-muted);}
+              .opt-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .seg-control{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1;}
+              .seg-a{fill:var(--color-accent-dark);stroke:var(--color-primary-dark);stroke-width:1;}
+              .seg-b{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .seg-label{font-family:var(--font-sans);font-weight:700;font-size:9.5px;fill:var(--color-primary);}
+              .seg-label-inv{font-family:var(--font-sans);font-weight:700;font-size:9.5px;fill:#ffffff;}
+            </style>
+            <defs>
+              <marker id="arrow-opt-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="20" y="15" width="220" height="50" rx="6" class="opt-box"></rect>
+            <text x="130" y="35" text-anchor="middle" class="opt-title">user_id = "user_12345"</text>
+            <text x="130" y="50" text-anchor="middle" class="opt-sub">+ experiment_id = "exp_991"</text>
+
+            <line x1="240" y1="40" x2="299" y2="40" class="opt-arrow" marker-end="url(#arrow-opt-3)"></line>
+
+            <rect x="300" y="10" width="220" height="60" rx="6" class="opt-box-strong"></rect>
+            <text x="410" y="34" text-anchor="middle" class="opt-title">MurmurHash()</text>
+            <text x="410" y="48" text-anchor="middle" class="opt-sub">fast, well-distributed, consistent</text>
+            <text x="410" y="60" text-anchor="middle" class="opt-sub">non-cryptographic hash function</text>
+
+            <line x1="520" y1="40" x2="579" y2="40" class="opt-arrow" marker-end="url(#arrow-opt-3)"></line>
+
+            <rect x="580" y="15" width="160" height="50" rx="6" class="opt-box"></rect>
+            <text x="660" y="35" text-anchor="middle" class="opt-title">bucket = hash mod 10,000</text>
+            <text x="660" y="50" text-anchor="middle" class="opt-sub">e.g. 6,421</text>
+
+            <line x1="660" y1="65" x2="660" y2="94" class="opt-arrow" marker-end="url(#arrow-opt-3)"></line>
+            <line x1="660" y1="95" x2="500" y2="149" class="opt-arrow" marker-end="url(#arrow-opt-3)"></line>
+
+            <text x="20" y="110" class="opt-label">Bucket range [0, 10,000) partitioned by traffic allocation:</text>
+
+            <rect x="20" y="150" width="350" height="40" class="seg-control"></rect>
+            <text x="195" y="174" text-anchor="middle" class="seg-label">Control &mdash; 0&ndash;4,999 (50%)</text>
+
+            <rect x="370" y="150" width="210" height="40" class="seg-a"></rect>
+            <text x="475" y="174" text-anchor="middle" class="seg-label-inv">Treatment A &mdash; 5,000&ndash;7,999 (30%)</text>
+
+            <rect x="580" y="150" width="140" height="40" class="seg-b"></rect>
+            <text x="650" y="174" text-anchor="middle" class="seg-label">Treatment B &mdash; 8,000&ndash;9,999 (20%)</text>
+
+            <line x1="500" y1="190" x2="500" y2="219" class="opt-arrow" marker-end="url(#arrow-opt-3)"></line>
+            <text x="500" y="210" text-anchor="middle" class="opt-label">bucket 6,421 falls here</text>
+
+            <rect x="380" y="220" width="240" height="45" rx="6" class="opt-box-strong"></rect>
+            <text x="500" y="240" text-anchor="middle" class="opt-title">Variation = Treatment A</text>
+            <text x="500" y="253" text-anchor="middle" class="opt-sub">returned synchronously to the caller</text>
+
+            <text x="20" y="290" class="opt-label">Stateless: no lookup table, no database row &mdash; same inputs always recompute the same output.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Deterministic hash-bucketing: hashing (user id + experiment id) with MurmurHash into a fixed bucket range, then mapping the bucket to a variation via cumulative traffic-allocation ranges &mdash; entirely stateless and reproducible anywhere.</div>
+        </div>
+
+        <h2 id="deep-dive-mutual-exclusion-via-layersnamespaces">Deep Dive &mdash; Mutual Exclusion via Layers/Namespaces</h2>
+        <p>Running 200 experiments concurrently is only safe if experiments that could plausibly interact never see the same user at the same time — otherwise a checkout-flow experiment and an unrelated pricing experiment could both touch the same user's session and produce a confounded, uninterpretable result for both. The fix is to group experiments into <strong>layers</strong> (also called namespaces): a layer represents one slice of the product surface (e.g. "checkout flow," "homepage hero"), and every experiment inside a layer competes for the same, mutually-exclusive share of that layer's traffic. A user is hashed once per layer (using the layer id as part of the hash input) to decide <em>which single experiment in that layer, if any,</em> they fall into — never more than one. Because each layer has its own independent hash seed, the same user can simultaneously be in one experiment in Layer 1 and a completely different experiment in Layer 2, with no interaction, since the two layers represent orthogonal, non-overlapping product surfaces by construction. This is the key technique — popularized by Google's "Overlapping Experiment Infrastructure" paper — that lets a platform run hundreds of simultaneous experiments without the interaction effects that would otherwise make results unreliable.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two mutually exclusive layers. Layer one, checkout flow, contains experiment A and experiment B, which compete for the same traffic and can never both contain the same user. Layer two, homepage, contains experiment C and experiment D, independently. A single user is hashed once per layer, landing in experiment A within layer one and, independently, in experiment C within layer two, at the same time.">
+            <style>
+              .opt-layer{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1.5;stroke-dasharray:5 3;}
+              .opt-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .opt-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .opt-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .opt-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .opt-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .opt-label{font-family:var(--font-sans);font-weight:400;font-size:9.5px;font-style:italic;fill:var(--color-text-muted);}
+              .opt-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-opt-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="20" y="20" width="340" height="260" rx="8" class="opt-layer"></rect>
+            <text x="35" y="40" class="opt-title">Layer 1 &mdash; "checkout_flow"</text>
+
+            <rect x="40" y="55" width="140" height="70" rx="6" class="opt-box-strong"></rect>
+            <text x="110" y="82" text-anchor="middle" class="opt-title">Experiment A</text>
+            <text x="110" y="96" text-anchor="middle" class="opt-sub">button color, 60% of layer</text>
+
+            <rect x="200" y="55" width="140" height="70" rx="6" class="opt-box"></rect>
+            <text x="270" y="82" text-anchor="middle" class="opt-title">Experiment B</text>
+            <text x="270" y="96" text-anchor="middle" class="opt-sub">shipping copy, 30% of layer</text>
+
+            <rect x="40" y="140" width="300" height="40" rx="6" class="opt-box-muted"></rect>
+            <text x="190" y="164" text-anchor="middle" class="opt-sub">remaining 10% &mdash; not in any experiment this layer</text>
+
+            <text x="40" y="210" class="opt-label">A user hashed into this layer lands in exactly</text>
+            <text x="40" y="223" class="opt-label">one of A, B, or neither &mdash; never both.</text>
+
+            <rect x="400" y="20" width="340" height="260" rx="8" class="opt-layer"></rect>
+            <text x="415" y="40" class="opt-title">Layer 2 &mdash; "homepage_hero"</text>
+
+            <rect x="420" y="55" width="140" height="70" rx="6" class="opt-box-strong"></rect>
+            <text x="490" y="82" text-anchor="middle" class="opt-title">Experiment C</text>
+            <text x="490" y="96" text-anchor="middle" class="opt-sub">hero image, 50% of layer</text>
+
+            <rect x="580" y="55" width="140" height="70" rx="6" class="opt-box"></rect>
+            <text x="650" y="82" text-anchor="middle" class="opt-title">Experiment D</text>
+            <text x="650" y="96" text-anchor="middle" class="opt-sub">headline copy, 50% of layer</text>
+
+            <rect x="290" y="320" width="180" height="45" rx="6" class="opt-box-strong"></rect>
+            <text x="380" y="340" text-anchor="middle" class="opt-title">User U</text>
+            <text x="380" y="353" text-anchor="middle" class="opt-sub">hashed independently per layer</text>
+
+            <line x1="340" y1="320" x2="140" y2="130" class="opt-arrow" marker-end="url(#arrow-opt-4)"></line>
+            <line x1="420" y1="320" x2="500" y2="130" class="opt-arrow" marker-end="url(#arrow-opt-4)"></line>
+            <text x="200" y="240" class="opt-label">bucketed into Exp A (Layer 1)</text>
+            <text x="530" y="240" class="opt-label">and, independently, Exp C (Layer 2)</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Mutual exclusion via layers: experiments inside the same layer compete for one mutually-exclusive share of traffic, while independent layers hash the same user separately, letting hundreds of experiments run at once without interaction effects.</div>
+        </div>
+
+        <h2 id="deep-dive-event-collection-and-the-metrics-pipeline">Deep Dive &mdash; Event Collection and the Metrics Pipeline</h2>
+        <p>Exposure events ("user X was bucketed into variation Y of experiment Z") and conversion/metric events (clicks, purchases, custom events) both stream into the same durable ingestion pipeline, but they're joined only downstream — a conversion event carries no experiment context at all; the join happens by matching (visitor_id) against every experiment the user is known to have been exposed to, then attributing that conversion to the corresponding variation for each such experiment.</p>
+        <p><strong>Deduplication:</strong> a page refresh, an SPA re-render, or a re-bucketing check must not count as a second exposure. Each exposure event carries a <code>dedup_key</code> — a hash of (visitor_id, experiment_id, day) — and the ingestion/collector tier drops (or the stats engine's aggregation query collapses) any event sharing an already-seen dedup key, so a user hammering refresh contributes exactly one exposure to the denominator, not one per refresh.</p>
+        <p><strong>Late and out-of-order events:</strong> a mobile device can go offline and upload a batch of queued conversion events hours or days later; the stream-processing layer uses event timestamps (not ingestion timestamps) for attribution, with a bounded "allowed lateness" window (e.g. up to 72 hours) during which a late event can still be folded into the correct day's aggregate before that window's results are considered final — after which further stragglers are still recorded for audit but no longer revise a closed aggregate.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An SDK exposure event passes through a dedup collector that checks a dedup key and drops duplicates, while a separate SDK conversion event and the deduplicated exposure event both land in the event ingestion pipeline. A stream join stage correlates events by visitor id and experiment id, tolerating late arriving events within an allowed lateness window, and produces per variation aggregates for the stats engine.">
+            <style>
+              .opt-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .opt-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .opt-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .opt-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .opt-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .opt-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .opt-title-inv{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:#ffffff;}
+              .opt-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .opt-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:#dbe6ff;}
+              .opt-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .opt-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .opt-arrow-dash{stroke:var(--color-accent);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+            </style>
+            <defs>
+              <marker id="arrow-opt-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="20" y="20" width="190" height="50" rx="6" class="opt-box"></rect>
+            <text x="115" y="40" text-anchor="middle" class="opt-title">SDK: exposure event</text>
+            <text x="115" y="54" text-anchor="middle" class="opt-sub">carries dedup_key</text>
+
+            <line x1="210" y1="45" x2="269" y2="45" class="opt-arrow" marker-end="url(#arrow-opt-5)"></line>
+
+            <rect x="270" y="20" width="220" height="60" rx="6" class="opt-box-strong"></rect>
+            <text x="380" y="40" text-anchor="middle" class="opt-title">Dedup Collector</text>
+            <text x="380" y="54" text-anchor="middle" class="opt-sub">checks dedup_key = hash(visitor+exp+day)</text>
+            <text x="380" y="66" text-anchor="middle" class="opt-sub">already-seen &rarr; drop as a no-op</text>
+
+            <rect x="550" y="20" width="190" height="50" rx="6" class="opt-box"></rect>
+            <text x="645" y="40" text-anchor="middle" class="opt-title">SDK: conversion event</text>
+            <text x="645" y="54" text-anchor="middle" class="opt-sub">no experiment context needed</text>
+
+            <line x1="380" y1="80" x2="380" y2="109" class="opt-arrow" marker-end="url(#arrow-opt-5)"></line>
+            <line x1="645" y1="70" x2="480" y2="109" class="opt-arrow" marker-end="url(#arrow-opt-5)"></line>
+
+            <rect x="180" y="110" width="400" height="50" rx="6" class="opt-box-bus"></rect>
+            <text x="380" y="128" text-anchor="middle" class="opt-title-inv">Event Ingestion Pipeline (Kafka)</text>
+            <text x="380" y="142" text-anchor="middle" class="opt-sub-inv">durable log, partitioned by visitor_id</text>
+
+            <line x1="380" y1="160" x2="380" y2="189" class="opt-arrow" marker-end="url(#arrow-opt-5)"></line>
+
+            <rect x="180" y="190" width="400" height="60" rx="6" class="opt-box-strong"></rect>
+            <text x="380" y="210" text-anchor="middle" class="opt-title">Stream Join: by (visitor_id, experiment_id)</text>
+            <text x="380" y="224" text-anchor="middle" class="opt-sub">attributes each conversion to the variation the user saw</text>
+            <text x="380" y="236" text-anchor="middle" class="opt-sub">tolerates late/out-of-order events (allowed lateness &asymp; 72h)</text>
+
+            <line x1="380" y1="250" x2="380" y2="279" class="opt-arrow" marker-end="url(#arrow-opt-5)"></line>
+
+            <rect x="180" y="280" width="400" height="50" rx="6" class="opt-box-store"></rect>
+            <text x="380" y="298" text-anchor="middle" class="opt-title">Per-Variation Aggregates</text>
+            <text x="380" y="312" text-anchor="middle" class="opt-sub">input to the Stats Engine's sequential-testing computation</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Event collection and the metrics pipeline &mdash; exposure events are deduplicated up front; exposure and conversion events are correlated downstream by (visitor_id, experiment_id), tolerating late-arriving events within a bounded window.</div>
+        </div>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <p>Two different sharding strategies apply to the two different planes of this system.</p>
+        <ul>
+          <li><strong>Event-ingestion partitioning:</strong> the raw exposure/conversion topic is partitioned by hash of <code>visitor_id</code>, so every event for one user lands on the same partition — preserving per-user event order without any cross-partition coordination, and letting ingestion throughput scale by adding partitions and consumers.</li>
+          <li><strong>Metrics-aggregation partitioning:</strong> once joined, per-variation aggregation and the results-computation job for each experiment are sharded independently, one job (or job shard) per <code>experiment_id</code> — a single enormous, high-traffic experiment recomputing its sequential-testing statistics never slows down or blocks the results job for any other, smaller experiment.</li>
+          <li><strong>Config-store partitioning:</strong> experiments, variations, audiences, and layers are all partitioned by <code>project_id</code>, keeping one team's configuration changes and datafile compilation independent of every other team's.</li>
+        </ul>
+        <table>
+          <tr><th>Data</th><th>Sharded by</th><th>Rationale</th></tr>
+          <tr><td>Raw exposure/conversion event topic</td><td>hash(visitor_id)</td><td>Preserves per-user event order; scales ingestion horizontally</td></tr>
+          <tr><td>Per-variation aggregates / results jobs</td><td>experiment_id</td><td>Isolates one experiment's compute load from every other experiment's</td></tr>
+          <tr><td>Config store (experiments, audiences, layers)</td><td>project_id</td><td>Keeps per-team/tenant configuration and publishing independent</td></tr>
+          <tr><td>Datafile CDN cache keys</td><td>project_id + environment</td><td>One team's publish invalidates only its own cached datafile</td></tr>
+        </table>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li><strong>Datafile caching at the SDK</strong> is the platform's primary fault-tolerance mechanism on the read path: every SDK holds the last successfully fetched datafile in memory (and on-disk for mobile), so a Config &amp; Rules Service outage, a CDN blip, or a backend-unreachable mobile device all degrade to "keep bucketing correctly from slightly stale rules" rather than failing bucketing or blocking the request.</li>
+          <li><strong>A durable, replicated event log</strong> (the ingestion pipeline, RF=3) is the fault-tolerance mechanism on the write path: exposure and conversion events are committed durably the moment they're ingested, independent of whether the Stats Engine is healthy. If the Stats Engine lags or crashes entirely, it can replay from the durable log from wherever its consumer offset last committed — no event is silently lost, only delayed.</li>
+          <li><strong>Config Store replication</strong> (e.g. multi-AZ, quorum writes) protects the source of truth for experiment definitions; because the compiled datafile is a point-in-time-immutable artifact, a Config Store outage doesn't affect already-published datafiles already cached everywhere — it only blocks <em>new</em> publishes until it recovers.</li>
+          <li><strong>Idempotent replay:</strong> because the stream join keys strictly off (visitor_id, experiment_id) and dedup_key, replaying a segment of the event log after a crash recomputes the same aggregates rather than double-counting — recovery is safe by construction, not by a special reconciliation step.</li>
+        </ul>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <h3>Statistical Engine &mdash; Sequential Testing and Guardrail Metrics</h3>
+        <p>This is the part of the system that turns raw per-variation counts into a trustworthy "is treatment better than control, and by how much" answer — and it's the part most likely to be silently wrong if built naively.</p>
+
+        <h3>Fixed-Horizon Testing and the Peeking Problem</h3>
+        <p>Classic A/B testing computes a p-value under the assumption that the sample size was fixed <em>in advance</em> and the test is checked <em>exactly once</em>, at the end. If a team instead watches the dashboard every day and stops the moment p &lt; 0.05 happens to appear, they are effectively running many implicit tests — and the true false-positive rate of "stop whenever it first looks significant" is much higher than the advertised 5%. This is the well-known "peeking problem," and it's the single most common way naive in-house A/B testing tools silently produce false wins.</p>
+
+        <h3>Always-Valid Sequential Testing</h3>
+        <p>Optimizely-style platforms instead use sequential-testing methods derived from confidence sequences — sometimes called "always-valid p-values" — that are constructed so that the false-positive-rate guarantee holds no matter how many times, or when, a team looks at the result. Practically, this means a running experiment's dashboard can be checked at any time, and stopping the moment it flags significance is statistically safe, unlike a peeked fixed-horizon test. The trade-off is that a sequential test is typically somewhat more conservative early on (it needs a bit more data to reach the same confidence than a fixed-horizon test checked at exactly the right, pre-committed moment) — but that conservatism is the price of the "check anytime" guarantee, and it's a trade most product teams gladly take.</p>
+        <table class="sortable">
+          <tr><th></th><th>Fixed-horizon testing</th><th>Sequential (always-valid) testing</th></tr>
+          <tr><td>Sample size</td><td>Must be pre-committed before the experiment starts</td><td>No pre-commitment needed; valid at any sample size</td></tr>
+          <tr><td>Checking results early/often</td><td>Inflates the false-positive rate ("peeking")</td><td>Statistically safe at any time by construction</td></tr>
+          <tr><td>Typical time-to-significance</td><td>Fastest, if checked exactly once at the planned end</td><td>Slightly slower on average, in exchange for anytime validity</td></tr>
+          <tr><td>Operational fit for a self-serve dashboard</td><td>Poor &mdash; teams will peek regardless of instructions</td><td>Good &mdash; matches how people actually use a live dashboard</td></tr>
+        </table>
+
+        <h3>Guardrail Metrics</h3>
+        <p>Alongside the primary metric a team explicitly configures, the platform automatically tracks a standard set of guardrail metrics for every experiment — page-load time, client error rate, and revenue are typical defaults. A treatment can win decisively on its primary metric (say, click-through rate) while quietly regressing page-load time or triggering more client errors; guardrails surface that regression even when nobody thought to look for it, and a strong platform alerts on a guardrail breach automatically rather than waiting for someone to notice a support ticket spike.</p>
+
+        <h3>Multi-Armed Bandits as an Alternative</h3>
+        <p>Multi-armed bandit allocation is a genuinely different approach worth contrasting: instead of a fixed traffic split held constant for the life of the experiment, a bandit dynamically shifts more traffic toward whichever variation is currently performing best, trading statistical rigor (a clean, symmetric comparison you can compute a confidence interval on) for faster exploitation of the apparent winner. Bandits fit well when the goal is pure short-term optimization (e.g. picking a headline for a one-day promotion) and poorly when the goal is a durable, generalizable causal answer about which variation is actually better — which is why most experimentation platforms, including Optimizely, offer bandit-style allocation as an option alongside, not a replacement for, classic fixed-split A/B testing.</p>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Per-project/per-team access control:</strong> every experiment, audience, and layer is scoped to a project, and role-based permissions (viewer / editor / admin) gate who can create, modify traffic allocation on, or conclude a live experiment.</li>
+          <li><strong>PII handling in event payloads:</strong> exposure and conversion events carry a visitor id (often a pseudonymous cookie/device id rather than a raw account identifier) and caller-supplied attributes; raw PII (email, name, address) should never be placed directly into event attributes — attributes are meant for targeting-relevant, non-identifying dimensions (plan tier, country, device type), and the platform should validate/reject attribute keys that look like raw PII.</li>
+          <li><strong>Audit trail on live-experiment changes:</strong> every mutation to a running experiment's traffic allocation, audience rules, or status is recorded with who made the change and when — this matters statistically, not just for compliance: an unrecorded mid-flight traffic-allocation change can silently bias a naive analysis that assumes a constant allocation for the whole experiment window.</li>
+          <li><strong>Datafile and event-ingestion authentication:</strong> SDK keys are scoped per project/environment; the CDN serves datafiles over TLS; the event-ingestion endpoint authenticates the calling SDK/account before accepting a batch.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <ol>
+          <li><strong>Datafile distribution:</strong> a CDN with edge points-of-presence serves the datafile close to every SDK, with cache invalidation triggered on publish — this is the dominant load-balancing concern for the read-heavy config plane, and it's solved by "put it on a CDN," not by scaling an origin service.</li>
+          <li><strong>Event-ingestion load balancing:</strong> a standard L7 load balancer in front of an autoscaled collector fleet absorbs the exposure/conversion event volume, which is bursty (a flash-sale experiment can spike ingestion sharply) but tolerant of a little added latency, unlike the bucketing path.</li>
+          <li><strong>Results-computation job scheduling:</strong> per-experiment aggregation jobs are scheduled across a worker pool, so one enormous experiment's job doesn't starve the scheduler for every other experiment's smaller job.</li>
+        </ol>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li><strong>Regional event-ingestion points</strong> accept exposure/conversion events close to where users actually are, minimizing the network hop for the one part of the pipeline that does touch the network — feeding into a global aggregation/results pipeline that merges per-region streams before per-variation stats are computed, so results reflect the whole global population, not one region in isolation.</li>
+          <li><strong>Datafile CDN edge caching</strong> already solves most of the multi-region bucketing-latency question by construction: since bucketing runs locally against a cached datafile, the only thing that needs to be "close" to the user is the occasional datafile fetch, which a CDN handles natively.</li>
+          <li><strong>Config &amp; Rules Service</strong> can remain a single, centrally-consistent source of truth (experiments are authored relatively rarely compared to being read), replicating its compiled datafile globally via the CDN rather than needing a globally-distributed writable config store.</li>
+          <li><strong>Cross-region event ordering</strong> isn't required for correctness here, since the stream join keys off (visitor_id, experiment_id) with a bounded lateness window rather than strict global ordering — this relaxation is what makes multi-region ingestion tractable without a distributed-consensus layer.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Sample-Ratio-Mismatch (SRM) detection:</strong> for a 50/50 experiment, run a continuous chi-squared (or equivalent) check comparing the observed variation split against the expected split; a statistically significant mismatch (e.g. seeing 52/48 when 50/50 was configured, at a sample size where that gap shouldn't occur by chance) is one of the single most reliable signals of a broken bucketing, targeting, or logging bug — and every healthy experimentation platform surfaces it automatically, since it silently invalidates results otherwise.</li>
+          <li><strong>Event-pipeline lag monitoring:</strong> track consumer lag on the ingestion topic and end-to-end delay from event timestamp to landing in the per-variation aggregate; alert if lag grows unbounded, since that's the leading indicator of the pipeline falling behind a traffic spike.</li>
+          <li><strong>Guardrail-metric regression alerting:</strong> automatically flag a guardrail (page-load time, error rate, revenue) that regresses for a treatment variation, even when the primary metric is winning, and surface it prominently on the results dashboard rather than requiring a team to remember to check.</li>
+          <li><strong>Experiment health dashboards:</strong> datafile propagation lag (time from publish to "every SDK has the new revision"), bucketing-evaluation error rates per SDK version, and exposure-to-conversion join success rates all belong on an internal operability dashboard distinct from the team-facing results dashboard.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Fixed-horizon "peeking" produces false wins if a team checks results early</td><td>Sequential (always-valid) testing methodology makes anytime-checking statistically safe by design</td></tr>
+          <tr><td>Misconfigured layers let two experiments interact/confound each other</td><td>Mutual exclusion via layers/namespaces; SRM monitoring surfaces the symptom quickly if it happens anyway</td></tr>
+          <tr><td>Event-pipeline backlog under a sudden traffic spike (e.g. a flash sale)</td><td>Autoscaled collector fleet, durable log absorbs the burst, results simply lag slightly rather than losing data</td></tr>
+          <tr><td>Config &amp; Rules Service outage blocks new publishes</td><td>Already-cached datafiles keep bucketing working everywhere; only new config changes are blocked until recovery</td></tr>
+          <tr><td>A single huge experiment's stats job starves smaller experiments</td><td>Per-experiment sharded results-computation jobs, isolated compute budgets</td></tr>
+          <tr><td>Duplicate exposure events from a page refresh inflate the denominator</td><td>dedup_key per (visitor, experiment, day) collapses duplicates before aggregation</td></tr>
+          <tr><td>Late/offline-uploaded mobile events arrive after results are considered final</td><td>Bounded allowed-lateness window folds most stragglers in; true late outliers are recorded for audit only</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor availability for bucketing itself: an SDK always returns a decision from its cached datafile rather than blocking on, or failing because of, a backend call — a stale-by-a-few-minutes datafile is far better than a bucketing call that can fail or add latency. Favor durability and eventual consistency for the event pipeline: an event is never rejected or dropped to satisfy a strict ordering guarantee; it's accepted immediately into the durable log and reconciled downstream, tolerating lag rather than blocking ingestion.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Config authoring</td><td>Config &amp; Rules Service; experiments/variations/audiences/layers scoped per project</td></tr>
+          <tr><td>Config distribution</td><td>Compiled, versioned "datafile" pushed to a CDN; SDKs poll/push-invalidate and cache last-known-good</td></tr>
+          <tr><td>Bucketing</td><td>Deterministic hash (MurmurHash) of user id + experiment/layer id into a fixed bucket range; fully stateless, zero added latency</td></tr>
+          <tr><td>Mutual exclusion</td><td>Layers/namespaces group experiments so a user is in at most one experiment per layer</td></tr>
+          <tr><td>Event tracking</td><td>Async, batched exposure + conversion events to a durable ingestion pipeline (Kafka), off the response's critical path</td></tr>
+          <tr><td>Deduplication</td><td>dedup_key per (visitor_id, experiment_id, day) collapses refresh/re-bucketing duplicates</td></tr>
+          <tr><td>Late events</td><td>Event-time attribution with a bounded allowed-lateness window</td></tr>
+          <tr><td>Statistics</td><td>Sequential (always-valid) testing avoids the fixed-horizon peeking problem; automatic guardrail metrics</td></tr>
+          <tr><td>Alternative allocation</td><td>Multi-armed bandits available for pure exploitation use cases, trading rigor for speed</td></tr>
+          <tr><td>Sharding</td><td>Events by hash(visitor_id); results jobs and config by experiment_id / project_id</td></tr>
+          <tr><td>Fault tolerance</td><td>Cached datafile at the SDK for read-path resilience; durable replicated event log for write-path resilience</td></tr>
+          <tr><td>Multi-region</td><td>Regional ingestion feeding global aggregation; CDN edge caching for the datafile</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect a real interview to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Bucketing and Determinism</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why hash the user id instead of storing bucket assignments in a database?</div>
+          <div class="qa-a">A database lookup on every page view/request would add a network round trip and a scaling bottleneck to the most latency-sensitive path in the system. A deterministic hash function computes the same answer from the same inputs with zero I/O, so bucketing is effectively free and infinitely horizontally scalable &mdash; the "database" is really just the small, cached datafile every SDK already has in memory.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What hash function does Optimizely-style bucketing typically use, and why does it matter?</div>
+          <div class="qa-a">A fast, well-distributed, non-cryptographic hash such as MurmurHash. It matters because the hash needs to (a) spread users uniformly across the bucket range so traffic-allocation percentages are actually honored in practice, and (b) be cheap enough to compute on every request across every SDK language/runtime without becoming a CPU cost anyone notices.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you guarantee a user gets the same variation across web, mobile, and server surfaces?</div>
+          <div class="qa-a">Every SDK implements the identical hashing and bucket-range-mapping algorithm against the identical datafile revision, keyed by the same stable user id. Since it's a pure function with no external state, any SDK, on any surface, given the same inputs, always produces the same output &mdash; consistency is a property of the algorithm being deterministic, not of any cross-surface coordination.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if a user is anonymous at first and then logs in — does their bucket change?</div>
+          <div class="qa-a">If bucketing switched from the anonymous device id to the logged-in user id, the hash input changes and the user could land in a different variation, which is a real edge case teams need to decide on explicitly. Common approaches are to keep bucketing keyed on a stable identity (e.g. always the device id, or an identity-resolution step that maps the anonymous id forward) for the life of an experiment, and to document any pre/post-login switch as a known limitation rather than silently allowing a mid-experiment reassignment.</div>
+        </div>
+
+        <h3>Mutual Exclusion and Layers</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why do you need layers/namespaces at all — why not just let experiments overlap?</div>
+          <div class="qa-a">Two unrelated experiments touching the same user simultaneously risk interaction effects &mdash; e.g. a pricing test and a checkout-flow test both changing behavior for the same session can confound each other's results in ways that are hard or impossible to disentangle afterward. Layers make mutual exclusion structural: a user can be in at most one experiment per layer, so only genuinely orthogonal product surfaces can run experiments on the same user at the same time.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does the "Overlapping Experiment Infrastructure" idea let you run hundreds of experiments at once?</div>
+          <div class="qa-a">By organizing experiments into many independent, mutually-exclusive layers rather than one global pool. Each layer only needs to avoid collisions with the small number of experiments inside it; different layers are independent of each other by design, so the total number of concurrently-safe experiments scales with the number of layers, not with some fixed global cap.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if two experiments in different layers both change the same button?</div>
+          <div class="qa-a">That's a layering mistake, not a bucketing one &mdash; the layers should be defined around actual product surfaces so that experiments touching the same UI element live in the same layer and are therefore mutually exclusive. If it does happen, sample-ratio-mismatch and guardrail-metric monitoring are the safety nets that surface the resulting anomaly so the team can fix the layer configuration.</div>
+        </div>
+
+        <h3>Datafile and SDK Architecture</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why is bucketing done client-side against a datafile instead of a network call to a bucketing service?</div>
+          <div class="qa-a">A network call would add latency to every single page render or API response in the system and create a central bucketing service as a scaling bottleneck and single point of failure for every request, everywhere. Shipping the (small, cacheable) rules to the edge/client/server instead means bucketing costs nothing beyond a hash computation and never depends on a live backend call succeeding.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if the SDK can't fetch a fresh datafile — outage, network partition, cold start?</div>
+          <div class="qa-a">It keeps using its last successfully cached datafile and keeps bucketing correctly from those (possibly slightly stale) rules. A brand-new cold start with genuinely no cached copy and no connectivity is the one true gap; SDKs typically ship a bundled default datafile for exactly this case so bucketing degrades gracefully rather than failing outright.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you roll out a datafile change safely (e.g. changing traffic allocation) without breaking active experiments?</div>
+          <div class="qa-a">Traffic-allocation changes are additive by construction: raising an allocation percentage only adds newly-eligible users at the margin of the bucket range, it never reassigns a user who was already included at the lower percentage, since their hash-derived bucket value hasn't moved. Publishing is versioned and every SDK atomically swaps to the new revision on its next fetch, so there's no window where two SDKs are running two different traffic splits' logic against the same live revision.</div>
+        </div>
+
+        <h3>Statistics and Guardrails</h3>
+        <div class="qa-item">
+          <div class="qa-q">What is the "peeking problem" in fixed-horizon A/B testing, and how does sequential testing fix it?</div>
+          <div class="qa-a">A fixed-horizon p-value is only valid if computed once, at a pre-committed sample size; checking it repeatedly and stopping the first time it crosses 0.05 inflates the true false-positive rate far above 5%, since you're implicitly running many correlated tests. Sequential (always-valid) testing methods are constructed via confidence sequences specifically so the significance guarantee holds no matter how often or when you check, making "peek anytime" statistically safe.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's a guardrail metric, and why do you need one even if the primary metric looks great?</div>
+          <div class="qa-a">A guardrail metric (page-load time, error rate, revenue) is automatically tracked alongside the primary metric to catch a negative side effect the team didn't think to look for. A variation can win decisively on clicks while quietly slowing the page down or increasing errors; without automatic guardrails, that regression only surfaces after it's already shipped to 100% of users.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do multi-armed bandits differ from classic A/B testing, and when would you choose one over the other?</div>
+          <div class="qa-a">A bandit dynamically shifts traffic toward the currently-best-performing variation instead of holding a fixed split for the whole experiment, optimizing for short-term outcome at the cost of a clean, symmetric statistical comparison. Choose a bandit for pure exploitation on a short-lived decision (e.g. a one-day promo headline); choose classic fixed-split A/B testing when you need a durable, generalizable, statistically rigorous answer about which variation is actually better.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you detect Sample Ratio Mismatch, and why is it such an important health check?</div>
+          <div class="qa-a">Run a chi-squared (or equivalent) test comparing the observed split across variations against the configured split (e.g. expected 50/50); a statistically significant deviation flags SRM. It's important because SRM is usually the first visible symptom of a bucketing, targeting, or logging bug that silently invalidates the whole experiment's results &mdash; catching it early prevents a team from trusting a broken result.</div>
+        </div>
+
+        <h3>Data Pipeline, Consistency, and Ops</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you handle a user re-bucketed on page refresh — does that inflate exposure counts?</div>
+          <div class="qa-a">No &mdash; each exposure event carries a dedup_key derived from (visitor_id, experiment_id, day), and the collector/aggregation layer collapses repeated events sharing that key into a single counted exposure, regardless of how many times the page recomputes the (identical) bucketing decision.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does the metrics pipeline handle a conversion event that arrives after the exposure event was already reported, or arrives late/out of order?</div>
+          <div class="qa-a">The stream join attributes events by their original event timestamp, not arrival/ingestion order, and tolerates a bounded "allowed lateness" window (e.g. up to 72 hours) during which a late-arriving event can still be folded into the correct aggregate before that period's numbers are treated as final.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you scale event ingestion during a huge traffic spike (e.g. a Black Friday experiment)?</div>
+          <div class="qa-a">Autoscale the collector fleet behind the load balancer, rely on the durable partitioned log to absorb the burst without dropping events, and accept that per-variation aggregates may lag by more than usual during the spike &mdash; correctness (no lost events) is preserved; only freshness of the dashboard briefly degrades.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's your audit trail if someone changes a live experiment's traffic allocation mid-flight — why does that matter statistically?</div>
+          <div class="qa-a">Every config mutation on a running experiment is logged with who changed what and when. It matters statistically because a mid-flight allocation change (without knowing it happened) can bias a naive analysis that implicitly assumes a constant split for the whole experiment window; a visible audit trail lets the stats engine (or an analyst) account for the change instead of silently drawing a wrong conclusion.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Determinism and statelessness are the design's spine: bucketing is a pure function of (user id, experiment/layer id, datafile revision), computed identically anywhere with zero added latency and no database lookup &mdash; state that explicitly, since it's what makes everything else possible. Layers/namespaces are what let hundreds of experiments run concurrently without interaction effects, by hashing each user independently per layer. Bucketing and event-tracking are architecturally decoupled on purpose: one must be synchronous and free, the other asynchronous and durable. And the statistical engine is not an afterthought &mdash; sequential (always-valid) testing plus automatic guardrail metrics are what make a "check anytime" self-serve dashboard trustworthy instead of a false-positive machine.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Diane Tang, Ashish Agarwal, Deirdre O'Brien, Mike Meyer &mdash; "Overlapping Experiment Infrastructure: More, Better, Faster Experimentation" (Google, KDD 2010)</li>
+          <li>Optimizely &mdash; Stats Engine documentation and engineering blog posts on sequential testing and always-valid inference</li>
+          <li>Ramesh Johari, Pete Koomen, Leonid Pekelis, David Walsh &mdash; "Always Valid Inference: Continuous Monitoring of A/B Tests," <em>Operations Research</em></li>
+          <li>Ron Kohavi, Diane Tang, Ya Xu &mdash; <em>Trustworthy Online Controlled Experiments: A Practical Guide to A/B Testing</em></li>
+          <li>Georgi Georgiev &mdash; <em>Statistical Methods in Online A/B Testing</em></li>
+          <li>Austin Appleby &mdash; MurmurHash reference implementation and design notes</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="zookeeper.html"><span class="dir">Previous</span>ZooKeeper</a>
+          <a class="next" href="dynamo.html"><span class="dir">Next</span>Amazon Dynamo</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

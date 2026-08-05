@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real-Time Client-Server Communication | System Design — Building Units | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Building Units</a><span class="sep">/</span><span class="current">Real-Time Client-Server Communication</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Building Units overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#websockets">WebSockets</a></li>
+        <li><a href="#websocket-gateway-architecture">WebSocket Handlers &amp; Connection Gateway Architecture at Scale</a></li>
+        <li><a href="#server-sent-events">Server-Sent Events (SSE)</a></li>
+        <li><a href="#long-polling-short-polling">Long Polling / Short Polling</a></li>
+        <li><a href="#webrtc">WebRTC</a></li>
+        <li><a href="#grpc-http2-streaming">gRPC / HTTP/2 Streaming</a></li>
+        <li><a href="#realtime-comparison">Comparison Table</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN — BUILDING UNITS</span>
+          <h1>Real-Time Client-Server Communication</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Real-time communication covers the mechanisms by which a server pushes updates to a client — or a client and server exchange data continuously — without the client having to repeatedly ask from scratch. The right choice depends heavily on directionality (does the client need to send data on the same channel, or only receive it?), how many concurrent connections you need to hold open, and what your network path (corporate proxies, load balancers, browsers) will actually allow through. This page moves from the general-purpose, bidirectional options (WebSockets, gRPC streaming) through one-way and legacy-friendly fallbacks (SSE, long polling) to peer-to-peer media (WebRTC), then closes with a side-by-side comparison of all of them.</p>
+
+        <h3 id="websockets">WebSockets</h3>
+        <p>WebSockets (RFC 6455, standardized in 2011) provide a full-duplex, bidirectional, persistent connection over a single TCP socket, letting client and server exchange messages in either direction at any time without the overhead of a new HTTP request/response for every message. A connection begins as an ordinary HTTP <code>GET</code> carrying an <code>Upgrade: websocket</code> header, a <code>Connection: Upgrade</code> header, and a <code>Sec-WebSocket-Key</code>; the server responds <code>101 Switching Protocols</code> with a matching <code>Sec-WebSocket-Accept</code>, proving it understood the protocol. After that single handshake, both sides stop speaking HTTP entirely and exchange raw WebSocket frames — text, binary, close, ping, and pong opcodes — on the same open socket indefinitely.</p>
+        <p>Because an idle TCP socket gives no application-level signal that the other side is still alive, WebSocket implementations rely on ping/pong control frames to detect connections silently killed by NAT devices or proxies, and to measure round-trip latency. The protocol itself is deliberately minimal: it guarantees a bidirectional byte/message channel and nothing else — there's no built-in reconnection, no delivery guarantees, and no authentication scheme, so the application has to build all of that itself on top.</p>
+        <p><strong>Popular tools:</strong> Browser-native <code>WebSocket</code> API; Node's <code>ws</code> and <code>uWebSockets.js</code>; Socket.IO (adds fallback transports, rooms, and auto-reconnect on top of raw WebSockets); Django Channels; Spring WebSocket; ASP.NET SignalR; and managed services (Ably, Pusher, PubNub) for teams that don't want to run the infrastructure themselves.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Chat and messaging apps, multiplayer gaming state sync, collaborative editing, and live trading tickers where the client also sends orders or subscription changes — anywhere the client must both receive pushes and send frequent messages on the same channel. If the client only ever receives and never needs to talk back, SSE is usually the simpler choice.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>True bidirectional, low-latency communication on one connection</li><li>Efficient for high-frequency exchanges like chat, gaming, and collaborative editing</li><li>Low per-message overhead versus repeated HTTP requests</li></ul></td>
+            <td><ul><li>Stateful connections complicate horizontal scaling and load balancing</li><li>No automatic reconnection or delivery guarantees — the application must build both</li><li>Some corporate proxies/firewalls block the protocol upgrade</li><li>Millions of idle sockets still consume real memory and file descriptors</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="websocket-gateway-architecture">WebSocket Handlers &amp; Connection Gateway Architecture at Scale</h3>
+        <p>Running WebSockets for millions of concurrent users forces an architectural split that a purely stateless HTTP API doesn't need. Stateless HTTP servers can be load-balanced request by request, since any instance can handle any request — but a WebSocket connection can't be, because a specific client's socket and its per-connection state live in one specific machine's memory. Production systems answer this by running a dedicated, stateful gateway tier that does nothing but hold open persistent connections and route messages, kept architecturally separate from the stateless API tier. Slack's architecture is a clean real-world example: stateful, in-memory Gateway Servers hold each user's subscriptions and are deployed per region so clients connect to the nearest one; separate Channel Servers hold channel state via consistent hashing; Admin Servers remain stateless request handlers; and Presence Servers track who's online — a browser only ever talks to an edge proxy (Envoy) and then a Gateway Server, which never runs business logic, just proxies and fans out messages. Discord follows the same principle, isolating its Gateway (the WebSocket entry point) from its REST API and other backend services. This split creates the classic "sticky session" problem: because a client's socket lives on exactly one gateway node, a load balancer must route that client back to the same node for the life of the connection (via IP hash, cookie, or consistent hash) — which becomes fragile at scale, since a node's death disconnects every client pinned to it at once, and a routine rolling deploy forcibly disconnects clients as nodes drain.</p>
+        <p>The harder problem is that a message for a given user can originate from any backend server, but only the one gateway node holding that user's socket can actually deliver it. Systems solve this by externalizing connection state into a connection registry — typically Redis — mapping <code>user_id &rarr; gateway_node_id</code>, updated on every connect and disconnect; any backend service looks up the owning node before routing a message there, decoupling "who owns the socket" from "who wants to send." For broadcasts, where subscribers to one channel are scattered across many gateway nodes, a pub/sub broker underneath (Redis Pub/Sub, Kafka, NATS) lets a message be published once while every gateway node subscribes only to the topics its local clients care about and re-delivers to local sockets — in Slack's flow this reaches millions of clients worldwide in roughly 500ms. Sharding bounds the blast radius further: Discord requires sharding past 2,500 guilds per connection (recommending roughly 1,000 guilds per shard) so that a shard crash affects only a fraction of users. In practice, a single well-tuned server can hold hundreds of thousands of idle connections (500K+ has been cited with ~16GB of RAM and tuned OS limits), since idle connections cost mostly file descriptors and ~2–10KB of memory each — the real ceiling is usually message throughput and fan-out cost, which is why Discord's gateway optimization focused on reducing per-message dispatch cost (batched dispatch, disabling Nagle's algorithm, async tasks over a small reactor-thread pool) rather than simply adding RAM.</p>
+        <p><strong>Popular tools:</strong> Slack's architecture (Envoy edge proxy &rarr; Gateway Servers &rarr; Channel Servers, with Consul for service discovery); Discord's Gateway (guild-based sharding, etcd for voice-server discovery); the generic building blocks used to construct one of these yourself — Redis for the connection registry and Pub/Sub, Kafka/NATS for durable high-throughput fan-out, Socket.IO's Redis adapter, Django Channels; and managed alternatives (Ably, Pusher, PubNub) that absorb this entire layer of complexity.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Running WebSockets in production at meaningful concurrency — tens of thousands or more simultaneous connections — where a message needs to reach a specific user or room's members regardless of which server they happen to be connected to: chat platforms, multiplayer backends, live-collaboration products spanning more than one server. At small scale (a single server, or a few servers where simple sticky sessions suffice) defer the registry/pub-sub investment, and if you don't want to own any of this, reach for a managed service like Ably, Pusher, or PubNub instead.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Scales persistent connections horizontally to millions of concurrent users</li><li>Cleanly isolates the stateful-connection problem from the rest of the stack</li><li>Sharding and regional deployment bound blast radius and improve latency</li></ul></td>
+            <td><ul><li>Materially more operational complexity — a connection registry and pub/sub backplane to run and monitor</li><li>A gateway node crash disconnects every client pinned to it at once</li><li>A registry outage breaks targeted message delivery</li><li>Requires careful client-side reconnect/resync logic</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="server-sent-events">Server-Sent Events (SSE)</h3>
+        <p>Server-Sent Events (part of the HTML5/WHATWG standard) provide one-way, server-to-client streaming over a plain, long-lived HTTP connection, using the <code>text/event-stream</code> content type and the browser's native <code>EventSource</code> API. The client opens an ordinary <code>GET</code> request; instead of closing the response, the server keeps it open and streams text-formatted events — <code>data:</code>, <code>event:</code>, and <code>id:</code> fields — which <code>EventSource</code> parses as they arrive. Because each event can carry an <code>id</code>, a dropped connection triggers the browser to automatically reconnect and send a <code>Last-Event-ID</code> header, letting the server resume the stream exactly where it left off with no application code required on the client.</p>
+        <p>SSE is unidirectional by design: the server can push data continuously, but anything flowing client-to-server needs a normal separate HTTP request. Because it's built on plain HTTP/1.1 or HTTP/2 with no protocol upgrade, it passes transparently through most proxies and firewalls that block WebSocket upgrades, and — since the underlying transport is still stateless HTTP — any server instance can pick up a reconnecting client, so it scales with ordinary HTTP autoscaling and needs no sticky sessions or connection registry at all.</p>
+        <p><strong>Popular tools:</strong> Browser-native <code>EventSource</code>; heavily used today for LLM/AI token-streaming responses, live notification feeds, and stock tickers; supported out of the box by most web frameworks, since implementing it server-side is just holding an HTTP response open.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Live dashboards, activity and notification feeds, tickers, progress bars, and streaming AI/LLM responses — anywhere the server pushes updates but the client doesn't need to talk back on the same channel. Reach for SSE when you want reconnection "for free," want to avoid standing up a stateful WebSocket gateway tier, or know that some of your users sit behind corporate networks that block WebSocket upgrades but allow ordinary HTTPS.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Much simpler than WebSockets — no upgrade handshake, no custom reconnect/resume logic</li><li>Plays nicely with existing load balancers, proxies, and CDNs</li><li>Naturally stateless-friendly, scales with ordinary HTTP autoscaling</li></ul></td>
+            <td><ul><li>One-directional only — a separate request is needed for client-to-server data</li><li>Text-only payloads</li><li>Per-domain connection limits under HTTP/1.1 (mitigated by HTTP/2 multiplexing)</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="long-polling-short-polling">Long Polling / Short Polling</h3>
+        <p>Long and short polling are older, HTTP-native techniques for approximating real-time updates from before WebSockets and SSE were widely available, where the client repeatedly asks "anything new?" instead of the server pushing updates unprompted. Short polling has the client request on a fixed interval, with the server responding immediately every time whether or not there's anything new — simple to implement, but wasteful, and latency is bounded by however long the polling interval is. Long polling instead has the client send a request that the server holds open, without responding, until new data becomes available or a timeout is hit; as soon as the server responds, the client immediately sends another request, so there is effectively always one request "pending" — this gives much lower latency and far fewer wasted round trips than short polling, while still using nothing but plain HTTP request/response semantics.</p>
+        <p>Both variants run over plain HTTP/1.1 with zero special infrastructure, which is their main appeal. The trade-off is that each long-polling request that's held open still consumes a server thread or connection slot for as long as it waits, and both approaches are fundamentally less efficient than a persistent connection for anything beyond occasional updates.</p>
+        <p><strong>Popular tools:</strong> Historically the basis of Comet-style chat implementations; today mainly seen as a fallback transport — Socket.IO and SockJS transparently fall back to long polling when a WebSocket connection can't be established (for example, blocked by a firewall); AWS SQS's long-polling mode for queue consumption is an intentional, simple design choice rather than a fallback.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          As an automatic fallback when WebSockets or SSE aren't available on the network path; for low-frequency update scenarios where simplicity matters more than efficiency (checking job or batch status, polling for a long-running task's completion); or when you deliberately want at-most-one-request-in-flight semantics without managing any persistent connection state.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Works everywhere plain HTTP works, no special infrastructure required</li><li>Trivial to implement and debug</li><li>Degrades gracefully in restrictive network environments</li></ul></td>
+            <td><ul><li>Fundamentally less efficient than WebSockets/SSE for frequent updates — repeated HTTP overhead</li><li>Each held-open long-polling request ties up server resources while waiting</li><li>Higher latency than a persistent push-based connection</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="webrtc">WebRTC</h3>
+        <p>WebRTC is a set of W3C/IETF-standardized APIs and protocols for real-time audio, video, and arbitrary data exchange directly between clients — peer-to-peer — rather than routed through an application server, making it the odd one out on this page: the channel is fundamentally client-to-client, not client-to-server. Before any media or data can flow directly, the two peers need to find each other and agree on parameters through signaling, a step WebRTC deliberately leaves to the application (commonly carried over a WebSocket) to exchange SDP offers/answers and ICE candidates.</p>
+        <p>Establishing a direct connection across the real internet, where most clients sit behind NAT, requires STUN (which tells a client its own public IP and port), ICE (the framework that gathers and tries candidate connection paths), and TURN — a relay server used as a last resort when a direct path can't be established, at the cost of extra latency and bandwidth since traffic is now relayed rather than truly peer-to-peer. Once connected, encrypted media (SRTP) and/or data (<code>RTCDataChannel</code>) flow directly between the peers or through the TURN relay. Pure mesh peer-to-peer doesn't scale past a handful of participants, which is why group calls in practice route through a media relay — Discord, for instance, runs group voice/video through a homegrown Selective Forwarding Unit (SFU) rather than pure P2P or standard ICE, simplifying NAT traversal and hiding participants' IPs from each other, at the scale of 850+ voice relay servers across 13 regions serving 2.6M+ concurrent voice users.</p>
+        <p><strong>Popular tools:</strong> Google's <code>libwebrtc</code> (used by Chrome and many native SDKs); Discord's customized stack with a homegrown SFU; Zoom and Google Meet (WebRTC-derived, via SFU); coturn (open-source STUN/TURN server); and mediasoup, Janus, LiveKit, and Jitsi as open-source SFU/media-server frameworks.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Video/voice calling, live conferencing, in-browser screen sharing, and real-time collaborative tools that need peer-to-peer data channels. Not the right tool for typical chat text, notifications, or general data sync — those should use WebSockets or SSE, since WebRTC's infrastructure cost (signaling, STUN, and especially provisioning TURN relay capacity for worst-case NAT failure) only pays off for actual audio/video/data media exchange.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Lowest possible latency for direct media/data exchange when peer-to-peer is achievable</li><li>Reduces server bandwidth costs for 1:1 calls</li><li>Standardized and end-to-end encrypted by default (DTLS/SRTP)</li></ul></td>
+            <td><ul><li>Significant infrastructure complexity — signaling plus STUN and TURN relay capacity for worst-case NAT failure</li><li>Doesn't scale to large groups without an SFU/MCU</li><li>Purpose-built for audio/video/data, not general application messaging</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="grpc-http2-streaming">gRPC / HTTP/2 Streaming</h3>
+        <p>gRPC is a high-performance RPC framework built by Google that runs over HTTP/2 and uses Protocol Buffers for schema-defined, binary-encoded messages, supporting four call patterns — including full bidirectional streaming — all multiplexed over a single HTTP/2 connection. It leans on HTTP/2's native multiplexing and framing to let client and server exchange a continuous sequence of typed, Protobuf-encoded messages on a single logical call, with either side able to keep sending after the call starts — similar in spirit to a WebSocket's full-duplex behavior, but layered on RPC semantics (defined service methods, typed messages, deadlines, cancellation, flow control) rather than raw framed bytes. A single <code>.proto</code> file defines the service contract once and generates client/server stubs across languages.</p>
+        <p>Binary Protobuf encoding is more compact and CPU-efficient than JSON over a WebSocket, and the generated, strongly typed contracts cut down on cross-language integration bugs. The significant limitation is browser support: using gRPC from a browser requires gRPC-Web plus a translating proxy, and gRPC-Web does not support client-streaming or bidirectional streaming in-browser — only server streaming — which is a real gap versus a native WebSocket for a browser client that genuinely needs to stream both ways.</p>
+        <p><strong>Popular tools:</strong> gRPC itself (Google) for service-to-service microservice communication; native gRPC support in Envoy/Istio meshes; Google Cloud APIs; and gRPC-Web paired with an Envoy proxy for the limited browser use cases it supports.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Service-to-service (backend-to-backend) real-time or streaming communication in a polyglot microservices architecture that wants a strongly typed contract; mobile app-to-backend streaming where you control the client SDK; and AI/ML inference or data pipelines needing efficient bidirectional streaming between services. Choose WebSockets instead when the client is a browser needing genuine bidirectional streaming, when infrastructure along the path doesn't fully support HTTP/2, or when you want the simpler, more universally supported option.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Wins on throughput/latency for high-volume structured data via multiplexing and binary encoding</li><li>Strong typing and codegen reduce cross-language integration bugs</li><li>Built-in deadlines, cancellation, and flow control</li></ul></td>
+            <td><ul><li>Not natively browser-friendly — needs gRPC-Web plus a proxy, with real streaming limits in-browser</li><li>Requires full HTTP/2 support from every load balancer/proxy in the path</li><li>More schema and codegen setup overhead than opening a plain WebSocket</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="realtime-comparison">Comparison Table</h3>
+        <p>The approaches above sit on a spectrum from fully bidirectional and persistent (WebSockets, gRPC) to one-way (SSE) to simple request/response approximations (polling) to genuinely peer-to-peer (WebRTC). The diagram and table below line them up by connection shape, directionality, transport, and typical use case as a quick reference.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 680 270" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="26" font-size="13" font-weight="700" fill="#0f2545">WebSocket vs. SSE vs. Long Polling</text>
+
+            <rect x="20" y="45" width="200" height="200" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="120" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">WebSocket</text>
+            <rect x="40" y="85" width="60" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="70" y="103" text-anchor="middle" font-size="9.5">Client</text>
+            <rect x="140" y="85" width="60" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="170" y="103" text-anchor="middle" font-size="9.5">Server</text>
+            <line x1="100" y1="94" x2="140" y2="94" stroke="#334155" marker-end="url(#rtArrow)"/>
+            <line x1="140" y1="106" x2="100" y2="106" stroke="#334155" marker-end="url(#rtArrow)"/>
+            <text x="120" y="150" text-anchor="middle" font-size="9.5" fill="#5a6472">one persistent socket;</text>
+            <text x="120" y="165" text-anchor="middle" font-size="9.5" fill="#5a6472">either side sends</text>
+            <text x="120" y="180" text-anchor="middle" font-size="9.5" fill="#5a6472">a message at any time</text>
+            <text x="120" y="200" text-anchor="middle" font-size="9.5" fill="#5a6472">(full-duplex)</text>
+
+            <rect x="240" y="45" width="200" height="200" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="340" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="#6b4a10">SSE</text>
+            <rect x="260" y="85" width="60" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="290" y="103" text-anchor="middle" font-size="9.5">Client</text>
+            <rect x="360" y="85" width="60" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="390" y="103" text-anchor="middle" font-size="9.5">Server</text>
+            <line x1="360" y1="94" x2="322" y2="94" stroke="#334155" marker-end="url(#rtArrow)"/>
+            <line x1="360" y1="102" x2="322" y2="102" stroke="#334155" marker-end="url(#rtArrow)"/>
+            <line x1="360" y1="110" x2="322" y2="110" stroke="#334155" marker-end="url(#rtArrow)"/>
+            <text x="340" y="150" text-anchor="middle" font-size="9.5" fill="#5a6472">one long-lived HTTP</text>
+            <text x="340" y="165" text-anchor="middle" font-size="9.5" fill="#5a6472">connection; server keeps</text>
+            <text x="340" y="180" text-anchor="middle" font-size="9.5" fill="#5a6472">streaming events one way</text>
+            <text x="340" y="200" text-anchor="middle" font-size="9.5" fill="#5a6472">(server &rarr; client only)</text>
+
+            <rect x="460" y="45" width="200" height="200" rx="8" fill="#f0fdf4" stroke="#166534"/>
+            <text x="560" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">Long Polling</text>
+            <rect x="480" y="82" width="55" height="26" rx="4" fill="#fff" stroke="#94a3b8"/><text x="507" y="99" text-anchor="middle" font-size="9">Client</text>
+            <rect x="585" y="82" width="55" height="26" rx="4" fill="#fff" stroke="#94a3b8"/><text x="612" y="99" text-anchor="middle" font-size="9">Server</text>
+            <line x1="535" y1="90" x2="585" y2="90" stroke="#334155" marker-end="url(#rtArrow)"/>
+            <text x="560" y="83" text-anchor="middle" font-size="8.5" fill="#5a6472">request</text>
+            <rect x="585" y="114" width="55" height="18" rx="3" fill="none" stroke="#166534" stroke-dasharray="3,2"/>
+            <text x="612" y="127" text-anchor="middle" font-size="8" fill="#166534">holds open&#8230;</text>
+            <line x1="585" y1="150" x2="535" y2="150" stroke="#334155" marker-end="url(#rtArrow)"/>
+            <text x="560" y="146" text-anchor="middle" font-size="8.5" fill="#5a6472">response</text>
+            <path d="M 490,150 Q 465,175 490,180" stroke="#166534" fill="none" marker-end="url(#rtArrow)"/>
+            <text x="507" y="200" text-anchor="middle" font-size="8.5" fill="#166534">re-request</text>
+            <text x="507" y="212" text-anchor="middle" font-size="8.5" fill="#166534">immediately</text>
+            <text x="560" y="232" text-anchor="middle" font-size="9.5" fill="#5a6472">cycle repeats: request &rarr;</text>
+            <text x="560" y="245" text-anchor="middle" font-size="9.5" fill="#5a6472">hold &rarr; response &rarr; re-request</text>
+
+            <defs>
+              <marker id="rtArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" fill="#334155"/>
+              </marker>
+            </defs>
+          </svg>
+          <div class="diagram-caption">WebSocket keeps one full-duplex socket open with either side free to send; SSE streams one-way over a single held-open HTTP connection; long polling repeats a request &rarr; hold-open &rarr; response &rarr; immediate re-request cycle over plain HTTP.</div>
+        </div>
+
+        <table>
+          <tr><th>Technology</th><th>Directionality</th><th>Transport</th><th>Typical Use Case</th></tr>
+          <tr><td>WebSockets</td><td>Full-duplex</td><td>Persistent TCP, upgraded from HTTP</td><td>Chat, multiplayer gaming, collaborative editing, live trading UIs</td></tr>
+          <tr><td>Server-Sent Events (SSE)</td><td>One-way (server &rarr; client)</td><td>Plain long-lived HTTP (<code>text/event-stream</code>)</td><td>Live feeds/notifications, dashboards, LLM token streaming</td></tr>
+          <tr><td>Long/Short Polling</td><td>Repeated request/response</td><td>Plain HTTP</td><td>Fallback transport; low-frequency status/job checks</td></tr>
+          <tr><td>WebRTC</td><td>Peer-to-peer, bidirectional</td><td>UDP/SRTP media + SCTP data, signaling over WS/HTTP</td><td>Voice/video calls, screen sharing, P2P data</td></tr>
+          <tr><td>gRPC / HTTP/2 streaming</td><td>Bidirectional (RPC streams)</td><td>HTTP/2, binary Protobuf</td><td>Service-to-service microservice communication, mobile streaming RPC</td></tr>
+        </table>
+
+        <div class="page-nav">
+          <a class="prev" href="resilience-patterns.html"><span class="dir">Previous</span>Resilience Patterns</a>
+          <a class="next" href="bigdata-processing.html"><span class="dir">Next</span>Big-Data Batch &amp; Stream Processing</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

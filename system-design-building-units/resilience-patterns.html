@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resilience Patterns | System Design — Building Units | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Building Units</a><span class="sep">/</span><span class="current">Resilience Patterns</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Building Units overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#circuit-breaker-pattern">Circuit Breaker Pattern</a></li>
+        <li><a href="#retry-backoff-jitter">Retry with Backoff &amp; Jitter</a></li>
+        <li><a href="#bulkhead-pattern">Bulkhead Pattern</a></li>
+        <li><a href="#backpressure">Backpressure</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN — BUILDING UNITS</span>
+          <h1>Resilience Patterns</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Resilience patterns are the building blocks that keep a distributed system functioning — or at least degrading gracefully — when a downstream dependency slows down, errors out, or disappears entirely. Individually, each pattern addresses a narrow failure mode: stopping calls to a dependency that's clearly broken, spacing out retries so they don't pile onto an already-struggling service, isolating one dependency's problems from another's, and signaling upstream to slow down before memory runs out. In production these patterns are rarely used alone — they stack as layered decorators around a single call: a timeout defines what counts as a failure, retries (with backoff and jitter) absorb transient blips without amplifying load, a circuit breaker stops calling a consistently failing dependency, a bulkhead keeps that failure from starving resources needed for other calls, and backpressure ensures that even a slow-but-successful path doesn't overwhelm memory or queues further upstream. Libraries like resilience4j and Polly, and service meshes like Istio/Envoy, let you compose all of them as stacked decorators around the same call.</p>
+
+        <h3 id="circuit-breaker-pattern">Circuit Breaker Pattern</h3>
+        <p>The circuit breaker pattern wraps a call from a caller service to a dependency — another microservice, a database, a third-party API — so that when the dependency is failing or too slow, the caller stops sending it requests for a while instead of continuing to hammer a struggling system and piling up threads on doomed calls. It's modeled directly on an electrical breaker that trips to cut current when load becomes dangerous, and was popularized by Michael Nygard's <em>Release It!</em> and later by Netflix's Hystrix. The breaker moves through three core states: <strong>Closed</strong>, its normal state, where calls pass through while it tracks recent outcomes in a sliding window (count- or time-based); once the failure or slow-call rate crosses a configured threshold, it trips to <strong>Open</strong>, where calls are rejected immediately — no network call is even attempted — typically invoking a fallback, which frees the caller's own threads and connections rather than letting them block on a hung dependency; after a cooldown period the breaker enters <strong>Half-Open</strong>, allowing a small number of probe requests through to test recovery — success sends it back to Closed, failure sends it back to Open with the cooldown reset.</p>
+        <p>Beyond the three core states, mature implementations like resilience4j add operational states for production control — <strong>Disabled</strong> (always pass through), <strong>Forced-Open</strong> (a manual kill-switch), and <strong>Metrics-Only</strong> (observe outcomes without ever tripping, useful for safely tuning thresholds against real traffic before enabling enforcement). The behavior is governed by a handful of tunables: the sliding window's type and size (last N calls or last N seconds), a minimum call count before a rate is even computed (so the breaker doesn't trip on a tiny, unrepresentative sample), a failure-rate and/or slow-call-rate threshold, the wait duration in Open before probing (commonly 10–60 seconds), and the permitted call/success count in Half-Open. A breaker is only as useful as its fallback: strategies range from returning a cached or stale response, to a default/degraded response, routing to a secondary provider or region, queuing the request for later async processing, or simply propagating a fast, clear error. Each downstream dependency typically gets its own breaker instance — per-dependency isolation — so one failing call doesn't trip breakers guarding unrelated, healthy calls.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="24" font-size="13" font-weight="700" fill="#0f2545">Circuit Breaker State Machine</text>
+
+            <rect x="40" y="50" width="180" height="80" rx="10" fill="#f0fdf4" stroke="#166534" stroke-width="1.5"/>
+            <text x="130" y="85" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">CLOSED</text>
+            <text x="130" y="104" text-anchor="middle" font-size="9.5" fill="#5a6472">normal operation</text>
+            <text x="130" y="117" text-anchor="middle" font-size="9.5" fill="#5a6472">tracking failure rate</text>
+
+            <rect x="480" y="50" width="180" height="80" rx="10" fill="#0f2545"/>
+            <text x="570" y="85" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">OPEN</text>
+            <text x="570" y="104" text-anchor="middle" font-size="9.5" fill="#cbd8ef">rejects calls immediately</text>
+            <text x="570" y="117" text-anchor="middle" font-size="9.5" fill="#cbd8ef">fallback / fail fast</text>
+
+            <rect x="260" y="240" width="180" height="80" rx="10" fill="#fff9ec" stroke="#d9a441" stroke-width="1.5"/>
+            <text x="350" y="275" text-anchor="middle" font-size="13" font-weight="700" fill="#6b4a10">HALF-OPEN</text>
+            <text x="350" y="294" text-anchor="middle" font-size="9.5" fill="#5a6472">limited probe requests</text>
+            <text x="350" y="307" text-anchor="middle" font-size="9.5" fill="#5a6472">testing recovery</text>
+
+            <line x1="220" y1="90" x2="480" y2="90" stroke="#334155" stroke-width="1.5" marker-end="url(#cbArrow)"/>
+            <text x="350" y="78" text-anchor="middle" font-size="10" fill="#1a202c">failure threshold exceeded</text>
+
+            <path d="M 510,130 Q 460,190 395,240" stroke="#334155" stroke-width="1.5" fill="none" marker-end="url(#cbArrow)"/>
+            <text x="497" y="178" text-anchor="middle" font-size="9.5" fill="#1a202c">cooldown expires,</text>
+            <text x="497" y="191" text-anchor="middle" font-size="9.5" fill="#1a202c">probe request allowed</text>
+
+            <path d="M 435,240 Q 560,190 560,130" stroke="#334155" stroke-width="1.5" fill="none" marker-end="url(#cbArrow)"/>
+            <text x="580" y="185" text-anchor="middle" font-size="9.5" fill="#1a202c">probe fails</text>
+
+            <path d="M 300,240 Q 200,190 150,130" stroke="#334155" stroke-width="1.5" fill="none" marker-end="url(#cbArrow)"/>
+            <text x="185" y="185" text-anchor="middle" font-size="9.5" fill="#1a202c">probe succeeds</text>
+
+            <defs>
+              <marker id="cbArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" fill="#334155"/>
+              </marker>
+            </defs>
+          </svg>
+          <div class="diagram-caption">Closed tracks failures in a sliding window and trips to Open once a threshold is crossed; Open rejects calls fast and falls back until a cooldown elapses; Half-Open probes recovery with a handful of trial requests, returning to Closed on success or back to Open on failure.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> resilience4j (the current de facto Java/JVM standard, especially with Spring Boot — lightweight, functional-decorator API with independently composable modules for CircuitBreaker, Retry, RateLimiter, Bulkhead, and TimeLimiter), Netflix Hystrix (the library that popularized the pattern in 2012, thread-pool-based isolation, now in maintenance mode since its 1.5.18 release and not recommended for new projects), Polly (.NET's standard resilience library, offering Circuit Breaker as a fluent policy), Sentinel (Alibaba), and infrastructure-level circuit breaking with zero app-code changes via Envoy Proxy (max-connection/pending/concurrent-request circuit breaking plus outlier detection), Istio (<code>DestinationRule</code> connection-pool and outlier detection settings), and Kong (<code>MeshCircuitBreaker</code> policies).</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Any call to an external dependency that could become slow or fail — third-party APIs, payment processors, microservice-to-microservice calls in a non-trivial dependency graph — especially in high fan-out systems (a gateway calling many downstream services) where one bad downstream shouldn't take down the whole aggregate response. Use at the mesh/gateway layer (Envoy/Istio/Kong) for uniform policy across polyglot services without touching each service's code, or at the application layer (resilience4j/Polly) when you need fine-grained, call-site-specific fallback logic. Less necessary for calls that are already cheap, fast, and highly reliable — localhost calls, well-provisioned internal caches.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Prevents cascading failure and resource exhaustion across a call graph</li><li>Fails fast, freeing caller threads/connections instead of waiting out timeouts</li><li>Self-healing via the half-open probe, no manual intervention needed</li><li>Strong operational signal (state-transition metrics) about which dependency is unhealthy</li><li>Infrastructure-level options (mesh/gateway) need zero app-code changes</li></ul></td>
+            <td><ul><li>Threshold/window/cooldown tuning is easy to get wrong — too sensitive trips on blips, too lax gives no protection</li><li>Requires thoughtfully designed fallback logic to actually be useful</li><li>Some requests fail outright during Open even if the dependency could have handled a few</li><li>Per-instance breaker state can be inconsistent across a fleet unless using a shared/distributed implementation</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="retry-backoff-jitter">Retry with Backoff &amp; Jitter</h3>
+        <p>Retry with backoff and jitter automatically re-attempts a failed operation on the assumption that many failures are transient — a brief network blip, a momentary latency spike, a dependency mid-restart. Exponential backoff increases the wait between attempts (1s, 2s, 4s, 8s, capped at some maximum) rather than retrying immediately, giving a struggling dependency room to recover instead of hitting it again right away. Jitter adds randomness on top of that schedule so that many clients who all failed at the same moment don't retry in lockstep — without it, a large batch of synchronized retries can itself create a "thundering herd" that takes down a service that was only mildly struggling.</p>
+        <p>Retries must be paired with a hard cap on attempt count or a deadline, and should only be applied to idempotent operations (or ones made safe via idempotency keys) — naive retries without backoff, jitter, and a cap are a common real-world <em>cause</em> of retry storms, not just a mitigation for them.</p>
+        <p><strong>Popular tools:</strong> resilience4j's Retry module, Polly's Retry policy (.NET), retry logic built into most cloud SDKs (AWS SDK, Google Cloud client libraries), and retry policies configured directly at the mesh/gateway layer in Istio and Envoy.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Network calls prone to transient errors — calling a database, cache, or downstream microservice/third-party API over an unreliable network — combined with circuit breakers (so retries stop once a dependency is confirmed down, not just flaky) and idempotency guarantees (so a retried write doesn't double-charge a customer or double-insert a record).
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Recovers automatically from transient blips without any user-visible error</li><li>Jitter prevents synchronized retry storms/thundering herds</li><li>Simple to bolt onto an existing call with a decorator/library</li></ul></td>
+            <td><ul><li>Unsafe for non-idempotent operations unless paired with idempotency keys</li><li>Poorly configured retries (no cap, no backoff) amplify load on an already-struggling dependency</li><li>Adds tail latency to the failing-then-succeeding path</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="bulkhead-pattern">Bulkhead Pattern</h3>
+        <p>The bulkhead pattern isolates the resources — thread pools, connection pools — used to call different dependencies, so that one failing or slow dependency can't exhaust the resources needed to keep calling other, healthy dependencies. The name comes from a ship's bulkheads, the watertight compartments that contain a hull breach to one section instead of letting it sink the whole vessel; applied to software, a slow "nice-to-have" recommendation service shouldn't be able to consume every thread in a pool and block a critical checkout call from ever getting one.</p>
+        <p>Implementations come in two flavors: thread-pool-based, giving each dependency a fully separate executor pool (strong isolation, but each pool costs its own memory and context-switching overhead), or semaphore-based, which is lighter-weight and simply caps the number of concurrent calls allowed to a dependency without a dedicated pool behind it.</p>
+        <p><strong>Popular tools:</strong> resilience4j's Bulkhead module (both thread-pool and semaphore-based implementations), Hystrix's thread-pool isolation (legacy), Polly's Bulkhead policy (.NET), and connection-pool limits configured per-destination in Envoy/Istio.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Calling multiple independent downstream dependencies that have different reliability or latency profiles, so a slow or flaky lower-priority dependency can't also block calls to a critical one. Common at aggregation/gateway layers fanning out to many backend services, and anywhere a single shared thread or connection pool is currently serving calls to services with very different risk profiles.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Contains one dependency's failure/slowness to its own resource pool</li><li>Protects critical-path calls from being starved by a noisy or slow neighbor</li><li>Semaphore variant is lightweight to add with minimal overhead</li></ul></td>
+            <td><ul><li>Thread-pool variant adds real memory and context-switch overhead per pool</li><li>Sizing each pool correctly requires ongoing tuning as traffic patterns shift</li><li>More moving parts/config to reason about than a single shared pool</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="backpressure">Backpressure</h3>
+        <p>Backpressure is the mechanism by which a system signals "slow down" to its upstream producer when it can't keep up with incoming load, instead of buffering the excess unboundedly — risking an out-of-memory crash — or silently dropping data. It's implemented via bounded queues that block or reject new items once full, reactive-streams-style demand signaling (a consumer explicitly requests N more items when it's ready, rather than being pushed data it can't yet handle), or lower-level flow-control primitives like TCP's own windowing.</p>
+        <p>Without backpressure, a fast producer paired with a slow consumer leads to unbounded queue growth and an eventual crash — a common, very real outage pattern in event-driven and streaming systems where nothing upstream is ever told to pause.</p>
+        <p><strong>Popular tools:</strong> Reactive Streams implementations such as Project Reactor and RxJava, Akka Streams, Kafka consumer flow control (poll-based pull rather than push), gRPC's built-in flow control, and application-level bounded queues (blocking or reject-on-full) sitting in front of a worker pool.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Streaming/event-driven pipelines and any producer/consumer relationship where load can spike faster than the consumer can process — message queue consumers, log/metrics ingestion pipelines, real-time data pipelines feeding a slower downstream stage.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Prevents unbounded memory growth and out-of-memory crashes under load spikes</li><li>Applies natural, coordinated throttling instead of uncontrolled buffering or silent data loss</li><li>Keeps a fast producer and a slow consumer stable together</li></ul></td>
+            <td><ul><li>Adds design complexity — every stage in a pipeline needs to participate for it to work end to end</li><li>Slowing the producer can cascade delay backward through the whole chain</li><li>Not all protocols/libraries support demand signaling natively, requiring extra plumbing</li></ul></td>
+          </tr>
+        </table>
+
+        <div class="page-nav">
+          <a class="prev" href="security-edge-protection.html"><span class="dir">Previous</span>Security &amp; Edge Protection</a>
+          <a class="next" href="realtime-communication.html"><span class="dir">Next</span>Real-Time Client-Server Communication</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

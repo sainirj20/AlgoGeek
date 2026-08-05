@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Netflix / YouTube — Video Streaming Platform | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Netflix / YouTube</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design-user-service-and-the-social-graph">Low-Level Design — User Service and the Social Graph</a></li>
+        <li><a href="#deep-dive-video-upload-and-the-content-processing-pipeline">Deep Dive — Video Upload and the Content-Processing Pipeline</a></li>
+        <li><a href="#deep-dive-adaptive-bitrate-streaming-and-the-encoding-ladder">Deep Dive — Adaptive Bitrate Streaming and the Encoding Ladder</a></li>
+        <li><a href="#deep-dive-open-connect-a-purpose-built-cdn">Deep Dive — Open Connect: A Purpose-Built CDN</a></li>
+        <li><a href="#deep-dive-metadata-sharding-userid-vs-videoid">Deep Dive — Metadata Sharding: UserID vs. VideoID</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Netflix / YouTube — Video Streaming Platform</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough: requirements, capacity estimation, API &amp; data model, upload/view architecture, content-processing pipeline, adaptive bitrate streaming, Netflix's real-world Open Connect CDN, sharding trade-offs, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a video-sharing and streaming platform. Users upload videos; other users view, search, comment on, and rate them. The platform must transcode every upload into multiple qualities and formats, then stream video back to a global audience of viewers with no buffering, on any device, at massive scale. This is one of the highest-signal interview questions in the "modern systems" category because it forces a candidate to reason about two very different workloads at once: a write-heavy, asynchronous content-processing pipeline (upload &rarr; validate &rarr; transcode &rarr; publish) and a read-heavy, latency-critical delivery pipeline (search &rarr; select &rarr; stream) &mdash; and to explain how the two share infrastructure without one degrading the other.</p>
+
+        <h3>Two Flavors, One Core Architecture</h3>
+        <p>"Design YouTube" and "Design Netflix" are, at the architecture level, the same problem wearing two different hats. YouTube's classic framing emphasizes <strong>user-generated uploads</strong>: anyone can push content in, so the platform needs an open ingestion pipeline, content moderation, and a search index over an enormous, constantly-growing, low-quality-control catalog. Netflix's framing emphasizes a <strong>licensed, professionally-produced catalog</strong>: ingestion is a smaller, more curated, higher-throughput-per-title pipeline (studio masters instead of home videos), and the hard engineering problems shift toward encoding efficiency and global delivery &mdash; which is exactly why Netflix built its own purpose-built CDN (Open Connect, covered in a Deep Dive below). Both flavors share the identical skeleton: <em>upload &rarr; store &rarr; process/transcode &rarr; index &rarr; serve via CDN &rarr; adaptively stream to a player</em>. In this write-up we design that shared skeleton once, then call out where the two flavors diverge (moderation-heavy vs. catalog-curated ingestion; broad UGC search vs. recommendation-driven browsing) and go deep on Netflix-specific real-world practices (Open Connect, the encoding ladder) since interviewers increasingly probe "how does the real system do it" rather than settling for the textbook answer alone.</p>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Always narrow scope before drawing boxes. This problem is large enough that an interviewer's answers to these questions can send the whole 45-minute conversation in very different directions.</p>
+        <ol>
+          <li>Are we designing for open, user-generated uploads (YouTube-style, anyone can publish) or a closed, licensed catalog (Netflix-style, content arrives from studios/production houses), or should the design support both?</li>
+          <li>Is live streaming in scope, or purely on-demand playback of pre-recorded video?</li>
+          <li>Do we need to support resuming playback across devices &mdash; start on a phone, resume on a smart TV, at the same timestamp?</li>
+          <li>Are recommendations and a personalized home feed in scope, or do we only need the core upload/search/view path?</li>
+          <li>Single region, or global with low-latency delivery to every continent?</li>
+          <li>What read:write ratio should we assume between views and uploads?</li>
+          <li>Do we need comments, likes/dislikes, and star ratings, or is playback the only user-facing feature?</li>
+          <li>How deep does content moderation need to go &mdash; automated piracy/nudity/legal screening, human review, or both?</li>
+          <li>Are monetization features (ads, subscription tiers, concurrent-stream limits) in scope?</li>
+          <li>What client types must we support (mobile, web, smart TV, game consoles), and how many distinct codec/resolution combinations does that imply?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't stall waiting for every answer. State a reasonable default out loud &mdash; "I'll design the shared upload/view/search/stream core, treat live streaming and recommendations as out of scope, and call out Netflix-specific real-world practices like Open Connect as deep dives" &mdash; and keep moving. That's exactly the shape this write-up takes.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Users can upload a video.</li>
+          <li>Users can view/stream a video.</li>
+          <li>Users can search for videos by title.</li>
+          <li>The system records view counts, likes, and dislikes for each video.</li>
+          <li>Users can comment on videos.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Highly reliable</strong> &mdash; any video that has been uploaded must never be lost.</li>
+          <li><strong>Highly available</strong>, with an acceptable trade-off: some consistency can be sacrificed for availability (e.g. a viewer seeing a slightly stale view/like count is fine; a viewer unable to watch anything is not).</li>
+          <li><strong>Real-time, smooth playback</strong> with no lag or buffering, even under variable network conditions.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>Recommendations, subscriptions, and channels are real, important features of both YouTube and Netflix, but they sit on top of the core platform rather than inside it &mdash; we note them here and do not design them in this write-up. The same goes for live streaming, ads, and payment/billing.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State the assumptions explicitly, then let the numbers drive the rest of the design &mdash; the read-heavy skew below is the single fact that justifies almost every caching and CDN decision later in this document.</p>
+
+        <h3>View Traffic</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          1.5 billion total registered users; 800 million daily active users (DAU); average 5 video views per active user per day
+          <br>Video views / day = 800 million &times; 5 = 4 billion
+          <br>Video views / second = 4,000,000,000 &divide; 86,400 &asymp; 46,296 &rarr; round to <strong>~46K video-views/sec</strong>
+        </div>
+
+        <h3>Upload Traffic</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Upload : view ratio &asymp; 1 : 200 (uploads are far rarer than views &mdash; the same read-heavy skew seen in most consumer platforms, only more extreme)
+          <br>Uploads / second = 46,000 &divide; 200 &asymp; <strong>~230 uploads/sec</strong>
+        </div>
+
+        <h3>Storage Ingest</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          ~500 hours of video uploaded per minute, platform-wide; each minute-of-video occupies ~50 MB once stored across multiple encoded formats/resolutions
+          <br>Minutes-of-video uploaded / minute = 500 hours &times; 60 = 30,000 minute-of-video/min
+          <br>Storage ingest = 30,000 &times; 50 MB = 1,500,000 MB/min = <strong>~1500 GB/min (~25 GB/sec)</strong>, ignoring compression efficiency and replication overhead &mdash; both push the real number around in opposite directions
+        </div>
+
+        <h3>Bandwidth</h3>
+        <div class="formula-box">
+          <span class="formula-label">Bandwidth</span>
+          Upload bandwidth (raw incoming stream, before multi-format storage expansion, at roughly ~10 MB per minute-of-video): 30,000 minute-of-video/min &times; 10 MB &asymp; 300,000 MB/min = <strong>~300 GB/min (~5 GB/sec)</strong>
+          <br>Outgoing (view) bandwidth at the 1:200 view:upload ratio &asymp; 200 &times; 5 GB/sec = <strong>~1000 GB/sec (~1 TB/sec)</strong>
+        </div>
+        <p>The takeaway: outgoing bandwidth dwarfs incoming bandwidth by roughly 200&times;. Every downstream decision &mdash; caching, CDN placement, encoding-ladder design, even how we shard metadata &mdash; should be judged first by how it affects that outgoing 1 TB/sec, not the comparatively tiny 5 GB/sec coming in.</p>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Three core calls cover the functional requirements: uploading, searching, and streaming a video.</p>
+        <pre><code>uploadVideo(api_dev_key, video_title, video_description, tags[],
+            category_id, default_language, recording_details, video_contents)
+&rarr; returns video_id on success, error code otherwise
+
+searchVideo(api_dev_key, search_query, user_location,
+            maximum_videos_to_return, page_token)
+&rarr; returns a page of { video_id, title, thumbnail_url, creation_date, view_count },
+   plus a next_page_token
+
+streamVideo(api_dev_key, video_id, offset, codec, resolution)
+&rarr; returns a media stream for video_id, starting at byte/time `offset`,
+   encoded in `codec` at `resolution`</code></pre>
+        <p><strong>Why do <code>offset</code>, <code>codec</code>, and <code>resolution</code> travel with every single stream request, instead of being fixed once per video?</strong> Because playback is not a one-shot download &mdash; it's a resumable, device-aware session. A user might pause a movie on a phone (H.264, 720p, 40% through the runtime) and resume it that evening on a smart TV (HEVC, 4K, from the exact second they left off). The client has to tell the server exactly where to resume (<code>offset</code>) and what its current device/network can actually decode and display (<code>codec</code>, <code>resolution</code>), because those can be completely different from the device the user started on. Baking codec/resolution into the video record itself, instead of the request, would make cross-device resume impossible without a client-side transcode &mdash; exactly the cost this design pushes onto the server-side transcoding pipeline instead (see the Deep Dive below).</p>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+        <p>Two tables cover the core functional requirements: video metadata, and comments.</p>
+        <table>
+          <tr><th colspan="2">Table: video</th></tr>
+          <tr><td>VideoID (PK)</td><td>bigint / UUID</td></tr>
+          <tr><td>Title</td><td>varchar(100)</td></tr>
+          <tr><td>Description</td><td>varchar(5000)</td></tr>
+          <tr><td>Size</td><td>bigint (bytes)</td></tr>
+          <tr><td>Thumbnail</td><td>varchar (URL / blob reference)</td></tr>
+          <tr><td>Uploader (FK &rarr; user)</td><td>bigint</td></tr>
+          <tr><td>NumberOfLikes</td><td>bigint</td></tr>
+          <tr><td>NumberOfDislikes</td><td>bigint</td></tr>
+          <tr><td>NumberOfViews</td><td>bigint</td></tr>
+          <tr><td>CreationDate</td><td>datetime</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: comment</th></tr>
+          <tr><td>CommentID (PK)</td><td>bigint</td></tr>
+          <tr><td>VideoID (FK)</td><td>bigint</td></tr>
+          <tr><td>UserID (FK)</td><td>bigint</td></tr>
+          <tr><td>Comment</td><td>varchar(2000)</td></tr>
+          <tr><td>TimeOfCreation</td><td>datetime</td></tr>
+        </table>
+        <p>Both tables are small, high-volume, and almost always accessed by a single key (VideoID) &mdash; the textbook case for a horizontally-sharded, wide-column NoSQL store rather than a single relational instance, for the same reasons this pattern shows up across nearly every high-scale system in this series.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Two client types &mdash; an uploading client and a viewing/browsing client &mdash; both enter through a single API gateway. Upload traffic is routed to a dedicated Upload Service; user-facing traffic fans out across four read-path services (User Service, Home page Service, Search Service, and View &amp; Statics). Every one of those five services publishes events into a central Kafka bus, which in turn feeds four independent downstream consumers: a CDN &amp; S3 writer (which pushes finished content into a CDN), an Analytics service, a history logger, and a Notification Service. A separate CDN node feeds directly back into the API gateway, serving already-cached content straight back to users without touching the application tier at all.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="18" font-size="13" font-weight="700" fill="#0f2545">High-Level Design — Upload &amp; View Fan-Out via Kafka</text>
+
+            <rect x="40" y="20" width="150" height="38" rx="5" fill="#0f2545"/>
+            <text x="115" y="43" text-anchor="middle" font-size="11" fill="#fff">Upload Client</text>
+            <rect x="610" y="20" width="150" height="38" rx="5" fill="#0f2545"/>
+            <text x="685" y="43" text-anchor="middle" font-size="11" fill="#fff">User Client</text>
+
+            <line x1="115" y1="58" x2="330" y2="95" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="685" y1="58" x2="470" y2="95" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+
+            <rect x="260" y="95" width="280" height="44" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="400" y="121" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">API Gateway</text>
+
+            <line x1="280" y1="139" x2="90" y2="175" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="330" y1="139" x2="240" y2="175" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="400" y1="139" x2="385" y2="175" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="460" y1="139" x2="530" y2="175" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="510" y1="139" x2="680" y2="175" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+
+            <rect x="15" y="175" width="150" height="44" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="90" y="200" text-anchor="middle" font-size="10.5">Upload Service</text>
+            <rect x="180" y="175" width="120" height="44" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="240" y="200" text-anchor="middle" font-size="10.5">User Service</text>
+            <rect x="315" y="175" width="140" height="44" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="385" y="200" text-anchor="middle" font-size="10.5">Home page Service</text>
+            <rect x="470" y="175" width="120" height="44" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="530" y="200" text-anchor="middle" font-size="10.5">Search Service</text>
+            <rect x="605" y="175" width="150" height="44" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="680" y="200" text-anchor="middle" font-size="10.5">View &amp; Statics</text>
+
+            <line x1="90" y1="219" x2="310" y2="270" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="240" y1="219" x2="350" y2="270" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="385" y1="219" x2="400" y2="270" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="530" y1="219" x2="450" y2="270" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="680" y1="219" x2="490" y2="270" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+
+            <rect x="290" y="270" width="220" height="48" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="400" y="299" text-anchor="middle" font-size="13" font-weight="700" fill="#6b4a10">Kafka</text>
+
+            <line x1="320" y1="318" x2="95" y2="355" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="370" y1="318" x2="275" y2="355" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="430" y1="318" x2="450" y2="355" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <line x1="480" y1="318" x2="645" y2="355" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+
+            <rect x="15" y="355" width="160" height="44" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="95" y="380" text-anchor="middle" font-size="10">CDN &amp; S3 Writer</text>
+            <rect x="200" y="355" width="150" height="44" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="275" y="380" text-anchor="middle" font-size="10">Analytics Service</text>
+            <rect x="375" y="355" width="150" height="44" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="450" y="380" text-anchor="middle" font-size="10">History Logger</text>
+            <rect x="550" y="355" width="190" height="44" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="645" y="380" text-anchor="middle" font-size="10">Notification Service</text>
+
+            <line x1="95" y1="399" x2="95" y2="435" stroke="#334155" marker-end="url(#arrow-nfx-1)"/>
+            <rect x="15" y="435" width="160" height="40" rx="5" fill="#0f2545"/>
+            <text x="95" y="459" text-anchor="middle" font-size="11" fill="#fff">CDN</text>
+
+            <polyline points="175,455 780,455 780,117 260,117" fill="none" stroke="#5a6472" stroke-dasharray="5,4" marker-end="url(#arrow-nfx-1)"/>
+            <text x="620" y="448" text-anchor="middle" font-size="9" fill="#5a6472">cached content served directly back to users</text>
+
+            <defs><marker id="arrow-nfx-1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level design — upload and user traffic share one API gateway, fan out to five services, all of which publish into Kafka; Kafka fans out to CDN/S3 writing, analytics, history logging, and notifications; a CDN loop feeds cached content straight back to the gateway.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>One entry point, two very different fan-outs:</strong> the API gateway is the single front door, but upload traffic and view traffic diverge immediately into completely different services with different scaling profiles.</li>
+          <li><strong>Kafka as the seam between "serve the request" and "do everything else":</strong> every service that touches the hot path (Upload, User, Home page, Search, View &amp; Statics) only has to publish an event and move on &mdash; analytics, history, CDN population, and notifications all happen asynchronously downstream.</li>
+          <li><strong>The CDN feedback loop is the whole point of caching:</strong> a repeat request for already-cached content is served straight back from the CDN into the gateway response path, never touching the five application services or Kafka at all.</li>
+        </ul>
+
+        <h2 id="low-level-design-user-service-and-the-social-graph">Low-Level Design — User Service and the Social Graph</h2>
+        <p>Two distinct client actions &mdash; login/signup and subscribe/un-subscribe &mdash; both pass through the same API gateway but are handled by two entirely separate services with their own datastores, because they touch different data and have different consistency needs.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 880 560" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="16" font-size="13" font-weight="700" fill="#0f2545">Low-Level Design — User Service &amp; Graph Service</text>
+
+            <rect x="70" y="20" width="220" height="38" rx="5" fill="#0f2545"/>
+            <text x="180" y="43" text-anchor="middle" font-size="10.5" fill="#fff">User login / signup</text>
+            <rect x="560" y="20" width="230" height="38" rx="5" fill="#0f2545"/>
+            <text x="675" y="43" text-anchor="middle" font-size="10.5" fill="#fff">Subscribe / un-subscribe</text>
+
+            <line x1="180" y1="58" x2="390" y2="90" stroke="#334155" marker-end="url(#arrow-nfx-2)"/>
+            <line x1="675" y1="58" x2="470" y2="90" stroke="#334155" marker-end="url(#arrow-nfx-2)"/>
+
+            <rect x="330" y="90" width="200" height="42" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="430" y="116" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">API Gateway</text>
+
+            <line x1="370" y1="132" x2="210" y2="175" stroke="#334155" marker-end="url(#arrow-nfx-2)"/>
+            <line x1="490" y1="132" x2="640" y2="175" stroke="#334155" marker-end="url(#arrow-nfx-2)"/>
+
+            <rect x="102" y="187" width="240" height="34" rx="5" fill="#dce6f7" stroke="#94a3b8"/>
+            <rect x="96" y="181" width="240" height="34" rx="5" fill="#eef3fc" stroke="#94a3b8"/>
+            <rect x="90" y="175" width="240" height="34" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="210" y="196" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1d4ed8">User Service</text>
+            <text x="210" y="207" text-anchor="middle" font-size="8" fill="#5a6472">(replicated)</text>
+
+            <rect x="532" y="187" width="240" height="34" rx="5" fill="#dce6f7" stroke="#94a3b8"/>
+            <rect x="526" y="181" width="240" height="34" rx="5" fill="#eef3fc" stroke="#94a3b8"/>
+            <rect x="520" y="175" width="240" height="34" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="640" y="196" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1d4ed8">Graph Service</text>
+            <text x="640" y="207" text-anchor="middle" font-size="8" fill="#5a6472">(replicated)</text>
+
+            <line x1="210" y1="221" x2="190" y2="290" stroke="#334155" marker-end="url(#arrow-nfx-2)"/>
+            <rect x="40" y="290" width="300" height="100" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="190" y="306" text-anchor="middle" font-size="10" font-weight="700">MySQL Cluster (User DB)</text>
+            <rect x="55" y="330" width="85" height="40" rx="4" fill="#eaf1ff" stroke="#2563eb"/><text x="97" y="354" text-anchor="middle" font-size="9">Master</text>
+            <rect x="150" y="330" width="85" height="40" rx="4" fill="#fff" stroke="#94a3b8"/><text x="192" y="354" text-anchor="middle" font-size="9">Slave</text>
+            <rect x="245" y="330" width="85" height="40" rx="4" fill="#fff" stroke="#94a3b8"/><text x="287" y="354" text-anchor="middle" font-size="9">Slave</text>
+
+            <line x1="600" y1="221" x2="435" y2="310" stroke="#334155" marker-end="url(#arrow-nfx-2)"/>
+            <rect x="380" y="310" width="110" height="50" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="435" y="339" text-anchor="middle" font-size="10">Redis</text>
+
+            <line x1="680" y1="221" x2="680" y2="290" stroke="#334155" marker-end="url(#arrow-nfx-2)"/>
+            <rect x="530" y="290" width="300" height="100" rx="6" fill="#fff" stroke="#94a3b8"/>
+            <text x="680" y="306" text-anchor="middle" font-size="10" font-weight="700">MySQL Cluster (Graph DB)</text>
+            <rect x="545" y="330" width="85" height="40" rx="4" fill="#eaf1ff" stroke="#2563eb"/><text x="587" y="354" text-anchor="middle" font-size="9">Master</text>
+            <rect x="640" y="330" width="85" height="40" rx="4" fill="#fff" stroke="#94a3b8"/><text x="682" y="354" text-anchor="middle" font-size="9">Slave</text>
+            <rect x="735" y="330" width="85" height="40" rx="4" fill="#fff" stroke="#94a3b8"/><text x="777" y="354" text-anchor="middle" font-size="9">Slave</text>
+
+            <rect x="340" y="460" width="200" height="48" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="440" y="489" text-anchor="middle" font-size="13" font-weight="700" fill="#6b4a10">Kafka</text>
+
+            <polyline points="330,221 360,221 360,484 340,484" fill="none" stroke="#334155" marker-end="url(#arrow-nfx-2)"/>
+            <text x="215" y="240" font-size="8.5" fill="#5a6472">notify update to system (e.g. email</text>
+            <text x="215" y="251" font-size="8.5" fill="#5a6472">change, new user &rarr; recommendation engine)</text>
+
+            <polyline points="760,221 850,221 850,484 540,484" fill="none" stroke="#334155" marker-end="url(#arrow-nfx-2)"/>
+            <text x="700" y="240" font-size="8.5" fill="#5a6472">publish event to tell system about update</text>
+
+            <defs><marker id="arrow-nfx-2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Figure 2. User Service and Graph Service are independently replicated, write to independent MySQL clusters (each Master/Slave/Slave), and both publish update events into Kafka; Graph Service additionally writes through Redis for fast subscribe/un-subscribe reads.</div>
+        </div>
+        <p><strong>User Service</strong> owns login/signup, writes to its own MySQL cluster (a master plus two read slaves), and publishes a Kafka event whenever a user record changes &mdash; the exact scenario called out is "notify update to system, like email change, new user for recommendation engine," i.e. downstream systems that care about user changes (email/notification systems, the recommendation engine's cold-start pipeline) subscribe to this topic instead of polling the User Service directly.</p>
+        <p><strong>Graph Service</strong> owns the subscribe/un-subscribe relationship &mdash; the social graph of "who follows/subscribes to whom" &mdash; and is architected differently: it writes to Redis (for the low-latency reads a subscription check needs on every page load) <em>and</em> to its own separate MySQL cluster (source of truth, same master/slave/slave replication pattern), and it too publishes a Kafka event ("publish event to tell system about update") so other services (e.g. the Home page Service deciding what to show a subscriber) learn about graph changes without a direct synchronous call into Graph Service.</p>
+
+        <h2 id="deep-dive-video-upload-and-the-content-processing-pipeline">Deep Dive — Video Upload and the Content-Processing Pipeline</h2>
+        <p>A content creator or production house submits video through a Load Balancer into a replicated Upload Service. The Upload Service immediately does two synchronous writes &mdash; video metadata into a Cassandra cluster, and the raw video file into Amazon S3 (which in turn feeds a CDN) &mdash; and then hands off to an asynchronous Content Processor pipeline: a File Chunker splits the upload into chunks, a Content Filter screens for piracy/nudity/legal issues and duplicates, a Content Tags stage extracts tags from the media (action, event, actor), a Transcoder &amp; quality converter produces the multiple formats/resolutions needed for different devices, and a final stage aggregates the chunks list and generates thumbnails. Both the content-filter stage and the final aggregation stage publish events into Kafka, which a CDN &amp; S3 writer (listening for "event complete" to push finished files to CDN/S3), a search consumer (consuming content tags to index the video), and a Notification Service (telling the uploader their video is live &mdash; or was blocked by the filter) all consume from independently.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 950 710" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="16" font-size="13" font-weight="700" fill="#0f2545">Deep Dive — Upload &amp; Content-Processing Pipeline</text>
+
+            <rect x="350" y="20" width="220" height="38" rx="5" fill="#0f2545"/>
+            <text x="460" y="43" text-anchor="middle" font-size="10.5" fill="#fff">Content Creator / Production House</text>
+
+            <line x1="460" y1="58" x2="460" y2="90" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <rect x="390" y="90" width="140" height="40" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="460" y="114" text-anchor="middle" font-size="11" font-weight="700" fill="#1d4ed8">Load Balancer</text>
+
+            <line x1="460" y1="130" x2="460" y2="160" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <rect x="362" y="166" width="220" height="34" rx="5" fill="#dce6f7" stroke="#94a3b8"/>
+            <rect x="356" y="160" width="220" height="34" rx="5" fill="#eef3fc" stroke="#94a3b8"/>
+            <rect x="350" y="154" width="220" height="34" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="460" y="175" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1d4ed8">Upload Service</text>
+            <text x="460" y="186" text-anchor="middle" font-size="8" fill="#5a6472">(replicated)</text>
+
+            <line x1="350" y1="208" x2="140" y2="260" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <rect x="30" y="260" width="220" height="44" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="140" y="279" text-anchor="middle" font-size="10">Cassandra Cluster</text>
+            <text x="140" y="292" text-anchor="middle" font-size="8" fill="#5a6472">(video metadata)</text>
+
+            <line x1="570" y1="208" x2="750" y2="260" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <rect x="660" y="260" width="180" height="44" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="750" y="279" text-anchor="middle" font-size="10">Amazon S3</text>
+            <text x="750" y="292" text-anchor="middle" font-size="8" fill="#5a6472">(raw video file)</text>
+
+            <line x1="750" y1="304" x2="750" y2="340" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <rect x="660" y="340" width="180" height="40" rx="5" fill="#0f2545"/>
+            <text x="750" y="364" text-anchor="middle" font-size="11" fill="#fff">CDN</text>
+
+            <polyline points="460,208 460,420 100,420 100,440" fill="none" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <text x="465" y="415" font-size="8.5" fill="#5a6472">hand off to content processor</text>
+
+            <rect x="30" y="440" width="140" height="50" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="100" y="461" text-anchor="middle" font-size="10">File Chunker</text>
+
+            <line x1="170" y1="465" x2="195" y2="465" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <rect x="195" y="440" width="150" height="50" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="270" y="459" text-anchor="middle" font-size="10">Content Filter</text>
+            <text x="270" y="472" text-anchor="middle" font-size="7.5" fill="#5a6472">piracy / nudity / legal / dup</text>
+
+            <line x1="345" y1="465" x2="370" y2="465" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <rect x="370" y="440" width="150" height="50" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="445" y="459" text-anchor="middle" font-size="10">Content Tags</text>
+            <text x="445" y="472" text-anchor="middle" font-size="7.5" fill="#5a6472">action / event / actor</text>
+
+            <line x1="520" y1="465" x2="545" y2="465" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <rect x="545" y="440" width="190" height="50" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="640" y="459" text-anchor="middle" font-size="10">Transcoder &amp; Quality Converter</text>
+            <text x="640" y="472" text-anchor="middle" font-size="7.5" fill="#5a6472">multi-format / multi-resolution</text>
+
+            <line x1="735" y1="465" x2="760" y2="465" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <rect x="760" y="440" width="170" height="50" rx="5" fill="#fff" stroke="#94a3b8"/>
+            <text x="845" y="459" text-anchor="middle" font-size="9.5">Aggregate chunks /</text>
+            <text x="845" y="472" text-anchor="middle" font-size="9.5">thumbnail generator</text>
+
+            <line x1="270" y1="490" x2="420" y2="540" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <line x1="845" y1="490" x2="620" y2="540" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+
+            <rect x="380" y="540" width="200" height="48" rx="6" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="480" y="569" text-anchor="middle" font-size="13" font-weight="700" fill="#6b4a10">Kafka</text>
+
+            <line x1="420" y1="588" x2="125" y2="610" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <line x1="470" y1="588" x2="360" y2="610" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+            <line x1="520" y1="588" x2="620" y2="610" stroke="#334155" marker-end="url(#arrow-nfx-3)"/>
+
+            <rect x="30" y="610" width="190" height="50" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="125" y="630" text-anchor="middle" font-size="9.5">CDN &amp; S3 Writer</text>
+            <text x="125" y="643" text-anchor="middle" font-size="7.5" fill="#5a6472">on "event complete" &rarr; push to CDN/S3</text>
+
+            <rect x="270" y="610" width="180" height="50" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="360" y="630" text-anchor="middle" font-size="9.5">Search Consumer</text>
+            <text x="360" y="643" text-anchor="middle" font-size="7.5" fill="#5a6472">consumes content tags</text>
+
+            <rect x="520" y="610" width="200" height="50" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="620" y="630" text-anchor="middle" font-size="9.5">Notification Service</text>
+            <text x="620" y="643" text-anchor="middle" font-size="7.5" fill="#5a6472">notifies uploader: live / blocked</text>
+
+            <polyline points="620,660 620,685 10,685 10,39 350,39" fill="none" stroke="#5a6472" stroke-dasharray="5,4" marker-end="url(#arrow-nfx-3)"/>
+            <text x="120" y="700" font-size="8" fill="#5a6472">notification delivered back to uploader once processing completes / is blocked</text>
+
+            <defs><marker id="arrow-nfx-3" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Figure 3. Upload Service writes metadata to Cassandra and the raw file to S3/CDN synchronously, then hands off to an async chunker &rarr; filter &rarr; tag &rarr; transcode &rarr; aggregate pipeline; the filter and aggregation stages publish to Kafka, which fans out to CDN/S3 writing, search indexing, and uploader notification.</div>
+        </div>
+        <p>Two design choices in this pipeline are worth calling out explicitly in an interview. First, metadata (Cassandra) and the raw bytes (S3) are written on two separate, purpose-built stores rather than one &mdash; metadata is small, structured, and needs fast key lookups; the raw file is a large blob best served by an object store built for exactly that. Second, the pipeline is a strict, ordered chain (chunk &rarr; filter &rarr; tag &rarr; transcode &rarr; aggregate) precisely so that content moderation happens <em>before</em> any expensive, irreversible work (transcoding into a dozen formats) is spent on content that might get rejected outright.</p>
+
+        <h2 id="deep-dive-adaptive-bitrate-streaming-and-the-encoding-ladder">Deep Dive — Adaptive Bitrate Streaming and the Encoding Ladder</h2>
+        <p>A single uploaded master is not stored as one file &mdash; it is encoded into an <strong>encoding ladder</strong>: many resolution/bitrate/codec combinations of the same title, so the player can pick whichever rendition fits the viewer's current network and device. In real Netflix practice, once every device/codec/resolution permutation is counted, a single movie can produce on the order of a <strong>thousand distinct encoded file variants</strong>. Each rendition is chunked into a few-second segments and described in an HLS (<code>.m3u8</code>) or DASH (<code>.mpd</code>) manifest that lists every available rung of the ladder.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 820 420" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="18" font-size="13" font-weight="700" fill="#0f2545">Adaptive Bitrate Streaming — the Encoding Ladder</text>
+
+            <rect x="20" y="170" width="140" height="50" rx="5" fill="#0f2545"/>
+            <text x="90" y="191" text-anchor="middle" font-size="10" fill="#fff">Source Master</text>
+            <text x="90" y="204" text-anchor="middle" font-size="8" fill="#cbd5e1">File</text>
+
+            <line x1="160" y1="185" x2="215" y2="52" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <line x1="160" y1="192" x2="215" y2="112" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <line x1="160" y1="198" x2="215" y2="172" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <line x1="160" y1="205" x2="215" y2="232" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <line x1="160" y1="212" x2="215" y2="292" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+
+            <rect x="220" y="30" width="200" height="44" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="320" y="55" text-anchor="middle" font-size="10">4K &middot; ~25 Mbps &middot; HEVC</text>
+            <rect x="220" y="90" width="200" height="44" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="320" y="115" text-anchor="middle" font-size="10">1080p &middot; ~8 Mbps</text>
+            <rect x="220" y="150" width="200" height="44" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="320" y="175" text-anchor="middle" font-size="10">720p &middot; ~5 Mbps</text>
+            <rect x="220" y="210" width="200" height="44" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="320" y="235" text-anchor="middle" font-size="10">480p &middot; ~2.5 Mbps</text>
+            <rect x="220" y="270" width="200" height="44" rx="5" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="320" y="295" text-anchor="middle" font-size="10">240p &middot; ~0.8 Mbps</text>
+
+            <line x1="420" y1="52" x2="470" y2="170" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <line x1="420" y1="112" x2="470" y2="175" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <line x1="420" y1="172" x2="470" y2="180" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <line x1="420" y1="232" x2="470" y2="185" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <line x1="420" y1="292" x2="470" y2="190" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+
+            <rect x="470" y="150" width="180" height="50" rx="5" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="560" y="171" text-anchor="middle" font-size="10">HLS / DASH Manifest</text>
+            <text x="560" y="184" text-anchor="middle" font-size="8" fill="#6b4a10">.m3u8 / .mpd</text>
+
+            <line x1="650" y1="175" x2="700" y2="175" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <rect x="700" y="150" width="100" height="50" rx="5" fill="#0f2545"/>
+            <text x="750" y="171" text-anchor="middle" font-size="9.5" fill="#fff">Client</text>
+            <text x="750" y="184" text-anchor="middle" font-size="9.5" fill="#fff">Player</text>
+
+            <path d="M770,220 C 790,250 790,300 770,330" fill="none" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <path d="M730,330 C 710,300 710,250 730,220" fill="none" stroke="#334155" marker-end="url(#arrow-nfx-4)"/>
+            <text x="750" y="360" text-anchor="middle" font-size="9" fill="#5a6472">player measures bandwidth in</text>
+            <text x="750" y="373" text-anchor="middle" font-size="9" fill="#5a6472">real time and switches rungs</text>
+            <text x="750" y="386" text-anchor="middle" font-size="9" fill="#5a6472">up/down to avoid buffering</text>
+
+            <defs><marker id="arrow-nfx-4" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Figure 4. One source master is encoded into an entire ladder of resolution/bitrate rungs, packaged into an HLS/DASH manifest; the client player continuously re-measures throughput and switches rungs to avoid buffering while maximizing quality.</div>
+        </div>
+        <p>The client, not the server, drives the adaptation: the player buffers a few segments ahead, continuously estimates its own available bandwidth from recent segment-download speed, and on the next segment boundary requests whichever rung the manifest offers that best matches that estimate &mdash; stepping down aggressively at the first sign of a stall, and stepping back up conservatively once bandwidth recovers, so the perceived experience favors "never buffers" over "always maximum quality."</p>
+
+        <h2 id="deep-dive-open-connect-a-purpose-built-cdn">Deep Dive — Open Connect: A Purpose-Built CDN</h2>
+        <p>Netflix's real production architecture splits cleanly into a control plane and a data plane, and that split is deliberate rather than incidental. The <strong>control plane</strong> runs in the general cloud (AWS) and handles everything that happens before a single video byte is streamed: authentication, browsing/UI, billing, and recommendations. All of that needs transactional consistency and very high availability, but it is comparatively low-bandwidth &mdash; it is metadata, not media. Once a title is actually selected, an entirely different system takes over: <strong>Open Connect</strong>, Netflix's purpose-built CDN made of caching appliances embedded directly inside ISP networks around the world, streams the actual video bytes from the node physically closest to the viewer &mdash; often inside the viewer's own ISP, minimizing hops and avoiding inter-network congestion entirely.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 380" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="18" font-size="13" font-weight="700" fill="#0f2545">Open Connect — Control Plane vs. Data Plane</text>
+
+            <rect x="300" y="30" width="180" height="38" rx="5" fill="#0f2545"/>
+            <text x="390" y="53" text-anchor="middle" font-size="10.5" fill="#fff">Client Device</text>
+
+            <line x1="330" y1="68" x2="160" y2="105" stroke="#334155" marker-end="url(#arrow-nfx-5)"/>
+            <text x="220" y="90" font-size="9" fill="#5a6472">1. auth, browse, pick title</text>
+
+            <line x1="450" y1="68" x2="620" y2="105" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow-nfx-5)"/>
+            <text x="560" y="90" font-size="9" fill="#5a6472">2. stream video bytes</text>
+
+            <rect x="20" y="105" width="300" height="235" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="170" y="128" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">Control Plane (AWS Cloud)</text>
+            <rect x="45" y="145" width="110" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="100" y="166" text-anchor="middle" font-size="9.5">Auth</text>
+            <rect x="165" y="145" width="115" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="222" y="166" text-anchor="middle" font-size="9.5">Browsing / UI</text>
+            <rect x="45" y="190" width="110" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="100" y="211" text-anchor="middle" font-size="9.5">Billing</text>
+            <rect x="165" y="190" width="115" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="222" y="211" text-anchor="middle" font-size="9.5">Recommendations</text>
+            <text x="170" y="250" text-anchor="middle" font-size="9" fill="#5a6472">transactional consistency +</text>
+            <text x="170" y="264" text-anchor="middle" font-size="9" fill="#5a6472">high availability, low bandwidth</text>
+
+            <rect x="440" y="105" width="320" height="235" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="600" y="128" text-anchor="middle" font-size="12" font-weight="700" fill="#6b4a10">Data Plane — Open Connect</text>
+            <rect x="470" y="150" width="260" height="60" rx="5" fill="#fff" stroke="#d9a441"/>
+            <text x="600" y="176" text-anchor="middle" font-size="10">Open Connect Appliance (OCA)</text>
+            <text x="600" y="192" text-anchor="middle" font-size="8.5" fill="#5a6472">embedded inside ISP network</text>
+            <text x="600" y="250" text-anchor="middle" font-size="9" fill="#5a6472">streams actual video bytes —</text>
+            <text x="600" y="264" text-anchor="middle" font-size="9" fill="#5a6472">minimizes hops, avoids inter-network congestion</text>
+
+            <defs><marker id="arrow-nfx-5" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Figure 5. Every session touches the control plane first (auth, browse, pick a title) and only then the data plane (Open Connect appliances embedded at ISPs) for the actual byte-heavy video stream — letting each half be optimized for a completely different workload.</div>
+        </div>
+        <p>This split matters because the two workloads have opposite characteristics: the control plane is low-bandwidth but must never lose a transaction (you must never be billed twice, or lose your place in your list); the data plane is enormously high-bandwidth but can tolerate a client simply re-requesting a dropped segment from a different OCA. Trying to serve both out of one general-purpose system would force compromises on both sides &mdash; splitting them lets Netflix scale petabytes of nightly video delivery independently from the comparatively tiny control-plane traffic.</p>
+
+        <h2 id="deep-dive-metadata-sharding-userid-vs-videoid">Deep Dive — Metadata Sharding: UserID vs. VideoID</h2>
+        <p>Once video metadata and user data are sharded (they must be, at this scale), the sharding key itself is a real trade-off with no universally correct answer.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 340" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="18" font-size="13" font-weight="700" fill="#0f2545">Sharding by UserID vs. VideoID</text>
+
+            <rect x="20" y="35" width="340" height="285" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="190" y="58" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">Shard by UserID</text>
+            <rect x="45" y="75" width="90" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="90" y="96" text-anchor="middle" font-size="9">Shard 1</text>
+            <rect x="145" y="75" width="90" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="190" y="96" text-anchor="middle" font-size="9">Shard 2</text>
+            <rect x="245" y="75" width="90" height="34" rx="4" fill="#fde8e8" stroke="#dc2626"/><text x="290" y="96" text-anchor="middle" font-size="9" fill="#991b1b">Shard 3</text>
+            <text x="290" y="130" text-anchor="middle" font-size="8.5" fill="#991b1b">viral uploader &rarr; hot shard</text>
+            <text x="190" y="160" text-anchor="middle" font-size="9.5" fill="#5a6472">+ keeps one user's uploads together</text>
+            <text x="190" y="176" text-anchor="middle" font-size="9.5" fill="#5a6472">&ndash; a single viral user overloads one</text>
+            <text x="190" y="192" text-anchor="middle" font-size="9.5" fill="#5a6472">&nbsp;&nbsp;shard; complicates uniform growth</text>
+
+            <rect x="420" y="35" width="340" height="285" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="590" y="58" text-anchor="middle" font-size="12" font-weight="700" fill="#6b4a10">Shard by VideoID</text>
+            <rect x="445" y="75" width="90" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="490" y="96" text-anchor="middle" font-size="9">Shard 1</text>
+            <rect x="545" y="75" width="90" height="34" rx="4" fill="#fde8e8" stroke="#dc2626"/><text x="590" y="96" text-anchor="middle" font-size="9" fill="#991b1b">Shard 2</text>
+            <rect x="645" y="75" width="90" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="690" y="96" text-anchor="middle" font-size="9">Shard 3</text>
+            <rect x="545" y="120" width="90" height="26" rx="4" fill="#eaf1ff" stroke="#2563eb"/><text x="590" y="137" text-anchor="middle" font-size="8">cache in front</text>
+            <text x="590" y="163" text-anchor="middle" font-size="8.5" fill="#991b1b">viral video &rarr; hot shard, cache-mitigated</text>
+            <text x="590" y="190" text-anchor="middle" font-size="9.5" fill="#5a6472">+ fixes the hot-user problem</text>
+            <text x="590" y="206" text-anchor="middle" font-size="9.5" fill="#5a6472">&ndash; shifts hotspot risk to popular videos,</text>
+            <text x="590" y="222" text-anchor="middle" font-size="9.5" fill="#5a6472">&nbsp;&nbsp;mitigated with a cache layer</text>
+
+            <defs><marker id="arrow-nfx-6" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Figure 6. Sharding by UserID keeps one uploader's videos co-located but risks a hot shard if that user goes viral; sharding by VideoID avoids the hot-user problem but shifts the hotspot to individual popular videos — addressed with a cache layer in front of the database.</div>
+        </div>
+        <p><strong>Shard by UserID:</strong> all of a given user's videos land on the same shard, which is convenient for "show me all of this uploader's videos," but it means a single user going viral concentrates disproportionate read traffic on one shard, and shard growth is uneven since users don't upload at the same rate.</p>
+        <p><strong>Shard by VideoID:</strong> spreads any one user's videos evenly across shards, eliminating the hot-uploader problem &mdash; but now an individual video that goes viral hot-spots its own shard instead. The standard mitigation is the same one used throughout this design: put a cache in front of the database for popular videos, so the shard itself never sees the full weight of a viral spike.</p>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <ul>
+          <li><strong>Video file storage:</strong> raw and encoded video files live on a distributed file system built for huge, mostly-immutable blobs &mdash; conceptually an HDFS/GlusterFS-style store, not a general-purpose database.</li>
+          <li><strong>Metadata:</strong> sharded per the UserID-vs-VideoID trade-off discussed above; there is no single right answer, only a right answer for a given read pattern.</li>
+          <li><strong>Thumbnails:</strong> stored in a Bigtable-style wide-column store rather than a plain filesystem, because thumbnails are numerous, tiny, and read-heavy &mdash; combining many small thumbnail files into one underlying storage block dramatically beats paying a disk seek per individual file.</li>
+        </ul>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li>Metadata replicates master-slave; a short-lived staleness window (a like/view count that's a few seconds behind) is an acceptable trade for read throughput.</li>
+          <li>Video files themselves are stored with multiple copies distributed across read servers/CDN nodes, so no single node failure makes a video unwatchable.</li>
+          <li>Consistent hashing governs how both cache and database servers are distributed, so a node joining or leaving only remaps a small, bounded fraction of keys instead of triggering a full reshuffle.</li>
+        </ul>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+        <ul>
+          <li><strong>Resumable, chunked uploads:</strong> a dropped connection mid-upload of a multi-gigabyte file shouldn't force a restart from byte zero &mdash; uploads are chunked so a resumed session picks up from the last acknowledged chunk.</li>
+          <li><strong>Inline video deduplication:</strong> at upload time, block-matching/phase-correlation algorithms compare the new upload against existing content to catch duplicates &mdash; including re-encoded copies, or copies with a different border/watermark overlaid &mdash; before they're stored. Catching a duplicate before the pipeline transcodes and stores it saves real encode, storage, and network cost at this platform's scale.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Per-request <code>api_dev_key</code>:</strong> every call carries a developer/API key used for quota enforcement and throttling, the same pattern used across most of this system-design series.</li>
+          <li><strong>Content moderation as a first-class pipeline stage, not an afterthought:</strong> the Content Filter stage from the upload pipeline diagram above &mdash; piracy, nudity, and legal checks &mdash; runs before transcoding, so rejected content never reaches the expensive downstream stages.</li>
+          <li><strong>DRM for licensed catalog content:</strong> Netflix-flavor deployments carrying studio-licensed titles need digital rights management (encrypted streams, license servers, device-level playback restrictions) layered on top of the encoding/delivery pipeline described above.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <ul>
+          <li><strong>Consistent hashing across cache/CDN nodes:</strong> distributes popularity skew so one logical cache replica doesn't become disproportionately overloaded relative to its peers.</li>
+          <li><strong>Dynamic HTTP redirection:</strong> a busy cache/CDN node can redirect a client to a less-busy node serving the same location &mdash; at the cost of one extra redirect hop of latency, a worthwhile trade when the alternative is a saturated node.</li>
+        </ul>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Cache and CDN nodes are geographically distributed, physically moving content closer to users rather than routing every request back to a single origin region.</li>
+          <li>Open Connect appliances embedded directly at ISPs worldwide are the ultimate expression of this idea &mdash; not just "a CDN edge in every region," but a cache node inside the very network the viewer's ISP traffic already flows through.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <p>The Analytics service and history logger introduced in the High-Level Design diagram track watch-time, bandwidth consumed per stream, user ratings/likes/dislikes, and &mdash; critically for a paid-plan business model &mdash; concurrent-stream count per account, so a plan's "watch on N screens at once" limit can actually be enforced. Because these consumers read off Kafka rather than sitting inline in the request path, an analytics backlog or outage never adds latency to a single stream request.</p>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <ul>
+          <li>The roughly 200:1 read:write (view:upload) ratio means the read path dominates almost every design decision &mdash; caching, CDN placement, and read-replica count all matter far more than write throughput.</li>
+          <li>Thumbnail read volume can exceed video read volume in raw request count, even though each thumbnail is tiny in bytes &mdash; a reminder that "hot path" isn't only about bandwidth, it's also about request rate and the number of round trips a single page load generates.</li>
+          <li>The 80/20 rule applies here as much as anywhere else in this series: roughly 20% of daily view volume drives 80% of traffic, which is exactly why it's sufficient &mdash; and far cheaper &mdash; to aggressively cache just that hot 20% rather than trying to cache the entire catalog uniformly.</li>
+        </ul>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Ingestion model</td><td>Shared upload/view/search/stream core; UGC moderation-heavy (YouTube) or licensed-catalog curated (Netflix) as a configuration of the same pipeline</td></tr>
+          <tr><td>Metadata store</td><td>Cassandra (video metadata) + MySQL clusters (User/Graph, master + 2 slaves each)</td></tr>
+          <tr><td>Raw file storage</td><td>Amazon S3 / distributed file system, fed forward to CDN</td></tr>
+          <tr><td>Thumbnail storage</td><td>Bigtable-style wide-column store (many small, read-heavy files)</td></tr>
+          <tr><td>Async backbone</td><td>Kafka, decoupling every hot-path service from analytics, history, CDN population, notifications</td></tr>
+          <tr><td>Content pipeline</td><td>Chunk &rarr; filter (moderation) &rarr; tag &rarr; transcode &rarr; aggregate/thumbnail</td></tr>
+          <tr><td>Delivery</td><td>Encoding ladder (HLS/DASH) + client-driven adaptive bitrate switching</td></tr>
+          <tr><td>CDN</td><td>General CDN + S3 writer; Netflix real-world: purpose-built Open Connect appliances embedded at ISPs</td></tr>
+          <tr><td>Metadata sharding</td><td>UserID (co-locate uploads, hot-user risk) vs. VideoID (hot-video risk, cache-mitigated) &mdash; explicit trade-off, no universal answer</td></tr>
+          <tr><td>Consistency model</td><td>AP for view/like counts and playback; strict consistency only where correctness truly requires it (e.g. billing/DRM in the control plane)</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Use these to rehearse; expect a real interview to pick a handful as "and then what?" follow-ups rather than asking all of them.</p>
+
+        <h3>Scaling and Performance</h3>
+        <div class="qa-item">
+          <div class="qa-q">A single video goes viral overnight — walk through what happens to the read path.</div>
+          <div class="qa-a">CDN edge caching absorbs the bulk of it; if sharded by VideoID, the cache layer in front of that one hot shard absorbs the rest. A strong answer also mentions the encoding ladder letting lower-bandwidth viewers keep streaming at a lower rung rather than stalling entirely.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Thumbnails generate more requests than videos do, even though they're tiny — how do you architect for that?</div>
+          <div class="qa-a">Store thumbnails in a Bigtable-style store that combines many small files into one storage block, avoiding a disk seek per file, and cache aggressively at the CDN edge since thumbnails are extremely cacheable (rarely change).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you scale ID/metadata sharding as the catalog grows into the billions of videos?</div>
+          <div class="qa-a">Consistent hashing across shards so growth only remaps a bounded fraction of keys, plus the UserID-vs-VideoID trade-off discussion — pick based on which hotspot (uploader or video) your access pattern makes more likely.</div>
+        </div>
+
+        <h3>Content Processing and Storage</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why run content filtering before transcoding instead of after?</div>
+          <div class="qa-a">Transcoding into a dozen-plus formats is the most expensive step in the pipeline. Rejecting piracy/nudity/legal violations before that step avoids spending compute and storage on content that will be taken down anyway.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you detect a re-uploaded duplicate that's been re-encoded or has a different watermark/border?</div>
+          <div class="qa-a">Block-matching/phase-correlation style algorithms compare visual content rather than exact bytes, so cosmetic changes (re-encode, overlay, border) don't defeat the dedup check.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">An upload drops mid-transfer on a flaky connection — what happens?</div>
+          <div class="qa-a">Because uploads are chunked and resumable, the client resumes from the last acknowledged chunk rather than restarting a multi-gigabyte upload from byte zero.</div>
+        </div>
+
+        <h3>Streaming and Playback</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why does the client, not the server, decide which bitrate rung to play?</div>
+          <div class="qa-a">The client has direct, real-time visibility into its own download throughput and buffer health; the server would only see stale, aggregated signals. Client-driven ABR reacts within a segment or two of a bandwidth change.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does streamVideo take codec and resolution on every request instead of once per video?</div>
+          <div class="qa-a">Because playback resumes across devices — a user might pause on one device and resume on a completely different one with a different screen and decoder, so those parameters have to travel with the session, not be fixed at upload time.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How many encoded variants does a single title really need?</div>
+          <div class="qa-a">In real Netflix practice, once every resolution/bitrate/codec/device permutation is counted, a single movie can produce on the order of a thousand distinct encoded file variants.</div>
+        </div>
+
+        <h3>Product and API Design</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you support search-by-title at this scale without scanning every video record?</div>
+          <div class="qa-a">A dedicated search index built off the content-tags Kafka topic (see the upload pipeline), not a live query against the metadata store — searchVideo hits the index, never the primary datastore directly.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support a "watch on N screens at once" plan limit?</div>
+          <div class="qa-a">The Analytics/history pipeline tracks concurrent active stream sessions per account in near-real time; the streaming path checks that count (or a cached approximation of it) before issuing a new stream.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you let an uploader replace a video's file without changing its VideoID or breaking existing links/comments?</div>
+          <div class="qa-a">Re-run the content-processing pipeline against the new file under the same VideoID, invalidate CDN-cached renditions for that ID, and version the underlying S3 object so in-flight streams from the old file aren't yanked mid-playback.</div>
+        </div>
+
+        <h3>Security and Content Moderation</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you stop the platform from being used to distribute pirated or illegal content?</div>
+          <div class="qa-a">The Content Filter stage in the upload pipeline runs automated piracy/legal/nudity screening before publish, backed by a Notification Service that tells the uploader immediately if content is blocked, plus a human-review escalation path for edge cases.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would DRM change this design for licensed, Netflix-style catalog content?</div>
+          <div class="qa-a">Streams are encrypted per-rendition, a license server in the control plane issues short-lived decryption keys tied to an authenticated, authorized session, and playback devices enforce output restrictions (e.g. blocking screen capture on protected content).</div>
+        </div>
+
+        <h3>Reliability and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">An entire ISP-embedded Open Connect appliance goes offline — what's the customer-visible impact?</div>
+          <div class="qa-a">The player's manifest lists alternate CDN/OCA endpoints; the client falls back to the next-nearest node. Customers in that ISP's footprint see a brief bump in startup latency, not an outage, assuming adequate alternate-node capacity.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Kafka falls behind during a traffic spike — what breaks?</div>
+          <div class="qa-a">Nothing on the live playback or upload path — Kafka only carries analytics, history, CDN-population, and notification events. A backlog delays notifications and dashboards, never a user's ability to watch or upload.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you roll out a new codec (e.g. AV1) without breaking playback for older devices?</div>
+          <div class="qa-a">Add the new codec as an additional rung in the encoding ladder and manifest — older devices simply never request it since their capability negotiation only ever selects codecs they support, which is exactly why codec travels with every streamVideo request rather than being fixed once.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The ~200:1 view:upload ratio is the single fact that should visibly drive every downstream decision here — aggressive caching, CDN placement, and read-optimized sharding all follow from it, exactly the way the 100:1 ratio drove the URL-shortener design earlier in this series. Keep the upload pipeline strictly ordered (moderate before you transcode) so expensive work is never wasted on content that gets rejected. Treat the encoding ladder and adaptive bitrate switching as the mechanism that makes "no buffering, on any device" actually achievable, and treat Netflix's real Open Connect control-plane/data-plane split as the canonical example of separating a low-bandwidth-but-consistency-critical workload from a high-bandwidth-but-loss-tolerant one. Finally, have a clear answer for the UserID-vs-VideoID sharding trade-off — it's the "how else could you do this?" question this design is most likely to draw.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Educative — "Grokking the System Design Interview": Designing YouTube or Netflix (course material)</li>
+          <li>Netflix Open Connect, <a href="https://openconnect.netflix.com/" target="_blank" rel="noopener">official site and technical overview</a></li>
+          <li>Netflix Technology Blog, <a href="https://netflixtechblog.com/" target="_blank" rel="noopener">netflixtechblog.com</a> &mdash; engineering write-ups on encoding, streaming, and content delivery at scale</li>
+          <li>General adaptive bitrate streaming background — HLS (HTTP Live Streaming) and MPEG-DASH industry specifications</li>
+          <li>Community write-ups on video-sharing system design: content-processing pipelines, sharding trade-offs (UserID vs. VideoID), and CDN-based delivery architectures</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="hackerrank.html"><span class="dir">Previous</span>HackerRank</a>
+          <a class="next" href="zerodha.html"><span class="dir">Next</span>Zerodha</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

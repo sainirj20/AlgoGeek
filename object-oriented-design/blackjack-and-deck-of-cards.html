@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackjack and a Deck of Cards | Object Oriented Design | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Object Oriented Design</a><span class="sep">/</span><span class="current">Blackjack and a Deck of Cards</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Object Oriented Design overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#actors-and-use-cases">Actors &amp; Use Cases</a></li>
+        <li><a href="#key-classes">Key Classes</a></li>
+        <li><a href="#class-diagram">Class Diagram</a></li>
+        <li><a href="#key-flow-activity-diagram">Key Flow: Playing a Round</a></li>
+        <li><a href="#key-flow-sequence-diagram">Key Flow: Hand Value &amp; Aces</a></li>
+        <li><a href="#design-patterns-applied">Design Patterns Applied</a></li>
+        <li><a href="#code-skeleton">Code Skeleton</a></li>
+        <li><a href="#extensibility-and-edge-cases">Extensibility &amp; Edge Cases</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">OBJECT ORIENTED DESIGN</span>
+          <h1>Design Blackjack and a Deck of Cards</h1>
+        </div>
+
+        <p><em>Blackjack is really two design problems sharing one whiteboard: a generic, reusable deck-of-cards library that has never heard the word "Blackjack," and a thin, game-specific rules layer stacked on top of it that knows nothing about how a deck shuffles. Interviewers use this problem to see whether you instinctively draw that seam &mdash; the same seam that lets the exact same Card/Suit/Rank/Deck classes deal a Poker hand, a Solitaire tableau, or a game of War without a single line of those classes changing &mdash; or whether you bake "King counts as 10" straight into the Card class and box yourself into a design that can only ever play one game. Layered on top of that seam is one genuinely tricky, exact piece of logic every interviewer will probe: resolving a hand's value when it holds one or more Aces, each worth 11 until being 11 would bust the hand, at which point it quietly becomes 1.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a generic deck of playing cards &mdash; the kind that could deal any card game &mdash; and then use it to implement the specific card game Blackjack (also called 21) for one or more players against a single dealer. A round starts with the deck shuffled and two cards dealt to every player and to the dealer. Each player then decides, in turn, whether to Hit (take another card) or Stand (keep their current hand), trying to get as close to 21 as possible without going over. The dealer does not get to make free choices: house rules fix its behavior completely (hit on 16 or below, stand on 17 or above). At the end of the round, every player still in the hand is compared against the dealer's hand to determine a win, loss, or push, and bets are paid out accordingly.</p>
+        <p><strong>The central design idea on this page is the split itself.</strong> Card, Suit, Rank, and Deck form a self-contained library that models "a standard deck of playing cards" and nothing more &mdash; it has no concept of a hand's value, a bust, a natural, or a bet. Hand, Player, Dealer, and Game/Table form a separate layer that knows all of the Blackjack-specific rules and is built entirely on top of the generic library's public surface (shuffle, deal, and the cards themselves). Every other design decision on this page &mdash; where a method lives, which class owns which behavior, how Dealer relates to Player &mdash; falls out of protecting that seam.</p>
+
+        <h2 id="requirements">Requirements</h2>
+        <ol>
+          <li>Model a <strong>standard 52-card deck</strong> (4 suits &times; 13 ranks).</li>
+          <li>Support <strong>shuffling</strong> the deck and <strong>dealing</strong> cards from it one at a time.</li>
+          <li>Support <strong>multiple simultaneous players</strong> plus exactly <strong>one dealer</strong> per round.</li>
+          <li><strong>Deal 2 cards</strong> to each player and to the dealer at the start of a round.</li>
+          <li>Compute a hand's <strong>Blackjack value</strong>: number cards count face value, face cards (Jack, Queen, King) count 10, and an <strong>Ace counts as 11 or 1</strong> &mdash; whichever keeps the hand &le; 21 (a "soft" hand still counts an Ace as 11; a "hard" hand has downgraded every Ace it needs to in order to stay in play or has none left to downgrade).</li>
+          <li>Players may <strong>Hit</strong> (take another card) or <strong>Stand</strong> (stop taking cards) on their turn.</li>
+          <li>A hand whose value exceeds 21 <strong>busts immediately</strong> &mdash; that player loses without waiting for the dealer.</li>
+          <li>The dealer follows a <strong>fixed house rule</strong> (e.g. must hit on 16 or below, must stand on 17 or above) &mdash; it never has a real choice.</li>
+          <li>A <strong>natural Blackjack</strong> (an Ace plus a 10-value card in the first two cards dealt) <strong>beats a regular 21</strong> reached with three or more cards.</li>
+          <li>At round end, determine each remaining player's <strong>outcome</strong> against the dealer: <strong>win, lose, or push</strong> (tie).</li>
+          <li>Support <strong>betting and payouts</strong> (briefly): a player wagers an amount before the round; a win typically pays 1:1, a natural Blackjack typically pays 3:2, a push returns the original bet, and a loss forfeits it.</li>
+        </ol>
+
+        <h2 id="actors-and-use-cases">Actors &amp; Use Cases</h2>
+        <p>Three actors touch the system, and each initiates at least one use case the others don't:</p>
+        <ul>
+          <li><strong>Player</strong> &mdash; places a bet, then decides Hit or Stand on their own hand each turn. The only actor who makes a genuinely free choice during play.</li>
+          <li><strong>Dealer</strong> &mdash; deals the cards, plays its own hand according to the fixed house rule (never a free choice), and pays out at settlement. Modeled as a specialized kind of Player precisely because it shares the same hand/turn shape but not the same decision-making.</li>
+          <li><strong>System / Table</strong> &mdash; not a person; the background component that owns shuffling, drives dealing and turn order across every player and the dealer, and settles every bet at round end. Keeping this as its own actor keeps "who initiated this" honest: a card doesn't shuffle itself into a fresh deal, the System does it between rounds.</li>
+        </ul>
+        <p>Primary use cases: <strong>Shuffle Deck</strong>, <strong>Deal Round</strong>, <strong>Player Hits</strong>, <strong>Player Stands</strong>, <strong>Dealer Plays</strong>, and <strong>Settle Round</strong>.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 840 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Use case diagram: Player, Dealer, and System/Table actors connected to six use cases inside the Blackjack Table System boundary">
+            <rect x="150" y="50" width="520" height="360" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+            <text x="410" y="74" text-anchor="middle" font-size="14" font-weight="700" fill="var(--color-primary-dark)">Blackjack Table System</text>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="72" y1="150" x2="165" y2="220"/>
+              <line x1="72" y1="150" x2="165" y2="320"/>
+
+              <line x1="72" y1="270" x2="435" y2="120"/>
+              <line x1="72" y1="270" x2="435" y2="220"/>
+              <line x1="72" y1="270" x2="435" y2="320"/>
+
+              <line x1="768" y1="270" x2="385" y2="120"/>
+              <line x1="768" y1="270" x2="655" y2="120"/>
+              <line x1="768" y1="270" x2="655" y2="320"/>
+            </g>
+
+            <g font-size="12" fill="var(--color-text)">
+              <circle cx="55" cy="116" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="126" x2="55" y2="160" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="140" x2="70" y2="140" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="160" x2="42" y2="185" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="160" x2="68" y2="185" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="202" text-anchor="middle">Player</text>
+
+              <circle cx="55" cy="236" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="246" x2="55" y2="280" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="260" x2="70" y2="260" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="280" x2="42" y2="305" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="280" x2="68" y2="305" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="322" text-anchor="middle">Dealer</text>
+
+              <circle cx="785" cy="236" r="10" fill="none" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="785" y1="246" x2="785" y2="280" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="770" y1="260" x2="800" y2="260" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="785" y1="280" x2="772" y2="305" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="785" y1="280" x2="798" y2="305" stroke="var(--color-accent)" stroke-width="2"/>
+              <text x="785" y="322" text-anchor="middle" fill="var(--color-accent-dark)">System /</text>
+              <text x="785" y="336" text-anchor="middle" fill="var(--color-accent-dark)">Table</text>
+            </g>
+
+            <g font-size="11" fill="var(--color-text)">
+              <ellipse cx="275" cy="120" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="124" text-anchor="middle">Shuffle Deck</text>
+
+              <ellipse cx="275" cy="220" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="224" text-anchor="middle">Player Hits</text>
+
+              <ellipse cx="275" cy="320" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="324" text-anchor="middle">Player Stands</text>
+
+              <ellipse cx="545" cy="120" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="124" text-anchor="middle">Deal Round</text>
+
+              <ellipse cx="545" cy="220" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="224" text-anchor="middle">Dealer Plays</text>
+
+              <ellipse cx="545" cy="320" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="324" text-anchor="middle">Settle Round</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 1. Use-case diagram: Player initiates the two hand-decision use cases; Dealer plays the fixed house rule and shares in dealing/settlement; System/Table owns shuffling and coordinates dealing and settlement so no single human actor has to run the table.</div>
+        </div>
+
+        <h2 id="key-classes">Key Classes</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td colspan="2" style="background: var(--color-accent-light); font-weight: 700; color: var(--color-heading);">Generic Card Library &mdash; knows nothing about Blackjack</td></tr>
+            <tr><td>Card</td><td>A single playing card; an immutable pairing of one Suit and one Rank. Has no concept of "value" beyond what Rank exposes.</td></tr>
+            <tr><td>Suit</td><td>Enum &mdash; HEARTS, DIAMONDS, CLUBS, SPADES.</td></tr>
+            <tr><td>Rank</td><td>Enum &mdash; TWO through TEN, JACK, QUEEN, KING, ACE; each constant carries a base Blackjack value, but Rank itself doesn't decide how a game uses that value.</td></tr>
+            <tr><td>Deck</td><td>A <code>List&lt;Card&gt;</code> representing all 52 cards; supports <code>shuffle()</code>, <code>dealOne()</code>, and <code>reset()</code>. Knows nothing about players, hands, or turns.</td></tr>
+            <tr><td colspan="2" style="background: var(--color-accent-light); font-weight: 700; color: var(--color-heading);">Blackjack-Specific Layer &mdash; knows nothing about shuffling mechanics</td></tr>
+            <tr><td>Hand</td><td>A player's or dealer's current cards for the round; computes its own best value accounting for Ace flexibility, and knows whether it's busted or a natural Blackjack.</td></tr>
+            <tr><td>Player</td><td>A participant with a Hand and a Bet; decides Hit or Stand on their turn (human input in this design).</td></tr>
+            <tr><td>Dealer <em>(extends Player)</em></td><td>Specialized Player whose "decide next action" is overridden with the fixed house rule instead of asking a human &mdash; same shape, different strategy.</td></tr>
+            <tr><td>Game / Table</td><td>Orchestrates a round: shuffling, dealing, turn order across every player and the dealer, and settling bets at the end.</td></tr>
+            <tr><td>Bet</td><td>A wager amount tied to a Player for the round; resolves to a payout (or forfeiture) once the round's outcome is known.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="class-diagram">Class Diagram</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 940 800" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="UML class diagram for the Blackjack and Deck of Cards system">
+            <defs>
+              <marker id="bjTriangle" viewBox="0 0 20 14" refX="18" refY="7" markerWidth="18" markerHeight="14" orient="auto">
+                <path d="M1,1 L18,7 L1,13 Z" fill="#ffffff" stroke="var(--color-primary)" stroke-width="1.2"/>
+              </marker>
+              <marker id="bjDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-primary-dark)" stroke="var(--color-primary-dark)" stroke-width="1"/>
+              </marker>
+              <marker id="bjArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)"/>
+              </marker>
+            </defs>
+
+            <!-- plain associations: Card <-> Suit / Rank -->
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="360" y1="100" x2="200" y2="85"/>
+              <line x1="580" y1="100" x2="740" y2="105"/>
+            </g>
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="335" y="94">13</text>
+              <text x="210" y="80">1</text>
+              <text x="600" y="94">4</text>
+              <text x="722" y="99">1</text>
+            </g>
+
+            <!-- composition: Deck -diamond-> Card, Hand -diamond-> Card -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="140" y1="250" x2="420" y2="160" marker-start="url(#bjDiamond)"/>
+              <line x1="800" y1="250" x2="520" y2="160" marker-start="url(#bjDiamond)"/>
+            </g>
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="150" y="240">1</text>
+              <text x="400" y="180">0..52</text>
+              <text x="788" y="240">1</text>
+              <text x="522" y="180">0..*</text>
+            </g>
+
+            <!-- inheritance: Dealer -triangle-> Player -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="470" y1="660" x2="470" y2="612" marker-end="url(#bjTriangle)"/>
+            </g>
+
+            <!-- plain associations with open arrow: Player-Hand, Player-Bet, Table-Deck, Table-Player, Table-Dealer -->
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none" marker-end="url(#bjArrow)">
+              <line x1="560" y1="470" x2="720" y2="402"/>
+              <line x1="580" y1="530" x2="688" y2="518"/>
+              <line x1="140" y1="470" x2="140" y2="392"/>
+              <line x1="250" y1="540" x2="358" y2="540"/>
+              <line x1="140" y1="630" x2="358" y2="715"/>
+            </g>
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="565" y="462">1</text>
+              <text x="700" y="410">1</text>
+              <text x="585" y="522">1</text>
+              <text x="668" y="512">0..1</text>
+              <text x="122" y="462">1</text>
+              <text x="122" y="400">1</text>
+              <text x="262" y="532">1</text>
+              <text x="335" y="532">1..*</text>
+              <text x="150" y="660">1</text>
+              <text x="330" y="700">1</text>
+            </g>
+
+            <!-- Suit enum -->
+            <g>
+              <rect x="30" y="30" width="170" height="110" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="30" y1="70" x2="200" y2="70" stroke="var(--color-accent-dark)"/>
+              <text x="115" y="48" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text)">&laquo;enumeration&raquo;</text>
+              <text x="115" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">Suit</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="115" y="86" text-anchor="middle">HEARTS</text>
+                <text x="115" y="100" text-anchor="middle">DIAMONDS</text>
+                <text x="115" y="114" text-anchor="middle">CLUBS</text>
+                <text x="115" y="128" text-anchor="middle">SPADES</text>
+              </g>
+            </g>
+
+            <!-- Rank enum -->
+            <g>
+              <rect x="740" y="30" width="170" height="150" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="740" y1="70" x2="910" y2="70" stroke="var(--color-accent-dark)"/>
+              <line x1="740" y1="148" x2="910" y2="148" stroke="var(--color-accent-dark)"/>
+              <text x="825" y="48" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text)">&laquo;enumeration&raquo;</text>
+              <text x="825" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">Rank</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="825" y="86" text-anchor="middle">TWO &hellip; TEN</text>
+                <text x="825" y="100" text-anchor="middle">JACK</text>
+                <text x="825" y="114" text-anchor="middle">QUEEN</text>
+                <text x="825" y="128" text-anchor="middle">KING</text>
+                <text x="825" y="142" text-anchor="middle">ACE</text>
+              </g>
+              <text x="750" y="163" font-size="9" fill="var(--color-text)">+ blackjackValue(): int</text>
+            </g>
+
+            <!-- Card -->
+            <g>
+              <rect x="360" y="40" width="220" height="120" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="360" y1="70" x2="580" y2="70" stroke="var(--color-primary)"/>
+              <line x1="360" y1="108" x2="580" y2="108" stroke="var(--color-primary)"/>
+              <text x="470" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Card</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="370" y="86">- suit: Suit</text>
+                <text x="370" y="100">- rank: Rank</text>
+                <text x="370" y="124">+ getSuit(): Suit</text>
+                <text x="370" y="138">+ getRank(): Rank</text>
+              </g>
+            </g>
+
+            <!-- Deck -->
+            <g>
+              <rect x="30" y="250" width="220" height="140" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="30" y1="280" x2="250" y2="280" stroke="var(--color-primary)"/>
+              <line x1="30" y1="304" x2="250" y2="304" stroke="var(--color-primary)"/>
+              <text x="140" y="272" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Deck</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="40" y="296">- cards: List&lt;Card&gt;</text>
+                <text x="40" y="320">+ shuffle(): void</text>
+                <text x="40" y="334">+ dealOne(): Card</text>
+                <text x="40" y="348">+ isEmpty(): boolean</text>
+                <text x="40" y="362">+ reset(): void</text>
+              </g>
+            </g>
+
+            <!-- Hand -->
+            <g>
+              <rect x="690" y="250" width="220" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="690" y1="280" x2="910" y2="280" stroke="var(--color-primary)"/>
+              <line x1="690" y1="304" x2="910" y2="304" stroke="var(--color-primary)"/>
+              <text x="800" y="272" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Hand</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="700" y="296">- cards: List&lt;Card&gt;</text>
+                <text x="700" y="320">+ addCard(c): void</text>
+                <text x="700" y="334">+ getBestValue(): int</text>
+                <text x="700" y="348">+ isBust(): boolean</text>
+                <text x="700" y="362">+ isNatural(): boolean</text>
+              </g>
+            </g>
+
+            <!-- Table -->
+            <g>
+              <rect x="30" y="470" width="220" height="160" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="30" y1="500" x2="250" y2="500" stroke="var(--color-primary)"/>
+              <line x1="30" y1="558" x2="250" y2="558" stroke="var(--color-primary)"/>
+              <text x="140" y="492" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Table</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="40" y="516">- deck: Deck</text>
+                <text x="40" y="530">- players: List&lt;Player&gt;</text>
+                <text x="40" y="544">- dealer: Dealer</text>
+                <text x="40" y="574">+ playRound(): void</text>
+                <text x="40" y="588">+ dealInitialCards(): void</text>
+                <text x="40" y="602">+ settleBets(): void</text>
+              </g>
+            </g>
+
+            <!-- Player -->
+            <g>
+              <rect x="360" y="470" width="220" height="140" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="360" y1="500" x2="580" y2="500" stroke="var(--color-primary)"/>
+              <line x1="360" y1="558" x2="580" y2="558" stroke="var(--color-primary)"/>
+              <text x="470" y="492" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Player {abstract}</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="370" y="516">- name: String</text>
+                <text x="370" y="530">- hand: Hand</text>
+                <text x="370" y="544">- bet: Bet</text>
+                <text x="370" y="574">+ decideAction(): Action</text>
+                <text x="370" y="588">+ placeBet(amount): void</text>
+              </g>
+            </g>
+
+            <!-- Bet -->
+            <g>
+              <rect x="690" y="470" width="220" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="690" y1="500" x2="910" y2="500" stroke="var(--color-primary)"/>
+              <line x1="690" y1="538" x2="910" y2="538" stroke="var(--color-primary)"/>
+              <text x="800" y="492" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Bet</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="700" y="516">- amount: BigDecimal</text>
+                <text x="700" y="530">- status: BetStatus</text>
+                <text x="700" y="554">+ payout(multiplier): BigDecimal</text>
+              </g>
+            </g>
+
+            <!-- Dealer -->
+            <g>
+              <rect x="360" y="660" width="220" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="360" y1="700" x2="580" y2="700" stroke="var(--color-primary)"/>
+              <text x="470" y="678" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">{overrides decideAction()}</text>
+              <text x="470" y="692" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Dealer</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="370" y="716">+ decideAction(): Action</text>
+                <text x="370" y="730" font-size="9" fill="var(--color-text-muted)">// fixed rule: hit &le;16, stand &ge;17</text>
+              </g>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 2. Deck &mdash;filled diamond&rarr; Card and Hand &mdash;filled diamond&rarr; Card are both composition. Dealer &mdash;hollow triangle&rarr; Player is inheritance: Dealer overrides <code>decideAction()</code> with the fixed house rule instead of taking human input. Card associates with the Suit and Rank enums, each marked &laquo;enumeration&raquo;.</div>
+        </div>
+        <p><strong>The same Card, not a copy.</strong> The two composition arrows into Card are not two independent collections that happen to hold equal cards &mdash; they describe the same physical card at two different points in its life. When Table deals a card, that Card instance is <em>removed</em> from Deck's list and <em>added</em> to a Hand's list; it is never duplicated. This matters for anyone implementing it: <code>dealOne()</code> should genuinely remove-and-return the card (e.g. <code>cards.remove(cards.size() - 1)</code>), and <code>Hand.addCard()</code> takes ownership of exactly that reference. A Card that is simultaneously "in" the Deck and "in" a Hand is a bug, not a valid state.</p>
+        <p><strong>Dealer as a subclass of Player is the cleanest polymorphism in this whole design.</strong> Both classes need identical shape &mdash; a Hand, a turn, a Hit/Stand decision &mdash; but a completely different answer to "how do you decide?" Rather than an <code>if (isDealer)</code> branch scattered through Game/Table, Dealer overrides <code>decideAction()</code> with the fixed rule, and Table can call <code>player.decideAction()</code> identically for every seat at the table, human or house. That's Strategy expressed through simple inheritance rather than a separate injected strategy object &mdash; both are legitimate; inheritance reads more naturally here because a Dealer really is a specialized kind of Player, not a Player configured with a pluggable policy object.</p>
+
+        <h2 id="key-flow-activity-diagram">Key Flow: Playing a Round (Activity Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 820 1150" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Activity diagram for playing one round of Blackjack">
+            <defs>
+              <marker id="bjActArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#bjActArrow)" fill="none">
+              <line x1="280" y1="30" x2="280" y2="54"/>
+              <line x1="280" y1="105" x2="280" y2="129"/>
+              <line x1="280" y1="185" x2="280" y2="209"/>
+              <line x1="410" y1="290" x2="520" y2="290"/>
+              <line x1="650" y1="330" x2="650" y2="354"/>
+              <line x1="280" y1="370" x2="280" y2="394"/>
+              <line x1="280" y1="510" x2="280" y2="534"/>
+              <line x1="280" y1="580" x2="280" y2="604"/>
+              <line x1="280" y1="776" x2="280" y2="860"/>
+              <line x1="280" y1="915" x2="280" y2="939"/>
+              <line x1="280" y1="995" x2="280" y2="1019"/>
+              <line x1="280" y1="1075" x2="280" y2="1099"/>
+            </g>
+            <circle cx="280" cy="20" r="10" fill="var(--color-primary)"/>
+
+            <rect x="170" y="55" width="220" height="50" rx="22" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="280" y="85" text-anchor="middle" font-size="11" fill="var(--color-text)">Shuffle Deck</text>
+
+            <rect x="140" y="130" width="280" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="280" y="153" text-anchor="middle" font-size="11" fill="var(--color-text)">Deal 2 cards to each Player</text>
+            <text x="280" y="167" text-anchor="middle" font-size="11" fill="var(--color-text)">and to the Dealer</text>
+
+            <polygon points="280,210 410,290 280,370 150,290" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="280" y="284" text-anchor="middle" font-size="10" fill="var(--color-text)">Any Player or Dealer has</text>
+            <text x="280" y="298" text-anchor="middle" font-size="10" fill="var(--color-text)">a natural Blackjack?</text>
+            <text x="345" y="252" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+            <text x="200" y="352" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+
+            <rect x="520" y="250" width="260" height="80" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="650" y="271" text-anchor="middle" font-size="10" fill="var(--color-text)">Settle immediately per Blackjack</text>
+            <text x="650" y="285" text-anchor="middle" font-size="10" fill="var(--color-text)">rules (natural pays 3:2; dealer</text>
+            <text x="650" y="299" text-anchor="middle" font-size="10" fill="var(--color-text)">also natural &rarr; push)</text>
+
+            <circle cx="650" cy="370" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="650" cy="370" r="6" fill="var(--color-primary)"/>
+
+            <rect x="60" y="395" width="600" height="410" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M60,395 L120,395 L120,408 L60,408 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="66" y="405" font-size="9" fill="var(--color-text)">loop</text>
+            <text x="126" y="405" font-size="9" fill="var(--color-text)">[for each remaining Player, in turn]</text>
+
+            <polygon points="280,430 360,470 280,510 200,470" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="280" y="474" text-anchor="middle" font-size="10" fill="var(--color-text)">Hit or Stand?</text>
+            <text x="325" y="450" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Stand</text>
+            <text x="288" y="524" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Hit</text>
+
+            <polyline points="360,470 640,470 640,764 288,764" fill="none" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#bjActArrow)"/>
+
+            <rect x="170" y="535" width="220" height="45" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="280" y="562" text-anchor="middle" font-size="10" fill="var(--color-text)">Draw one card; add to Hand</text>
+
+            <polygon points="280,605 380,655 280,705 180,655" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="280" y="649" text-anchor="middle" font-size="10" fill="var(--color-text)">Busted</text>
+            <text x="280" y="663" text-anchor="middle" font-size="10" fill="var(--color-text)">(hand value &gt; 21)?</text>
+            <text x="345" y="628" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+            <text x="195" y="694" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+
+            <polyline points="180,655 110,655 110,470 200,470" fill="none" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#bjActArrow)"/>
+
+            <rect x="460" y="628" width="190" height="54" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="555" y="650" text-anchor="middle" font-size="10" fill="var(--color-text)">Player busts &mdash;</text>
+            <text x="555" y="664" text-anchor="middle" font-size="10" fill="var(--color-text)">loses bet immediately</text>
+
+            <line x1="380" y1="655" x2="460" y2="655" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#bjActArrow)"/>
+            <polyline points="650,655 650,764 292,764" fill="none" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#bjActArrow)"/>
+
+            <circle cx="280" cy="770" r="6" fill="var(--color-primary)"/>
+
+            <rect x="150" y="860" width="260" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="280" y="883" text-anchor="middle" font-size="10" fill="var(--color-text)">Dealer plays the fixed house</text>
+            <text x="280" y="897" text-anchor="middle" font-size="10" fill="var(--color-text)">rule (hit &le;16, stand &ge;17)</text>
+
+            <rect x="120" y="940" width="320" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="280" y="963" text-anchor="middle" font-size="10" fill="var(--color-text)">Compare each remaining Player's</text>
+            <text x="280" y="977" text-anchor="middle" font-size="10" fill="var(--color-text)">hand to the Dealer's hand</text>
+
+            <rect x="120" y="1020" width="320" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="280" y="1043" text-anchor="middle" font-size="10" fill="var(--color-text)">Settle bets: win pays 1:1, lose</text>
+            <text x="280" y="1057" text-anchor="middle" font-size="10" fill="var(--color-text)">forfeits bet, push returns bet</text>
+
+            <circle cx="280" cy="1115" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="280" cy="1115" r="6" fill="var(--color-primary)"/>
+          </svg>
+          <div class="diagram-caption">Figure 3. Activity diagram for a round: the natural-Blackjack check happens once, immediately after the deal, and settles the round on the spot &mdash; it never waits on a Hit/Stand decision a natural doesn't need. Each remaining player then loops Hit/Stand independently until they stand or bust; only after every player has finished does the dealer play its fixed, non-discretionary rule.</div>
+        </div>
+
+        <h2 id="key-flow-sequence-diagram">Key Flow: Computing a Hand's Best Value with Aces (Sequence Walkthrough)</h2>
+        <p>This is the trickiest pure-logic piece of the whole problem, and the one interviewers most want to see coded correctly: a hand can hold more than one Ace, and each one independently flips between 11 and 1 depending on whether the hand can afford it. The algorithm is simple if stated precisely &mdash; count every Ace as 11 first, then downgrade Aces one at a time, from 11 to 1, for as long as the total is over 21 <em>and</em> there is still an Ace being counted as 11 &mdash; and it is exactly the kind of thing that goes wrong when stated imprecisely (e.g. downgrading before checking, or downgrading every Ace at once instead of one at a time).</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Sequence walkthrough of Hand.getBestValue(), showing the Ace-downgrade loop worked through the example Ace, Ace, 9">
+            <defs>
+              <marker id="bjSeqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-border)" stroke-width="1.3" stroke-dasharray="4,4">
+              <line x1="140" y1="60" x2="140" y2="500"/>
+              <line x1="600" y1="60" x2="600" y2="500"/>
+            </g>
+            <g fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5">
+              <rect x="70" y="20" width="140" height="40"/>
+              <rect x="520" y="20" width="160" height="40"/>
+            </g>
+            <g font-size="11" font-weight="700" fill="var(--color-text)" text-anchor="middle">
+              <text x="140" y="44">Game / Table</text>
+              <text x="600" y="44">Hand</text>
+            </g>
+
+            <line x1="140" y1="90" x2="600" y2="90" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#bjSeqArrow)"/>
+            <text x="250" y="84" font-size="10" fill="var(--color-text)">getBestValue()</text>
+
+            <path d="M600,120 L655,120 L655,150 L600,150" fill="none" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#bjSeqArrow)"/>
+            <g font-size="10">
+              <text x="665" y="118" fill="var(--color-text)">sum &larr; 0, aceCount &larr; 0</text>
+              <text x="665" y="132" fill="var(--color-text)">for each card: sum += rank.blackjackValue();</text>
+              <text x="665" y="146" fill="var(--color-text)">if rank == ACE: aceCount++;</text>
+              <text x="665" y="164" fill="var(--color-accent-dark)">Example: Ace+Ace+9 &rarr; sum=11+11+9=31, aceCount=2</text>
+            </g>
+
+            <rect x="560" y="195" width="380" height="185" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M560,195 L610,195 L610,207 L560,207 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="566" y="204" font-size="9" fill="var(--color-text)">loop</text>
+            <text x="616" y="204" font-size="9" fill="var(--color-text-muted)">[sum &gt; 21 and aceCount &gt; 0]</text>
+
+            <path d="M600,235 L655,235 L655,265 L600,265" fill="none" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#bjSeqArrow)"/>
+            <g font-size="10">
+              <text x="665" y="233" fill="var(--color-text)">sum -= 10;</text>
+              <text x="665" y="247" fill="var(--color-text)">aceCount -= 1;</text>
+              <text x="665" y="263" fill="var(--color-accent-dark)">31&gt;21 &rarr; downgrade: sum=31-10=21, aceCount=1</text>
+              <text x="665" y="277" fill="var(--color-accent-dark)">21&le;21 &rarr; condition false &rarr; exit loop</text>
+            </g>
+
+            <line x1="600" y1="430" x2="140" y2="430" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#bjSeqArrow)"/>
+            <text x="230" y="424" font-size="10" fill="var(--color-text)">return 21 (final best value)</text>
+            <text x="230" y="452" font-size="9" font-style="italic" fill="var(--color-text-muted)">Ace+Ace+9 resolves to a three-card, hard 21 &mdash; not a bust at 31.</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Every Ace starts counted as 11; the loop downgrades one Ace at a time (subtracting 10) only while the hand is still over 21 <em>and</em> an Ace remains counted as 11. Worked example: Ace+Ace+9 starts at 11+11+9=31 (&gt;21), downgrades one Ace to 1 &rarr; 21, and stops because 21 &le; 21 &mdash; the correct final value is 21, not a bust.</div>
+        </div>
+
+        <h2 id="design-patterns-applied">Design Patterns Applied</h2>
+        <p>Name the pattern and the forcing function together, not just the name:</p>
+        <ul>
+          <li><strong>Strategy</strong> (Dealer vs. a human Player) &mdash; both classes share the exact same shape (a Hand, a turn, a Hit/Stand decision) and differ only in how <code>decideAction()</code> is implemented: a human Player asks the UI, Dealer applies the fixed house rule. Game/Table never branches on <code>if (isDealer)</code>; it calls <code>decideAction()</code> identically for every seat. The same interface would let a future "basic-strategy bot" Player slot in without touching Game/Table at all.</li>
+          <li><strong>Factory</strong> (building a standard 52-card Deck) &mdash; a static <code>Deck.createStandardDeck()</code> is the one place that knows "standard" means 4 suits &times; 13 ranks, looping <code>Suit.values()</code> &times; <code>Rank.values()</code>. Nothing else in the codebase needs to know how a deck is assembled, which is exactly what makes the multi-deck-shoe extension below a one-method change.</li>
+          <li><strong>Builder</strong> (optional, for deck variants) &mdash; a casino "shoe" (6&ndash;8 standard decks shuffled together) or a deck with jokers stripped out are both variations on <em>how a Deck's card list gets assembled</em>, not on how a Deck behaves once built. A small <code>DeckBuilder</code> (<code>withDecks(6)</code>, <code>withoutJokers()</code>, <code>build()</code>) keeps that assembly logic out of the Deck class itself and out of every call site that just wants "a deck."</li>
+          <li><strong>Single Responsibility / separation of concerns</strong> (the split itself) &mdash; this is the design principle underneath everything else on this page. Card, Suit, Rank, and Deck have exactly one reason to change: the rules of what a standard deck of cards <em>is</em>. Hand, Player, Dealer, and Game/Table have exactly one reason to change: the rules of Blackjack. Neither layer reaches into the other's responsibility &mdash; Deck never asks whether a card is "good," and Hand never asks how the deck was shuffled.</li>
+        </ul>
+
+        <h2 id="code-skeleton">Code Skeleton</h2>
+        <p>Fields and method signatures only &mdash; not a runnable program. <code>Hand.getBestValue()</code> is the one method worked out in full, since the Ace-downgrade logic is exactly what interviewers probe on.</p>
+
+        <pre><code>public enum Suit {
+    HEARTS, DIAMONDS, CLUBS, SPADES
+}
+
+public enum Action {
+    HIT, STAND
+}</code></pre>
+
+        <pre><code>public enum Rank {
+    TWO(2), THREE(3), FOUR(4), FIVE(5), SIX(6), SEVEN(7), EIGHT(8), NINE(9), TEN(10),
+    JACK(10), QUEEN(10), KING(10), ACE(11);
+
+    private final int baseValue;
+
+    Rank(int baseValue) { this.baseValue = baseValue; }
+
+    // Base value only -- Hand.getBestValue() below is what actually decides
+    // whether a given Ace counts as 11 or gets downgraded to 1.
+    public int blackjackValue() {
+        return baseValue;
+    }
+}</code></pre>
+
+        <pre><code>public class Card {
+    private final Suit suit;
+    private final Rank rank;
+
+    public Card(Suit suit, Rank rank) { this.suit = suit; this.rank = rank; }
+
+    public Suit getSuit();
+    public Rank getRank();
+    @Override public String toString();
+}</code></pre>
+
+        <pre><code>public class Deck {
+    private final List&lt;Card&gt; cards;
+
+    private Deck(List&lt;Card&gt; cards) { this.cards = cards; }
+
+    // Factory: the only place that knows a "standard" deck is 4 suits x 13 ranks.
+    public static Deck createStandardDeck() {
+        List&lt;Card&gt; cards = new ArrayList&lt;&gt;();
+        for (Suit s : Suit.values()) {
+            for (Rank r : Rank.values()) {
+                cards.add(new Card(s, r));
+            }
+        }
+        return new Deck(cards);
+    }
+
+    public void shuffle();
+    public Card dealOne();      // removes and returns the top card -- ownership transfers to the caller
+    public boolean isEmpty();
+    public void reset();        // e.g. return all cards for a fresh shuffle between rounds
+    public int remainingCount();
+}</code></pre>
+
+        <pre><code>public class Hand {
+    private final List&lt;Card&gt; cards = new ArrayList&lt;&gt;();
+
+    public void addCard(Card card) { cards.add(card); }
+
+    // The crux of the problem: every Ace starts out counted as 11; while the
+    // running total is over 21 and at least one Ace is still being counted as
+    // 11, downgrade one Ace to 1 (subtract 10) and re-check.
+    public int getBestValue() {
+        int total = 0;
+        int acesCountedAsEleven = 0;
+
+        for (Card card : cards) {
+            total += card.getRank().blackjackValue();
+            if (card.getRank() == Rank.ACE) {
+                acesCountedAsEleven++;
+            }
+        }
+
+        while (total &gt; 21 &amp;&amp; acesCountedAsEleven &gt; 0) {
+            total -= 10;
+            acesCountedAsEleven--;
+        }
+
+        return total;
+    }
+
+    public boolean isBust() {
+        return getBestValue() &gt; 21;
+    }
+
+    // Natural Blackjack: exactly 2 cards, valued 21 (an Ace plus any 10-value card).
+    public boolean isNatural() {
+        return cards.size() == 2 &amp;&amp; getBestValue() == 21;
+    }
+
+    public List&lt;Card&gt; getCards();
+}</code></pre>
+
+        <div class="formula-box">
+          <span class="formula-label">Worked example</span>
+          A hand of <strong>Ace + Ace + 9</strong>: the loop starts with <code>total = 11 + 11 + 9 = 31</code> and <code>acesCountedAsEleven = 2</code>. Since 31 &gt; 21 and an Ace is still counted as 11, downgrade once: <code>total = 21</code>, <code>acesCountedAsEleven = 1</code>. Now 21 is not &gt; 21, so the loop stops &mdash; <code>getBestValue()</code> returns <strong>21</strong>, not a bust at 31.
+        </div>
+
+        <pre><code>public abstract class Player {
+    protected final String name;
+    protected final Hand hand = new Hand();
+    protected Bet bet;
+
+    protected Player(String name) { this.name = name; }
+
+    public void placeBet(BigDecimal amount) { this.bet = new Bet(amount); }
+
+    // Strategy hook: a human Player asks the UI; Dealer (below) overrides this
+    // with a fixed rule and never asks anyone anything.
+    public abstract Action decideAction();
+
+    public Hand getHand();
+    public Bet getBet();
+}</code></pre>
+
+        <pre><code>public class Dealer extends Player {
+    private static final int MUST_HIT_BELOW = 17;
+
+    public Dealer() { super("Dealer"); }
+
+    @Override
+    public Action decideAction() {
+        return hand.getBestValue() &lt; MUST_HIT_BELOW ? Action.HIT : Action.STAND;
+    }
+}</code></pre>
+
+        <pre><code>public class Table {
+    private final Deck deck = Deck.createStandardDeck();
+    private final List&lt;Player&gt; players;
+    private final Dealer dealer = new Dealer();
+
+    public Table(List&lt;Player&gt; players) { this.players = players; }
+
+    public void playRound();
+    private void dealInitialCards();
+    private void settleBets();
+}</code></pre>
+
+        <h2 id="extensibility-and-edge-cases">Extensibility &amp; Edge Cases</h2>
+        <ul>
+          <li><strong>Multi-deck "shoes."</strong> Real casino Blackjack typically shuffles 6&ndash;8 standard decks together into one large "shoe" to slow card counting. Because Deck is already the sole owner of "how a deck gets built," this only changes Deck construction &mdash; e.g. <code>Deck.createShoe(6)</code> concatenating six <code>createStandardDeck()</code> results before one shuffle. Hand and Game/Table never notice: they only ever call <code>dealOne()</code>.</li>
+          <li><strong>Splitting a pair.</strong> When a Player's first two cards share the same rank value, they may split into two independent hands, each getting one more card and its own bet. The model change is real but contained: Player moves from a single <code>hand: Hand</code> field to a <code>hands: List&lt;Hand&gt;</code> (and correspondingly a bet per hand), and Game/Table's per-player loop becomes a loop over each of that player's hands instead of one hand per player. Hand and Deck themselves don't change at all.</li>
+          <li><strong>Doubling down.</strong> A player may double their bet in exchange for exactly one more card, after which their turn ends automatically regardless of the resulting value. Modeled as another Action (<code>DOUBLE_DOWN</code>) that Table handles by doubling the Bet, dealing exactly one card, and forcing a Stand &mdash; no change to Hand's scoring logic.</li>
+          <li><strong>Insurance against a dealer Ace.</strong> When the dealer's face-up card is an Ace, players may place a side bet that pays out if the dealer's hidden card completes a natural Blackjack. This is naturally a second, independent Bet tied to a Player, resolved before the main hand is settled &mdash; it doesn't change Hand or Deck, only adds another Bet instance and an earlier settlement step in Game/Table.</li>
+          <li><strong>Card-counting-resistant shuffling.</strong> Real casinos worry about players tracking which high-value cards remain in the shoe; countermeasures include continuous shuffling machines, deep cut-card placement, and frequent reshuffling. Worth naming as a real-world concern in an interview, but it's an operational/algorithmic detail of <code>shuffle()</code>'s randomness source, not something this design needs to model in depth.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">Walk through exactly what getBestValue() does for the hand Ace, 6, Ace, 5.</div>
+          <div class="qa-a">First pass: every card counts at its base Blackjack value with every Ace counted as 11, so total = 11 + 6 + 11 + 5 = 33, and acesCountedAsEleven = 2. The loop checks: is 33 &gt; 21 and is at least one Ace still counted as 11? Yes, so downgrade one Ace: total = 23, acesCountedAsEleven = 1. Check again: 23 &gt; 21 and an Ace remains, so downgrade the second Ace too: total = 13, acesCountedAsEleven = 0. Check again: 13 is not &gt; 21, so the loop stops. getBestValue() returns 13 &mdash; a hard hand, since both Aces have been downgraded to 1.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why should Card and Deck know nothing about Blackjack-specific scoring?</div>
+          <div class="qa-a">Because it's the whole point of building a "generic deck of playing cards" first: Card and Deck describe what a standard 52-card deck is and how it shuffles/deals, which is true regardless of which game is played with it. The moment Card starts asking "am I part of a natural Blackjack?" or Deck starts tracking "whose turn is it," those classes have taken on a second responsibility that has nothing to do with being a deck of cards, and every future game built on top inherits rules it doesn't want. Keeping scoring entirely inside Hand (which only Blackjack code touches) means Card and Deck stay honestly reusable, and a change to Blackjack's rules can never accidentally break how cards shuffle.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you reuse this same Card/Deck library to build Poker, without modifying either class?</div>
+          <div class="qa-a">Because Card and Deck only expose "a suit, a rank" and "shuffle/deal," a Poker implementation is a second, independent layer built the same way the Blackjack layer was: a PokerHand class that takes 5 (or 7, for community-card variants) dealt Cards and implements Poker-specific evaluation (pairs, straights, flushes) entirely on its own, a PokerPlayer, and a PokerTable orchestrating betting rounds. Card and Deck are never touched or subclassed &mdash; both games simply consume the same dealOne() calls and interpret the resulting Cards through entirely separate scoring classes. That's the payoff of never letting Blackjack-specific logic leak into the generic layer in the first place.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would splitting a pair into two hands change the Hand/Game model?</div>
+          <div class="qa-a">Player's single hand: Hand field becomes hands: List&lt;Hand&gt;, with one Bet per hand (a split typically requires matching the original bet on the new hand). Game/Table's round logic, which currently loops "for each Player, decide Hit/Stand until done," becomes "for each Player, for each of that Player's Hands, decide Hit/Stand until done" &mdash; effectively one more level of iteration, plus a new PLAYER_SPLIT-style action that's only legal on the first two cards of a hand when they share a rank value. Hand itself doesn't change: it already only knows about "its own" cards and has no idea whether it's a player's only hand or one of two split hands.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why model Dealer as a subclass of Player instead of an entirely separate class?</div>
+          <div class="qa-a">Dealer and Player share every structural piece &mdash; a Hand, a Bet is largely irrelevant for the dealer but the turn-taking shape (decide an Action, apply it, repeat) is identical. The only real difference is how the next action gets decided: a human Player asks the UI, Dealer applies a fixed rule. Modeling that as one overridden method on a subclass lets Game/Table treat every seat uniformly (call decideAction() on whatever Player-shaped object is in that seat) instead of writing dealer-specific branches throughout the round logic. A fully separate Dealer class would either duplicate Hand/turn bookkeeping or need its own special-cased handling everywhere Table interacts with a hand.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Both the Player and the Dealer have a natural Blackjack in the same round &mdash; what happens?</div>
+          <div class="qa-a">A push: per the requirements, a natural beats a made 21, but two naturals facing each other are equal, so the bet is returned rather than paid out or forfeited. This has to be checked explicitly in the "any natural?" branch of the round flow (Figure 3) rather than assumed away &mdash; naively coding "if Player has natural, Player wins" would incorrectly pay out a player whose natural just ties the dealer's.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does getBestValue() start every Ace at 11 and downgrade, rather than trying every combination of 1s and 11s and picking the best legal one?</div>
+          <div class="qa-a">Both approaches produce the same correct answer, but the downgrade loop is O(number of Aces) instead of evaluating up to 2^(number of Aces) combinations, and more importantly it mirrors how a person actually reasons about the hand: assume the best case (every Ace as 11), and only give ground exactly as far as you have to. Since downgrading any Ace from 11 to 1 always reduces the total by exactly 10 regardless of which Ace you pick, the order of downgrades never matters &mdash; which is precisely why a simple "downgrade while over 21 and an Ace remains" loop is both correct and sufficient, with no need for combinatorial search.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you make the dealer's fixed rule configurable (e.g. some casinos have the dealer hit on a "soft 17") without changing Hand or Game/Table?</div>
+          <div class="qa-a">Because decideAction() is already the single method that encodes the dealer's policy, a "hits on soft 17" variant is a matter of what that one method checks &mdash; e.g. asking Hand for both its best value and whether it's currently "soft" (has an Ace still counted as 11), and hitting when value &lt; 17 or (value == 17 and soft). That's a change confined entirely to Dealer.decideAction() (or a swapped-in DealerStrategy object, if you push it one level further with an injected strategy rather than inheritance); Hand's getBestValue() and Game/Table's round-orchestration logic don't need to know this rule exists.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the risk if dealOne() copies a card instead of removing it from the Deck's list?</div>
+          <div class="qa-a">You'd end up with the same logical card simultaneously "in" the Deck and "in" a Hand, which breaks the deck's fundamental invariant that once a card is dealt it can't be dealt again this round. Concretely, isEmpty()/remainingCount() would over-report how many cards are left, and if the underlying List isn't actually shrunk, a later dealOne() call in the same round could hand a second player the exact same card that's already sitting in someone else's Hand. dealOne() has to remove-and-return, not peek-and-copy, precisely because Deck and Hand are modeled as two collections one physical card moves between, never two collections that both list it at once.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Key Takeaways</div>
+          <ul>
+            <li>The reusable Card/Suit/Rank/Deck library and the Blackjack-specific Hand/Player/Dealer/Game layer are deliberately separate &mdash; that seam is the central design idea, and it's what lets the same deck library power a completely different game (Poker, Solitaire, War) untouched.</li>
+            <li>The Ace-as-1-or-11 algorithm is short but exact: count every Ace as 11 first, then downgrade one Ace at a time (subtract 10) only while the total is over 21 and an Ace remains counted as 11.</li>
+            <li>Dealer extends Player and overrides decideAction() with a fixed rule &mdash; a clean, natural Strategy/polymorphism example that lets Game/Table treat every seat at the table identically.</li>
+            <li>A dealt card moves from Deck's collection to a Hand's collection; it is removed, not duplicated &mdash; getting this ownership transfer right in dealOne() is what keeps the deck's invariants intact.</li>
+            <li>Because the library layer knows nothing about Blackjack rules, extensions like multi-deck shoes, splitting pairs, and doubling down land as small, contained changes rather than rewrites of Card or Deck.</li>
+          </ul>
+        </div>
+
+        <h2 id="references">References</h2>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Strategy_pattern" target="_blank" rel="noopener">"Strategy pattern"</a> &mdash; general reference for the Strategy discussion above (Dealer's overridden decideAction() vs. a human Player's).</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Single-responsibility_principle" target="_blank" rel="noopener">"Single-responsibility principle"</a> &mdash; general reference for the reusable-library-vs-game-rules separation that is the central idea of this page.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Blackjack" target="_blank" rel="noopener">"Blackjack"</a> &mdash; general reference for the game rules this page models (natural Blackjack, dealer hit/stand thresholds, standard payouts).</p>
+
+        <div class="page-nav">
+          <a class="prev" href="airline-management-system.html"><span class="dir">Previous</span>Airline Management System</a>
+          <a class="next" href="hotel-management-system.html"><span class="dir">Next</span>Hotel Management System</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

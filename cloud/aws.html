@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS (Amazon Web Services) &mdash; Cloud Architecture Tutorial | Cloud | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Cloud</a><span class="sep">/</span><span class="current">AWS</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Cloud overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#use-case-and-requirements">Use Case &amp; Requirements</a></li>
+        <li><a href="#architecture-overview">Architecture Overview</a></li>
+        <li><a href="#component-breakdown">Component Breakdown</a></li>
+        <li><a href="#data-flow">Data Flow</a></li>
+        <li><a href="#infrastructure-as-code-iac">Infrastructure as Code (IaC)</a></li>
+        <li><a href="#best-practices">Best Practices</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">CLOUD ARCHITECTURE</span>
+          <h1>AWS (Amazon Web Services) &mdash; Cloud Architecture Tutorial</h1>
+        </div>
+
+        <p><em>A complete, interview-ready architecture walkthrough: a global e-commerce checkout platform built end-to-end on AWS &mdash; requirements, capacity estimation, service mapping, honest cross-cloud trade-offs, data flow, Terraform, best practices, and common interview questions.</em></p>
+
+        <h2 id="use-case-and-requirements">Use Case &amp; Requirements</h2>
+
+        <h3>The Business Problem</h3>
+        <p>A global e-commerce company needs to re-platform its checkout and order-processing API to serve customers worldwide. Today's system buckles during flash sales and can't guarantee latency or correctness at the scale the business now needs. The new platform must accept checkout requests from anywhere in the world, reserve inventory, capture a tokenized payment reference (never the raw card number &mdash; that stays with a certified payment processor), durably record the order, and notify every downstream system (fulfillment, notifications, fraud review, analytics) that a sale happened &mdash; all while never double-charging a customer or silently losing an order, even during a 10&times; traffic spike or a full regional outage.</p>
+        <p>Two very different consistency worlds live side by side in this system: the <strong>order/payment write path</strong>, where correctness is non-negotiable (an order must be written exactly once, and payment state must never be ambiguous), and the <strong>catalog/browse read path</strong>, where slightly stale data (a price shown a few seconds late, a sold-out item still visible for a moment) is a perfectly acceptable trade for massive read scale and low latency. A good architecture treats these as two different problems with two different datastores, not one database trying to be everything.</p>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Accept checkout requests from web and mobile clients globally.</li>
+          <li>Reserve inventory against the product catalog as part of the checkout transaction.</li>
+          <li>Process and tokenize a payment reference via an external, certified payment processor (raw PAN never touches this system).</li>
+          <li>Write a durable, uniquely-identified order record once the transaction is confirmed.</li>
+          <li>Publish an order-placed event so downstream consumers (fulfillment, notifications, fraud review, analytics) can react asynchronously.</li>
+          <li>Serve the product catalog / browse experience (~50 million SKUs) with low-latency reads worldwide.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ul>
+          <li><strong>Throughput:</strong> steady-state ~500 transactions/second, peak 5,000 transactions/second during flash-sale events (a 10&times; burst).</li>
+          <li><strong>Latency:</strong> sub-150ms p99 for checkout API calls, globally.</li>
+          <li><strong>Availability:</strong> 99.95% SLA.</li>
+          <li><strong>Consistency:</strong> strong consistency for order/payment writes (never double-charge, never lose an order); eventual consistency is acceptable for catalog/browse reads.</li>
+          <li><strong>Compliance:</strong> PCI-DSS-adjacent handling &mdash; only tokenized card references are stored here; raw PAN handling is delegated entirely to a certified payment processor.</li>
+          <li><strong>Deployment topology:</strong> multi-region active-active, for both latency (serve users from the nearest region) and disaster recovery.</li>
+          <li><strong>Scale:</strong> ~200 million orders/year, ~50 million SKUs in the catalog, product images/assets served globally via CDN.</li>
+        </ul>
+
+        <h3>Capacity Estimation and Constraints</h3>
+        <p>The numbers below are the ones that should visibly drive every service choice further down this page &mdash; particularly the split between a low-latency, strongly-consistent order store and a massive-scale, eventually-consistent catalog store.</p>
+
+        <div class="formula-box">
+          <span class="formula-label">Peak vs. steady-state throughput</span>
+          Steady-state: 500 TPS &times; 86,400 sec/day &asymp; 43.2 million checkout-API requests/day
+          <br>Peak flash-sale: 5,000 TPS sustained for a ~2-hour window = 5,000 &times; 7,200 sec = 36 million requests in that window alone
+          <br>Peak &divide; steady ratio = 5,000 &divide; 500 = 10&times; &mdash; every tier (ALB, ECS task count, Aurora connections, ElastiCache) must be able to scale roughly 10&times; on short notice
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Orders/year vs. API TPS &mdash; these are not the same number</span>
+          200,000,000 orders/year &divide; (365 &times; 24 &times; 3,600 sec) &asymp; 6.34 completed orders/sec on average
+          <br>500 (steady-state API TPS) &divide; 6.34 (average completed-order rate) &asymp; 79&times;
+          <br>In other words, roughly 79 checkout-API calls (cart validation, address checks, payment tokenization round-trips, retries, idempotent re-submits) occur for every one finalized order at steady state &mdash; Aurora's write volume tracks the much smaller "committed order" rate, while ECS/Fargate and the ALB must be sized to the full API call volume
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Order storage growth (3-year horizon)</span>
+          Average order record (header + ~3 line items + shipping/billing refs + tokenized payment reference + audit/state-transition metadata) &asymp; 2 KB
+          <br>200,000,000 orders/year &times; 3 years = 600,000,000 order records
+          <br>Raw logical storage = 600,000,000 &times; 2 KB &asymp; 1.2 TB
+          <br>Aurora's storage layer already replicates data 6 ways across 3 AZs at no extra operational effort; adding a second region via Aurora Global Database roughly doubles the logical footprint &mdash; plan for &asymp;2.4 TB of Aurora-managed storage, plus ~25&ndash;30% headroom for indexes/WAL &rarr; &asymp;3 TB planning figure
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Catalog size (DynamoDB)</span>
+          50,000,000 SKUs &times; &asymp;3 KB average item (title, description, attributes, pricing, inventory pointers, image references) &asymp; 150 GB of catalog data
+          <br>150 GB is trivially small for DynamoDB &mdash; it's chosen here for read latency and request-rate scale, not because the data volume itself is large
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Product image storage and CDN egress</span>
+          50,000,000 SKUs &times; ~6 images/SKU &times; ~250 KB/image &asymp; 75 TB total in S3
+          <br>Assumed browsing volume: ~300,000,000 catalog-browsing sessions/month &times; ~40 image views/session &times; ~150 KB (CDN-optimized size) &asymp; 1.8 PB/month served to end users
+          <br>With a CloudFront cache-hit ratio of ~90%+ (typical for popular product imagery), origin (S3) egress falls to &asymp;180 TB/month &mdash; the remaining &asymp;1.62 PB/month is absorbed entirely at CloudFront's edge and never touches the origin
+        </div>
+
+        <h2 id="architecture-overview">Architecture Overview</h2>
+
+        <h3>Why AWS for This Workload</h3>
+        <p>AWS brings the broadest managed-service catalog of any of the major clouds, the largest hiring pool of engineers already fluent in its core primitives (ECS/EKS, Aurora, SNS/SQS, IAM), and the most mature multi-service integration story &mdash; CloudFront, WAF, Shield, ALB, ECS, and Aurora click together with comparatively little glue code. For a platform processing 200 million orders a year against a 50-million-SKU catalog, Aurora PostgreSQL is a proven, "boring in a good way" choice for the order ledger: strong consistency within a region, automatic 6-way storage replication across 3 Availability Zones, typical failover in under a minute, and fast (sub-second, though asynchronous) cross-region replication via Aurora Global Database.</p>
+        <p>Be honest about the one requirement AWS cannot give you "for free" the way GCP Spanner can: true multi-region <strong>active-active writes with strong consistency</strong>. Aurora Global Database's cross-region replication is asynchronous &mdash; typically under a second of lag, but never zero &mdash; so if two regions both accepted a conflicting write for the same order at nearly the same instant, AWS gives you no built-in conflict resolution. The architecturally honest options are (a) route each customer/order to a single "home region" for writes, using multi-region purely for read latency and disaster recovery rather than simultaneous same-row writes, or (b) build an explicit conflict-detection and reconciliation layer on top. This is a genuine trade-off against GCP Spanner's synchronous, externally-consistent global writes: Spanner is architecturally simpler for teams that truly need global active-active writes on the same row, at the cost of Spanner's own operational model and a narrower non-Google talent pool.</p>
+
+        <h3>Cross-Cloud Comparison at a Glance</h3>
+        <p>An even-handed comparison for <em>this specific workload</em> &mdash; not a sales pitch. Each cloud has at least one row where it is genuinely the stronger choice.</p>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>AWS</th><th>GCP</th><th>Azure</th></tr>
+          <tr>
+            <td>Global load balancing model</td>
+            <td>Route 53 (DNS-based latency/geoproximity routing) + CloudFront edge + regional ALBs &mdash; mature, but DNS TTLs mean failover propagation isn't instantaneous</td>
+            <td>Global external HTTP(S) Load Balancer on a single anycast IP &mdash; true global L7 balancing without DNS TTL delay; arguably the most elegant model of the three</td>
+            <td>Front Door + Traffic Manager &mdash; a DNS + edge combination conceptually similar to AWS's model</td>
+          </tr>
+          <tr>
+            <td>Strong-consistency global database option</td>
+            <td>Aurora Global Database &mdash; strong consistency within a region/writer, fast but <em>asynchronous</em> cross-region replication (sub-second lag)</td>
+            <td>Cloud Spanner &mdash; synchronous, externally-consistent global writes via TrueTime; genuinely simpler for true global active-active on the same row</td>
+            <td>Cosmos DB &mdash; multi-region with tunable consistency levels, but its "Strong" mode also constrains writes to a single region, similar to Aurora's constraint</td>
+          </tr>
+          <tr>
+            <td>Container platform maturity</td>
+            <td>ECS/Fargate + EKS &mdash; the most battle-tested at scale, largest ecosystem</td>
+            <td>GKE &mdash; widely regarded as the most polished managed Kubernetes, unsurprising given Google originated Kubernetes</td>
+            <td>AKS &mdash; solid and improving quickly, historically a step behind on some advanced features</td>
+          </tr>
+          <tr>
+            <td>Native CDN/WAF integration</td>
+            <td>CloudFront + AWS WAF + Shield &mdash; deep native integration with ALB and S3 origins</td>
+            <td>Cloud CDN + Cloud Armor &mdash; tightly integrated with the global load balancer</td>
+            <td>Front Door + Azure WAF &mdash; similarly integrated with Azure's edge network</td>
+          </tr>
+          <tr>
+            <td>Enterprise identity / hybrid story</td>
+            <td>IAM + AWS Directory Service &mdash; capable, but a less natural fit for AD-heavy hybrid enterprises</td>
+            <td>Cloud Identity / Anthos &mdash; capable, but a smaller enterprise hybrid footprint than Azure</td>
+            <td><strong>Strongest here</strong> &mdash; Entra ID / on-prem Active Directory hybrid integration is deep and mature; the right call if the company already runs on Microsoft</td>
+          </tr>
+          <tr>
+            <td>Committed-discount savings mechanism</td>
+            <td>Savings Plans / Reserved Instances &mdash; flexible across instance families and compute services</td>
+            <td>Committed Use Discounts, plus automatic sustained-use discounts requiring no upfront commitment &mdash; unique to GCP</td>
+            <td>Reserved Instances + Azure Hybrid Benefit &mdash; especially valuable if the company already holds Microsoft Enterprise Agreement licensing</td>
+          </tr>
+        </table>
+
+        <p>A High-Level Design view of the platform on AWS:</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1200 780" xmlns="http://www.w3.org/2000/svg" style="font-family:var(--font-sans)">
+            <defs>
+              <marker id="arrow-aws-hld" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--color-accent)"></path>
+              </marker>
+            </defs>
+
+            <!-- connecting lines (drawn first, so boxes sit on top) -->
+            <line x1="610" y1="60" x2="610" y2="100" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="610" y1="140" x2="610" y2="180" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="750" y1="207" x2="828" y2="210" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="610" y1="235" x2="610" y2="275" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="610" y1="315" x2="610" y2="355" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="750" y1="382" x2="828" y2="382" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="520" y1="410" x2="290" y2="458" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="600" y1="410" x2="480" y2="458" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="660" y1="410" x2="665" y2="458" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="920" y1="410" x2="925" y2="458" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="640" y1="525" x2="558" y2="578" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="660" y1="525" x2="725" y2="578" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="690" y1="525" x2="893" y2="578" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="555" y1="635" x2="555" y2="678" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="725" y1="635" x2="725" y2="678" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+            <line x1="895" y1="635" x2="895" y2="678" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-hld)"></line>
+
+            <!-- Client -->
+            <rect x="520" y="20" width="180" height="40" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="610" y="45" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">Client / Mobile App</text>
+
+            <!-- Route 53 -->
+            <rect x="520" y="100" width="180" height="40" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="610" y="125" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">Route 53</text>
+
+            <!-- CloudFront -->
+            <rect x="470" y="180" width="280" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="610" y="203" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">CloudFront</text>
+            <text x="610" y="221" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">+ AWS WAF + Shield Advanced</text>
+
+            <!-- S3 images -->
+            <rect x="828" y="185" width="170" height="50" rx="8" style="fill:var(--color-surface);stroke:var(--color-border);stroke-width:1.5"></rect>
+            <text x="913" y="207" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">S3</text>
+            <text x="913" y="223" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">Product Images</text>
+
+            <!-- ALB -->
+            <rect x="520" y="275" width="180" height="40" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="610" y="300" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">Regional ALB</text>
+
+            <!-- ECS checkout -->
+            <rect x="470" y="355" width="280" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="610" y="378" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">ECS on Fargate</text>
+            <text x="610" y="396" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">Checkout API tasks</text>
+
+            <!-- Catalog service -->
+            <rect x="828" y="355" width="180" height="55" rx="8" style="fill:var(--color-surface);stroke:var(--color-border);stroke-width:1.5"></rect>
+            <text x="918" y="378" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">Catalog Service</text>
+            <text x="918" y="396" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">ECS/Fargate</text>
+
+            <!-- Aurora -->
+            <rect x="140" y="458" width="210" height="65" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="245" y="482" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">Aurora PostgreSQL</text>
+            <text x="245" y="499" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">Global Database (orders)</text>
+
+            <!-- Redis -->
+            <rect x="380" y="458" width="180" height="65" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="470" y="482" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">ElastiCache</text>
+            <text x="470" y="499" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">for Redis (cache)</text>
+
+            <!-- SNS -->
+            <rect x="590" y="458" width="160" height="65" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="670" y="482" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">SNS Topic</text>
+            <text x="670" y="499" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">order-placed</text>
+
+            <!-- DynamoDB -->
+            <rect x="828" y="458" width="200" height="65" rx="8" style="fill:var(--color-surface);stroke:var(--color-border);stroke-width:1.5"></rect>
+            <text x="928" y="482" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">DynamoDB</text>
+            <text x="928" y="499" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">Catalog, 50M SKUs</text>
+
+            <!-- SQS x3 -->
+            <rect x="480" y="578" width="150" height="55" rx="8" style="fill:var(--color-surface);stroke:var(--color-border);stroke-width:1.5"></rect>
+            <text x="555" y="601" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">SQS</text>
+            <text x="555" y="618" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">Fulfillment Queue</text>
+
+            <rect x="650" y="578" width="150" height="55" rx="8" style="fill:var(--color-surface);stroke:var(--color-border);stroke-width:1.5"></rect>
+            <text x="725" y="601" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">SQS</text>
+            <text x="725" y="618" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">Notification Queue</text>
+
+            <rect x="820" y="578" width="150" height="55" rx="8" style="fill:var(--color-surface);stroke:var(--color-border);stroke-width:1.5"></rect>
+            <text x="895" y="601" text-anchor="middle" style="font-size:13px;fill:var(--color-primary)">SQS</text>
+            <text x="895" y="618" text-anchor="middle" style="font-size:11px;fill:var(--color-text-muted)">Fraud-Review Queue</text>
+
+            <!-- Consumers -->
+            <rect x="480" y="678" width="150" height="45" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="555" y="705" text-anchor="middle" style="font-size:12px;fill:var(--color-primary)">Fulfillment Svc</text>
+
+            <rect x="650" y="678" width="150" height="45" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="725" y="705" text-anchor="middle" style="font-size:12px;fill:var(--color-primary)">Notification Svc</text>
+
+            <rect x="820" y="678" width="150" height="45" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="895" y="705" text-anchor="middle" style="font-size:12px;fill:var(--color-primary)">Fraud Review Svc</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; Route 53 and CloudFront/WAF/Shield front regional ALBs, which route to ECS/Fargate checkout tasks (backed by Aurora Global Database + ElastiCache + SNS/SQS) and a parallel Catalog Service backed by DynamoDB. Product images are served from S3 via CloudFront.</div>
+        </div>
+
+        <h2 id="component-breakdown">Component Breakdown</h2>
+        <table>
+          <tr><th>Component</th><th>AWS Service</th><th>Why Chosen Over Alternatives</th></tr>
+          <tr>
+            <td>Edge / CDN</td>
+            <td>Amazon CloudFront</td>
+            <td>600+ global edge locations, native origins for both S3 (images) and ALB (API), tight native coupling with WAF/Shield &mdash; avoids the integration overhead of a multi-CDN or third-party CDN strategy that isn't justified at this stage.</td>
+          </tr>
+          <tr>
+            <td>WAF / DDoS</td>
+            <td>AWS WAF + AWS Shield Advanced</td>
+            <td>Managed rule groups cover the OWASP Top 10 and common bot patterns out of the box; Shield Advanced adds DDoS cost protection and 24/7 access to the AWS DDoS Response Team &mdash; both attach natively to CloudFront/ALB with no extra integration work.</td>
+          </tr>
+          <tr>
+            <td>Load Balancing</td>
+            <td>Application Load Balancer (regional)</td>
+            <td>L7 routing (path-based routing between checkout and catalog services), native health checks that feed Route 53 failover decisions, and native ECS/Fargate target-group integration.</td>
+          </tr>
+          <tr>
+            <td>Compute / Containers</td>
+            <td>Amazon ECS on AWS Fargate</td>
+            <td>Serverless container operations &mdash; no node fleet to patch or scale &mdash; while still supporting the fast, bursty scale-out a 10&times; flash-sale spike demands. See deep dive below.</td>
+          </tr>
+          <tr>
+            <td>Primary OLTP Database</td>
+            <td>Amazon Aurora PostgreSQL + Aurora Global Database</td>
+            <td>Strong consistency within a region/writer, automatic 6-way storage replication across 3 AZs, and fast (sub-second, asynchronous) cross-region replication. See deep dive below.</td>
+          </tr>
+          <tr>
+            <td>Cache</td>
+            <td>Amazon ElastiCache for Redis</td>
+            <td>Sub-millisecond reads for session and cart state take the hottest, most latency-sensitive reads off Aurora entirely, which matters directly for the sub-150ms p99 target.</td>
+          </tr>
+          <tr>
+            <td>Async Messaging</td>
+            <td>Amazon SNS + SQS</td>
+            <td>Durable pub/sub fan-out: one order-placed event, multiple independent per-consumer queues, each scaling and retrying (with dead-letter queues) on its own schedule. Amazon EventBridge is a reasonable alternative once event-routing rules get more complex (e.g. content-based filtering across many event types).</td>
+          </tr>
+          <tr>
+            <td>Catalog Database</td>
+            <td>Amazon DynamoDB</td>
+            <td>Single-digit-millisecond reads at effectively unlimited scale for a 50-million-SKU catalog; eventually consistent reads are an explicit, acceptable requirement for browse traffic. See deep dive below.</td>
+          </tr>
+          <tr>
+            <td>Object Storage</td>
+            <td>Amazon S3</td>
+            <td>11-nines durability, the native CloudFront origin, and S3 Intelligent-Tiering to control cost across ~75 TB of product imagery with uneven access patterns.</td>
+          </tr>
+          <tr>
+            <td>IAM</td>
+            <td>AWS IAM (ECS task roles)</td>
+            <td>Least-privilege roles scoped per service; ECS task IAM roles mean the checkout API and catalog service never hold long-lived static credentials in a container image or environment variable.</td>
+          </tr>
+          <tr>
+            <td>Secrets</td>
+            <td>AWS Secrets Manager</td>
+            <td>Automatic rotation for database credentials and third-party API keys (e.g. the payment processor integration), with fine-grained IAM-controlled access instead of secrets baked into config files.</td>
+          </tr>
+          <tr>
+            <td>Encryption Keys</td>
+            <td>AWS KMS (customer-managed keys)</td>
+            <td>Centralized, audited key management (via CloudTrail) for data at rest across Aurora, S3, and EBS, with full control over key rotation and access policy &mdash; important given the PCI-DSS-adjacent handling requirement.</td>
+          </tr>
+          <tr>
+            <td>Observability (metrics/logs/traces)</td>
+            <td>Amazon CloudWatch + AWS X-Ray</td>
+            <td>CloudWatch covers metrics, logs, alarms, and dashboards natively across every service in this stack; X-Ray adds distributed tracing across the full checkout call path (ALB &rarr; ECS &rarr; Aurora/SNS) needed to debug p99 latency regressions.</td>
+          </tr>
+        </table>
+
+        <h3>Deep Dive &mdash; Compute: ECS/Fargate vs. EKS vs. EC2 Auto Scaling Groups vs. Lambda</h3>
+        <p>The core checkout API is chosen to run on <strong>Amazon ECS on AWS Fargate</strong>. Against the named alternatives: <strong>EKS</strong> (managed Kubernetes) is the right call when an organization has already standardized its tooling, deployment pipelines, and operational muscle memory around Kubernetes &mdash; it is not a stronger technical fit for this workload specifically, it's a stronger fit when Kubernetes is already the org-wide default and the incremental cost of a second orchestration paradigm (ECS) outweighs Fargate's simplicity. <strong>Raw EC2 Auto Scaling Groups</strong> give the most low-level control (custom AMIs, specific instance families, bin-packing tuning) but push node patching, capacity planning, and cluster-level failure handling back onto the team &mdash; overhead this workload doesn't need to accept just to run a stateless HTTP API. <strong>Lambda</strong> is a legitimate option for the spiky, event-driven pieces of this system (e.g. the SQS-triggered fulfillment/notification/fraud-review consumers), where short-lived, bursty invocations map well onto Lambda's per-invocation billing and scaling model &mdash; but it is a weaker fit for the core checkout API itself, where sustained connection pools to Aurora, predictable p99 latency (cold starts are a real risk under Lambda), and long-lived in-memory caches favor a persistently-running container. Net: ECS/Fargate gives serverless container operations (no node fleet to manage) while still behaving like a normal long-running service for the checkout API's latency and connection-pooling needs, with EKS held in reserve for Kubernetes-standardized orgs and Lambda used surgically for the async fan-out.</p>
+
+        <h3>Deep Dive &mdash; Primary Database: Aurora Global Database vs. DynamoDB Global Tables vs. Self-Managed Sharded Postgres</h3>
+        <p><strong>Aurora PostgreSQL with Aurora Global Database</strong> is the recommended choice for the order/payment ledger. It gives strong, transactional (ACID) consistency within a region &mdash; essential for "never double-charge, never lose an order" &mdash; plus fast, low-single-digit-second RPO cross-region replication for disaster recovery and read scale-out, without the application needing to manage sharding logic itself. <strong>DynamoDB Global Tables</strong> was seriously considered, since it does offer true multi-region active-active writes &mdash; but its conflict resolution is "last writer wins" based on timestamp, which is the wrong default for financial transactions where silently discarding one of two conflicting writes is a correctness bug, not a minor edge case; DynamoDB also trades away the relational joins and multi-row ACID transactions that order processing (order header + line items + inventory decrement, atomically) benefits from. A <strong>self-managed, manually-sharded Postgres</strong> fleet (e.g. via Citus or application-level sharding) gives full control and could technically be made to work, but re-implements &mdash; at much higher operational cost and risk &mdash; problems Aurora already solves as a managed service: automatic storage replication, backups, failover, and monitoring. Aurora Global Database is chosen specifically because it matches this workload's actual requirement (strong regional consistency, fast DR, acceptable async cross-region lag with an explicit region-affinity strategy for writes) rather than a requirement it doesn't have (synchronous global active-active writes, which is Spanner's problem to solve, not Aurora's).</p>
+
+        <h2 id="data-flow">Data Flow</h2>
+
+        <p>A single, synchronous checkout request, end to end:</p>
+        <ol>
+          <li>Client sends an HTTPS checkout request, resolved by Route 53's latency-based/geoproximity routing to the nearest healthy region.</li>
+          <li>The request hits CloudFront, where AWS WAF inspects it against managed rule groups and AWS Shield Advanced screens for DDoS patterns.</li>
+          <li>CloudFront forwards to the regional Application Load Balancer, which routes to a healthy ECS/Fargate target in the checkout API's target group.</li>
+          <li>The ECS/Fargate task validates the cart contents and checks an idempotency key (so a client retry never creates a duplicate order).</li>
+          <li>The task reserves inventory as part of an Aurora transaction (a soft hold, decremented atomically alongside the order write).</li>
+          <li>The task calls out to the external, certified payment processor to tokenize the payment method and obtain a payment reference &mdash; the raw card number never enters this system.</li>
+          <li>Aurora commits the order record (order header, line items, tokenized payment reference, inventory decrement) in a single strongly-consistent transaction &mdash; this is the one step in the whole flow that must never be "eventually" correct.</li>
+          <li>The task publishes an order-placed event to an SNS topic.</li>
+          <li>The task returns a 200 response to the client, targeting sub-150ms p99 for the entire round trip.</li>
+        </ol>
+
+        <p>The async fan-out that follows every completed order, decoupled from the client-facing latency budget above:</p>
+        <ol>
+          <li>The SNS topic fans the order-placed event out to three independent SQS queues: fulfillment, notifications, and fraud-review.</li>
+          <li>Each queue is consumed by its own service, scaling and retrying independently of the others &mdash; a slow fraud-review consumer never backs up fulfillment.</li>
+          <li>SQS gives at-least-once delivery, so every consumer is built to be idempotent on <code>order_id</code> (e.g. an upsert or a processed-events dedup table) rather than assuming exactly-once semantics.</li>
+          <li>Failed deliveries land in a per-queue dead-letter queue after a bounded number of retries, so poison messages don't block the rest of the queue.</li>
+        </ol>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 980 830" xmlns="http://www.w3.org/2000/svg" style="font-family:var(--font-sans)">
+            <defs>
+              <marker id="arrow-aws-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--color-accent)"></path>
+              </marker>
+            </defs>
+
+            <!-- main vertical chain connectors -->
+            <line x1="260" y1="75" x2="260" y2="95" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+            <line x1="260" y1="150" x2="260" y2="170" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+            <line x1="260" y1="225" x2="260" y2="245" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+            <line x1="260" y1="300" x2="260" y2="320" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+            <line x1="260" y1="375" x2="260" y2="395" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+            <line x1="260" y1="450" x2="260" y2="470" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+            <line x1="260" y1="525" x2="260" y2="545" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+            <line x1="260" y1="600" x2="260" y2="620" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+            <line x1="260" y1="675" x2="260" y2="695" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+
+            <!-- branch to async chain -->
+            <line x1="480" y1="647" x2="558" y2="647" style="stroke:var(--color-accent-dark);stroke-width:2;stroke-dasharray:5,4" marker-end="url(#arrow-aws-flow)"></line>
+            <line x1="750" y1="675" x2="750" y2="695" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+            <line x1="750" y1="750" x2="750" y2="770" style="stroke:var(--color-accent);stroke-width:2" marker-end="url(#arrow-aws-flow)"></line>
+
+            <!-- Step boxes -->
+            <rect x="40" y="20" width="440" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="260" y="52" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">1. Client sends checkout request (HTTPS)</text>
+
+            <rect x="40" y="95" width="440" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="260" y="127" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">2. Route 53 resolves nearest healthy region</text>
+
+            <rect x="40" y="170" width="440" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="260" y="202" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">3. CloudFront: TLS + WAF inspection</text>
+
+            <rect x="40" y="245" width="440" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="260" y="277" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">4. Regional ALB forwards to ECS/Fargate</text>
+
+            <rect x="40" y="320" width="440" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="260" y="352" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">5. Task validates cart + idempotency key</text>
+
+            <rect x="40" y="395" width="440" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="260" y="427" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">6. Reserve inventory (Aurora, in-transaction)</text>
+
+            <rect x="40" y="470" width="440" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="260" y="502" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">7. Tokenize payment via external processor</text>
+
+            <rect x="40" y="545" width="440" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="260" y="577" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">8. Aurora commits order + payment ref</text>
+
+            <rect x="40" y="620" width="440" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="260" y="652" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">9. Publish order-placed event to SNS</text>
+
+            <rect x="40" y="695" width="440" height="55" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="260" y="722" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">10. Return 200 to client (sub-150ms p99)</text>
+
+            <!-- Async branch boxes -->
+            <rect x="560" y="620" width="380" height="55" rx="8" style="fill:var(--color-surface);stroke:var(--color-border);stroke-width:1.5"></rect>
+            <text x="750" y="646" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">SNS fans out to 3 SQS queues</text>
+            <text x="750" y="663" text-anchor="middle" style="font-size:10.5px;fill:var(--color-text-muted)">(fulfillment, notifications, fraud-review)</text>
+
+            <rect x="560" y="695" width="380" height="55" rx="8" style="fill:var(--color-surface);stroke:var(--color-border);stroke-width:1.5"></rect>
+            <text x="750" y="721" text-anchor="middle" style="font-size:12.5px;fill:var(--color-primary)">Consumers scale and retry independently</text>
+            <text x="750" y="738" text-anchor="middle" style="font-size:10.5px;fill:var(--color-text-muted)">per-queue dead-letter queues on repeated failure</text>
+
+            <rect x="560" y="770" width="380" height="45" rx="8" style="fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5"></rect>
+            <text x="750" y="797" text-anchor="middle" style="font-size:12px;fill:var(--color-primary)">At-least-once delivery &mdash; consumers must be idempotent</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Request lifecycle for a single checkout &mdash; the synchronous path (left) stays on the sub-150ms p99 latency budget; the async fan-out (right) branches off after the SNS publish and runs fully decoupled from that budget.</div>
+        </div>
+
+        <h2 id="infrastructure-as-code-iac">Infrastructure as Code (IaC)</h2>
+        <p>This platform is provisioned with Terraform using the official <code>hashicorp/aws</code> provider. Resource arguments have shifted meaningfully between major provider versions (for example, several 4.x &rarr; 5.x changes to <code>aws_lb_target_group</code> and IAM resource defaults) &mdash; always pin an exact provider version and check the current documentation before upgrading, rather than assuming last year's syntax still applies.</p>
+        <p>The script below provisions <strong>core networking and compute only</strong> &mdash; a VPC across two Availability Zones, public/private subnets, an Internet Gateway and per-AZ NAT Gateways, security groups scoped to least privilege, an Application Load Balancer, and an ECS cluster/service/task definition on Fargate. It intentionally does not provision every service shown in the architecture diagram (Aurora, DynamoDB, SNS/SQS, etc.) so the example stays focused and readable.</p>
+
+        <pre><code>terraform {
+  required_version = "&gt;= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~&gt; 5.60" # pin an exact minor version; arguments shift across major versions
+    }
+  }
+}
+
+provider "aws" {
+  region = var.region
+}
+
+# ---------------------------------------------------------------------------
+# Variables (values supplied via *.tfvars per environment &mdash; dev/staging/prod)
+# ---------------------------------------------------------------------------
+variable "region" {
+  description = "AWS region for this deployment (one per active-active region)"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block for the checkout-platform VPC"
+  type        = string
+  default     = "10.20.0.0/16"
+}
+
+variable "az_count" {
+  description = "Number of Availability Zones to spread subnets across"
+  type        = number
+  default     = 2
+}
+
+variable "checkout_image" {
+  description = "Container image URI for the checkout API (from ECR)"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev / staging / prod) &mdash; also used for tagging"
+  type        = string
+  default     = "prod"
+}
+
+variable "acm_certificate_arn" {
+  description = "ARN of the ACM certificate bound to the checkout API domain"
+  type        = string
+}
+
+# ---------------------------------------------------------------------------
+# Networking &mdash; VPC, subnets, Internet Gateway, NAT Gateways
+# ---------------------------------------------------------------------------
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+resource "aws_vpc" "checkout" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name        = "checkout-vpc-${var.environment}"
+    Environment = var.environment
+  }
+}
+
+# Public subnets &mdash; hold the ALB and the NAT Gateways, one per AZ
+resource "aws_subnet" "public" {
+  count                   = var.az_count
+  vpc_id                  = aws_vpc.checkout.id
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "checkout-public-${count.index}"
+    Tier = "public"
+  }
+}
+
+# Private subnets &mdash; hold the ECS/Fargate tasks (and, in the full design, Aurora), one per AZ
+resource "aws_subnet" "private" {
+  count             = var.az_count
+  vpc_id            = aws_vpc.checkout.id
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 10)
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+
+  tags = {
+    Name = "checkout-private-${count.index}"
+    Tier = "private"
+  }
+}
+
+resource "aws_internet_gateway" "checkout" {
+  vpc_id = aws_vpc.checkout.id
+
+  tags = { Name = "checkout-igw-${var.environment}" }
+}
+
+# One Elastic IP + NAT Gateway per AZ, so a single AZ outage never removes
+# outbound internet access (e.g. calls to the external payment processor)
+# for tasks running in the other AZ.
+resource "aws_eip" "nat" {
+  count  = var.az_count
+  domain = "vpc"
+
+  tags = { Name = "checkout-nat-eip-${count.index}" }
+}
+
+resource "aws_nat_gateway" "checkout" {
+  count         = var.az_count
+  allocation_id = aws_eip.nat[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
+
+  tags = { Name = "checkout-nat-${count.index}" }
+
+  depends_on = [aws_internet_gateway.checkout]
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.checkout.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.checkout.id
+  }
+
+  tags = { Name = "checkout-public-rt" }
+}
+
+resource "aws_route_table_association" "public" {
+  count          = var.az_count
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
+}
+
+# Private route tables &mdash; one per AZ, each pointed at that AZ's own NAT Gateway
+resource "aws_route_table" "private" {
+  count  = var.az_count
+  vpc_id = aws_vpc.checkout.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.checkout[count.index].id
+  }
+
+  tags = { Name = "checkout-private-rt-${count.index}" }
+}
+
+resource "aws_route_table_association" "private" {
+  count          = var.az_count
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private[count.index].id
+}
+
+# ---------------------------------------------------------------------------
+# Security groups
+# ---------------------------------------------------------------------------
+
+# ALB security group &mdash; only HTTPS from the internet reaches the ALB.
+resource "aws_security_group" "alb" {
+  name        = "checkout-alb-sg-${var.environment}"
+  description = "Allow inbound HTTPS to the checkout ALB"
+  vpc_id      = aws_vpc.checkout.id
+
+  ingress {
+    description = "HTTPS from CloudFront / clients"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Return traffic to ECS tasks in the VPC only"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  tags = { Name = "checkout-alb-sg" }
+}
+
+# ECS task security group &mdash; reachable ONLY from the ALB security group,
+# never directly from the internet or any other CIDR. No default
+# allow-all egress; egress is explicitly scoped below.
+resource "aws_security_group" "ecs_tasks" {
+  name        = "checkout-ecs-sg-${var.environment}"
+  description = "Allow inbound traffic to checkout tasks only from the ALB"
+  vpc_id      = aws_vpc.checkout.id
+
+  ingress {
+    description     = "Traffic from the ALB only"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  egress {
+    description = "HTTPS egress (payment processor, AWS service APIs)"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Postgres egress to Aurora"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  tags = { Name = "checkout-ecs-sg" }
+}
+
+# ---------------------------------------------------------------------------
+# Application Load Balancer
+# ---------------------------------------------------------------------------
+resource "aws_lb" "checkout" {
+  name               = "checkout-alb-${var.environment}"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  subnets            = aws_subnet.public[*].id
+
+  enable_deletion_protection = true
+
+  tags = { Name = "checkout-alb" }
+}
+
+resource "aws_lb_target_group" "checkout" {
+  name        = "checkout-tg-${var.environment}"
+  port        = 8080
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.checkout.id
+  target_type = "ip" # required for Fargate tasks &mdash; there is no static EC2 instance to attach
+
+  health_check {
+    path                = "/healthz"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 15
+    timeout             = 5
+    matcher             = "200"
+  }
+
+  tags = { Name = "checkout-tg" }
+}
+
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.checkout.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = var.acm_certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.checkout.arn
+  }
+}
+
+# ---------------------------------------------------------------------------
+# ECS cluster, task definition, and service (Fargate launch type)
+# ---------------------------------------------------------------------------
+resource "aws_ecs_cluster" "checkout" {
+  name = "checkout-cluster-${var.environment}"
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled" # feeds CloudWatch Container Insights dashboards
+  }
+}
+
+resource "aws_iam_role" "ecs_execution" {
+  name = "checkout-ecs-execution-role-${var.environment}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_execution" {
+  role       = aws_iam_role.ecs_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# Task role &mdash; the identity the *application code* assumes at runtime.
+# Least-privilege: scope this to only what the checkout API actually needs
+# (e.g. Secrets Manager read, SNS publish), never blanket AWS access.
+resource "aws_iam_role" "ecs_task" {
+  name = "checkout-ecs-task-role-${var.environment}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_ecs_task_definition" "checkout" {
+  family                   = "checkout-api"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc" # required for Fargate
+  cpu                      = "1024"   # 1 vCPU
+  memory                   = "2048"   # 2 GB
+  execution_role_arn       = aws_iam_role.ecs_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "checkout-api"
+      image     = var.checkout_image
+      essential = true
+      portMappings = [
+        { containerPort = 8080, protocol = "tcp" }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/checkout-api-${var.environment}"
+          "awslogs-region"        = var.region
+          "awslogs-stream-prefix" = "checkout"
+        }
+      }
+    }
+  ])
+}
+
+resource "aws_ecs_service" "checkout" {
+  name            = "checkout-api-${var.environment}"
+  cluster         = aws_ecs_cluster.checkout.id
+  task_definition = aws_ecs_task_definition.checkout.arn
+  desired_count   = 6
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = aws_subnet.private[*].id
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    assign_public_ip = false # tasks live in private subnets; egress goes via NAT
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.checkout.arn
+    container_name   = "checkout-api"
+    container_port   = 8080
+  }
+
+  depends_on = [aws_lb_listener.https]
+}</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Production practice</div>
+          Store Terraform state in a remote S3 backend with DynamoDB-based state locking, so two engineers (or two CI runs) can never corrupt state by writing concurrently. Keep separate <code>.tfvars</code> files or workspaces per environment (dev/staging/prod) rather than branching the configuration itself. And always run <code>terraform plan</code> in CI &mdash; posted as a reviewable artifact on the pull request &mdash; before any <code>terraform apply</code> runs against a real environment.
+        </div>
+
+        <h2 id="best-practices">Best Practices</h2>
+
+        <h3>Security</h3>
+        <ul>
+          <li>IAM least-privilege roles and policies for every service identity &mdash; no wildcard actions or resources in production policies.</li>
+          <li>ECS task IAM roles instead of static, long-lived credentials baked into containers or environment variables.</li>
+          <li>AWS KMS customer-managed keys (CMKs) for encryption at rest across Aurora, S3, and EBS, with key usage audited via CloudTrail.</li>
+          <li>TLS everywhere in transit, using ACM-issued certificates on the ALB listener and CloudFront distribution.</li>
+          <li>Security Groups scoped to least privilege (e.g. ECS tasks reachable only from the ALB security group) plus NACLs for defense-in-depth network segmentation.</li>
+          <li>AWS Secrets Manager with automatic rotation for database credentials and third-party API keys.</li>
+          <li>AWS WAF managed rule groups covering common web attack patterns (SQLi, XSS, known bad bots) in front of the checkout API.</li>
+        </ul>
+
+        <h3>Monitoring, Logging and Alerting</h3>
+        <ul>
+          <li>CloudWatch dashboards and alarms tied directly to the platform's SLOs (p99 latency, error rate, availability) rather than generic infrastructure metrics alone.</li>
+          <li>CloudWatch Logs with structured (JSON) logging and metric filters, so specific error classes (e.g. payment tokenization failures) can trigger their own alarms.</li>
+          <li>AWS X-Ray for distributed tracing across the full checkout call path (ALB &rarr; ECS &rarr; Aurora/SNS), essential for diagnosing which hop is responsible when p99 latency creeps up.</li>
+          <li>Route 53 health checks driving automated failover &mdash; a region that fails its health check is automatically removed from the latency-based routing pool.</li>
+        </ul>
+
+        <h3>Cost Optimization</h3>
+        <ul>
+          <li>AWS Cost Explorer &mdash; as of November 2025, Cost Explorer provides AI-powered 18-month cost forecasts with explainable insights, and is free to use.</li>
+          <li>AWS Compute Optimizer &mdash; right-sizing recommendations for ECS/Fargate task sizing and EBS volumes, based on actual observed utilization rather than provisioned capacity.</li>
+          <li>AWS Trusted Advisor &mdash; flags idle load balancers, idle RDS/Aurora instances, and unassociated Elastic IPs that are quietly accumulating cost.</li>
+          <li>The newer AWS Cost Optimization Hub consolidates recommendations from Compute Optimizer, Trusted Advisor, and other services into a single dashboard, rather than requiring separate visits to each tool.</li>
+          <li>A clear 2026 industry trend: these tools are moving from "recommend and wait for a human to act" toward increasingly automated, autonomous remediation &mdash; worth factoring into how much manual FinOps process is really needed going forward.</li>
+          <li>Savings Plans / Reserved Instances for the predictable steady-state (~500 TPS) portion of compute, layered with on-demand Fargate capacity to absorb flash-sale bursts.</li>
+          <li>S3 Intelligent-Tiering for product images, since access patterns across ~75 TB of imagery are uneven (new/promoted SKUs are hot, long-tail SKUs are cold).</li>
+        </ul>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Organized by theme &mdash; expect a real interview to pick a handful of these as follow-ups once the core design is on the whiteboard.</p>
+
+        <h3>Multi-Region Consistency and CAP</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Explain Aurora Global Database's replication lag and what it means for active-active writes.</div>
+          <div class="qa-a">Aurora Global Database replicates from the primary region to secondary regions asynchronously, typically with sub-second lag. That means it gives you fast, low-RPO disaster recovery and low-latency reads in secondary regions, but it does not give you synchronous, conflict-free multi-region writes. If two regions both accept a write for the same order at nearly the same instant, there's no built-in resolution &mdash; you must either route writes for a given customer/order to one "home" region, or build your own conflict-detection layer.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does Aurora's consistency model compare to DynamoDB's, through a CAP lens?</div>
+          <div class="qa-a">Aurora (single-region writer) behaves as a strongly consistent, CP-leaning system for the order ledger &mdash; correctness over availability during a network partition to the writer. DynamoDB, especially with Global Tables, leans AP: it stays available and partition-tolerant across regions, accepting "last writer wins" conflict resolution, which is why it's the right fit for the catalog (where a stale read is fine) and the wrong fit for the order ledger (where silently discarding a conflicting write is a bug).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">If two regions both accept a write for the same order at nearly the same time, what actually happens on Aurora Global Database?</div>
+          <div class="qa-a">Aurora Global Database has a single writer instance for the whole global cluster; secondary regions only get read replicas by default. So in practice, a properly configured system routes all writes for a given order to that one writer region &mdash; the "two regions both accept a write" scenario is prevented architecturally rather than resolved after the fact. If you instead promote a secondary region to also accept writes (a managed planned failover), you own the responsibility of making sure only one region is writing at a time.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you decide between a "write to home region" strategy and a conflict-resolution strategy?</div>
+          <div class="qa-a">Home-region routing (pin each customer or order to a primary region based on where the account was created, or geography) is simpler to reason about and avoids conflicts by construction &mdash; the trade-off is slightly higher write latency for a customer temporarily far from their home region. A conflict-resolution layer is only worth the complexity if the business genuinely needs every region to accept writes for every customer at all times, which is rare for a checkout flow &mdash; most e-commerce platforms find home-region routing sufficient.</div>
+        </div>
+
+        <h3>Compute Platform Trade-offs</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Why ECS on Fargate over EKS for the core checkout API?</div>
+          <div class="qa-a">Fargate removes node management entirely (no patching, no capacity planning for the underlying EC2 fleet) while ECS's scheduling model is simpler to operate than Kubernetes for a team that isn't already standardized on it. EKS becomes the better choice specifically when an organization already runs Kubernetes elsewhere and wants one consistent tooling/operational model across all its services &mdash; not because EKS is technically superior for this workload in isolation.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">When would Lambda be a better fit than Fargate for a piece of this system?</div>
+          <div class="qa-a">For the SQS-triggered async consumers (fulfillment, notifications, fraud-review) &mdash; short-lived, bursty, event-driven work that maps well onto Lambda's per-invocation scaling and billing. It's a weaker fit for the core checkout API itself, where sustained Aurora connection pools and predictable p99 latency (cold starts are a real risk) favor a long-running container.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What operational burden does Fargate remove compared to self-managed EC2 Auto Scaling Groups?</div>
+          <div class="qa-a">Fargate removes AMI patching, OS-level security updates, EC2 instance health monitoring, and manual bin-packing/capacity planning for the underlying hosts &mdash; AWS manages the compute substrate. The trade-off is somewhat less low-level control (custom kernel tuning, specific instance types) than a hand-managed EC2 fleet would allow.</div>
+        </div>
+
+        <h3>Messaging and Event-Driven Patterns</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Why fan out via SNS+SQS rather than have every consumer subscribe directly to a single queue?</div>
+          <div class="qa-a">A single shared queue means every consumer competes for the same messages and a slow consumer (or a bug in one) can starve or delay the others. SNS-to-multiple-SQS gives each downstream service (fulfillment, notifications, fraud-review) its own independent queue, its own retry/backoff behavior, and its own dead-letter queue &mdash; failures are isolated per consumer.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">SQS gives at-least-once delivery &mdash; how do you make the fulfillment consumer idempotent?</div>
+          <div class="qa-a">Key the processing logic off <code>order_id</code>: either an upsert that's safe to apply twice, or a small "processed events" table/dedup cache checked before acting on a message. The consumer should be written assuming it may see the same message more than once, rather than assuming SQS's at-least-once guarantee is actually exactly-once.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">When would EventBridge be preferable to raw SNS/SQS for this system?</div>
+          <div class="qa-a">Once event routing needs content-based filtering rules across many event types and many possible targets (e.g. "route only high-value fraud-flagged orders to a separate investigation queue, everything else to standard fraud-review"), EventBridge's rule engine is a cleaner fit than hand-rolling that logic in each SNS subscriber's filter policy.</div>
+        </div>
+
+        <h3>Global Traffic Management and Disaster Recovery</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Compare Route 53's latency-based, geoproximity, and failover routing policies for this workload.</div>
+          <div class="qa-a">Latency-based routing sends each user to the region with the lowest measured network latency &mdash; the default choice here since sub-150ms p99 is a hard requirement. Geoproximity adds the ability to deliberately bias traffic toward or away from a region (e.g. for data-residency reasons) using a "bias" value. Failover routing is layered on top of either: Route 53 health checks detect a region going unhealthy and automatically stop sending it traffic, which is how the platform survives a regional outage without a human in the loop.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Walk through what happens during a full regional outage.</div>
+          <div class="qa-a">Route 53 health checks against the ALB (and, transitively, the checkout API) detect the region is unhealthy and stop routing new traffic there within the health-check interval. Traffic shifts to the remaining healthy region(s). Aurora Global Database's secondary region can be promoted to a standalone writer if the outage affects the primary write region, at the cost of a small window of unreplicated writes (bounded by the pre-outage replication lag) being lost or needing reconciliation.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the RPO/RTO story given Aurora Global Database's asynchronous replication?</div>
+          <div class="qa-a">RPO (Recovery Point Objective) is bounded by replication lag &mdash; typically under a second, but worth stating as "not zero" rather than promising zero data loss. RTO (Recovery Time Objective) for a managed planned failover of Aurora Global Database is on the order of a minute; an unplanned promotion during an actual regional disaster can take longer and should be tested, not assumed.</div>
+        </div>
+
+        <h3>Security and Cost</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do ECS task IAM roles avoid the need for static credentials?</div>
+          <div class="qa-a">Fargate injects temporary, automatically-rotated credentials into each task via the ECS agent, scoped to whatever IAM policy is attached to that task's role. The application code calls AWS APIs (e.g. Secrets Manager, SNS) using those temporary credentials via the standard SDK credential chain &mdash; no access keys are ever stored in the container image, environment variables, or config files.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between Trusted Advisor, Compute Optimizer, and the Cost Optimization Hub?</div>
+          <div class="qa-a">Trusted Advisor flags broader account-hygiene issues, including cost ones (idle load balancers, unassociated Elastic IPs, idle databases). Compute Optimizer is narrower and deeper &mdash; it analyzes actual utilization metrics to recommend specific right-sizing changes for EC2/Fargate/EBS. The Cost Optimization Hub is newer and sits above both, consolidating their recommendations (plus others) into one dashboard so teams aren't checking three separate tools.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does KMS fit into the PCI-DSS-adjacent handling requirement, given raw PAN is never stored here?</div>
+          <div class="qa-a">Even though raw card numbers are delegated to the external payment processor, the tokenized payment reference, order data, and any related metadata stored in Aurora/S3 still need encryption at rest with auditable key management &mdash; that's what KMS customer-managed keys provide, along with a CloudTrail record of every key usage for compliance review.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Start from the numbers &mdash; a 10&times; peak-to-steady TPS ratio, ~79 API calls per completed order, and a hard sub-150ms p99 &mdash; and let them drive every service choice, not the other way around. AWS's real strength here is breadth and integration maturity: CloudFront, WAF, Shield, ALB, ECS/Fargate, Aurora, and SNS/SQS all click together with minimal glue code, backed by the deepest managed-service catalog and the largest hiring pool of any major cloud. Its real limitation is equally clear: Aurora Global Database's cross-region replication is asynchronous, so genuine multi-region active-active writes with strong consistency require an explicit design decision &mdash; home-region write routing or conflict resolution &mdash; not a feature you get by default. Split the data plane deliberately: Aurora PostgreSQL for the order/payment ledger where correctness is non-negotiable, DynamoDB for the 50-million-SKU catalog where eventual consistency and massive read scale matter more. Push everything that isn't on the critical path of "did the order commit?" &mdash; fulfillment, notifications, fraud review, analytics &mdash; onto the async SNS/SQS fan-out, and design every consumer of that fan-out to be idempotent, since SQS's at-least-once delivery guarantees nothing less.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>AWS Well-Architected Framework &mdash; <a href="https://aws.amazon.com/architecture/well-architected/" target="_blank" rel="noopener">aws.amazon.com/architecture/well-architected</a></li>
+          <li>Amazon Aurora Global Database documentation &mdash; <a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-global-database.html" target="_blank" rel="noopener">docs.aws.amazon.com/AmazonRDS &mdash; Aurora Global Database</a></li>
+          <li>Amazon ECS on AWS Fargate documentation &mdash; <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/AWS_Fargate.html" target="_blank" rel="noopener">docs.aws.amazon.com/AmazonECS &mdash; AWS Fargate</a></li>
+          <li>AWS Cost Optimization Hub documentation &mdash; <a href="https://docs.aws.amazon.com/cost-management/latest/userguide/cost-optimization-hub.html" target="_blank" rel="noopener">docs.aws.amazon.com/cost-management &mdash; Cost Optimization Hub</a></li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="gcp.html"><span class="dir">Previous</span>GCP</a>
+          <a class="next" href="azure.html"><span class="dir">Next</span>Azure</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

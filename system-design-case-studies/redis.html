@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redis | System Design — Case Studies | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Case Studies</a><span class="sep">/</span><span class="current">Redis</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Case Studies overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#internal-architecture-deep-dive">Internal Architecture Deep Dive</a></li>
+        <li><a href="#system-design-view-end-to-end-walkthroughs">System-Design View: End-to-End Walkthroughs</a></li>
+        <li><a href="#the-math">The Math</a></li>
+        <li><a href="#cap-theorem-placement">CAP Theorem Placement</a></li>
+        <li><a href="#real-world-usage-patterns">Real-World Usage Patterns</a></li>
+        <li><a href="#trade-offs-and-limitations">Trade-offs and Limitations</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Redis</h1>
+        </div>
+
+        <p><em>A system-design deep dive and interview study guide: internal architecture first, then math, diagrams, real-world usage, trade-offs, and follow-up interview questions.</em></p>
+
+        <h2 id="overview">Overview</h2>
+        <p>Redis (<strong>RE</strong>mote <strong>DI</strong>ctionary <strong>S</strong>erver) is an in-memory data structure store that doubles as a cache, a primary database, a message broker, and a streaming platform — you talk to it over a simple text-like protocol and it gives you back rich structures (strings, hashes, lists, sets, sorted sets, streams) instead of just bytes. It is fast — routinely serving hundreds of thousands to low millions of simple operations per second per core — for three compounding reasons: (a) all the "hot" data lives in RAM so there is no disk seek on the read/write path, (b) the algorithms behind every data type are deliberately chosen to be O(1) or O(log N), and (c) a single-threaded, event-driven core eliminates locking and context-switch overhead for command execution. The rest of this document goes straight into <em>how</em> that is built, before we ever get to "what do people use it for."</p>
+
+        <table>
+          <tr><th>Design choice</th><th>Why it makes Redis fast</th></tr>
+          <tr><td>All "hot" data lives in RAM</td><td>No disk seek on the read/write path</td></tr>
+          <tr><td>O(1)/O(log N) algorithms behind every data type</td><td>Predictable, low per-command CPU cost even as data grows</td></tr>
+          <tr><td>Single-threaded, event-driven core</td><td>Eliminates locking and context-switch overhead for command execution</td></tr>
+        </table>
+        <p>We'll walk through the internals in the order you'd actually need them to understand a request flowing through the system — the event loop first, then the data structures it operates on, persistence, memory eviction, replication, clustering, and transactional atomicity — before moving on to the math, diagrams, real-world usage, trade-offs, and interview questions.</p>
+
+        <h2 id="internal-architecture-deep-dive">Internal Architecture Deep Dive</h2>
+
+        <h3>1.1 The Single-Threaded Event Loop Model</h3>
+        <p><strong>What "event loop" means.</strong> Redis's core (<code>src/ae.c</code>, the "asynchronous event" library) is a <em>reactor pattern</em> implementation. Instead of spawning a thread or process per client connection (which does not scale past a few thousand connections and requires locks the moment two threads touch the same key), Redis keeps one thread that:</p>
+        <ol>
+          <li>Registers every client socket's file descriptor with the OS's I/O readiness mechanism — <code>epoll</code> on Linux, <code>kqueue</code> on BSD/macOS, <code>evport</code> on Solaris, or a portable <code>select()</code> fallback.</li>
+          <li>Calls a blocking wait (<code>epoll_wait</code>) that sleeps until one or more sockets are "ready" (readable, writable, or have an error).</li>
+          <li>Iterates over the ready file descriptors and invokes the registered callback for each one (read a command, write a reply, accept a new connection, fire a timer).</li>
+          <li>Before going back to sleep, runs <code>beforeSleep()</code> housekeeping: flush replication output buffers, process expired keys, write AOF buffers, etc.</li>
+          <li>Loops forever.</li>
+        </ol>
+        <p>This is <strong>I/O multiplexing</strong>: one thread monitors thousands of sockets cheaply, and only does work when there is actually work to do — no busy polling, no per-connection thread stacks.</p>
+        <p><strong>Why single-threaded command execution avoids lock contention.</strong> Every Redis data structure (hash table, skip list, quicklist, ...) is a plain, non-thread-safe C structure. If two OS threads could run <code>HSET</code> on the same hash concurrently, Redis would need mutexes (or lock-free structures) around every data structure, and contention on hot keys would serialize the very concurrency you were trying to buy. By construction, <em>only one thread ever executes a command against the keyspace at any instant</em>, so: no mutexes are needed on the data structures themselves; every command that doesn't block (no <code>BLPOP</code> semantics) appears atomic to every other client — this is what makes single commands, and later Lua scripts and <code>MULTI/EXEC</code> blocks, trivially atomic; and there are no race conditions, no deadlocks, and the code is dramatically simpler to reason about and debug.</p>
+        <p>Because most Redis operations are O(1)/O(log N) over in-memory structures, a single CPU core can execute them in the sub-microsecond-to-low-microsecond range — the bottleneck for a long time was not CPU, it was the cost of <code>read()</code>/<code>write()</code> syscalls and TCP/TLS handling per connection. That is precisely the part Redis later parallelized.</p>
+        <p><strong>Multi-threaded I/O (Redis 6.0+).</strong> Since Redis 6, you can set <code>io-threads N</code> (and <code>io-threads-do-reads yes</code>) in <code>redis.conf</code>. This spins up N&minus;1 extra "I/O threads" whose <em>only</em> job is to: read raw bytes off the socket and parse the RESP (<strong>RE</strong>dis <strong>S</strong>erialization <strong>P</strong>rotocol) request into a command + arguments, and/or serialize the reply and write raw bytes back to the socket. Crucially, the I/O threads never touch the keyspace and never <em>execute</em> a command. The main thread still does 100% of command execution, single-threaded, exactly as before. The I/O threads just take the network-syscall and protocol-parsing work off the main thread's plate so it isn't stalled by slow clients or TLS handshakes. This is why Redis's docs describe it as "multi-threaded I/O, single-threaded execution" rather than a general move to multi-threading. (TLS support for I/O threads was historically limited in Redis 6/7 and was improved in Redis 8.)</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/redis-fig1.png" alt="Diagram of Redis's single-threaded event loop, showing I/O threads reading and writing socket bytes while command execution happens on one core, with RDB/AOF persisting to disk">
+          <div class="diagram-caption">Figure 1. Redis's single-threaded event loop: I/O threads read and write socket bytes, but all command execution happens on one core against in-memory data structures, with RDB/AOF persisting to disk.</div>
+        </div>
+
+        <p><strong>Worked example — request lifecycle for <code>GET foo</code>:</strong></p>
+        <ol>
+          <li>Client opens a TCP connection; the accept handler (running on the main event loop) registers the new socket's fd for read events.</li>
+          <li>Client sends <code>*2\r\n$3\r\nGET\r\n$3\r\nfoo\r\n</code> (RESP-encoded <code>GET foo</code>). The bytes land in the kernel's socket receive buffer.</li>
+          <li><code>epoll_wait()</code> returns, reporting the client fd as readable.</li>
+          <li>An I/O thread (or the main thread, if <code>io-threads 1</code>) reads the bytes into the client's query buffer and parses the RESP array into the command name <code>GET</code> and argument <code>foo</code>.</li>
+          <li>The main thread dequeues the parsed command, looks it up in the command table, runs ACL/auth and argument-arity checks, then calls the command's handler (<code>getCommand</code> &rarr; <code>lookupKeyReadWithFlags</code> &rarr; a hash-table lookup for the key <code>"foo"</code> in the current DB's dict).</li>
+          <li>If found, the value object is serialized into a RESP bulk string reply (<code>$3\r\nbar\r\n</code>) and appended to the client's output buffer; if not found, a RESP null (<code>$-1\r\n</code> / <code>_\r\n</code> in RESP3) is queued instead.</li>
+          <li>The main thread (or a write I/O thread) writes the buffered reply back to the socket once it is writable.</li>
+          <li>Somewhere in this same event-loop tick (via <code>beforeSleep()</code>), Redis may also: append the command to the AOF buffer if it was a write, feed the command to the replication stream, check the key's TTL, and run any due cron jobs (<code>serverCron</code>, ~10 times/sec by default) — expiring keys, resizing hash tables, updating stats.</li>
+        </ol>
+        <p>A <code>SET foo bar</code> command follows the same path but additionally: (a) the write is appended to the AOF (if enabled), (b) the write is propagated to the replication backlog and any connected replicas, and (c) the key's "dirty" counter increments (used to trigger RDB save points like <code>save 60 1000</code>).</p>
+
+        <h3>1.2 Core Data Structures and Their Complexity</h3>
+        <p>Every Redis key is a <code>redisObject</code> (<code>robj</code>): a small header (type tag, internal <em>encoding</em> tag, an LRU/LFU field, a reference count, and a pointer to the actual payload). The "type" is what you see from <code>TYPE key</code> (string, list, hash, set, zset, stream); the "encoding" is the <em>internal</em> representation Redis actually chose (visible via <code>OBJECT ENCODING key</code>), and Redis silently upgrades encodings as data grows, trading memory for speed.</p>
+
+        <table>
+          <tr><th>Data Type</th><th>Internal Encoding(s)</th><th>Time Complexity</th><th>Notes</th></tr>
+          <tr>
+            <td>String</td>
+            <td>SDS (Simple Dynamic String) — five header variants (<code>sdshdr5/8/16/32/64</code>) sized to the string length</td>
+            <td><code>GET</code>/<code>SET</code> O(1) (excluding network transfer proportional to payload size); <code>APPEND</code>/<code>STRLEN</code> amortized O(1); <code>GETRANGE</code>/<code>SETRANGE</code> O(N) in the size of the range copied</td>
+            <td>Redis never uses raw C strings (<code>char *</code>); it uses SDS (<code>sds.h</code>) instead, because: O(1) length (reading <code>sds-&gt;len</code> vs. O(N) <code>strlen()</code>); binary safety (values can contain embedded <code>\0</code> bytes for protobufs/images/blobs — a plain C string would truncate at the first null byte); and amortized O(1) append via over-allocation — SDS doubles the buffer when growing a string under 1 MB, and grows by fixed 1 MB increments above that, so repeated <code>APPEND</code> calls need a realloc only occasionally. <code>buf</code> stays null-terminated for interoperability with C string functions even though the authoritative length lives in the header, not the terminator.</td>
+          </tr>
+          <tr>
+            <td>List</td>
+            <td>Small lists: bare <strong>listpack</strong> (below <code>list-max-listpack-size</code>, default up to 128 entries and small per-item size). Large lists: <strong>quicklist</strong> — a doubly linked list where each node is a listpack</td>
+            <td><code>LPUSH</code>/<code>RPUSH</code>/<code>LPOP</code>/<code>RPOP</code> O(1) (always operate on the head/tail node); <code>LLEN</code> O(1) (length is cached, not recomputed); <code>LINDEX</code>/<code>LINSERT</code> in the middle O(N) (must walk quicklist nodes, and scan within a listpack node, to reach the position)</td>
+            <td>Redis 3.2 replaced the old design — a <code>ziplist</code> for small lists, or a genuine doubly linked <code>linkedlist</code> of individually malloc'd nodes for large lists (poor cache locality, ~16 bytes of pointer overhead per element) — with quicklist: each node is a compact, contiguous listpack packing multiple entries with no per-element pointers, giving O(1) push/pop at both ends like a real linked list but with the memory density of a flat array inside each node. Optional LZF compression of the "cold" middle nodes of a long quicklist (<code>list-compress-depth</code>) trades CPU for memory.</td>
+          </tr>
+          <tr>
+            <td>Hash</td>
+            <td>Small hashes: single <strong>listpack</strong> (below <code>hash-max-listpack-entries</code>, default 128 fields, and <code>hash-max-listpack-value</code>, default 64 bytes per field/value). Large hashes: real chained <strong>hashtable</strong> (<code>dictEntry</code> per field, open hashing with linked-list buckets) — conversion is one-way, it never shrinks back</td>
+            <td>Listpack-encoded: <code>HGET</code>/<code>HSET</code> O(N) (N = number of fields, but small by construction); hashtable-encoded: <code>HGET</code>/<code>HSET</code>/<code>HDEL</code> O(1) average; <code>HGETALL</code>/<code>HKEYS</code>/<code>HVALS</code> O(N) regardless of encoding (must return every field)</td>
+            <td>A listpack-encoded hash is a flat, contiguous array of field-value pairs with no hashing at all — lookups are O(N) but N is small and cache-friendly, which in practice beats a "real" hash table's pointer-chasing for tiny objects.</td>
+          </tr>
+          <tr>
+            <td>Set</td>
+            <td>Three possible encodings: <strong>intset</strong> (every member an integer, small set &le; <code>set-max-intset-entries</code> default 512 — a flat, sorted array of native integers); <strong>listpack</strong> (Redis &ge; 7.2, small sets with at least one non-integer member, default up to 128 entries/64 bytes per element — same flat, pointer-free layout as hash/list listpacks); <strong>hashtable</strong> (general-purpose encoding once a set outgrows the small-set thresholds)</td>
+            <td>intset membership test O(log N) via binary search; insertion requires shifting the array — O(N) worst case, though N is bounded by the small-set threshold. hashtable <code>SADD</code>/<code>SISMEMBER</code>/<code>SREM</code> O(1) average</td>
+            <td>Redis automatically promotes intset &rarr; listpack &rarr; hashtable (or intset &rarr; hashtable directly) as thresholds are crossed; it never demotes.</td>
+          </tr>
+          <tr>
+            <td>Sorted Set (ZSET)</td>
+            <td>Small sorted sets: one flat <strong>listpack</strong> of (member, score) pairs (&le; <code>zset-max-listpack-entries</code> default 128, 64-byte values). Larger sorted sets: a dual structure — a <strong>hash table</strong> mapping member &rarr; score, plus a <strong>skip list</strong> (<code>zskiplist</code>) keeping members ordered by (score, member)</td>
+            <td>Listpack <code>ZADD</code>/<code>ZRANGE</code> O(N) (N tiny); large-ZSET <code>ZSCORE</code> O(1) via the hash table; <code>ZADD</code> and ordered operations O(log N) via the skip list; <code>ZRANGEBYSCORE</code> O(log N + M) for M results; <code>ZRANK</code>/<code>ZREVRANK</code> O(log N)</td>
+            <td><strong>Skip list mechanics:</strong> a probabilistic alternative to a balanced tree. The bottom level is an ordinary sorted linked list containing every element; each element is also promoted, with probability p = 1/4 per additional level, up to a capped maximum (<code>ZSKIPLIST_MAXLEVEL</code> = 32 in Redis) — higher levels have exponentially fewer nodes, forming "express lanes" that let a search skip over large chunks of the list, giving expected O(log N) search — the same asymptotic bound as a balanced binary search tree, with much simpler, lock-free-friendly insert/delete code (no tree rotations). Redis additionally stores a <strong>span</strong> value at each level of each node — how many level-0 nodes does this forward pointer skip over — so summing span while traversing lets Redis answer <code>ZRANK</code>/<code>ZREVRANK</code> in the same O(log N) traversal, without a separate structure. <strong>Worked example:</strong> inserting scores {1, 5, 9, 12, 20} — each <code>ZADD</code> does an O(log N) hashtable insert/update of member&rarr;score, an O(log N) skip-list search for the insertion point, O(1) random level generation via coin flips, and O(log N) pointer relinking at each level the new node participates in. A subsequent <code>ZRANGEBYSCORE key 5 12</code> walks down through the express lanes to find the first node with score &ge; 5 (O(log N)), then walks forward at level 0 collecting nodes until score &gt; 12 (O(M) for M results) — total O(log N + M), far better than a naive O(N) scan for large sets.</td>
+          </tr>
+          <tr>
+            <td>Bitmap</td>
+            <td>Not a distinct type — a Redis <strong>String</strong> interpreted as a raw array of bits</td>
+            <td><code>SETBIT</code>/<code>GETBIT</code> O(1) — e.g. <code>SETBIT key 7 1</code> computes byte index 7/8=0, bit offset 7%8=7, and flips that bit; <code>BITCOUNT</code> (population count over a range) O(N) in bits/bytes scanned, though Redis uses processor popcount instructions and SIMD-friendly loops to make it fast in practice</td>
+            <td>Manipulated with <code>SETBIT</code>/<code>GETBIT</code>/<code>BITCOUNT</code>/<code>BITPOS</code>/<code>BITOP</code>. Extremely memory-dense: a flag for 1 billion users costs ~125 MB.</td>
+          </tr>
+          <tr>
+            <td>HyperLogLog (HLL)</td>
+            <td>Fixed <strong>12 KB</strong> string (dense/sparse internal representation), regardless of whether you've counted 10 or 10 billion distinct items</td>
+            <td><code>PFADD</code> O(1) per element; <code>PFCOUNT</code> O(1) with a small constant for a single key (cached, invalidated only when a register changes) and O(N) across N keys; <code>PFMERGE</code> (union of N HLLs, register-wise max) O(N)</td>
+            <td>A probabilistic algorithm (Flajolet et al., refined by Google) for estimating the cardinality of a huge set with a standard error of about 0.81%. It hashes every element into a bit string and looks at the position of the leftmost 1 bit (length of the leading run of zero bits); 14 bits of a 64-bit hash select one of 16,384 registers, and the remaining 50 bits compute the run-of-zeros count for that bucket only, comfortably fitting a 6-bit register (max representable run &asymp; 50); each register stores the maximum run length ever observed for its bucket, and averaging (harmonic-mean-style) across all 16,384 registers produces a much lower-variance estimate than any single register could — 16,384 registers &times; 6 bits = 98,304 bits = 12,288 bytes &asymp; 12 KB. Since raw estimates are biased for small cardinalities, Redis switches to a Linear Counting estimator below roughly 2.5&ndash;3&times;m (&asymp; 40,000&ndash;50,000 for m = 16,384) and applies an empirically-fit polynomial bias correction near the crossover, so very small counts (a few hundred elements) are reported almost exactly right.</td>
+          </tr>
+          <tr>
+            <td>Stream</td>
+            <td><strong>Radix tree</strong> (compressed prefix trie, <code>rax</code>) keyed by entry ID (<code>&lt;milliseconds&gt;-&lt;sequence&gt;</code>); each radix-tree leaf stores a <strong>listpack</strong> "macro node" holding a whole batch of consecutive entries (until it exceeds <code>stream-node-max-bytes</code>/<code>stream-node-max-entries</code>)</td>
+            <td><code>XADD</code> O(1) amortized; <code>XRANGE</code>/<code>XREVRANGE</code> O(log N) to locate the start plus O(M) to walk M results</td>
+            <td>An append-only log of entries. Because consecutive IDs sharing a millisecond timestamp share a long common prefix, the radix tree compresses very well, which is why Streams are dramatically more memory-efficient than the same data modeled as, say, a sorted set + hash (real-world reports show roughly an order of magnitude less memory for equivalent data). Streams support <strong>consumer groups</strong>: each group tracks a <code>last-delivered-id</code> and a per-consumer <strong>Pending Entries List (PEL)</strong> — a dict of delivered-but-unacknowledged entry IDs with delivery time/count, enabling at-least-once processing with <code>XREADGROUP</code>/<code>XACK</code>/<code>XCLAIM</code>.</td>
+          </tr>
+        </table>
+
+        <h3>1.3 Persistence: RDB vs. AOF vs. AOF Rewrite</h3>
+        <p>Redis offers two independent, combinable persistence mechanisms (or none, for pure caching).</p>
+        <p><strong>RDB (Redis Database) — point-in-time snapshotting.</strong> Triggered by <code>SAVE</code> (blocking), <code>BGSAVE</code> (background), or automatically by <code>save &lt;seconds&gt; &lt;changes&gt;</code> rules (e.g. <code>save 60 1000</code> = snapshot if &ge;1000 keys changed in the last 60s). Mechanism:</p>
+        <ol>
+          <li>Redis calls <code>fork()</code>. The OS gives the child process its <em>own</em> virtual address space that initially shares the exact same physical memory pages as the parent (via <strong>copy-on-write</strong>, COW) — this is nearly instantaneous even for a huge dataset because no memory is actually copied yet.</li>
+          <li>The child process walks the entire keyspace and serializes it into a temporary binary RDB file.</li>
+          <li>If the parent (still serving live traffic) modifies a page that the child hasn't finished reading yet, the kernel duplicates <em>only that one 4 KB page</em> — the child keeps seeing the old, consistent snapshot-time data; the parent's changes go to its own private copy. This is what makes RDB a true <strong>consistent point-in-time snapshot</strong> without ever pausing the main event loop for the bulk of the work.</li>
+          <li>When the child finishes, it atomically renames the temp file over the old <code>dump.rdb</code>.</li>
+        </ol>
+        <p>The cost you do pay is the <code>fork()</code> call itself, which is proportional to the size of the process's page table (not the dataset), but can still stall the parent for milliseconds to occasionally over a second on very large instances with poor memory/CPU characteristics — this is the main operational risk of RDB.</p>
+        <p><strong>AOF (Append Only File) — command logging.</strong> With <code>appendonly yes</code>, every write command is appended (in RESP format) to a log; replaying the log from the start reconstructs the dataset. The durability knob is <code>appendfsync</code>:</p>
+        <ul>
+          <li><code>always</code>: <code>fsync()</code> after every write batch, before acknowledging the client. Safest, slowest — but Redis performs <strong>group commit</strong>: if many clients pipeline writes concurrently, they can share a single <code>fsync()</code> call, softening the cost.</li>
+          <li><code>everysec</code> (<strong>default</strong>): a background thread calls <code>fsync()</code> once per second; the main thread never blocks on disk. You can lose at most ~1 second of writes if the OS/box crashes.</li>
+          <li><code>no</code>: Redis never calls <code>fsync()</code> explicitly; the OS decides when to flush dirty pages (Linux typically flushes within ~30 seconds by default). Fastest, least durable — you can lose many seconds of data on an OS-level crash or power loss (though not on a Redis <em>process</em> crash alone, since the data is already in the OS page cache).</li>
+        </ul>
+        <p><strong>The durability-vs-performance trade-off, with the timing math:</strong> a spinning disk's <code>fsync()</code> typically costs on the order of several milliseconds (dominated by seek + rotational latency) while an SSD's costs roughly tens of microseconds to low single-digit milliseconds. If Redis had to do one <code>fsync()</code> per client write with no batching, throughput would be capped near <code>1 / fsync_latency</code> writes/sec <strong>per fsync-serialized stream</strong> — e.g. ~150&ndash;250 writes/sec on a disk with a 4&ndash;6 ms fsync, vs. potentially tens of thousands/sec on fast NVMe SSDs. Group commit changes this: if K clients pipeline concurrently within one event-loop tick, one <code>fsync()</code> call can cover all K of their writes, so effective throughput becomes closer to <code>K / fsync_latency</code>. This is exactly why <code>always</code> is "very very slow" for a single unpipelined client but far more tolerable under concurrent load, and why <code>everysec</code> is the recommended default: it bounds worst-case loss to ~1 second while making the fsync cost basically invisible to the request path.</p>
+        <p><strong>AOF rewrite (log compaction).</strong> An AOF that logs <code>INCR counter</code> 100 times has 100 log entries to replay just to reconstruct one key with value <code>100</code>; a rewrite (<code>BGREWRITEAOF</code>, or automatic via <code>auto-aof-rewrite-percentage</code>/<code>auto-aof-rewrite-min-size</code>) produces the <em>minimal</em> command set (or, since Redis 7.0, an RDB-format "base" file) that reconstructs the current dataset, using the same fork+COW trick as RDB. Since Redis 7.0, AOF is a <strong>multi-part</strong> mechanism: a base file (RDB or AOF format) + one or more incremental files + a manifest file, all inside an <code>appenddirname</code> directory. During a rewrite, the parent immediately opens a <em>new</em> incremental file and keeps appending live writes to it while the forked child builds the new base file in the background — this avoids the old (&lt; 7.0) design's need to buffer all concurrent writes in memory and write them twice.</p>
+        <p>Combining RDB + AOF (<code>appendonly yes</code> with periodic RDB snapshots too) gives you the best of both: AOF for near-zero data loss, RDB for fast restarts, compact backups, and (as covered next) supporting partial-resync after restarts.</p>
+
+        <h3>1.4 Memory Management and Eviction Policies</h3>
+        <p>When <code>maxmemory</code> is set and the limit is hit, Redis enforces a <code>maxmemory-policy</code>:</p>
+        <ul>
+          <li><code>noeviction</code>: reject new writes with an error once the limit is hit (reads still work). Default.</li>
+          <li><code>allkeys-lru</code> / <code>volatile-lru</code>: evict the least-recently-used key, from the whole keyspace or only from keys that have a <strong>TTL</strong> (<strong>T</strong>ime <strong>T</strong>o <strong>L</strong>ive, an expiration) set, respectively.</li>
+          <li><code>allkeys-lfu</code> / <code>volatile-lfu</code>: evict the least-frequently-used key (whole keyspace / TTL-only).</li>
+          <li><code>allkeys-random</code> / <code>volatile-random</code>: evict a uniformly random key.</li>
+          <li><code>volatile-ttl</code>: evict the key with the nearest expiration time first.</li>
+        </ul>
+        <p><strong>The approximated LRU algorithm.</strong> Redis does <em>not</em> maintain a real LRU doubly-linked list threaded through every key (that would cost extra pointers per key and require list-splicing on every read, hurting the O(1) read path). Instead, each object's header stores a 24-bit "LRU clock" (seconds-resolution, updated on access). When eviction is needed, Redis:</p>
+        <ol>
+          <li>Randomly samples <code>maxmemory-samples</code> (default 5) keys from the target pool (all keys, or only keys with a TTL).</li>
+          <li>Evicts whichever sampled key has the oldest LRU timestamp.</li>
+          <li>Since Redis 3.0, sampled-but-not-evicted candidates are kept in a small "eviction pool" across invocations, so good candidates found in one round aren't forgotten before the next — this closes much of the gap to true LRU without the memory/CPU cost of an exact list.</li>
+        </ol>
+        <p><em>The sampling math/trade-off:</em> with a single random sample of size k out of N keys, the chance any <em>specific</em> very-stale key is chosen for consideration in one round is only k/N — but because the pool persists good candidates across many eviction rounds (and real workloads evict repeatedly, not just once), the effective accuracy converges much closer to true LRU than a single k/N draw suggests. Redis's own published comparisons show k=5 (default) is a reasonable approximation, and raising <code>maxmemory-samples</code> to 10 measurably narrows the gap to true LRU, at the cost of more CPU per eviction (you must fetch and compare more candidate keys). This is a classic <strong>accuracy-vs-CPU-per-eviction dial</strong>: bigger samples get closer to the "true" answer, smaller samples are cheaper. Redis exposes it precisely because the right point on that curve depends on the access-pattern skew of your workload (very skewed/Pareto-like access patterns need very little sampling to work almost perfectly).</p>
+        <p><strong>LFU (Least Frequently Used, Redis 4.0+).</strong> True per-key access counters would need large integers and constant maintenance. Instead Redis reuses the object header's 24-bit field as: 16 bits for "last decrement time" + an 8-bit <strong>Morris counter</strong> (a classic probabilistic approximate-counting algorithm) that increments <em>probabilistically</em>, with the increment probability <em>decreasing</em> as the counter grows (governed by <code>lfu-log-factor</code>, default 10) — this lets 8 bits (0&ndash;255) represent access counts up into the millions logarithmically instead of saturating after 255 real accesses. The counter also <strong>decays</strong>: every <code>lfu-decay-time</code> minutes (default 1) without access, the counter is nudged down, so the algorithm adapts when a previously "hot" key goes cold.</p>
+
+        <h3>1.5 Replication: Async, Backlog, PSYNC</h3>
+        <p>Redis replication is <strong>leader-follower</strong> (master-replica), and <strong>asynchronous by default</strong>: the master applies a write locally, then streams it to replicas, without waiting for their acknowledgment before replying to the client. Replicas periodically (about once/second) send back an acknowledged <strong>replication offset</strong> so the master knows how caught-up each replica is; this enables the optional <code>WAIT numreplicas timeout</code> command for near-synchronous behavior on demand, without changing the default fire-and-forget fast path.</p>
+        <p>Every master has a pseudo-random <strong>replication ID</strong> (marking a "history" of the dataset) and a monotonically increasing <strong>replication offset</strong> (bytes of write-stream produced so far, incremented even with zero replicas attached). The pair (replication ID, offset) uniquely identifies an exact state of the dataset.</p>
+        <p><strong>PSYNC and partial vs. full resync.</strong> When a replica (re)connects, it sends the master its last known (replid, offset) via the <code>PSYNC</code> command:</p>
+        <ul>
+          <li>If the master recognizes that <code>replid</code> as current or historical, <em>and</em> the requested offset still exists in the master's <strong>replication backlog</strong> (a fixed-size in-memory circular buffer of recent write-stream bytes, default <code>repl-backlog-size</code> 1 MB, tunable), the master performs a <strong>partial resynchronization</strong>: it streams just the missing bytes from the backlog. Fast, cheap, no RDB transfer needed.</li>
+          <li>Otherwise, a <strong>full resynchronization</strong> happens: the master starts a background RDB save (or, with <code>repl-diskless-sync</code>, streams the RDB directly over the socket without touching disk), buffers new writes arriving during the save, transfers the RDB to the replica, and finally streams the buffered writes. The replica loads the RDB wholesale, then applies the streamed tail.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/redis-fig2.png" alt="Diagram of asynchronous replication showing the master appending writes to a replication backlog and streaming them to replicas via PSYNC">
+          <div class="diagram-caption">Figure 2. Asynchronous replication: the master appends writes to a replication backlog and streams them to replicas via PSYNC; a disconnected replica can resume with a partial resync if its offset is still in the backlog.</div>
+        </div>
+
+        <p>Backlog sizing is a direct trade-off: it must be large enough to cover (expected max disconnect duration) &times; (write throughput in bytes/sec), or a routine network blip forces an expensive full resync instead of a cheap partial one — the default 1 MB is frequently too small for busy production masters and is commonly raised into the 100s of MB.</p>
+        <p>Since Redis 4.0, a <strong>promoted replica retains a secondary replication ID</strong> referencing its old master's history and the offset at which it was promoted, so replicas reconnecting after a failover can still attempt a partial resync against the <em>new</em> master using the <em>old</em> master's ID/offset lineage — avoiding an unnecessary full resync cluster-wide right after a failover.</p>
+
+        <h3>1.6 Redis Cluster: Hash Slots, Resharding, Failover</h3>
+        <p>Redis Cluster shards data across multiple masters (each optionally with its own replicas) using <strong>hash slots</strong>, not consistent hashing rings. The keyspace is divided into a fixed <strong>16,384 slots</strong>; every key is deterministically mapped to a slot via <code>HASH_SLOT = CRC16(key) mod 16384</code> (<strong>CRC16</strong> = a 16-bit Cyclic Redundancy Check, a fast, well-distributed hash — Redis uses the CCITT/XMODEM variant). Each master owns a subset of the 16,384 slots (e.g., 3 masters might each own ~5,461 slots); clients (or a smart client library) cache a slot&rarr;node map and route each command directly to the owning master. <strong>Hash tags</strong> — the substring between <code>{</code> and <code>}</code> in a key — let you force related keys onto the same slot (and hence the same node) for multi-key operations: <code>{user:1000}:profile</code> and <code>{user:1000}:orders</code> both hash only on <code>user:1000</code>, landing in the same slot.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/redis-fig3.png" alt="Diagram of Redis Cluster showing three masters sharing the 16,384 hash slots, each backed by a replica">
+          <div class="diagram-caption">Figure 3. Redis Cluster: three masters share the 16,384 hash slots between them, each backed by a replica for failover.</div>
+        </div>
+
+        <p><strong>Why 16,384 and not the full 65,536 that a 16-bit CRC could address?</strong> Three intertwined reasons, from Redis's own design discussion:</p>
+        <ol>
+          <li><strong>Gossip message size.</strong> Every cluster node periodically gossips its view of slot ownership to every other node as part of the heartbeat (PING/PONG) messages over the <strong>cluster bus</strong> (a separate binary protocol on port <code>+10000</code>). That message includes a bitmap with one bit per slot. At 16,384 slots that's exactly 2 KB per heartbeat; at 65,536 it would be 8 KB — 4&times; more bytes, sent continuously, node-to-node, in an all-to-all gossip mesh (O(N<sup>2</sup>) node pairs). For clusters with many nodes this bandwidth/CPU cost compounds badly, while 16,384 stays cheap.</li>
+          <li><strong>Node-count reality.</strong> Redis Cluster is not designed to scale to tens of thousands of masters — realistically it targets up to roughly 1,000 nodes. At 1,000 masters, 16,384 slots still gives ~16 slots/node of placement granularity, which is fine; you don't need 65,536 slots' worth of granularity for a cluster that will never have anywhere near 65,536 nodes.</li>
+          <li><strong>Cheap arithmetic either way</strong>, but message size dominates the decision — 16,384 (2<sup>14</sup>) keeps the modulo/AND operation trivial (<code>crc16(key) &amp; 0x3FFF</code>) while keeping the gossip payload small; doubling it to 65,536 buys essentially no practical benefit at real cluster sizes while measurably taxing the gossip protocol.</li>
+        </ol>
+        <p><strong>Resharding.</strong> An operator (or <code>redis-cli --cluster reshard</code>) moves a slot from node A to node B by: marking the slot <code>MIGRATING</code> on A and <code>IMPORTING</code> on B (<code>CLUSTER SETSLOT</code>), then migrating keys one-by-one with <code>MIGRATE</code>. While a slot is mid-migration, if A gets a request for a key that has <em>already</em> moved, it replies with an <code>-ASK</code> redirect (temporary, this-request-only: the client sends <code>ASKING</code> then retries against B); once <em>all</em> keys are moved, <code>CLUSTER SETSLOT &lt;slot&gt; NODE B</code> finalizes ownership and future requests to that slot get a normal, sticky <code>-MOVED</code> redirect instead.</p>
+        <p><strong>Master-replica failover inside a cluster.</strong> Nodes gossip liveness continuously; if a node stops responding within <code>cluster-node-timeout</code>, the observing node marks it <strong>PFAIL</strong> ("possibly failed") and gossips that suspicion. Once a majority of masters agree a node is down, it's promoted to <strong>FAIL</strong> (confirmed), and one of the failed master's replicas holds an election, requesting votes from the surviving masters; upon receiving votes from a majority, it promotes itself to master and announces the new slot ownership via gossip. Because this requires a <em>majority</em> of masters to agree, a cluster needs <strong>at least 3 masters</strong> to tolerate a single node/network failure safely (with 3 masters, quorum is 2; with 5, quorum is 3), and <code>cluster-require-full-coverage</code> (default <code>yes</code>) makes the whole cluster refuse traffic if any slot has no reachable owner, prioritizing consistency of "don't silently serve incomplete data" over blanket availability (this is itself tunable).</p>
+
+        <h3>1.7 Transactions and Lua Scripting Atomicity</h3>
+        <p><strong>MULTI/EXEC.</strong> <code>MULTI</code> puts a connection into a "queueing" mode: subsequent commands on that connection are validated and queued, not executed, until <code>EXEC</code> is issued. Because Redis is single-threaded, once <code>EXEC</code> starts, the entire queued batch runs back-to-back with <strong>no other client's commands interleaved</strong> — that's the whole atomicity guarantee, and it falls out for free from the execution model rather than needing a special transaction engine. Two caveats: (1) a command that fails at <em>queue time</em> (unknown command, wrong arity) aborts the whole transaction before <code>EXEC</code>; (2) a runtime error in one queued command (e.g., <code>INCR</code> on a string that isn't a number) does <strong>not</strong> roll back the other commands — Redis transactions are not "all or nothing" on runtime errors, only atomic in the sense of <em>uninterrupted execution</em>. <code>WATCH key</code> adds optimistic-locking (compare-and-swap): if a watched key changes between <code>WATCH</code> and <code>EXEC</code>, the whole transaction is aborted (returns null) so the client can retry.</p>
+        <p><strong>Lua scripting (<code>EVAL</code>/<code>EVALSHA</code>, or <code>FUNCTION</code> since Redis 7.0).</strong> A Lua script runs to completion as a single atomic step from every other client's point of view — again, simply because the single main thread cannot interleave anything else while the script runs. This makes Lua strictly more powerful than <code>MULTI/EXEC</code> for logic like "read a value, branch on it, then conditionally write" (impossible inside a plain <code>MULTI/EXEC</code> block, since queued commands can't see intermediate results), at the cost of a real operational risk: a slow or infinite-looping script blocks <em>the entire server</em>, including replication and all other clients, for its whole duration (mitigated by <code>lua-time-limit</code>, and by preferring read-only script variants — <code>EVAL_RO</code>/<code>FUNCTION</code> read-only flags — where possible).</p>
+
+        <h2 id="system-design-view-end-to-end-walkthroughs">System-Design View: End-to-End Walkthroughs</h2>
+
+        <h3>A SET/GET pair through the event loop</h3>
+        <ol>
+          <li><strong>Connection &amp; framing.</strong> Client opens (or reuses, via connection pooling) a TCP connection; commands arrive RESP-encoded.</li>
+          <li><code>SET session:42 "alice" EX 3600</code> arrives. An I/O thread (if <code>io-threads</code> &gt; 1) or the main thread reads and parses it.</li>
+          <li>Main thread executes: hash the key into the main dict, insert/replace the <code>robj</code>, set the key's expiration entry in the expires dict, mark the dataset "dirty."</li>
+          <li>Side effects queued in the same event-loop tick: append the command to the AOF buffer (if enabled), propagate it verbatim (or as a deterministic equivalent) to the replication backlog and any connected replicas' output buffers.</li>
+          <li>Reply <code>+OK\r\n</code> queued to the client's output buffer, flushed on the next writable-socket event.</li>
+          <li>Later, <code>GET session:42</code> arrives on a (possibly different) connection; main thread checks the expires dict first (lazy + periodic active expiration both apply), finds it not expired, does an O(1) dict lookup, and returns the value as a RESP bulk string — no disk I/O anywhere on this path unless a swap/OOM condition exists.</li>
+        </ol>
+
+        <h3>A cluster-mode request with a redirect</h3>
+        <ol>
+          <li>A smart client library computes <code>slot = CRC16("order:9981") mod 16384 = 5798</code> and consults its cached slot map: slot 5798 &rarr; Node A.</li>
+          <li>It sends <code>GET order:9981</code> directly to Node A.</li>
+          <li>Suppose slot 5798 was reassigned to Node C moments earlier (resharding completed). Node A no longer owns it and replies: <code>-MOVED 5798 10.0.4.12:6379</code></li>
+          <li>The client updates its local slot-map cache (5798 &rarr; Node C) and re-issues <code>GET order:9981</code> against <code>10.0.4.12:6379</code>, which now serves it normally.</li>
+          <li>Contrast with an <strong>in-flight migration</strong>: if slot 5798 is currently <code>MIGRATING</code> from A to C and this particular key has <em>already</em> been moved but not yet finalized cluster-wide, A replies <code>-ASK 5798 10.0.4.12:6379</code> instead. This time the client sends <code>ASKING</code> immediately followed by <code>GET order:9981</code> to C — a one-shot redirect that does <strong>not</strong> update the client's slot cache, because the <em>slot</em> as a whole isn't owned by C yet, only this individual key has already migrated.</li>
+        </ol>
+
+        <h2 id="the-math">The Math</h2>
+
+        <h3>3.1 HyperLogLog Error Rate</h3>
+        <div class="formula-box">
+          <span class="formula-label">Standard error of the HLL estimator</span>
+          RSE &asymp; 1.04 / &radic;m
+          <br>where m is the number of registers. Redis fixes m = 16,384 = 2<sup>14</sup> (14 bits of a 64-bit hash select the register): RSE &asymp; 1.04 / &radic;16384 = 1.04 / 128 &asymp; 0.008125 = 0.8125% &asymp; 0.81%
+          <br>Practically: for a true cardinality of 1,000,000, one standard error is &asymp; 8,125 elements, so the estimate should typically land within roughly &plusmn;0.81% (&asymp; 991,875 to 1,008,125) of the true value, with roughly 2 standard errors (&asymp; &plusmn;1.6%) covering the great majority of runs (~95%) under the usual near-Gaussian-error assumption for large N. Redis additionally uses a Linear Counting estimator below ~2.5&ndash;3&times;m and a polynomial bias correction near that crossover, so very small counts — a few hundred — tend to be far more accurate than the asymptotic 0.81% figure would suggest.
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Register footprint</span>
+          16,384 registers &times; 6 bits/register = 98,304 bits = 12,288 bytes &asymp; 12 KB
+          <br>Matching Redis's documented fixed HLL size — 12 KB whether you've counted 10 or 10 billion distinct items.
+        </div>
+
+        <h3>3.2 Approximate-LRU Sampling Accuracy vs. Sample Size</h3>
+        <div class="formula-box">
+          <span class="formula-label">Per-round sampling probability</span>
+          P(a specific globally-oldest key is caught in one round's sample) = k / N
+          <br>where k = <code>maxmemory-samples</code> (default 5) and N = size of the candidate keyspace (all keys, or only keys with a TTL).
+          <br>There's no closed-form "accuracy %" Redis publishes, but the mechanism gives an intuitive bound: each eviction round considers k independently drawn candidates, refreshed against a small persistent "best candidates" pool across rounds since Redis 3.0. Because eviction happens repeatedly (not once) and the pool retains near-misses, the cumulative probability that truly stale keys eventually get evicted (rather than the model producing a durably wrong long-run ranking) rises quickly with either more rounds or a larger k. Redis's own benchmarking shows k=5 (default) already tracks true LRU well under realistic (Pareto/power-law) access patterns, and k=10 closes most of the remaining gap at roughly double the per-eviction CPU cost (2&times; the keys to fetch and compare) — a straightforward CPU-vs-precision dial rather than a fixed formula.
+        </div>
+
+        <h3>3.3 Memory Overhead per Key</h3>
+        <div class="formula-box">
+          <span class="formula-label">Per-key metadata overhead (64-bit build)</span>
+          dictEntry (key ptr + value ptr + next ptr) &asymp; 24 bytes
+          <br>+ robj header for the key wrapper &asymp; 16 bytes
+          <br>+ SDS header + bytes for the key itself &asymp; 3&ndash;17 bytes header + key length
+          <br>+ robj header for the value wrapper &asymp; 16 bytes
+          <br>+ SDS header + bytes for the value itself &asymp; 3&ndash;17 bytes header + value length
+          <br>Summed, that's commonly cited as <strong>~70&ndash;90 bytes of pure metadata overhead per key-value pair</strong>, before counting the actual payload bytes — plus allocator rounding (jemalloc/tcmalloc round each allocation up to the nearest size class, e.g. 8/16/32/48/64/80/96..., which can add a few more bytes of "waste" per allocation). This is why storing millions of tiny keys (e.g., one key per user-attribute) is often far more memory-expensive than packing the same data into fewer hash/listpack-encoded keys.
+        </div>
+
+        <h3>3.4 Replication Backlog Sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Minimum backlog size</span>
+          repl-backlog-size (bytes) &ge; write_throughput (bytes/sec) &times; max_expected_disconnect_duration (sec)
+          <br>Example: a master sustaining 5 MB/sec of write traffic, with network blips that can occasionally last up to 60 seconds, needs a backlog of at least 5 MB/s &times; 60s = 300 MB to avoid forcing a full RDB resync (which itself costs a <code>fork()</code>, a full snapshot transfer, and a load on the replica) every time such a blip occurs. The default of 1 MB is adequate only for near-idle masters or sub-second blips.
+        </div>
+
+        <h3>3.5 Single-Core Throughput Math</h3>
+        <div class="formula-box">
+          <span class="formula-label">CPU-bound throughput ceiling</span>
+          max ops/sec &asymp; 1 / (avg command CPU time)
+          <br>If an O(1) hash-table <code>GET</code> takes on the order of 1 microsecond of CPU time (typical order of magnitude for an in-memory hash lookup plus RESP encoding), that alone bounds throughput near <strong>~1,000,000 ops/sec</strong> for that single core — consistent with commonly cited Redis single-instance benchmarks in the several-hundred-thousand-to-low-millions ops/sec range for simple commands.
+          <br>Two things move real numbers below this ceiling: (a) network/syscall overhead per request when not pipelined (each round trip costs far more than 1 &micro;s in practice, often tens of microseconds, which is exactly what pipelining and multi-threaded I/O attack), and (b) commands with worse complexity (O(log N), O(N)) simply take longer per call, directly lowering the ops/sec ceiling by the same inverse relationship. Pipelining N commands per round trip amortizes the fixed network cost across N operations, pushing achieved throughput much closer to the CPU-bound ceiling above.
+        </div>
+
+        <h2 id="cap-theorem-placement">CAP Theorem Placement</h2>
+        <p>The <strong>CAP theorem</strong> says a distributed data store can only guarantee two of {<strong>C</strong>onsistency, <strong>A</strong>vailability, <strong>P</strong>artition tolerance} at any given moment during an actual network partition. Redis (in its replicated / Cluster form) leans <strong>AP</strong> in practice:</p>
+        <ul>
+          <li><strong>Availability &amp; Partition tolerance are prioritized over strict consistency.</strong> Replication is asynchronous by default: the master acknowledges a client's write as soon as it's applied locally, without waiting for any replica. If the master then crashes before that write reaches a replica, and a replica is promoted, <strong>that acknowledged write is silently lost</strong> — the classic AP trade-off. The system stays available (a new master takes over quickly) but sacrifices durability/consistency of the most recent writes.</li>
+          <li>Redis Cluster's default <code>cluster-require-full-coverage yes</code> pulls a bit toward C for <em>coverage</em> (it refuses to serve if any slot is unreachable, rather than serving a partial/degraded view) — but this is a narrow, configurable safety net, not a general strong-consistency guarantee; it can be turned off in favor of maximum availability.</li>
+          <li>Stronger consistency is <em>available on demand</em>, not by default: the <code>WAIT numreplicas timeout</code> command lets a client require that N replicas acknowledge a write before considering it durable, closing much of the failure window — but Redis's own documentation is explicit that this still does not make the system a genuine CP system: it reduces the <em>probability</em> of losing an acknowledged write to specific, harder-to-trigger failure modes, it does not eliminate it.</li>
+          <li>A <strong>single, non-replicated Redis instance</strong> isn't meaningfully "CAP-classified" at all — CAP is a statement about behavior <em>during a network partition</em> between replicated nodes, and a lone instance has no partition to speak of; it's simply CA-by-vacuity (fully consistent and available until it dies, with no distributed component).</li>
+        </ul>
+        <p><strong>Bottom line for interviews:</strong> say "Redis defaults to AP-leaning behavior via asynchronous replication — it favors staying available and accepting writes even when replicas are behind or unreachable, at the cost of being able to lose the last few acknowledged writes on an unclean failover. You can dial toward stronger consistency with <code>WAIT</code>, synchronous-ish semantics, or <code>min-replicas-to-write</code>, but you pay availability/latency for it, and even then it's a probabilistic safety improvement, not a formal consistency guarantee."</p>
+
+        <h2 id="real-world-usage-patterns">Real-World Usage Patterns</h2>
+        <ul>
+          <li><strong>Cache (cache-aside / read-through).</strong> The overwhelmingly common use: application checks Redis first, falls back to the database on a miss, writes the result back to Redis with a TTL. <code>maxmemory</code> + <code>allkeys-lru</code>/<code>allkeys-lfu</code> bound memory automatically.</li>
+          <li><strong>Session store.</strong> Web/app session data keyed by session ID, often a Hash per session with a TTL (<code>EXPIRE</code>) matching session lifetime — fast, and naturally self-cleaning.</li>
+          <li><strong>Leaderboards.</strong> A Sorted Set per leaderboard: <code>ZADD leaderboard &lt;score&gt; &lt;player&gt;</code>, <code>ZREVRANGE leaderboard 0 9 WITHSCORES</code> for top-10, <code>ZRANK</code>/<code>ZREVRANK</code> for "what's my rank" — all O(log N), which is why the skip-list structure matters so much here.</li>
+          <li><strong>Rate limiting.</strong> Several patterns, all commonly implemented with Redis: (a) fixed-window counter via <code>INCR</code> + <code>EXPIRE</code>; (b) sliding-window log using a Sorted Set keyed by timestamp, trimming old entries with <code>ZREMRANGEBYSCORE</code> and counting with <code>ZCARD</code>; (c) token bucket, typically implemented as a small Lua script (for atomicity) that refills tokens based on elapsed time and decrements on each request.</li>
+          <li><strong>Pub/Sub and real-time messaging.</strong> <code>PUBLISH</code>/<code>SUBSCRIBE</code>/<code>PSUBSCRIBE</code> for fan-out messaging (chat, live notifications, WebSocket backplanes); for anything needing persistence/consumer groups/replay, Streams (<code>XADD</code>/<code>XREADGROUP</code>) are the more durable evolution of the same idea.</li>
+          <li><strong>Queues / job processing.</strong> Lists (<code>LPUSH</code>/<code>BRPOP</code>) for simple FIFO work queues, or Streams with consumer groups for at-least-once delivery with acknowledgment and retry (<code>XACK</code>/<code>XCLAIM</code>/<code>XAUTOCLAIM</code>) semantics closer to a lightweight message broker.</li>
+          <li><strong>Distributed locks.</strong> <code>SET key value NX PX ttl</code> as a basic mutual-exclusion primitive; multi-node variants (e.g., the Redlock algorithm) exist for higher-assurance locking across several independent Redis instances, though they remain a debated topic regarding formal correctness under clock/network faults.</li>
+          <li><strong>Unique-count / analytics at scale.</strong> HyperLogLog for cheap approximate "unique visitors today" / "unique searches" counters across huge traffic without linear memory growth.</li>
+          <li><strong>Geospatial.</strong> Geo commands (<code>GEOADD</code>/<code>GEOSEARCH</code>) are built on top of Sorted Sets using a geohash-encoded score, reusing the same skip-list machinery for range queries.</li>
+        </ul>
+
+        <h2 id="trade-offs-and-limitations">Trade-offs and Limitations</h2>
+        <ul>
+          <li><strong>Data must fit in RAM</strong> (for the core in-memory model) — you pay for capacity in the most expensive tier of memory, and dataset growth directly drives infrastructure cost; this is fundamentally different from disk-oriented databases.</li>
+          <li><strong>Single-threaded command execution can be blocked by slow commands.</strong> An O(N) command over a huge collection (<code>KEYS *</code>, <code>SMEMBERS</code> on a multi-million-member set, unbounded <code>SORT</code>, a poorly written Lua script, or <code>FLUSHALL</code>) stalls <em>every other client</em> for its duration, because there is exactly one thread executing commands. The standard mitigation is to prefer cursor-based scanning (<code>SCAN</code>/<code>HSCAN</code>/<code>SSCAN</code>/<code>ZSCAN</code>) over blocking full-collection commands, and to keep Lua scripts short and read-mostly.</li>
+          <li><strong>Asynchronous replication can lose acknowledged writes.</strong> As discussed under CAP, a write acknowledged to the client before it reaches any replica can vanish if the master fails before propagating it and a replica is promoted — an inherent risk unless you explicitly trade latency/availability for safety via <code>WAIT</code>/synchronous-ish configuration.</li>
+          <li><code>fork()</code><strong>-based persistence can cause latency spikes.</strong> Both RDB snapshotting and AOF rewrite fork a child process; on very large datasets or memory-constrained/overcommitted hosts, the fork itself (or subsequent copy-on-write page duplication under heavy write load) can introduce multi-hundred-millisecond to multi-second latency blips.</li>
+          <li><strong>Cluster limitations.</strong> Multi-key operations (transactions, Lua scripts touching multiple keys, <code>MGET</code> across keys) only work atomically/efficiently when all involved keys hash to the <em>same</em> slot — which requires deliberate hash-tag key design; resharding and topology changes add real operational complexity; and a hard minimum of 3 masters is needed for automated quorum-based failover.</li>
+          <li><strong>Memory fragmentation and overhead.</strong> As shown in the memory-overhead-per-key math above, many small keys carry meaningful fixed overhead independent of payload size — packing related fields into hashes/listpacks is often materially cheaper than one key per field.</li>
+          <li><strong>No native ACID transactions across independently-failing multi-key/multi-shard operations</strong> in Cluster mode — Redis's transactional guarantees are strongest within a single node's single-threaded execution, not across a sharded cluster.</li>
+        </ul>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">Why is Redis single-threaded for command execution, and doesn't that waste multi-core CPUs?</div>
+          <div class="qa-a">Because most Redis commands are O(1)/O(log N) over in-memory structures, the bottleneck historically was network I/O and syscalls, not CPU-bound command logic — and single-threaded execution buys atomicity/no-lock-contention for free. Multi-core is now exploited for the <em>I/O</em> side (parsing/writing sockets) via <code>io-threads</code>, while execution stays single-threaded by design.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What changed with Redis 6's multi-threaded I/O — is command execution now parallel?</div>
+          <div class="qa-a">No. I/O threads only read raw bytes/parse RESP and write replies; they never touch the keyspace or run a command. The main thread still executes every command sequentially. This removes network-syscall overhead from the execution thread's critical path without introducing any locking.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Walk me through what happens, end-to-end, when a client issues <code>SET key value</code>.</div>
+          <div class="qa-a">TCP bytes &rarr; socket buffer &rarr; <code>epoll</code>/I/O thread reads &amp; parses RESP &rarr; main thread dequeues the command &rarr; hash-table insert/update &rarr; side effects queued in the same tick (AOF append, replication propagation, dirty counter update) &rarr; <code>+OK</code> reply queued &rarr; written back to the socket on next writable event.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does Redis use SDS instead of plain C strings?</div>
+          <div class="qa-a">O(1) length lookups (vs. O(N) <code>strlen</code>), binary safety (values can contain <code>\0</code>), and amortized O(1) appends via pre-allocation (double under 1 MB, +1 MB increments above) — while staying null-terminated for interoperability with C string APIs.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does a Redis List actually store a million elements internally, and what's the complexity of accessing the middle element?</div>
+          <div class="qa-a">As a <strong>quicklist</strong>: a doubly linked list of <strong>listpack</strong> nodes, each holding a batch of elements in one contiguous, pointer-free memory block. Push/pop at head/tail is O(1); reading an arbitrary middle index is O(N) because you must walk quicklist nodes (and scan within a node) to reach it.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does a Redis Set sometimes report <code>intset</code> and other times <code>hashtable</code> via <code>OBJECT ENCODING</code>?</div>
+          <div class="qa-a">Small, all-integer sets use <code>intset</code> (sorted array, O(log N) membership via binary search); sets that grow past thresholds or contain non-integers get promoted to <code>listpack</code> (small, mixed-type) or <code>hashtable</code> (large) — promotions are one-directional.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Explain why ZADD and ZRANGE are O(log N) in a sorted set.</div>
+          <div class="qa-a">Large sorted sets use a skip list — a multi-level probabilistic linked list where higher levels skip over exponentially more elements, so a search/insert only needs to examine ~log N nodes on average, matching a balanced tree's asymptotics with simpler code. A parallel hash table gives O(1) <code>ZSCORE</code> lookups by member.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is the "span" field in a Redis skip-list node for?</div>
+          <div class="qa-a">It records how many level-0 nodes a given forward pointer skips over. Accumulating span while traversing lets Redis compute a member's rank (<code>ZRANK</code>) in the same O(log N) traversal used for search, without needing a separate rank index.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Derive the HyperLogLog standard error for Redis's default configuration.</div>
+          <div class="qa-a">RSE &asymp; 1.04/&radic;m. Redis uses m = 16384 registers &rarr; 1.04/&radic;16384 = 1.04/128 &asymp; 0.81%. More registers (bigger m) means lower error but more memory (m &times; 6 bits); Redis's fixed choice of 16384 registers is why the standard 12 KB HLL always has ~0.81% error regardless of the true cardinality (outside the small-cardinality linear-counting regime).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is Redis's LRU eviction called "approximated" rather than exact?</div>
+          <div class="qa-a">Maintaining a real, globally ordered LRU list would need extra per-key pointers and list-splicing on every read, hurting the O(1) fast path. Instead, Redis samples <code>maxmemory-samples</code> random keys (default 5) and evicts whichever has the oldest stored access timestamp, refining accuracy over time via a small persistent candidate pool (since Redis 3.0).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does Redis approximate LFU with only 8 bits per key?</div>
+          <div class="qa-a">A Morris probabilistic counter: the counter increments with a probability that shrinks as it grows (tuned by <code>lfu-log-factor</code>), letting 8 bits (0&ndash;255) represent access frequencies that logarithmically span into the millions, and the counter periodically decays (<code>lfu-decay-time</code>) so stale "popularity" fades.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is the difference between RDB and AOF, and when would you use each (or both)?</div>
+          <div class="qa-a">RDB is a compact point-in-time binary snapshot (fast restarts, good for backups, but can lose the interval since the last snapshot); AOF is a replayable write log with tunable fsync durability (near-zero data loss with <code>everysec</code>, but larger files, slower restarts). Most production setups combine both — AOF for durability, RDB for fast recovery/backups — since Redis prefers the AOF on restart if both are present (it's the more complete history).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Explain the fsync policy trade-off mathematically.</div>
+          <div class="qa-a"><code>always</code> fsyncs every write batch — safe but bounded near 1/fsync_latency writes/sec per serialized stream (worse on spinning disks with multi-millisecond fsyncs) unless group commit batches many concurrent clients into one fsync call; <code>everysec</code> fsyncs on a timer in a background thread, decoupling write latency from disk latency entirely at the cost of up to ~1 second of exposure on crash; <code>no</code> defers entirely to OS flush timing (~30s typical on Linux), fastest but least durable against OS/power failure.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is Redis's replication backlog, and how do you size it?</div>
+          <div class="qa-a">A fixed-size circular buffer of recent write-stream bytes on the master, used to serve partial resyncs to reconnecting replicas. Size it to at least write_throughput (bytes/sec) &times; max_expected_disconnect_duration (sec); too small (the 1 MB default is often too small in production) forces expensive full resyncs on routine blips.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between a partial and a full resync, and what triggers each?</div>
+          <div class="qa-a">Partial: the replica's requested (replid, offset) is still present in the master's backlog and history — the master streams just the missing bytes. Full: history unknown or offset already evicted from the backlog — master forks, takes/streams an RDB snapshot, buffers concurrent writes, then streams the buffered tail.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why exactly 16,384 hash slots in Redis Cluster, and not 65,536 (the full range of a 16-bit CRC)?</div>
+          <div class="qa-a">Because slot ownership is gossiped as a bitmap in every heartbeat message across an all-to-all node mesh; 16,384 bits is a lean 2 KB payload, while 65,536 bits would be 8 KB — 4&times; the gossip bandwidth/CPU for no real benefit, since Redis Cluster realistically targets up to roughly ~1,000 nodes, and 16,384 slots already gives fine-enough placement granularity (~16 slots/node) at that scale.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between a <code>MOVED</code> and an <code>ASK</code> redirect?</div>
+          <div class="qa-a"><code>MOVED</code> is permanent/sticky: the slot has fully, finally moved to another node, and the client should update its cached slot map. <code>ASK</code> is temporary and per-request: it's issued mid-migration for a key that has already moved even though the <em>slot</em> as a whole hasn't finished migrating; the client must send <code>ASKING</code> then retry just this one command, without updating its persistent slot cache.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does Redis Cluster need a minimum of 3 master nodes?</div>
+          <div class="qa-a">Automatic failover requires a majority ("quorum") of masters to agree a node is down before promoting a replica, to avoid split-brain during network partitions — the smallest N where a majority is meaningfully defined and a single failure can be tolerated is 3 (quorum = 2).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Are Redis transactions (<code>MULTI/EXEC</code>) truly atomic like a relational database transaction?</div>
+          <div class="qa-a">They guarantee <em>uninterrupted</em> execution (no other client's commands interleave, because Redis is single-threaded) but not rollback-on-error: a runtime error in one queued command does not undo the others — only errors caught at queue time (before <code>EXEC</code>) abort the whole batch. For real conditional/rollback-style logic, Lua scripting or <code>WATCH</code>-based optimistic concurrency is used instead.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Where does Redis sit on the CAP theorem, and why?</div>
+          <div class="qa-a">AP-leaning: asynchronous replication means the system stays available and keeps accepting writes even during replica lag or partial partitions, at the cost of potentially losing the most recently acknowledged writes if the master fails before replicating them and a replica is promoted. Stronger consistency is opt-in (<code>WAIT</code>, <code>min-replicas-to-write</code>) and reduces — but does not eliminate — that risk, at a latency/availability cost.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Redis is an in-memory data structure server whose speed comes from three compounding design choices: everything hot lives in RAM, every data type's algorithms are deliberately O(1)/O(log N) (SDS strings, quicklist lists, listpack/hashtable hashes and sets, skiplist+hashtable sorted sets, HyperLogLog, radix-tree streams), and a single-threaded, event-driven core eliminates lock contention entirely — with multi-threaded I/O (Redis 6+) only offloading socket parsing, never command execution. Durability is a tunable dial between RDB snapshots (fast restarts, fork+COW consistency, possible seconds-to-minutes of loss) and AOF logs (near-zero loss with everysec, replayed/compacted via rewrite), while memory pressure is managed with approximated LRU/LFU eviction sampling rather than exact bookkeeping. Replication is asynchronous by default, using a replication backlog and PSYNC for cheap partial resyncs, which is why Redis leans AP on the CAP theorem — it stays available and keeps accepting writes during partitions or replica lag, at the risk of losing the last acknowledged writes on an unclean failover, unless you opt into WAIT for stronger guarantees. Redis Cluster shards via 16,384 CRC16-derived hash slots (not consistent hashing) with MOVED/ASK redirects for resharding and quorum-based failover requiring at least 3 masters, while MULTI/EXEC and Lua scripts get "free" atomicity from the single-threaded execution model rather than a dedicated transaction engine. These properties make Redis the default choice for caching, session stores, leaderboards, rate limiting, pub/sub, queues, distributed locks, and approximate analytics — everywhere sub-millisecond, in-memory operations matter more than disk-backed strict consistency.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Redis persistence (RDB, AOF, fsync policies, log rewriting) — <a href="https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/" target="_blank" rel="noopener">Redis persistence documentation</a></li>
+          <li>Redis replication (PSYNC, replication ID/offset, backlog, diskless replication) — <a href="https://redis.io/docs/latest/operate/oss_and_stack/management/replication/" target="_blank" rel="noopener">Redis replication documentation</a></li>
+          <li><a href="https://redis.io/docs/latest/operate/oss_and_stack/management/scaling/" target="_blank" rel="noopener">Scale with Redis Cluster</a> (hash slots, resharding, failover overview)</li>
+          <li><a href="https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/" target="_blank" rel="noopener">Redis Cluster specification</a></li>
+          <li>Key eviction (LRU/LFU policies, approximated LRU algorithm, <code>maxmemory-samples</code>, Morris counter/LFU) — <a href="https://redis.io/docs/latest/develop/reference/eviction/" target="_blank" rel="noopener">Redis eviction documentation</a></li>
+          <li>HyperLogLog data type documentation (12 KB, 0.81% standard error, PFADD/PFCOUNT/PFMERGE) — <a href="https://redis.io/docs/latest/develop/data-types/probabilistic/hyperloglogs/" target="_blank" rel="noopener">Redis HyperLogLog docs</a></li>
+          <li>antirez (Salvatore Sanfilippo) — <a href="https://antirez.com/news/75" target="_blank" rel="noopener">"Redis new data structure: the HyperLogLog"</a> (original design writeup, 1.04/&radic;m derivation, 16384 registers, linear counting + bias correction)</li>
+          <li><a href="https://redis.io/docs/latest/commands/zadd/" target="_blank" rel="noopener">Redis ZADD command reference</a> (complexity)</li>
+          <li><a href="https://redis.io/docs/latest/commands/object-encoding/" target="_blank" rel="noopener">OBJECT ENCODING command reference</a> (encoding names per type)</li>
+          <li><a href="https://redis.io/docs/latest/operate/oss_and_stack/reference/internals/internals-sds/" target="_blank" rel="noopener">Redis SDS internals reference</a></li>
+          <li>Redis source, <code>sds.h</code> — <a href="https://github.com/redis/redis/blob/unstable/src/sds.h" target="_blank" rel="noopener">sdshdr5/8/16/32/64 struct definitions</a></li>
+          <li>antirez/listpack — <a href="https://github.com/antirez/listpack/blob/master/listpack.md" target="_blank" rel="noopener">listpack.md design notes</a></li>
+          <li><a href="https://redis.io/tutorials/howtos/ratelimiting/" target="_blank" rel="noopener">Redis rate-limiting patterns tutorial</a> (fixed window, sliding window, token bucket)</li>
+          <li>GitHub discussion — <a href="https://github.com/redis/redis/issues/2576" target="_blank" rel="noopener">why Redis Cluster uses 16384 slots</a> (design rationale from the maintainers)</li>
+          <li><a href="https://redis.io/docs/latest/commands/wait/" target="_blank" rel="noopener">WAIT command reference</a> (synchronous-ish replication semantics and caveats)</li>
+          <li>antirez — <a href="http://antirez.com/news/109" target="_blank" rel="noopener">LFU eviction mode design notes</a></li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="google-file-system.html"><span class="dir">Previous</span>Google File System</a>
+          <a class="next" href="case-studies-index.html"><span class="dir">Next</span>Index</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microsoft Azure — Cloud Architecture Tutorial | Cloud | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Cloud</a><span class="sep">/</span><span class="current">Azure</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Cloud overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#use-case-and-requirements">Use Case &amp; Requirements</a></li>
+        <li><a href="#architecture-overview">Architecture Overview</a></li>
+        <li><a href="#component-breakdown">Component Breakdown</a></li>
+        <li><a href="#data-flow">Data Flow</a></li>
+        <li><a href="#infrastructure-as-code-iac">Infrastructure as Code (IaC)</a></li>
+        <li><a href="#best-practices">Best Practices</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">CLOUD ARCHITECTURE</span>
+          <h1>Microsoft Azure — Cloud Architecture Tutorial</h1>
+        </div>
+
+        <p><em>A complete, interview-ready walkthrough of designing a global e-commerce checkout &amp; order-processing platform natively on Microsoft Azure &mdash; requirements, capacity estimation, service selection, a defensible Cosmos DB consistency strategy, IaC, and follow-up interview questions.</em></p>
+
+        <h2 id="use-case-and-requirements">Use Case &amp; Requirements</h2>
+
+        <h3>The Business Problem</h3>
+        <p>A retailer needs to re-platform its checkout and order-processing API to serve a genuinely global customer base. The current system can't survive flash-sale traffic spikes, can't guarantee an order is written exactly once, and can't serve a 50-million-SKU catalog with consistent low latency in every region the company sells into. The re-platformed system has to hold up under extreme, bursty write load on the most correctness-sensitive part of the business (orders and payments) while simultaneously serving a much larger, much less sensitive read workload (browsing the catalog) &mdash; and it has to do both from multiple regions at once, both for latency and so that losing an entire region doesn't take checkout offline.</p>
+        <p>The two halves of this problem pull in different directions. Order writes need strict correctness &mdash; a shopper must never be charged twice for the same order, and a placed order must never silently vanish. Catalog browsing needs raw scale and speed far more than it needs freshness &mdash; a product description or price that is a few seconds stale is a non-issue; a slow product page is a lost sale. A good architecture treats these as two different problems solved by the same platform, not one problem solved with one blanket setting.</p>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Accept checkout requests from web and mobile clients globally.</li>
+          <li>Reserve inventory for the items in a cart at the moment of checkout.</li>
+          <li>Process and tokenize a payment reference by calling out to a certified external payment processor (this system never stores a raw PAN).</li>
+          <li>Write a durable order record once inventory and payment tokenization both succeed.</li>
+          <li>Publish an order-placed event so downstream systems (fulfillment, notifications, analytics, fraud review) can react asynchronously.</li>
+          <li>Serve the product catalog and support browse/search traffic at very high read volume.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Peak throughput:</strong> 5,000 transactions/second during flash-sale events; ~500 TPS steady-state.</li>
+          <li><strong>Latency:</strong> sub-150ms p99 for checkout API calls, globally &mdash; not just in the region closest to the datacenter.</li>
+          <li><strong>Availability:</strong> 99.95% SLA (&asymp; 4.4 hours of downtime budget per year).</li>
+          <li><strong>Consistency:</strong> strong consistency for order/payment writes &mdash; an order must never be double-charged or lost &mdash; while catalog/browse reads can be eventually consistent.</li>
+          <li><strong>Compliance:</strong> PCI-DSS-adjacent handling of payment data &mdash; only tokenized card references are stored here; raw PAN handling is delegated entirely to a certified payment processor.</li>
+          <li><strong>Topology:</strong> multi-region active-active deployment, for both latency (serve from the closest region) and disaster recovery (no single region is a single point of failure).</li>
+          <li><strong>Scale:</strong> ~200 million orders/year, a catalog of ~50 million SKUs, and globally distributed product-image/asset delivery via CDN.</li>
+        </ol>
+
+        <h3>Capacity Estimation and Constraints</h3>
+        <p>As with any capacity exercise, we state assumptions explicitly and let the numbers drive the design rather than picking services first and rationalizing them afterward.</p>
+
+        <div class="formula-box">
+          <span class="formula-label">Traffic</span>
+          Steady-state requests/day = 500/sec &times; 86,400 sec &asymp; 43.2 million/day
+          <br>Peak (flash-sale) requests/day, if sustained all day (illustrative ceiling only) = 5,000/sec &times; 86,400 sec &asymp; 432 million/day
+          <br>In practice, flash-sale peaks are short bursts (minutes to a few hours), not sustained 24 hours &mdash; the 5,000 TPS number sizes burst capacity, not average daily volume.
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Orders / Second (Average)</span>
+          ~200,000,000 orders/year &divide; 365 days &asymp; 547,945 orders/day
+          <br>547,945 &divide; 86,400 sec &asymp; 6.3 completed orders/sec on average
+          <br>Note the gap between ~6&ndash;7 completed orders/sec on average and 500&ndash;5,000 checkout-API TPS: checkout API calls include cart validation, inventory checks, and abandoned/retried attempts &mdash; only a fraction of checkout API calls end in a completed order.
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Order Storage Growth (3 Years)</span>
+          Assume &asymp;1.5 KB per stored order record (order header, line-item metadata, tokenized payment reference, address references, audit fields)
+          <br>200M orders/year &times; 1.5 KB &asymp; 300 GB/year of logical order data
+          <br>Over 3 years: 300 GB &times; 3 &asymp; 900 GB logical data
+          <br>Replicated across 3 Azure regions for active-active + DR: 900 GB &times; 3 &asymp; 2.7 TB physical
+          <br>With a tuned (non-default) Cosmos DB indexing policy adding &asymp;30% overhead: 2.7 TB &times; 1.3 &asymp; ~3.5 TB provisioned storage footprint after 3 years
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Catalog Size</span>
+          Assume &asymp;4 KB per SKU record (title, descriptions, attributes, pricing, category references, image URLs)
+          <br>50 million SKUs &times; 4 KB &asymp; 200 GB logical catalog data
+          <br>Replicated across 3 regions: 200 GB &times; 3 &asymp; 600 GB physical
+          <br>Note the catalog is far smaller than the order history despite having 50M records vs. ~600M orders over 3 years &mdash; catalog records are read-heavy/write-light and don't grow linearly the way transactional data does.
+        </div>
+
+        <div class="formula-box">
+          <span class="formula-label">Image Storage &amp; CDN Egress</span>
+          Assume &asymp;6 images/SKU at &asymp;180 KB each (optimized JPEG/WebP)
+          <br>Origin image library: 50M SKUs &times; 6 &times; 180 KB &asymp; 54 TB in Blob Storage (one-time size, not per-month)
+          <br>Assume 300 million product-page views/month, &asymp;4 images loaded/view at &asymp;150 KB average after Front Door's CDN image optimization
+          <br>Monthly image egress = 300M &times; 4 &times; 150 KB &asymp; 180,000,000,000 KB &asymp; ~176 TB/month served from the edge
+          <br>Assuming a &asymp;92% CDN cache-hit ratio, only &asymp;14 TB/month actually egresses from Blob Storage origin &mdash; the rest is served from Front Door's edge caches
+        </div>
+
+        <h2 id="architecture-overview">Architecture Overview</h2>
+
+        <h3>Why Azure for This Workload</h3>
+        <p>Three Azure-specific properties matter more here than a generic "any cloud can do this" answer would suggest, and it's worth being explicit about each rather than treating "Azure is fine too" as sufficient.</p>
+        <p><strong>Cosmos DB's per-container, tunable consistency levels let one database service host both halves of this problem.</strong> Rather than standing up two entirely different database platforms &mdash; one for strict order correctness, one for high-scale eventual-consistency browsing &mdash; Cosmos DB lets the order container run at Bounded Staleness (or Strong, with the trade-off discussed below) while a separate catalog container in the same account runs at Session or Eventual consistency. That's one operational surface, one SDK, one billing model, and one team's expertise covering both workloads, rather than two.</p>
+        <p><strong>Azure Front Door collapses the edge tier into one product.</strong> Global HTTP(S) load balancing, CDN, and a built-in Web Application Firewall ship as a single, integrated Azure service. AWS and GCP can absolutely build the equivalent edge tier, but doing so means composing 2&ndash;3 separate services (e.g. CloudFront + WAF + Global Accelerator/Route 53 on AWS) with their own configuration surfaces, their own health-check semantics, and their own places where a misconfiguration between services can create a gap. Front Door being one product with one routing/WAF/caching configuration is a genuine reduction in operational surface area for this workload's edge tier.</p>
+        <p><strong>If the company is already Microsoft-centric &mdash; Windows Server, on-prem Active Directory, Office 365 &mdash; Azure's hybrid and enterprise-identity story is a real, material advantage.</strong> Microsoft Entra ID (formerly Azure Active Directory) extends an existing on-prem AD via Entra Connect with far less friction than federating an external identity provider into AWS IAM or GCP Cloud Identity from scratch, and ExpressRoute gives a private, high-throughput link back to existing on-prem systems (inventory masters, ERP, legacy fraud systems) that many retailers still run outside the cloud. This advantage is conditional &mdash; it only matters if the company's existing estate is actually Microsoft-centric &mdash; but where that's true, it's not a marketing point, it's a genuine integration-cost reduction.</p>
+        <p>None of this means Azure is unconditionally "better" for this workload &mdash; see the honest comparison below, and see the consistency-level discussion in Component Breakdown for where Azure's own default ("just use Strong everywhere") would actually be the wrong call.</p>
+
+        <h3>Cross-Cloud Comparison at a Glance</h3>
+        <table>
+          <tr><th>Dimension</th><th>Azure</th><th>AWS</th><th>GCP</th></tr>
+          <tr>
+            <td>Global load balancing model</td>
+            <td>Azure Front Door &mdash; global L7 LB, CDN, and WAF as one integrated product</td>
+            <td>Composed from Route 53 + CloudFront + Global Accelerator + WAF &mdash; more moving parts, more granular control</td>
+            <td>Cloud Load Balancing &mdash; unified global anycast L7 LB from day one, with Cloud CDN + Cloud Armor layered alongside it</td>
+          </tr>
+          <tr>
+            <td>Strong-consistency global database option</td>
+            <td>Cosmos DB &mdash; 5 tunable consistency levels per container; "Strong" exists but only with a single write region</td>
+            <td>DynamoDB Global Tables replicate eventually across regions by default; strong consistency only within a single region</td>
+            <td>Cloud Spanner &mdash; genuine external/linearizable strong consistency across regions via TrueTime, as one consistency model rather than five tunable levels</td>
+          </tr>
+          <tr>
+            <td>Container platform maturity</td>
+            <td>AKS &mdash; mature, widely adopted, solid Windows-container support if ever needed</td>
+            <td>EKS &mdash; broadest ecosystem/integrations and largest community of the three, plus Fargate serverless option</td>
+            <td>GKE &mdash; arguably the most polished pure-Kubernetes experience, since Google originated Kubernetes; Autopilot mode is excellent</td>
+          </tr>
+          <tr>
+            <td>Native CDN/WAF integration</td>
+            <td>Front Door &mdash; LB + CDN + WAF genuinely integrated as one product/config surface</td>
+            <td>CloudFront + AWS WAF are mature and powerful but remain separate services to wire together</td>
+            <td>Cloud CDN + Cloud Armor integrate cleanly with the global LB but are still conceptually separate products</td>
+          </tr>
+          <tr>
+            <td>Enterprise identity / hybrid story</td>
+            <td>Entra ID + ExpressRoute &mdash; strongest fit if already running Windows Server/on-prem AD/Office 365</td>
+            <td>IAM + Direct Connect &mdash; solid, but no native AD-equivalent; needs AWS Managed Microsoft AD or federation</td>
+            <td>Cloud Identity + Interconnect &mdash; capable, but the least natural fit of the three for a legacy Windows/AD estate</td>
+          </tr>
+          <tr>
+            <td>Committed-discount savings mechanism</td>
+            <td>Azure Reservations + Azure Savings Plans</td>
+            <td>Reserved Instances + Savings Plans &mdash; the original version of this mechanism, broadest service coverage</td>
+            <td>Committed Use Discounts, plus automatic sustained-use discounts requiring no upfront commitment at all &mdash; unique among the three</td>
+          </tr>
+        </table>
+        <p>Read this table as a genuine trade-off map, not a scorecard for one winner. If the team's real bottleneck is "we need the strongest possible global-write consistency guarantee with the least amount of per-request consistency-level decision-making," Cloud Spanner is a legitimate reason to prefer GCP for the order-write path specifically. If the real bottleneck is "we need the broadest possible managed-service catalog and the largest hiring pool of engineers who already know the platform," AWS's maturity and market share are a legitimate reason to prefer it. Azure's case here rests specifically on the edge-tier integration, the per-container consistency flexibility, and &mdash; conditionally &mdash; the hybrid/identity story.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="High-level architecture diagram for the checkout platform on Azure">
+            <defs>
+              <marker id="arrow-azr-hld" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="var(--color-accent-dark)" />
+              </marker>
+            </defs>
+
+            <!-- Client -->
+            <rect x="20" y="20" width="120" height="50" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="80" y="50" text-anchor="middle" font-size="13" fill="var(--color-text)">Client</text>
+
+            <!-- Azure DNS -->
+            <rect x="200" y="20" width="140" height="50" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="270" y="50" text-anchor="middle" font-size="13" fill="var(--color-text)">Azure DNS</text>
+
+            <!-- Front Door -->
+            <rect x="400" y="15" width="360" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2" />
+            <text x="580" y="38" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-primary)">Azure Front Door</text>
+            <text x="580" y="56" text-anchor="middle" font-size="11" fill="var(--color-text)">Global LB + CDN + WAF (one integrated product)</text>
+
+            <!-- arrows row 1 -->
+            <line x1="140" y1="45" x2="196" y2="45" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+            <line x1="340" y1="45" x2="396" y2="45" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+
+            <!-- AKS -->
+            <rect x="310" y="150" width="400" height="60" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="510" y="174" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-primary)">AKS Cluster</text>
+            <text x="510" y="192" text-anchor="middle" font-size="11" fill="var(--color-text)">Checkout API + Catalog Service pods</text>
+
+            <!-- Blob storage -->
+            <rect x="800" y="150" width="180" height="60" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="890" y="174" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-primary)">Azure Blob Storage</text>
+            <text x="890" y="192" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Product images / assets</text>
+
+            <!-- arrows row 2 -->
+            <line x1="550" y1="75" x2="510" y2="146" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+            <line x1="720" y1="60" x2="885" y2="146" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+            <text x="800" y="112" font-size="10" fill="var(--color-text-muted)">CDN origin pull</text>
+
+            <!-- Row 3: Cosmos Catalog, Cosmos Orders, Redis, Service Bus -->
+            <rect x="30" y="290" width="230" height="64" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="145" y="313" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--color-primary)">Cosmos DB &mdash; catalog</text>
+            <text x="145" y="330" text-anchor="middle" font-size="10.5" fill="var(--color-text)">container (Session / Eventual)</text>
+
+            <rect x="290" y="290" width="230" height="64" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5" />
+            <text x="405" y="313" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--color-primary)">Cosmos DB &mdash; orders</text>
+            <text x="405" y="330" text-anchor="middle" font-size="10.5" fill="var(--color-text)">container (Bounded Staleness / Strong)</text>
+
+            <rect x="550" y="290" width="190" height="64" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="645" y="315" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--color-primary)">Azure Cache</text>
+            <text x="645" y="332" text-anchor="middle" font-size="10.5" fill="var(--color-text)">for Redis (session/cart)</text>
+
+            <rect x="770" y="290" width="200" height="64" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="870" y="315" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--color-primary)">Service Bus</text>
+            <text x="870" y="332" text-anchor="middle" font-size="10.5" fill="var(--color-text)">order-placed topic</text>
+
+            <!-- arrows AKS -> row3 -->
+            <line x1="440" y1="210" x2="180" y2="286" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+            <line x1="500" y1="210" x2="420" y2="286" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+            <line x1="560" y1="210" x2="640" y2="286" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+            <line x1="620" y1="210" x2="860" y2="286" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+
+            <!-- Row 4: downstream consumers -->
+            <rect x="590" y="430" width="140" height="56" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="660" y="463" text-anchor="middle" font-size="11.5" fill="var(--color-text)">Fulfillment</text>
+
+            <rect x="750" y="430" width="140" height="56" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="820" y="463" text-anchor="middle" font-size="11.5" fill="var(--color-text)">Notifications</text>
+
+            <rect x="900" y="430" width="90" height="56" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="945" y="456" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Fraud</text>
+            <text x="945" y="472" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Review</text>
+
+            <!-- arrows Service Bus -> consumers -->
+            <line x1="840" y1="354" x2="670" y2="426" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+            <line x1="870" y1="354" x2="815" y2="426" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+            <line x1="900" y1="354" x2="945" y2="426" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-hld)" />
+
+            <text x="500" y="620" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">Order writes: Bounded Staleness / Strong consistency &nbsp;|&nbsp; Catalog reads: Session / Eventual consistency &nbsp;|&nbsp; Async fan-out via Service Bus subscriptions</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level design &mdash; client traffic enters through Azure DNS and a single integrated Azure Front Door tier (LB + CDN + WAF), reaches AKS-hosted checkout/catalog services, and fans out to Cosmos DB (two differently-configured containers), Azure Cache for Redis, Service Bus, and downstream async consumers; product images are served from Blob Storage via Front Door's CDN.</div>
+        </div>
+
+        <h2 id="component-breakdown">Component Breakdown</h2>
+        <table>
+          <tr><th>Component</th><th>Azure Service</th><th>Why Chosen Over Alternatives</th></tr>
+          <tr>
+            <td>Edge / CDN / WAF / Global LB</td>
+            <td>Azure Front Door</td>
+            <td>One product for global HTTP(S) load balancing, CDN, and WAF, instead of composing 2&ndash;3 separate services (as AWS/GCP require) &mdash; fewer moving parts, one routing/caching/WAF config surface.</td>
+          </tr>
+          <tr>
+            <td>Compute / Containers</td>
+            <td>Azure Kubernetes Service (AKS)</td>
+            <td>Fine-grained control over networking, autoscaling, and connection pooling needed for a 500&rarr;5,000 TPS swing on a sub-150ms budget. See deep dive below.</td>
+          </tr>
+          <tr>
+            <td>Primary OLTP database (orders/payments)</td>
+            <td>Azure Cosmos DB (Core/SQL API)</td>
+            <td>Multi-region elastic write scale plus per-container tunable consistency &mdash; lets the order container run near-strong while other data stays cheap and fast. See deep dive below.</td>
+          </tr>
+          <tr>
+            <td>Cache</td>
+            <td>Azure Cache for Redis</td>
+            <td>Sub-millisecond reads for session/cart hot paths; offloads the vast majority of repeat reads from Cosmos DB, directly protecting the p99 latency budget.</td>
+          </tr>
+          <tr>
+            <td>Async messaging / eventing</td>
+            <td>Azure Service Bus</td>
+            <td>Topics/subscriptions give clean fan-out of order-placed events to fulfillment, notifications, analytics, and fraud-review, with dead-lettering and per-subscription filtering built in. Azure Event Grid is a lighter-weight alternative for simpler, more reactive routing where guaranteed ordering/dead-lettering per-subscriber isn't required.</td>
+          </tr>
+          <tr>
+            <td>Catalog / browse-path database</td>
+            <td>Azure Cosmos DB (separate container, Session/Eventual) &mdash; with Azure Cache for Redis as a read-through cache in front</td>
+            <td>Browse reads tolerate staleness, so a cheaper consistency level is the right call; a Redis read-through layer absorbs the bulk of repeat reads on hot SKUs during a flash sale, keeping Cosmos DB RU/s spend down.</td>
+          </tr>
+          <tr>
+            <td>Object storage (images/assets)</td>
+            <td>Azure Blob Storage</td>
+            <td>Effectively unlimited scale for a &asymp;54 TB image library, native lifecycle-tiering to Cool/Archive, and a natural Front Door CDN origin.</td>
+          </tr>
+          <tr>
+            <td>IAM</td>
+            <td>Microsoft Entra ID</td>
+            <td>Least-privilege RBAC role assignments across the estate, plus Managed Identities so AKS workloads never hold static credentials.</td>
+          </tr>
+          <tr>
+            <td>Secrets</td>
+            <td>Azure Key Vault</td>
+            <td>Centralized secret storage with access policies/RBAC, integrated natively with AKS (via CSI driver) and Managed Identities.</td>
+          </tr>
+          <tr>
+            <td>Encryption keys</td>
+            <td>Azure Key Vault-managed customer keys</td>
+            <td>Customer-managed keys for encryption at rest across Cosmos DB and Blob Storage, with centralized rotation and audit, on top of TLS everywhere in transit.</td>
+          </tr>
+          <tr>
+            <td>Observability (metrics/logs/traces)</td>
+            <td>Azure Monitor + Application Insights + Log Analytics</td>
+            <td>Metrics/alerts tied to SLOs, distributed tracing across the entire checkout call path, and centralized KQL log queries &mdash; one connected observability stack rather than three disconnected tools.</td>
+          </tr>
+        </table>
+
+        <h3>Deep Dive &mdash; Compute: AKS vs. Container Apps vs. Azure Functions</h3>
+        <p>The core checkout API is the piece under the tightest constraints in this whole design: it must sustain a steady 500 TPS baseline, absorb sudden 10&times; bursts to 5,000 TPS during flash sales, hold a sub-150ms p99 latency budget throughout, and maintain long-lived, warm connection pools to Cosmos DB and Redis so every request isn't paying a fresh-connection tax. That combination &mdash; predictable scaling behavior, deep networking control (VNet integration, private endpoints to PaaS backends, service-mesh sidecars for mTLS), and always-on warm compute &mdash; is exactly AKS's sweet spot. AKS also lets the platform team tune cluster autoscaler and KEDA-based pod autoscaling against real signals (Service Bus queue depth, custom Cosmos DB RU-consumption metrics), which matters more here than it would for a simpler workload.</p>
+        <p><strong>Azure Container Apps</strong> is the right call for the platform's simpler, stateless services &mdash; a webhook receiver, an internal admin API, a notification-formatting service &mdash; where the team doesn't want to own cluster upgrades, node-pool sizing, or CNI configuration, and where scale-to-zero during idle periods is a genuine cost win. It trades away some of AKS's networking granularity and its mature ecosystem of sidecars/service-mesh add-ons in exchange for materially less operational overhead. For this design, Container Apps is a good fit for the notification and fraud-review consumer services downstream of Service Bus, but a poor fit for the latency-critical, connection-pool-heavy checkout API itself.</p>
+        <p><strong>Azure Functions</strong> is the right tool for the truly event-driven, short-lived leaf work &mdash; a single Service Bus-triggered notification send, a thumbnail-resize job triggered by a Blob Storage upload &mdash; but it's a poor fit for the synchronous checkout API. Even on the Premium plan (which mitigates cold starts), the function invocation model doesn't naturally hold a long-lived, warmed connection pool to Cosmos DB and Redis the way a long-running pod does, and a sub-150ms p99 budget has very little room to spare for any cold-start risk at all. Functions earns its place in this architecture as a consumer of Service Bus/Event Grid events, not as the checkout API's host.</p>
+
+        <h3>Deep Dive &mdash; Primary Database: Cosmos DB vs. Azure SQL Database Hyperscale</h3>
+        <p>Cosmos DB's headline feature for this workload is its five tunable consistency levels &mdash; Strong, Bounded Staleness, Session, Consistent Prefix, and Eventual &mdash; configurable per container, letting the same database account serve both the order-write path and the catalog-browse path at the consistency level each actually needs, rather than forcing a single database-wide setting on two very different workloads.</p>
+        <table>
+          <tr><th>Consistency level</th><th>Guarantee</th><th>Where it fits in this design</th></tr>
+          <tr><td>Strong</td><td>Linearizable reads; always see the latest committed write</td><td>Only available with a single write region in Cosmos DB &mdash; sacrifices multi-region write latency/availability for order writes if used verbatim.</td></tr>
+          <tr><td>Bounded Staleness</td><td>Reads lag writes by at most K versions or T time, globally, even with multi-region writes</td><td><strong>Recommended for the order-write container</strong> &mdash; the strongest guarantee Cosmos DB offers that's still compatible with true multi-master, multi-region writes.</td></tr>
+          <tr><td>Session</td><td>Read-your-own-writes and monotonic reads within a single client session</td><td>Good fit for cart/session data and general catalog reads where a user should see their own recent actions reflected immediately.</td></tr>
+          <tr><td>Consistent Prefix</td><td>Reads never see out-of-order writes, but may lag</td><td>Rarely the best default here; occasionally useful for ordered event/log-style reads.</td></tr>
+          <tr><td>Eventual</td><td>No ordering guarantee; lowest latency, highest availability</td><td>Acceptable for the pure catalog-browse container where staleness of a few seconds is a non-issue.</td></tr>
+        </table>
+        <p>This is exactly where the design must make an honest, explicit call rather than defaulting to "Strong" everywhere. Cosmos DB's <strong>Strong</strong> consistency level requires synchronous replication and, critically, is only supported when the account is configured for a <em>single write region</em> &mdash; it is not compatible with true multi-region, multi-master writes. Since one of this platform's hard requirements is multi-region active-active deployment for both latency and DR, reaching for Strong on the order container verbatim would silently force the design back to a single write region for orders &mdash; undermining the exact multi-region write benefit that made Cosmos DB attractive in the first place. The design therefore has two honest options, and states the trade-off out loud rather than hiding it:</p>
+        <ul>
+          <li><strong>Option A &mdash; Bounded Staleness with multi-region writes (recommended default):</strong> orders can be written in any region with Cosmos DB actively replicating them to all other regions within a bounded K-operations/T-time window, giving near-strong guarantees at a fraction of Strong's cross-region write latency. This must be paired with an application-level idempotency key on every order write (a client-generated request ID as part of the partition/unique key) plus a conditional write (ETag-based optimistic concurrency), so that even a retried or racing write can never double-charge or duplicate an order &mdash; the database's consistency level and the application's idempotency logic are doing complementary jobs, not the same job.</li>
+          <li><strong>Option B &mdash; Strong consistency with a single write region:</strong> if the business is willing to accept that all order writes route to one active write region (with fast automatic failover to a designated secondary on a regional outage), Strong consistency is available and removes the need for application-level idempotency as a correctness backstop. This is simpler to reason about but gives up active-active writes specifically for the order path &mdash; catalog and session data can still be fully active-active regardless of which option is chosen for orders.</li>
+        </ul>
+        <p>Given the explicit multi-region active-active requirement, Option A (Bounded Staleness + idempotency keys) is the primary recommendation for this design, with Option B noted as the simpler fallback if the business later decides active-active order writes aren't worth the added application-level complexity.</p>
+        <p><strong>Azure SQL Database Hyperscale with active geo-replication</strong> is a legitimate alternative if the team strongly prefers relational/ACID semantics over a document/API-based data model. Hyperscale scales storage and read throughput well beyond what a single traditional SQL instance can do, and ~200M orders/year (&asymp;6&ndash;7 orders/sec average, 5,000 TPS peak) is well within what a well-sized Hyperscale primary plus readable secondaries can serve. The honest trade-off: active geo-replication is asynchronous, so a regional failover can lose the last few seconds of committed transactions (a real RPO, not zero), and Hyperscale itself is fundamentally single-write-region &mdash; there's no multi-master write story here at all. For this specific workload, Cosmos DB is preferred as the primary recommendation because it natively supports multi-region writes and lets one database account serve both the order and catalog workloads at their respective correct consistency levels; Azure SQL Hyperscale remains the right call for a team that values SQL semantics and query flexibility more than multi-region write elasticity, and can accept single-write-region operation.</p>
+
+        <h2 id="data-flow">Data Flow</h2>
+        <p>Two distinct flows matter here: the synchronous checkout request (must complete inside the 150ms p99 budget) and the asynchronous fan-out that happens after the order is durably written (has no such tight budget, and is explicitly decoupled from it).</p>
+
+        <h3>Synchronous Checkout Request</h3>
+        <ol>
+          <li>Client issues a checkout request; Azure DNS resolves the platform's hostname to Azure Front Door's anycast edge.</li>
+          <li>Azure Front Door terminates TLS, applies WAF managed rule sets, and load-balances the request to the healthiest backend region &mdash; edge, WAF, and global LB all happen in this single hop.</li>
+          <li>The request reaches an AKS-hosted checkout API pod in the target region.</li>
+          <li>The pod performs an inventory check/reservation against the current inventory state (backed by Cosmos DB and/or Redis for hot SKUs).</li>
+          <li>The pod calls out to the external, certified payment processor to tokenize the payment reference &mdash; no raw PAN is ever handled or stored by this system.</li>
+          <li>On success, the pod issues a transactional write of the order record to the Cosmos DB order container, at the chosen consistency level (Bounded Staleness, paired with an idempotency key and a conditional write as discussed above).</li>
+          <li>The pod publishes an order-placed event to a Service Bus topic &mdash; this publish is fire-and-forget from the request's point of view; a Service Bus outage never blocks the response.</li>
+          <li>The pod returns a success response (order confirmation) to the client.</li>
+          <li>Total elapsed time across steps 1&ndash;8 is what's measured against the sub-150ms p99 target; caching (Redis) and regional proximity (Front Door routing to the nearest healthy region) are what make that budget achievable at global scale.</li>
+        </ol>
+
+        <h3>Asynchronous Fan-Out</h3>
+        <ol>
+          <li>The order-placed event lands on the Service Bus topic published in step 7 above.</li>
+          <li>Independent subscriptions on that topic &mdash; one each for fulfillment, notifications, analytics, and fraud-review &mdash; each receive their own copy of the message, filtered as needed per subscription.</li>
+          <li>The fulfillment consumer reserves warehouse capacity and kicks off shipping workflows.</li>
+          <li>The notifications consumer sends the order-confirmation email/push notification.</li>
+          <li>The fraud-review consumer runs post-hoc risk scoring and flags orders for manual review if needed.</li>
+          <li>Every consumer is built to be idempotent (keyed on the order ID) &mdash; Service Bus's at-least-once delivery model means a consumer can, in principle, see the same message more than once, and correctness must not depend on exactly-once delivery actually holding at the messaging layer.</li>
+          <li>A failed message delivery is retried per the subscription's retry policy, then dead-lettered for manual inspection rather than silently dropped.</li>
+        </ol>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 900 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence diagram of a single checkout request lifecycle on Azure">
+            <defs>
+              <marker id="arrow-azr-flow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="var(--color-accent-dark)" />
+              </marker>
+            </defs>
+
+            <!-- vertical step chain -->
+            <!-- step boxes -->
+            <rect x="60" y="15" width="780" height="46" rx="6" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="450" y="43" text-anchor="middle" font-size="12.5" fill="var(--color-text)">1. Client &rarr; Azure DNS resolves hostname to Front Door anycast edge</text>
+
+            <rect x="60" y="85" width="780" height="46" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5" />
+            <text x="450" y="113" text-anchor="middle" font-size="12.5" fill="var(--color-primary)">2. Azure Front Door: TLS + WAF + global LB routing (one hop)</text>
+
+            <rect x="60" y="155" width="780" height="46" rx="6" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="450" y="183" text-anchor="middle" font-size="12.5" fill="var(--color-text)">3. AKS &mdash; checkout API pod receives the request</text>
+
+            <rect x="60" y="225" width="780" height="46" rx="6" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="450" y="253" text-anchor="middle" font-size="12.5" fill="var(--color-text)">4. Inventory check / reservation (Cosmos DB + Redis hot path)</text>
+
+            <rect x="60" y="295" width="780" height="46" rx="6" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="450" y="323" text-anchor="middle" font-size="12.5" fill="var(--color-text)">5. Payment tokenization call to external certified processor</text>
+
+            <rect x="60" y="365" width="780" height="46" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5" />
+            <text x="450" y="393" text-anchor="middle" font-size="12.5" fill="var(--color-primary)">6. Cosmos DB order write (Bounded Staleness + idempotency key)</text>
+
+            <rect x="60" y="435" width="780" height="46" rx="6" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" />
+            <text x="450" y="463" text-anchor="middle" font-size="12.5" fill="var(--color-text)">7. Service Bus publish: order-placed event (fire-and-forget)</text>
+
+            <rect x="60" y="505" width="780" height="46" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5" />
+            <text x="450" y="533" text-anchor="middle" font-size="12.5" fill="var(--color-primary)">8. Response returned to client &mdash; inside the sub-150ms p99 budget</text>
+
+            <!-- connecting arrows -->
+            <line x1="450" y1="61" x2="450" y2="82" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-flow)" />
+            <line x1="450" y1="131" x2="450" y2="152" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-flow)" />
+            <line x1="450" y1="201" x2="450" y2="222" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-flow)" />
+            <line x1="450" y1="271" x2="450" y2="292" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-flow)" />
+            <line x1="450" y1="341" x2="450" y2="362" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-flow)" />
+            <line x1="450" y1="411" x2="450" y2="432" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-flow)" />
+            <line x1="450" y1="481" x2="450" y2="502" stroke="var(--color-accent-dark)" stroke-width="2" marker-end="url(#arrow-azr-flow)" />
+
+            <!-- async branch off step 7 -->
+            <line x1="740" y1="458" x2="820" y2="458" stroke="var(--color-text-muted)" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrow-azr-flow)" />
+            <text x="825" y="462" font-size="11" fill="var(--color-text-muted)">async fan-out</text>
+            <rect x="700" y="580" width="200" height="46" rx="6" fill="var(--color-surface)" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" />
+            <text x="800" y="608" text-anchor="middle" font-size="11" fill="var(--color-text-muted)">Fulfillment / Notifications / Fraud-Review consumers</text>
+            <line x1="800" y1="551" x2="800" y2="576" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-azr-flow)" />
+          </svg>
+          <div class="diagram-caption">Figure 2. Sequence view of a single checkout request &mdash; steps 1&ndash;8 are on the synchronous, latency-budgeted path; the Service Bus publish in step 7 kicks off a fully decoupled async fan-out to downstream consumers.</div>
+        </div>
+
+        <h2 id="infrastructure-as-code-iac">Infrastructure as Code (IaC)</h2>
+        <p>This design uses Terraform with the official <code>hashicorp/azurerm</code> provider, currently in its 4.x major version line (current release around 4.81.0 as of mid-2026). The 3.x&rarr;4.x upgrade introduced real breaking changes &mdash; provider-block requirement changes, resource property renames/removals, and changed default behaviors on several resources &mdash; so a production script should pin an exact provider version and consult the official 4.0 upgrade guide before adopting it, rather than floating on <code>~&gt; 3.0</code> or blindly bumping to <code>~&gt; 4.0</code>.</p>
+        <p>The script below provisions only the core networking and compute tier &mdash; resource group, VNet/subnets, an NSG, and the AKS cluster &mdash; not every service in the architecture diagram. Cosmos DB, Service Bus, Redis, Key Vault, and Front Door are deliberately left to their own, independently-versioned Terraform root modules in a real repository, so that a compute-tier change doesn't force a plan/apply cycle across unrelated stateful services.</p>
+
+        <pre><code>############################################################
+# Core networking and compute for the Global E-Commerce
+# Checkout Platform on Azure.
+#
+# Scope: resource group, VNet/subnets, NSG, and the AKS
+# cluster ONLY. Cosmos DB, Service Bus, Redis, Key Vault,
+# and Front Door live in separate root modules.
+############################################################
+
+terraform {
+  required_version = "&gt;= 1.7.0"
+
+  required_providers {
+    azurerm = {
+      source = "hashicorp/azurerm"
+      # Pin an EXACT major version. The 3.x -&gt; 4.x upgrade
+      # (azurerm 4.0) introduced real breaking changes --
+      # provider block requirements, resource property
+      # renames/removals, and changed defaults on several
+      # resources. Read the official 4.0 upgrade guide before
+      # bumping this.
+      version = "= 4.81.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+}
+
+# ------------------------------------------------------------
+# Resource group -- deployment boundary for this workload's
+# network + compute tier.
+# ------------------------------------------------------------
+resource "azurerm_resource_group" "checkout_platform" {
+  name     = var.resource_group_name
+  location = var.location
+
+  tags = {
+    workload    = "checkout-platform"
+    environment = var.environment
+  }
+}
+
+# ------------------------------------------------------------
+# Virtual network for the checkout platform's compute tier.
+# ------------------------------------------------------------
+resource "azurerm_virtual_network" "checkout_vnet" {
+  name                = "${var.resource_group_name}-vnet"
+  address_space       = ["10.20.0.0/16"]
+  location            = azurerm_resource_group.checkout_platform.location
+  resource_group_name = azurerm_resource_group.checkout_platform.name
+}
+
+# Subnet dedicated to AKS node pools (checkout API pods).
+resource "azurerm_subnet" "aks_subnet" {
+  name                 = "snet-aks-nodes"
+  resource_group_name  = azurerm_resource_group.checkout_platform.name
+  virtual_network_name = azurerm_virtual_network.checkout_vnet.name
+  address_prefixes     = ["10.20.0.0/20"]
+}
+
+# Subnet reserved for private endpoints (Cosmos DB, Key Vault,
+# Service Bus, Storage) so PaaS traffic never traverses the
+# public internet.
+resource "azurerm_subnet" "private_endpoint_subnet" {
+  name                 = "snet-private-endpoints"
+  resource_group_name  = azurerm_resource_group.checkout_platform.name
+  virtual_network_name = azurerm_virtual_network.checkout_vnet.name
+  address_prefixes     = ["10.20.16.0/24"]
+
+  private_endpoint_network_policies = "Enabled"
+}
+
+# ------------------------------------------------------------
+# NSG for the AKS subnet: allow HTTPS only from Azure Front
+# Door's managed backend service tag; deny everything else
+# inbound by default.
+# ------------------------------------------------------------
+resource "azurerm_network_security_group" "aks_nsg" {
+  name                = "${var.resource_group_name}-aks-nsg"
+  location            = azurerm_resource_group.checkout_platform.location
+  resource_group_name = azurerm_resource_group.checkout_platform.name
+
+  # Allow inbound HTTPS only from Front Door's backend range --
+  # the well-known service tag Azure maintains for Front Door
+  # origin traffic, so we never hand-maintain an IP allowlist.
+  security_rule {
+    name                       = "Allow-HTTPS-From-FrontDoor"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "AzureFrontDoor.Backend"
+    destination_address_prefix = "*"
+  }
+
+  # Explicit deny-all default -- belt-and-suspenders on top of
+  # the NSG's own implicit deny, so intent is visible in the
+  # ruleset itself.
+  security_rule {
+    name                       = "Deny-All-Inbound"
+    priority                   = 4096
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "aks_nsg_assoc" {
+  subnet_id                 = azurerm_subnet.aks_subnet.id
+  network_security_group_id = azurerm_network_security_group.aks_nsg.id
+}
+
+# ------------------------------------------------------------
+# AKS cluster running the checkout API + catalog service
+# microservices.
+# ------------------------------------------------------------
+resource "azurerm_kubernetes_cluster" "checkout_aks" {
+  name                = "${var.resource_group_name}-aks"
+  location            = azurerm_resource_group.checkout_platform.location
+  resource_group_name = azurerm_resource_group.checkout_platform.name
+  dns_prefix          = "checkout-aks"
+  kubernetes_version  = var.kubernetes_version
+
+  default_node_pool {
+    name                 = "system"
+    vm_size              = "Standard_D4s_v5"
+    vnet_subnet_id       = azurerm_subnet.aks_subnet.id
+    auto_scaling_enabled = true
+    min_count            = 3
+    max_count            = 12
+    zones                = ["1", "2", "3"]
+  }
+
+  # Cluster-level managed identity (control plane -&gt; Azure
+  # resource access) -- separate from per-workload Managed
+  # Identities assigned to individual pods.
+  identity {
+    type = "SystemAssigned"
+  }
+
+  network_profile {
+    network_plugin    = "azure"
+    load_balancer_sku = "standard"
+    network_policy    = "azure"
+  }
+
+  tags = {
+    workload    = "checkout-platform"
+    environment = var.environment
+  }
+}
+
+# ------------------------------------------------------------
+# Variables (kept in this file for a self-contained example;
+# in the real repo these live in a separate variables.tf).
+# ------------------------------------------------------------
+variable "resource_group_name" {
+  type        = string
+  description = "Name of the resource group for the checkout platform's network/compute tier."
+}
+
+variable "location" {
+  type        = string
+  description = "Azure region for this deployment, e.g. eastus2, westeurope, southeastasia."
+}
+
+variable "environment" {
+  type        = string
+  description = "Deployment environment: dev, staging, or prod."
+}
+
+variable "kubernetes_version" {
+  type        = string
+  description = "AKS Kubernetes version -- pin explicitly and check the current AKS-supported version list before applying."
+  default     = "1.31"
+}
+</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Production practice</div>
+          Use a remote <code>azurerm</code> backend (a dedicated Storage Account + container) for Terraform state, with state locking enabled, so two engineers or two CI runs can never corrupt state by writing concurrently. Keep separate <code>.tfvars</code> files (or separate Terraform workspaces) per environment &mdash; dev, staging, prod &mdash; rather than parameterizing a single shared state file. Always run <code>terraform plan</code> in CI and require a reviewed, visible plan output before any <code>terraform apply</code> reaches a shared environment.
+        </div>
+
+        <h2 id="best-practices">Best Practices</h2>
+
+        <h3>Security</h3>
+        <ul>
+          <li>Assign Microsoft Entra ID roles on a least-privilege basis &mdash; scope role assignments to the specific resource group or resource, not the subscription, wherever practical.</li>
+          <li>Use Managed Identities for every AKS workload that talks to Cosmos DB, Key Vault, Service Bus, or Blob Storage, so no service ever holds a static credential in code or config.</li>
+          <li>Encrypt data at rest across Cosmos DB and Blob Storage using Azure Key Vault-managed customer keys, and enforce TLS everywhere in transit.</li>
+          <li>Use Network Security Groups to segment the AKS subnet from the private-endpoint subnet, restricting inbound traffic to only what Front Door and internal services actually need.</li>
+          <li>Store all secrets (connection strings, API keys, certificates) in Azure Key Vault with access policies or RBAC-based access, never in application config or source control.</li>
+          <li>Enable Front Door's built-in WAF managed rule sets to block common web attacks (SQLi, XSS, and known bad bot signatures) at the edge, before traffic ever reaches AKS.</li>
+        </ul>
+
+        <h3>Monitoring, Logging and Alerting</h3>
+        <ul>
+          <li>Define Azure Monitor metrics and alert rules tied directly to the platform's SLOs (p99 latency, error rate, 99.95% availability), not just raw infrastructure metrics.</li>
+          <li>Instrument the checkout API with Application Insights for distributed tracing across the entire call path &mdash; Front Door &rarr; AKS &rarr; Cosmos DB/Redis/Service Bus &mdash; so a latency regression can be attributed to a specific hop.</li>
+          <li>Centralize structured logs in Log Analytics workspaces and use KQL to build cross-service queries (e.g. correlating a spike in Cosmos DB throttling with a specific AKS deployment).</li>
+          <li>Configure Front Door health probes against each regional backend so an unhealthy region is automatically routed around, well before it becomes customer-visible.</li>
+        </ul>
+
+        <h3>Cost Optimization</h3>
+        <ul>
+          <li>Use Microsoft Cost Management for ongoing cost analysis and budget alerts, scoped per environment and per service, so a runaway cost driver is caught early rather than at month-end.</li>
+          <li>Act on Azure Advisor's right-sizing and reserved-capacity recommendations regularly &mdash; it will flag over-provisioned AKS node pools and underused reserved capacity.</li>
+          <li>Commit to Azure Reservations or Azure Savings Plans for the steady-state 500 TPS compute baseline, while leaving headroom for flash-sale bursts to run at on-demand rates.</li>
+          <li>Configure Cosmos DB autoscale throughput (rather than fixed RU/s) so provisioned throughput tracks actual demand instead of being sized for worst-case peak at all times.</li>
+          <li>Apply Blob Storage lifecycle management policies to automatically tier cold, rarely-viewed product images down to Cool or Archive tiers.</li>
+        </ul>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <h3>Consistency and Data</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Walk through Cosmos DB's five consistency levels and when you'd choose each.</div>
+          <div class="qa-a">Strong (linearizable, but single-write-region only), Bounded Staleness (bounded lag by K operations/T time, works with multi-region writes &mdash; the practical "strong" choice for this design's order container), Session (read-your-own-writes within a client session &mdash; good for cart/session data), Consistent Prefix (no out-of-order reads, but may lag), and Eventual (fastest, no ordering guarantee &mdash; fine for catalog browsing).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why can't you just set every Cosmos DB container to Strong consistency and call it done?</div>
+          <div class="qa-a">Strong consistency requires synchronous replication and is only supported with a single write region in Cosmos DB. Given a hard requirement for multi-region active-active writes, defaulting to Strong for orders would silently force a single write region, undermining the multi-region benefit the platform needs.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">If you use Bounded Staleness instead of Strong for order writes, how do you still prevent a double-charge?</div>
+          <div class="qa-a">Pair the database consistency level with an application-level idempotency key on the order write (a client-generated request ID) and a conditional/optimistic-concurrency write (ETag check), so a retried or racing write can never create two order records for the same checkout attempt.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you frame this consistency decision in CAP-theorem terms?</div>
+          <div class="qa-a">The order-write path favors consistency over availability during a partition (accepting some write latency/retry to avoid a double-charge), while the catalog-browse path favors availability and partition tolerance (serving slightly stale data rather than failing a page load) &mdash; the same platform makes two different CAP trade-offs for two different data types, on purpose.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Cosmos DB vs. Azure SQL Hyperscale for the order table &mdash; how do you decide?</div>
+          <div class="qa-a">Cosmos DB wins on native multi-region write elasticity and per-container consistency tuning, letting one account serve both orders and catalog. Azure SQL Hyperscale is a legitimate alternative if the team needs strict relational/ACID semantics, but its active geo-replication is asynchronous (a real RPO on failover) and it's fundamentally single-write-region.</div>
+        </div>
+
+        <h3>Compute Platform Choices</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Why AKS instead of Azure Container Apps for the checkout API?</div>
+          <div class="qa-a">The checkout API needs deep networking control (VNet integration, private endpoints, service-mesh sidecars), fine-tuned autoscaling against custom metrics, and always-warm connection pools to Cosmos DB/Redis to hit a sub-150ms p99 &mdash; all things AKS gives more control over than Container Apps. Container Apps is the better fit for simpler, stateless downstream services.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why not run the checkout API on Azure Functions given it's naturally event-driven?</div>
+          <div class="qa-a">The synchronous checkout call has almost no latency budget to spare; even Premium-plan Functions carry more cold-start/connection-pool risk than a long-running AKS pod. Functions are a good fit for the async consumer side (a single notification send, an image-resize job), not the latency-critical checkout request itself.</div>
+        </div>
+
+        <h3>Messaging and Event-Driven Patterns</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How does Service Bus's topic/subscription model support the order-placed fan-out?</div>
+          <div class="qa-a">A single order-placed topic with independent subscriptions per downstream consumer (fulfillment, notifications, analytics, fraud-review) &mdash; each subscription gets its own copy of the message, can filter independently, and can fail/retry/dead-letter independently of the others.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Service Bus guarantees at-least-once delivery, not exactly-once &mdash; how do your consumers stay correct?</div>
+          <div class="qa-a">Every consumer is built to be idempotent, keyed on the order ID (e.g. an upsert or a dedup check before acting), so processing the same message twice produces the same end state as processing it once.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">When would you reach for Event Grid instead of Service Bus?</div>
+          <div class="qa-a">Event Grid suits simpler, more reactive routing scenarios (e.g. triggering a function on a Blob Storage upload) where you don't need Service Bus's richer guarantees &mdash; ordered sessions, per-subscription dead-lettering, and transactional send/receive semantics.</div>
+        </div>
+
+        <h3>Edge, Cost, and Operations</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the actual advantage of Azure Front Door over composing CloudFront + WAF + Global Accelerator on AWS?</div>
+          <div class="qa-a">Front Door is one product with one configuration surface for global LB, CDN, and WAF, reducing the number of places a misconfiguration or a gap between services can occur. The AWS composition is more flexible/granular but has more moving parts to keep consistent.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">The flash-sale event ends and traffic drops back to steady-state &mdash; what happens to cost?</div>
+          <div class="qa-a">Cosmos DB autoscale throughput scales RU/s back down automatically; AKS's cluster autoscaler scales node pools down; only the steady-state 500 TPS baseline should be covered by Reservations/Savings Plans, with burst capacity running at on-demand rates.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you catch an unexpected cost spike before the monthly bill arrives?</div>
+          <div class="qa-a">Microsoft Cost Management budgets and alerts scoped per environment/service, combined with Azure Advisor's ongoing right-sizing recommendations &mdash; both surface anomalies well before invoice time.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">An entire Azure region goes down &mdash; what's the customer-visible impact?</div>
+          <div class="qa-a">With Front Door's health probes, traffic automatically routes to the remaining healthy regions; Cosmos DB's multi-region replication means order and catalog data is already present elsewhere. The main risk is the RPO/RTO around in-flight writes at the moment of failure, which is exactly why the Bounded Staleness + idempotency design matters.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you test a regional failover without waiting for a real outage?</div>
+          <div class="qa-a">Use Front Door's manual backend disable/priority controls to simulate a region going unhealthy in a staging environment, and verify Cosmos DB failover priorities and AKS traffic shift behave as expected before relying on it in production.</div>
+        </div>
+
+        <h3>Security and Identity</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Why use Managed Identities instead of service principals with stored credentials for AKS workloads?</div>
+          <div class="qa-a">Managed Identities eliminate the need to store, rotate, or leak any credential at all &mdash; Azure handles the identity lifecycle, and access is granted purely through RBAC role assignments on the identity, which is both more secure and less operational overhead.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does Entra ID's least-privilege RBAC model apply to this platform in practice?</div>
+          <div class="qa-a">Each service's Managed Identity gets only the specific role assignments it needs on the specific resource it needs (e.g. Cosmos DB Data Contributor on just the order container, not the whole account), rather than broad subscription-level Owner/Contributor roles.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">If the company already runs on-prem Active Directory, how does that change the Azure identity design?</div>
+          <div class="qa-a">Entra Connect can synchronize on-prem AD identities into Entra ID with far less custom federation work than bridging an external IdP into AWS IAM or GCP Cloud Identity, and ExpressRoute gives a private link back to on-prem systems the checkout platform might still depend on (e.g. a legacy inventory master).</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Let the numbers drive the design: ~200M orders/year is only &asymp;6&ndash;7 orders/sec on average, but the 5,000 TPS flash-sale peak and the sub-150ms global p99 are what actually size the compute and caching tiers. Cosmos DB's biggest strength for this workload &mdash; five tunable consistency levels per container &mdash; is only a strength if you actually choose deliberately per data type; defaulting to "Strong" everywhere would quietly force a single write region and undo the multi-region write benefit the platform needs, so the order container uses Bounded Staleness plus application-level idempotency instead, while the catalog container runs Session/Eventual. Azure Front Door's single-product integration of LB + CDN + WAF is a genuine simplification of the edge tier versus composing several services on other clouds, and Entra ID + ExpressRoute is a real, if conditional, advantage for a Microsoft-centric enterprise &mdash; but AWS's broader managed-service catalog and GCP's Spanner-based true global consistency are equally legitimate reasons a team might choose differently. State every trade-off explicitly, the same way you'd defend a consistency-level choice or a compute-platform choice in an interview.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Microsoft Learn, <a href="https://learn.microsoft.com/en-us/azure/architecture/" target="_blank" rel="noopener">Azure Architecture Center</a></li>
+          <li>Microsoft Learn, <a href="https://learn.microsoft.com/en-us/azure/cosmos-db/consistency-levels" target="_blank" rel="noopener">Azure Cosmos DB Consistency Levels</a></li>
+          <li>Microsoft Learn, <a href="https://learn.microsoft.com/en-us/azure/aks/" target="_blank" rel="noopener">Azure Kubernetes Service (AKS) Documentation</a></li>
+          <li>Microsoft Learn, <a href="https://learn.microsoft.com/en-us/azure/cost-management-billing/" target="_blank" rel="noopener">Microsoft Cost Management Documentation</a></li>
+          <li>Microsoft Learn, <a href="https://learn.microsoft.com/en-us/azure/frontdoor/" target="_blank" rel="noopener">Azure Front Door Documentation</a></li>
+          <li>HashiCorp, <a href="https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/4.0-upgrade-guide" target="_blank" rel="noopener">azurerm Provider &mdash; 4.0 Upgrade Guide</a></li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="aws.html"><span class="dir">Previous</span>AWS</a>
+          <a class="next" href="cloud-index.html"><span class="dir">Next</span>Index</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

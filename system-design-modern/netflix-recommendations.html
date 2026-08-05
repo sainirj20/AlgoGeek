@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Netflix Recommendations | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design &mdash; Modern Systems</a><span class="sep">/</span><span class="current">Netflix Recommendations</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design &mdash; Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-scope">Problem Statement &amp; Scope</a></li>
+        <li><a href="#functional-requirements">Functional Requirements</a></li>
+        <li><a href="#non-functional-requirements">Non-Functional Requirements</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#api-design">API Design</a></li>
+        <li><a href="#low-level-design-deep-dive">Low-Level Design (Deep Dive)</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-sharding-and-partitioning">Data Sharding and Partitioning</a></li>
+        <li><a href="#feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#caching-strategy">Caching Strategy</a></li>
+        <li><a href="#monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</a></li>
+        <li><a href="#security-considerations">Security Considerations</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing Netflix's Recommendation System</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for the personalization and recommendation engine behind a Netflix-style video-streaming platform's homepage: the ranked-row layout (Continue Watching, Trending Now, Because You Watched X, genre rows), personalized ranking of titles within each row, and personalized artwork/thumbnail selection &mdash; covering functional and non-functional requirements, capacity estimation, high-level architecture, API and low-level design, database schema, sharding, a cold-start deep dive, replication and fault tolerance, caching, monitoring, security, and a bank of follow-up interview questions. This design is scoped strictly to <strong>recommendation and ranking</strong>: video encoding, adaptive-bitrate transcoding, and CDN delivery of the actual video bytes are a separate system and are out of scope here. The thread running through every section is a <strong>two-stage funnel wrapped in a three-tier offline/nearline/online architecture</strong>: a cheap, high-recall <em>candidate generation</em> stage narrows a large catalog down to a few hundred relevant titles per user, a more expensive <em>ranking</em> stage scores and orders just those few hundred, and almost all of the genuinely expensive work &mdash; model training, most feature computation &mdash; happens before a homepage request ever arrives, leaving the online path with only a cache fetch and one batched ranking pass.</em></p>
+
+        <h2 id="problem-statement-and-scope">Problem Statement &amp; Scope</h2>
+        <p>Design the personalization/recommendation engine for a large-scale video-streaming platform, similar to Netflix's, that:</p>
+        <ul>
+          <li>Generates a <strong>personalized homepage</strong> made of ranked "rows" (Continue Watching, Trending Now, Because You Watched X, genre-specific rows, Top Picks for You) for each of hundreds of millions of members.</li>
+          <li>Personalizes the <strong>ranking of titles within each row</strong>, not just which rows appear or in what order.</li>
+          <li>Selects <strong>personalized artwork/thumbnails</strong> per member per title, so the same title's tile can look different (and, ideally, more relevant and clickable) to different members.</li>
+          <li>Incorporates both a member's <strong>long-term taste profile</strong> and their <strong>most recent, in-session activity</strong> when deciding what to show right now.</li>
+          <li>Handles <strong>cold start</strong> gracefully for brand-new members with little history and newly-added titles with little engagement data.</li>
+          <li>Supports <strong>experimentation</strong> &mdash; A/B tests and bandit-style exploration &mdash; over ranking algorithms, row layouts, and artwork, as a first-class capability rather than an afterthought.</li>
+        </ul>
+
+        <h3>In scope</h3>
+        <p>Candidate generation, ranking, row/layout selection, artwork selection, the offline/nearline/online architecture split, the feature store, cold-start handling, and A/B/bandit-based experimentation for algorithms and layouts &mdash; i.e., everything between "we have a catalog and a member" and "here is the ranked homepage payload returned to the client."</p>
+
+        <h3>Out of scope (acknowledged, not designed in depth)</h3>
+        <p>Video encoding and adaptive-bitrate transcoding, CDN edge caching and delivery of the actual video bytes, DRM/licensing enforcement, playback-quality telemetry, query-driven search (as distinct from row-based browsing recommendations), and the content-licensing/catalog-acquisition business process. These are separate systems that recommendations sits alongside and consumes signals from (e.g., a completed play), but this design does not build them.</p>
+
+        <div class="callout">
+          <div class="callout-title">Key design tension</div>
+          Two facts shape almost every later decision. First, <strong>recommendation is a two-stage funnel, not a single model</strong>: no practical system scores a full catalog of tens of thousands of titles with an expensive ranking model for every request, at sub-second latency, for hundreds of millions of users &mdash; candidate generation and ranking are split precisely to make that tractable (see Low-Level Design). Second, <strong>personalization freshness is a three-way trade-off, not a binary</strong>: offline batch training captures deep, slow-moving taste signal from a huge historical dataset; nearline stream processing folds in this session's or today's activity within minutes; and the online layer applies only the cheapest, most immediate context at request time. Get the boundaries between these three tiers wrong, and you either serve a homepage that's stale for hours, or you try to do too much work synchronously and blow the latency budget.
+        </div>
+
+        <h2 id="functional-requirements">Functional Requirements</h2>
+        <table>
+          <tr><th>#</th><th>Requirement</th><th>Notes</th></tr>
+          <tr><td>FR1</td><td>Generate a personalized homepage of ranked rows per user</td><td>A per-member ordered list of rows (Continue Watching, Trending Now, genre rows, Because You Watched X, Top Picks), each itself an ordered list of titles.</td></tr>
+          <tr><td>FR2</td><td>Rank titles within each row by predicted relevance</td><td>Not just row selection &mdash; the order of titles inside a row is itself a personalized prediction of what this member is most likely to watch.</td></tr>
+          <tr><td>FR3</td><td>Support "Because You Watched X" style explainable rows</td><td>Rows anchored on a specific title the member engaged with, surfacing similar titles with a human-readable explanation tying the recommendation back to that anchor.</td></tr>
+          <tr><td>FR4</td><td>Incorporate real-time signals alongside long-term taste</td><td>What the member just watched, paused, or browsed <em>this session</em> should influence the homepage, blended with (not replacing) their long-term taste profile.</td></tr>
+          <tr><td>FR5</td><td>Handle cold-start for new users and new titles</td><td>A member with little/no history and a title with little/no engagement data must both still be recommendable from day one.</td></tr>
+          <tr><td>FR6</td><td>Support A/B testing of ranking algorithms/row layouts</td><td>Different members can be served by different candidate-generation strategies, ranking models, or row-layout policies, with clean attribution of engagement to the variant they saw.</td></tr>
+          <tr><td>FR7</td><td>Personalize thumbnail/artwork selection per user</td><td>For a given title, select the specific artwork image (from a pre-produced set) most likely to resonate with this particular member, per row/context.</td></tr>
+        </table>
+        <p>Non-goals for this doc: video encoding/transcoding pipelines, CDN/edge delivery of video segments, DRM, and query-driven search retrieval &mdash; these are separate systems recommendations feeds into or reads signals from, not components built here.</p>
+
+        <h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+        <p>These are the constraints that actually shape the architecture.</p>
+        <ul>
+          <li><strong>Very low latency despite complex ranking.</strong> The homepage must render in well under a second (target P95 &asymp;500&nbsp;ms end-to-end) even though computing it in principle requires scoring a large catalog against a rich, personalized model. This single constraint is what forces almost everything expensive off the request path (see Capacity Estimation and High-Level Design).</li>
+          <li><strong>Freshness &mdash; recent activity should influence recommendations quickly.</strong> If a member just binged the first season of a show, the homepage should reflect that within minutes, not after the next nightly batch job. Session-level personalization (this session's clicks) and nearline personalization (today's activity) are both first-class, distinct from the slower offline layer.</li>
+          <li><strong>Massive scale, computed essentially independently per user.</strong> The system must serve hundreds of millions of members, each with a genuinely unique homepage. Unlike a single shared leaderboard or feed, this is an <strong>embarrassingly parallel per-user problem</strong> &mdash; there is no cross-user coordination needed to render one member's homepage, which is what makes horizontal scaling of the online tier straightforward once the per-request cost is bounded.</li>
+          <li><strong>Offline model training must process a huge, continuously growing interaction dataset.</strong> Billions of interaction events accumulate daily across hundreds of millions of members; training candidate-generation and ranking models on this scale is itself a large distributed-computing problem (see Capacity Estimation), decoupled from the low-latency online path.</li>
+        </ul>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p><strong>Given assumptions (illustrative, for this exercise &mdash; not a claim about any specific platform's actual current metrics):</strong> &asymp;100M daily active users (DAU); &asymp;20,000 titles in a member's region/licensing-eligible catalog; &asymp;150 logged interaction events per active member per day (impressions, hovers, play-starts, pauses, completes, thumbs, browses).</p>
+
+        <h3>Homepage request volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          DAU = 100M; homepage loads/DAU/day &asymp; 2.5 (cold open, resume-from-background, occasional manual refresh)
+          <br>Homepage requests/day &asymp; 100M &times; 2.5 = 250M/day
+          <br>Peak concentration (assumption): &asymp;20% of daily requests land in a representative 3-hour prime-time window (10,800 s)
+          <br>Requests in that window = 250M &times; 20% = 50M &rarr; 50M &divide; 10,800 s &asymp; 4,630 req/sec sustained
+          <br>Instantaneous burst multiplier (assumption) &times;1.5 &rarr; &asymp;7,000 req/sec peak homepage-render load
+        </div>
+
+        <h3>Candidate funnel sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Eligible catalog per user (region/licensing-filtered) &asymp; 20,000 titles
+          <br>Per-request candidate generators (collaborative-filtering/embedding-ANN, trending, continue-watching, genre-affinity, editorial) &asymp; 5 generators &times; &asymp;150 candidates each &asymp; 750 raw candidates
+          <br>After de-duplication across generators &asymp; 500 unique candidates/request &mdash; a <strong>40&times; narrowing</strong> from the eligible catalog
+          <br>Ranking model scores those &asymp;500 candidates and assembles &asymp;40 row slots &times; &asymp;15 displayed titles/row (with reuse of a title across rows) per homepage request
+        </div>
+
+        <h3>Ranking latency budget (why batching matters)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Homepage render P95 budget &asymp; 500 ms end-to-end
+          <br>Gateway/session/auth &asymp; 20 ms &middot; candidate-cache fetch &asymp; 30 ms &middot; feature-store fetch for &asymp;500 candidates &asymp; 50 ms
+          <br>Ranking-model batch inference for &asymp;500 candidates, one vectorized call &asymp; 150 ms &rarr; &asymp;0.3 ms/candidate amortized
+          <br>Row assembly, cross-row dedup, response marshal &asymp; 50 ms &middot; network + client render headroom &asymp; 200 ms
+          <br><em>If the &asymp;500 candidates were instead scored as 500 sequential model calls at even 2 ms/call, that single step alone would cost &asymp;1,000 ms &mdash; already over the entire budget. A single batched, vectorized ranking pass across the whole candidate set is not an optimization here; it is the only way the budget closes at all (see Low-Level Design).</em>
+        </div>
+
+        <h3>Interaction event stream and storage</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Events/day &asymp; 100M DAU &times; 150 events/user/day = 15B events/day
+          <br>Avg event size &asymp;200 bytes (user_id, title_id, event_type, row_id, position, device, session_id, timestamp) &rarr; raw ingest &asymp; 15B &times; 200B = 3 TB/day
+          <br>Average ingest rate &asymp; 15B &divide; 86,400 s &asymp; 174k events/sec; assume &asymp;2&times; concentration in prime time &rarr; &asymp;350k events/sec peak
+          <br>+ replication/index overhead (&asymp;2&times;) &asymp; 6 TB/day &rarr; &asymp;30-day hot retention &asymp; 180 TB hot tier before rolling to cheaper cold/analytics storage
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Takeaway</div>
+          The render-time budget (&asymp;500 ms) is dwarfed by how much data feeds it &mdash; a 20,000-title catalog and &asymp;15B interaction events/day. The only way to close that gap is to do almost all the expensive work (model training, most candidate generation, most feature computation) <strong>before</strong> a request ever arrives, leaving the online path with just a cache fetch and one batched ranking pass. This offline/nearline/online split, not any single clever algorithm, is the core scalability idea (see High-Level Design).
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+
+        <h3>Services</h3>
+        <table>
+          <tr><th>Service</th><th>Responsibility</th></tr>
+          <tr><td>Event Ingestion Service</td><td>Collects interaction events (impression, hover, play, pause, complete, thumbs up/down, browse) from clients and publishes them onto an event stream.</td></tr>
+          <tr><td>Nearline Signal Processor</td><td>Stream-processing layer that consumes the interaction-event stream and updates each user's recent-activity features and candidate pool in the Feature Store within minutes &mdash; the "fresh but not instant" tier.</td></tr>
+          <tr><td>Offline Training Pipeline</td><td>Batch jobs (Spark-style) over the data warehouse of historical interactions that periodically retrain the candidate-generation and ranking models and publish new model/embedding artifacts.</td></tr>
+          <tr><td>Feature Store</td><td>Shared store of user features (taste vector, recent-activity summary, cohort/segment) and item features (embeddings, popularity, metadata), written by the offline and nearline tiers and read by the online tier.</td></tr>
+          <tr><td>Candidate Generation Service</td><td>Runs multiple cheap, high-recall generators (collaborative filtering/embedding-ANN, trending, continue-watching, genre-affinity, editorial) to produce a precomputed, per-user candidate pool refreshed by the nearline tier.</td></tr>
+          <tr><td>Ranking Service</td><td>The expensive, high-precision stage: scores the (already narrowed) candidate set with a richer model using request-time context, in one batched call, at request time.</td></tr>
+          <tr><td>Page Generation Service</td><td>The online, request-facing orchestrator: on a homepage request, pulls precomputed candidates + fresh features, calls Ranking, assembles and dedupes rows, and returns the homepage payload.</td></tr>
+          <tr><td>Row/Layout Service</td><td>Decides which row <em>templates</em> are eligible and in what order for a given member (itself personalized and experiment-controlled), independent of which titles fill each row.</td></tr>
+          <tr><td>Artwork Selection Service</td><td>Chooses, per member per title per context, which pre-produced artwork image to display, using a contextual-bandit-style model (FR7).</td></tr>
+          <tr><td>Experimentation / A-B Testing Service</td><td>Assigns members to algorithm/layout variants (sticky per experiment), and is consulted by Page Generation/Ranking so different members can run different candidate generators, ranking models, or row layouts (FR6).</td></tr>
+          <tr><td>Supporting infra</td><td>Event bus (Kafka-style) for interaction events, a distributed cache (candidate lists, assembled homepages), a data warehouse for offline training, and a metrics/experimentation analytics pipeline.</td></tr>
+        </table>
+
+        <h3>Architecture overview: offline / nearline / online</h3>
+        <p>The diagram below is the load-bearing idea of this whole design. Historical interaction data trains models <strong>offline</strong> (hours/days); the interaction-event stream updates per-user features and candidate pools <strong>nearline</strong> (minutes); and an incoming homepage request is served entirely from precomputed state plus one lightweight ranking pass <strong>online</strong> (milliseconds). A Feature Store sits underneath all three tiers, and an Experimentation layer decides which algorithm/layout variant a given member's request is routed through.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 680" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-nf-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-nf-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="10" width="330" height="50" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="185" y="32" text-anchor="middle" fill="#6b4a10" font-size="11" font-weight="700">Event Ingestion Service</text>
+            <text x="185" y="48" text-anchor="middle" fill="#6b4a10" font-size="9">play / pause / browse / rating events</text>
+
+            <rect x="390" y="10" width="330" height="50" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="555" y="32" text-anchor="middle" fill="#6b4a10" font-size="11" font-weight="700">Data Warehouse</text>
+            <text x="555" y="48" text-anchor="middle" fill="#6b4a10" font-size="9">years of historical interaction logs</text>
+
+            <line x1="350" y1="35" x2="388" y2="35" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-nf-1m)"></line>
+            <text x="369" y="27" text-anchor="middle" font-size="7" fill="var(--color-text-muted)" font-style="italic">archived</text>
+
+            <rect x="20" y="78" width="330" height="160" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="30" y="96" fill="var(--color-text-muted)" font-size="10" font-weight="700" letter-spacing="0.03em">NEARLINE LAYER &mdash; stream processing (minutes)</text>
+
+            <rect x="40" y="108" width="290" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="185" y="130" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Nearline Signal Processor</text>
+            <text x="185" y="145" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">updates recent-activity user features</text>
+
+            <rect x="40" y="178" width="290" height="48" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="185" y="198" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Candidate Set Refresh</text>
+            <text x="185" y="212" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">recomputes per-user candidate pool</text>
+
+            <rect x="390" y="78" width="330" height="160" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="400" y="96" fill="var(--color-text-muted)" font-size="10" font-weight="700" letter-spacing="0.03em">OFFLINE LAYER &mdash; batch training (hours/days)</text>
+
+            <rect x="410" y="108" width="290" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="555" y="130" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Batch Model Training (Spark)</text>
+            <text x="555" y="145" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">trains candidate-gen &amp; ranking models</text>
+
+            <rect x="410" y="178" width="290" height="48" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="555" y="198" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Model &amp; Candidate Artifacts</text>
+            <text x="555" y="212" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">published to nearline + online tiers</text>
+
+            <line x1="185" y1="60" x2="185" y2="106" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nf-1)"></line>
+            <line x1="555" y1="60" x2="555" y2="106" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nf-1)"></line>
+            <line x1="185" y1="163" x2="185" y2="176" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-nf-1)"></line>
+            <line x1="555" y1="163" x2="555" y2="176" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-nf-1)"></line>
+
+            <rect x="170" y="255" width="400" height="55" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="278" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Feature Store</text>
+            <text x="370" y="294" text-anchor="middle" fill="#cbd8ef" font-size="9">user taste vectors + item features + recent-activity signals</text>
+
+            <path d="M185,226 L100,226 L100,255" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-nf-1m)"></path>
+            <text x="60" y="245" text-anchor="middle" font-size="7" fill="var(--color-text-muted)" font-style="italic">feature updates</text>
+            <line x1="470" y1="226" x2="470" y2="253" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-nf-1)"></line>
+            <text x="500" y="242" text-anchor="middle" font-size="7" fill="var(--color-text-muted)" font-style="italic">embeddings</text>
+
+            <path d="M700,226 L700,300 L650,300 L650,363" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-nf-1m)"></path>
+            <text x="704" y="315" font-size="7" fill="var(--color-text-muted)" font-style="italic" text-anchor="middle">model weights</text>
+
+            <path d="M185,226 L100,226 L100,363" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-nf-1m)"></path>
+            <text x="60" y="350" text-anchor="middle" font-size="7" fill="var(--color-text-muted)" font-style="italic">refreshed candidates</text>
+
+            <rect x="20" y="330" width="700" height="230" rx="10" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="30" y="348" fill="var(--color-text-muted)" font-size="10" font-weight="700" letter-spacing="0.03em">ONLINE LAYER &mdash; low-latency, request-time serving</text>
+
+            <rect x="40" y="365" width="200" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="140" y="390" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Candidate Cache</text>
+            <text x="140" y="405" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">precomputed per-user sets</text>
+
+            <rect x="270" y="365" width="220" height="60" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="380" y="390" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Page Generation Service</text>
+            <text x="380" y="405" text-anchor="middle" fill="#cbd8ef" font-size="8">assembles rows on request</text>
+
+            <rect x="520" y="365" width="180" height="60" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="610" y="390" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Ranking Service</text>
+            <text x="610" y="405" text-anchor="middle" fill="#cbd8ef" font-size="8">scores &amp; orders candidates</text>
+
+            <rect x="520" y="450" width="180" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="610" y="472" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">Experimentation / A-B Testing</text>
+            <text x="610" y="487" text-anchor="middle" fill="#6b4a10" font-size="8">assigns algorithm/layout variant</text>
+
+            <line x1="370" y1="310" x2="380" y2="363" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nf-1)"></line>
+
+            <line x1="240" y1="395" x2="268" y2="395" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-nf-1)" marker-start="url(#arrow-nf-1)"></line>
+            <line x1="490" y1="395" x2="518" y2="395" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-nf-1)" marker-start="url(#arrow-nf-1)"></line>
+
+            <line x1="610" y1="450" x2="610" y2="427" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-nf-1m)"></line>
+
+            <rect x="300" y="615" width="160" height="45" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="380" y="642" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Client (homepage request)</text>
+
+            <line x1="380" y1="613" x2="380" y2="427" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nf-1)" marker-start="url(#arrow-nf-1)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 1. The offline/nearline/online split: historical data trains models offline (hours/days); the event stream refreshes per-user features and candidates nearline (minutes); a homepage request is served online (milliseconds) from precomputed candidates plus one batched ranking pass. The Feature Store is shared across all three tiers, and Experimentation decides which variant a request is routed through.</div>
+        </div>
+
+        <h3>Data flow: homepage request (online path)</h3>
+        <ol>
+          <li>Client &rarr; Page Generation Service: <code>GET /v1/homepage</code>.</li>
+          <li>Page Generation Service &rarr; Candidate Cache: fetch the precomputed candidate pool for this user (already narrowed from the full catalog by the nearline/offline tiers).</li>
+          <li>Page Generation Service &rarr; Feature Store: fetch fresh user + item features (including this session's very latest context, if the online layer keeps any).</li>
+          <li>Page Generation Service &rarr; Ranking Service: one batched scoring call over the candidate set, informed by the Experimentation layer's variant assignment for this user.</li>
+          <li>Ranking Service &rarr; Page Generation Service: ranked candidates with scores.</li>
+          <li>Page Generation Service assembles rows (row templates from Row/Layout Service, artwork from Artwork Selection Service), dedupes titles across rows, and returns the homepage payload.</li>
+        </ol>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-nf-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-nf-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="5" y="15" width="90" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="50" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Client</text>
+            <rect x="130" y="15" width="150" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="205" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Page Gen. Service</text>
+            <rect x="315" y="15" width="130" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="380" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Candidate Cache</text>
+            <rect x="480" y="15" width="120" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="540" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Feature Store</text>
+            <rect x="635" y="15" width="100" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="685" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Ranking Svc</text>
+
+            <line x1="50" y1="51" x2="50" y2="380" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="205" y1="51" x2="205" y2="380" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="380" y1="51" x2="380" y2="380" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="540" y1="51" x2="540" y2="380" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+            <line x1="685" y1="51" x2="685" y2="380" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></line>
+
+            <line x1="50" y1="78" x2="205" y2="78" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nf-2)"></line>
+            <text x="127" y="70" text-anchor="middle" font-size="9" fill="var(--color-text)">1. GET /v1/homepage</text>
+
+            <line x1="205" y1="110" x2="380" y2="110" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nf-2)"></line>
+            <text x="292" y="102" text-anchor="middle" font-size="9" fill="var(--color-text)">2. fetch precomputed candidates</text>
+
+            <line x1="205" y1="142" x2="540" y2="142" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nf-2)"></line>
+            <text x="372" y="134" text-anchor="middle" font-size="9" fill="var(--color-text)">3. fetch fresh user + item features</text>
+
+            <line x1="205" y1="174" x2="685" y2="174" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nf-2)"></line>
+            <text x="445" y="166" text-anchor="middle" font-size="9" fill="var(--color-text)">4. score candidates (one batched call, variant-aware)</text>
+
+            <line x1="685" y1="206" x2="205" y2="206" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nf-2)"></line>
+            <text x="445" y="198" text-anchor="middle" font-size="9" fill="var(--color-text)">5. ranked candidates + scores</text>
+
+            <rect x="130" y="224" width="290" height="45" rx="6" fill="none" stroke="var(--color-accent)" stroke-dasharray="3,3"></rect>
+            <text x="275" y="240" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">6. assemble rows, dedupe across rows,</text>
+            <text x="275" y="253" text-anchor="middle" font-size="8" fill="var(--color-text-muted)" font-style="italic">attach artwork &amp; explanations</text>
+
+            <line x1="205" y1="290" x2="50" y2="290" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-nf-2)"></line>
+            <text x="127" y="282" text-anchor="middle" font-size="9" fill="var(--color-text)">7. 200 OK &mdash; ranked rows</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Homepage request sequence: candidates and most feature computation are already precomputed before the request arrives; the only real-time work is one batched ranking call plus row assembly.</div>
+        </div>
+
+        <h3>Data flow: interaction event &rarr; nearline feature update</h3>
+        <ol>
+          <li>Client emits an interaction event (play, pause, browse, thumbs up/down) &rarr; Event Ingestion Service &rarr; event bus.</li>
+          <li>Nearline Signal Processor consumes the stream, updates the user's <code>recent_activity_summary</code> in the Feature Store, and &mdash; on a strong signal (e.g., a completed episode) &mdash; triggers a candidate-pool refresh for that user.</li>
+          <li>The event is also archived into the data warehouse, where it becomes training data for the next offline model-training run.</li>
+          <li>The very next homepage request for that user reads the updated feature/candidate state &mdash; there is no need to wait for the offline pipeline to see the effect of a signal that arrived a few minutes ago.</li>
+        </ol>
+
+        <h2 id="api-design">API Design</h2>
+        <p>Conventions: JSON over HTTPS/gRPC internally. The homepage endpoint is a pure read (idempotent, cacheable); the event-ingestion endpoint is fire-and-forget (best-effort, at-least-once delivery is acceptable since ranking is a statistical, not transactional, decision).</p>
+
+        <h3>Get homepage</h3>
+        <pre><code>GET /v1/homepage
+Authorization: Bearer &lt;access_token&gt;
+
+200 OK
+{
+  "user_id": "u_9021",
+  "experiment_variants": { "ranking_model": "v3_deep", "row_layout": "control" },
+  "rows": [
+    {
+      "row_id": "continue_watching",
+      "row_type": "CONTINUE_WATCHING",
+      "titles": [ { "title_id": "t_4471", "rank": 1, "artwork_url": "..." }, ... ]
+    },
+    {
+      "row_id": "byw_the_crown",
+      "row_type": "BECAUSE_YOU_WATCHED",
+      "explanation": "Because you watched The Crown",
+      "anchor_title_id": "t_1188",
+      "titles": [ { "title_id": "t_5502", "rank": 1, "artwork_url": "..." }, ... ]
+    },
+    { "row_id": "trending_now", "row_type": "TRENDING", "titles": [ ... ] }
+  ]
+}</code></pre>
+
+        <h3>Ingest interaction event</h3>
+        <pre><code>POST /v1/events
+{
+  "user_id": "u_9021",
+  "title_id": "t_5502",
+  "event_type": "PLAY" | "PAUSE" | "COMPLETE" | "THUMBS_UP" | "THUMBS_DOWN" | "IMPRESSION" | "BROWSE",
+  "row_id": "byw_the_crown",
+  "position_in_row": 2,
+  "session_id": "s_88213",
+  "device_type": "TV" | "MOBILE" | "WEB",
+  "event_ts": "2026-08-03T20:14:05Z"
+}
+&#8594; 202 Accepted // fire-and-forget, published onto the event bus for nearline processing</code></pre>
+
+        <h3>Get personalized artwork for a title</h3>
+        <pre><code>GET /v1/artwork?user_id=u_9021&amp;title_id=t_5502&amp;context=row:trending_now
+&#8594; 200 { "title_id": "t_5502", "artwork_url": "https://images.example.com/t_5502/variant_c.jpg" }
+// selection logic only; actual image bytes are served by the (out-of-scope) CDN</code></pre>
+        <p>The homepage endpoint never fans out N synchronous artwork-selection calls per row on the request path; artwork is chosen via a lightweight lookup against precomputed per-user/per-title bandit assignments and attached during row assembly (see Low-Level Design and Caching Strategy).</p>
+
+        <h2 id="low-level-design-deep-dive">Low-Level Design (Deep Dive)</h2>
+
+        <h3>7.1 The two-stage pattern: candidate generation vs. ranking</h3>
+        <p>This is the backbone of the whole design. A homepage request is answered in two distinct stages with very different cost/precision trade-offs:</p>
+        <ul>
+          <li><strong>Stage 1 &mdash; Candidate generation (cheap, high recall).</strong> Several lightweight generators each independently narrow the &asymp;20,000-title eligible catalog down to a few hundred plausible titles: collaborative filtering / matrix factorization or two-tower embeddings with approximate nearest-neighbor lookup (personalized taste), a trending/popularity generator (non-personalized), a continue-watching generator (in-progress titles), and a genre-affinity generator. None of these need to be highly accurate individually &mdash; their job is just to make sure the <em>right titles are somewhere in the pool</em>, not to get the final order right.</li>
+          <li><strong>Stage 2 &mdash; Ranking (expensive, high precision).</strong> A single, more powerful model (deep neural net or gradient-boosted trees) scores only the few hundred candidates that survived Stage 1, using rich features &mdash; user taste vector, item embedding, recent-activity context, device, time of day &mdash; to produce the final, precise order.</li>
+        </ul>
+        <p><strong>Why the split is necessary.</strong> Running the expensive ranking model against the full &asymp;20,000-title catalog for every one of &asymp;7,000 peak homepage requests/sec would multiply the ranking cost by &asymp;40&times; over scoring only the candidate set (see Capacity Estimation) &mdash; that compute simply does not exist within a &asymp;500&nbsp;ms budget at this scale. The two-stage funnel trades a cheap, high-recall filter for a precise, low-recall-but-high-precision final ranker: it is the same standard pattern used in search and ad-serving systems, applied here to recommendations.</p>
+        <pre><code>def generate_homepage(user_id, context):
+  candidates = union(
+    cf_candidate_generator(user_id),          # collaborative filtering / matrix factorization
+    embedding_ann_generator(user_id),         # two-tower embedding + approximate nearest neighbor
+    trending_generator(context.region),       # non-personalized, popularity-based
+    continue_watching_generator(user_id),     # in-progress titles
+    genre_affinity_generator(user_id),        # per-genre taste
+  )
+  candidates = dedupe(candidates)             # ~500 unique titles, down from a ~20,000-title catalog
+  features = feature_store.batch_fetch(user_id, candidates, context)
+  scores = ranking_model.score_batch(user_id, candidates, features)  # one vectorized call
+  ranked = sort_by_score_desc(candidates, scores)
+  rows = assemble_rows(ranked, row_definitions_for(user_id))         # dedupe across rows, respect quotas
+  return rows</code></pre>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 380" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-nf-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="220" y="15" width="300" height="45" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="370" y="35" text-anchor="middle" fill="#6b4a10" font-size="11" font-weight="700">Eligible catalog</text>
+            <text x="370" y="50" text-anchor="middle" fill="#6b4a10" font-size="8">&asymp;20,000 titles (region/licensing-filtered)</text>
+
+            <line x1="370" y1="60" x2="370" y2="85" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nf-3)"></line>
+
+            <rect x="40" y="87" width="130" height="45" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="105" y="112" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">CF / ANN embed.</text>
+            <rect x="190" y="87" width="130" height="45" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="255" y="112" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Trending</text>
+            <rect x="340" y="87" width="130" height="45" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="405" y="112" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Continue Watching</text>
+            <rect x="490" y="87" width="130" height="45" rx="16" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="555" y="112" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Genre affinity</text>
+
+            <line x1="220" y1="132" x2="300" y2="160" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-nf-3)"></line>
+            <line x1="330" y1="132" x2="340" y2="160" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-nf-3)"></line>
+            <line x1="470" y1="132" x2="420" y2="160" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-nf-3)"></line>
+            <line x1="580" y1="132" x2="450" y2="160" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow-nf-3)"></line>
+
+            <rect x="230" y="163" width="280" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.6"></rect>
+            <text x="370" y="183" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Union + de-dup</text>
+            <text x="370" y="198" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">&asymp;500 unique candidates (&asymp;40&times; narrowing)</text>
+
+            <line x1="370" y1="208" x2="370" y2="233" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nf-3)"></line>
+
+            <rect x="230" y="235" width="280" height="45" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="255" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">Ranking model (batched)</text>
+            <text x="370" y="270" text-anchor="middle" fill="#cbd8ef" font-size="8">rich features, one vectorized scoring call</text>
+
+            <line x1="370" y1="280" x2="370" y2="305" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nf-3)"></line>
+
+            <rect x="180" y="307" width="380" height="45" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="370" y="327" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Final ranked rows</text>
+            <text x="370" y="342" text-anchor="middle" fill="#6b4a10" font-size="8">&asymp;40 rows &times; &asymp;15 displayed titles/row</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. The two-stage funnel: several cheap generators produce overlapping candidate sets that union/dedupe to a few hundred titles; only that narrowed set is scored by the expensive ranking model.</div>
+        </div>
+
+        <h3>7.2 Row assembly and cross-row deduplication</h3>
+        <p>Once titles are ranked, they must be poured into row slots without one title dominating every row it's eligible for. Row assembly is a greedy fill: row templates are processed in priority order (itself personalized/experiment-controlled), each row pulls its top-N eligible ranked candidates that satisfy its own filter (e.g., a genre row only pulls titles tagged with that genre; a Because-You-Watched row only pulls titles similar to its anchor), and a title already placed in a higher-priority row is, by default, excluded from lower-priority rows &mdash; with narrow, deliberate exceptions (e.g., a title can legitimately appear in both Continue Watching and Trending Now, since those answer different questions). This keeps the homepage from feeling repetitive even though the same &asymp;500-candidate pool feeds every row.</p>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>Presented as relational-style DDL for clarity; in practice the Feature Store and InteractionEvent store are more likely a wide-column/KV store (for write throughput and per-user locality) than a single relational table, but the logical schema below holds either way.</p>
+
+        <h3>user_profile (taste vector)</h3>
+        <pre><code>CREATE TABLE user_profile (
+  user_id BIGINT PRIMARY KEY,
+  taste_vector FLOAT[] NOT NULL,        -- learned embedding (e.g. 128-dim) from offline CF/two-tower training
+  genre_affinity JSONB,                 -- {"genre_id": score, ...}
+  recent_activity_summary JSONB,        -- rolling-window features, updated nearline
+  onboarding_survey JSONB,              -- initial taste seed for cold-start (see Feature-Specific Logic)
+  cohort_segment VARCHAR(32),           -- signup cohort / region / device-mix bucket, for popularity-prior fallback
+  model_version INT NOT NULL,           -- which offline model produced taste_vector
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);</code></pre>
+
+        <h3>title_metadata (content)</h3>
+        <pre><code>CREATE TABLE title_metadata (
+  title_id BIGINT PRIMARY KEY,
+  title_type VARCHAR(8) NOT NULL,       -- MOVIE|SERIES
+  genres VARCHAR(32)[] NOT NULL,
+  content_embedding FLOAT[],            -- learned embedding for content-based generation / new-title cold start
+  popularity_score FLOAT NOT NULL DEFAULT 0,  -- rolling global/regional popularity, used for trending + cold-start
+  licensed_regions VARCHAR(8)[] NOT NULL,
+  available_from DATE,
+  available_until DATE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);</code></pre>
+
+        <h3>interaction_event (append-only)</h3>
+        <pre><code>CREATE TABLE interaction_event (
+  event_id BIGINT PRIMARY KEY,          -- snowflake, time-sortable
+  user_id BIGINT NOT NULL,              -- shard/partition key
+  title_id BIGINT NOT NULL,
+  event_type VARCHAR(16) NOT NULL,      -- IMPRESSION|HOVER|PLAY|PAUSE|COMPLETE|THUMBS_UP|THUMBS_DOWN|BROWSE
+  row_id VARCHAR(64),                   -- which row this happened in (row/algorithm attribution)
+  position_in_row SMALLINT,
+  session_id BIGINT,
+  device_type VARCHAR(16),
+  event_ts TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX idx_interaction_user_time ON interaction_event(user_id, event_ts DESC);</code></pre>
+
+        <h3>row_definition</h3>
+        <pre><code>CREATE TABLE row_definition (
+  row_template_id BIGINT PRIMARY KEY,
+  row_type VARCHAR(24) NOT NULL,        -- CONTINUE_WATCHING|TRENDING|BECAUSE_YOU_WATCHED|GENRE|TOP_PICKS
+  generation_strategy VARCHAR(32) NOT NULL,  -- which candidate generator(s) feed this row
+  explanation_template VARCHAR(128),    -- e.g. "Because you watched {anchor_title}"
+  eligible_segment VARCHAR(32),         -- ALL|NEW_USER|RETURNING_USER
+  display_priority_default SMALLINT
+);</code></pre>
+
+        <h3>experiment_assignment</h3>
+        <pre><code>CREATE TABLE experiment_assignment (
+  user_id BIGINT NOT NULL,
+  experiment_id VARCHAR(64) NOT NULL,
+  variant VARCHAR(32) NOT NULL,         -- e.g. control|ranking_model_v2|new_row_layout
+  sticky_bucket_hash INT NOT NULL,      -- deterministic hash(user_id, experiment_id) for consistent bucketing
+  assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, experiment_id)
+);</code></pre>
+        <p><strong>Indexes/constraints that matter:</strong> <code>interaction_event(user_id, event_ts DESC)</code> is the hot path for both the nearline processor's per-user reads and offline training's per-user history extraction; <code>experiment_assignment</code>'s composite key guarantees one sticky variant per user per experiment, which is what makes A/B attribution valid (see Follow-up Interview Questions).</p>
+
+        <h2 id="data-sharding-and-partitioning">Data Sharding and Partitioning</h2>
+        <p>Like most recommendation systems at this scale, the data splits cleanly into two very differently-shaped stores.</p>
+        <h3>User-scoped data &mdash; sharded by user_id</h3>
+        <p>The interaction-event stream and the Feature Store (taste vectors, recent-activity summaries, candidate pools) are both partitioned by <code>user_id</code>. This is a natural fit because every read on the online path (a homepage request) and every write on the nearline path (an interaction event) is scoped to exactly one user &mdash; there is no cross-user join required to render a homepage or process a signal, so co-locating one user's data lets both paths stay a local, single-partition operation.</p>
+        <h3>Content metadata &mdash; broadly replicated, not sharded</h3>
+        <p>Title/content metadata is tiny by comparison &mdash; tens of thousands of rows, changing rarely (a new title, a metadata correction) &mdash; so it doesn't need sharding at all. It is instead broadly replicated/cached in full on every candidate-generation and ranking node, turning "look up this title's genre/embedding/popularity" into a local, in-memory read rather than a network hop to a partitioned store.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 320" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-nf-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="15" width="330" height="30" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="185" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">User data &mdash; sharded by user_id</text>
+
+            <rect x="390" y="15" width="330" height="30" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="555" y="35" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Content metadata &mdash; broadly replicated</text>
+
+            <rect x="20" y="65" width="150" height="100" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="95" y="88" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Shard A</text>
+            <text x="95" y="106" text-anchor="middle" fill="var(--color-primary)" font-size="8">feature store rows +</text>
+            <text x="95" y="120" text-anchor="middle" fill="var(--color-primary)" font-size="8">interaction events</text>
+            <text x="95" y="140" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">co-located per user</text>
+
+            <rect x="190" y="65" width="150" height="100" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="265" y="88" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Shard B</text>
+            <text x="265" y="106" text-anchor="middle" fill="var(--color-primary)" font-size="8">feature store rows +</text>
+            <text x="265" y="120" text-anchor="middle" fill="var(--color-primary)" font-size="8">interaction events</text>
+            <text x="265" y="140" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">co-located per user</text>
+
+            <rect x="405" y="65" width="300" height="100" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="555" y="90" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">&asymp;20,000 titles, full copy on every</text>
+            <text x="555" y="106" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">candidate-gen / ranking node</text>
+            <text x="555" y="128" text-anchor="middle" fill="#6b4a10" font-size="8" font-style="italic">small + changes rarely &mdash; sharding</text>
+            <text x="555" y="142" text-anchor="middle" fill="#6b4a10" font-size="8" font-style="italic">would add lookup latency for no benefit</text>
+
+            <text x="370" y="205" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">Two shapes, two strategies: billions of small, per-user records need a shard</text>
+            <text x="370" y="223" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">key so reads/writes stay local; a small, mostly-static catalog is cheaper to</text>
+            <text x="370" y="241" text-anchor="middle" font-size="10" fill="var(--color-text)" font-weight="600">replicate everywhere than to partition and look up remotely.</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. User-scoped data (feature store, interaction events) shards by user_id so per-user online reads and nearline writes stay local; content metadata is small and mostly static, so it is broadly replicated rather than sharded.</div>
+        </div>
+
+        <h2 id="feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</h2>
+        <h3>10.1 Cold start for a brand-new user</h3>
+        <p>A member who just signed up has no <code>taste_vector</code> &mdash; there is no interaction history for collaborative filtering to work with. The fallback is layered, and each layer is replaced by a better one as soon as it becomes available:</p>
+        <ol>
+          <li><strong>Day 0, before any interaction:</strong> if the onboarding flow included a taste survey ("pick a few titles/genres you like"), seed an initial pseudo-taste-vector via <em>content-based</em> similarity against the survey picks' embeddings &mdash; this needs no collaborative signal at all. If there was no survey, fall back further to a <strong>popularity/demographic prior</strong>: trending titles for the user's signup region/language/device cohort, entirely non-personalized.</li>
+          <li><strong>The first few minutes of the first session:</strong> as soon as the very first real interactions (a hover, a play) arrive, the nearline layer processes them within minutes and starts populating <code>recent_activity_summary</code> &mdash; even before enough data exists for a proper offline-trained taste vector, the ranking model can apply an immediate, session-level boost (e.g., "they just clicked a comedy, nudge comedy candidates up") using only request-time context, blended with the popularity-prior candidate pool.</li>
+          <li><strong>Day 1&ndash;7:</strong> the nearline layer keeps building up <code>recent_activity_summary</code> from real signal; ranking blends an increasing share of personalized (CF/embedding) candidates with a decreasing share of the popularity prior as confidence grows.</li>
+          <li><strong>Day 7+:</strong> the member has accumulated enough history to be included in the next scheduled offline training run, which produces a proper, model-trained <code>taste_vector</code> &mdash; from this point on, the standard candidate-generation pipeline in Section 7 applies with no special-casing.</li>
+        </ol>
+        <pre><code>def build_candidate_pool(user_id, context):
+  profile = user_profile.get(user_id)
+  if profile.has_reliable_taste_vector():
+    return cf_candidate_generator(user_id) + embedding_ann_generator(user_id) + genre_affinity_generator(user_id)
+  elif profile.onboarding_survey_completed():
+    return content_based_from_survey(profile.onboarding_survey) + popularity_prior(profile.cohort_segment)
+  else:
+    return popularity_prior(profile.cohort_segment)   # region/device/signup-cohort trending, non-personalized
+
+# nearline: as soon as the first real interactions land (within minutes), recent_activity_summary
+# is populated, and ranking applies a session-level boost even before a full taste_vector exists.</code></pre>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 220" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-nf-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="10" y="60" width="160" height="70" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="90" y="85" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Day 0: signup</text>
+            <text x="90" y="100" text-anchor="middle" fill="#6b4a10" font-size="8">survey seed or</text>
+            <text x="90" y="112" text-anchor="middle" fill="#6b4a10" font-size="8">popularity prior</text>
+
+            <line x1="170" y1="95" x2="198" y2="95" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nf-5)"></line>
+
+            <rect x="200" y="60" width="160" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="280" y="80" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">First minutes</text>
+            <text x="280" y="96" text-anchor="middle" fill="var(--color-primary)" font-size="8">nearline picks up first</text>
+            <text x="280" y="109" text-anchor="middle" fill="var(--color-primary)" font-size="8">clicks, online applies boost</text>
+
+            <line x1="360" y1="95" x2="388" y2="95" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nf-5)"></line>
+
+            <rect x="390" y="60" width="160" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="470" y="80" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Day 1&ndash;7</text>
+            <text x="470" y="96" text-anchor="middle" fill="var(--color-primary)" font-size="8">blended: growing personal</text>
+            <text x="470" y="109" text-anchor="middle" fill="var(--color-primary)" font-size="8">signal + shrinking prior</text>
+
+            <line x1="550" y1="95" x2="578" y2="95" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nf-5)"></line>
+
+            <rect x="580" y="60" width="150" height="70" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="655" y="82" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">Day 7+</text>
+            <text x="655" y="98" text-anchor="middle" fill="#cbd8ef" font-size="8">offline-trained taste_vector,</text>
+            <text x="655" y="111" text-anchor="middle" fill="#cbd8ef" font-size="8">standard pipeline applies</text>
+
+            <text x="370" y="175" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">Each stage is a fallback, replaced by a better signal as soon as it exists &mdash; the member is never left</text>
+            <text x="370" y="192" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">with a blank or fully generic homepage while waiting for the next offline training cycle.</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. The cold-start cascade: a popularity/survey prior at signup, replaced within minutes by session-level online adjustment, blended over the first week, and finally superseded by a fully offline-trained taste vector.</div>
+        </div>
+
+        <h3>10.2 Cold start for a new title</h3>
+        <p>A newly-added title has the opposite problem: no engagement data exists for collaborative filtering to associate it with any user's taste. It is bootstrapped via <strong>content-based similarity</strong> (its metadata/embedding places it near similar existing titles, so it can ride into a genre or Because-You-Watched row on content grounds alone), an <strong>editorial promotion slot</strong> (a small number of guaranteed impressions independent of the model, common for a marquee new release), and an <strong>exploration budget</strong> in the ranking layer &mdash; a small score boost that trades a little precision for surfacing the title to a slice of users specifically to gather the first real engagement signal, which then feeds back into its own popularity/embedding features within the next nearline cycle.</p>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li><strong>Ranking service slow or unavailable &rarr; fall back, never fail.</strong> Page Generation Service applies a tight timeout around the Ranking Service call. On timeout or error, it falls back first to the member's <strong>last successfully computed homepage</strong> (cached), and if that's unavailable too, to a <strong>popularity-based default homepage</strong> for the member's region. A member should essentially never see a blank or error homepage because one downstream model call was slow.</li>
+          <li><strong>Feature Store replication.</strong> The Feature Store is replicated across availability zones; the online read path tolerates a replica that is a few minutes stale (features are refreshed nearline anyway, so "slightly stale" is the normal operating state, not a failure) rather than blocking a homepage request on strict read-your-writes consistency.</li>
+          <li><strong>Offline training pipeline failures don't affect what's currently served.</strong> A failed or delayed nightly training run simply means the online/nearline tiers keep serving the last successfully deployed model artifact and candidate sets &mdash; there is no hard dependency from the request path back to "did last night's training job succeed." New model artifacts go through a canary/shadow evaluation before replacing the currently-serving model, so a bad training run never reaches production traffic without a validated comparison against the incumbent.</li>
+          <li><strong>Nearline backlog is a graceful-degradation case, not an outage.</strong> If the stream processor falls behind (a burst of events, a deploy), homepage requests simply serve slightly older recent-activity features until it catches up &mdash; freshness degrades smoothly rather than the system failing outright.</li>
+        </ul>
+
+        <h2 id="caching-strategy">Caching Strategy</h2>
+        <p>Guiding rule: <strong>precompute and cache anything that's safe to be a few minutes stale; only recompute what a fresh, strong signal actually changes.</strong></p>
+        <table>
+          <tr><th>Data</th><th>Cache?</th><th>Rationale / invalidation</th></tr>
+          <tr><td>Per-user candidate pool</td><td><strong>Yes</strong> &mdash; precomputed, refreshed nearline</td><td>Recomputing the full candidate-generation pass on every request would be wasted work; a pool that's a few minutes stale is indistinguishable to the member from one computed a second ago.</td></tr>
+          <tr><td>Full assembled homepage</td><td><strong>Yes</strong>, for a bounded period (e.g., per-session or a few minutes)</td><td>Repeated homepage loads within the same session shouldn't re-run ranking every time; served straight from cache until a strong signal or TTL expiry invalidates it.</td></tr>
+          <tr><td>Title/content metadata</td><td><strong>Yes</strong>, long TTL</td><td>Changes rarely (new title added, metadata correction); broadly replicated (see Data Sharding), invalidated on the metadata refresh job.</td></tr>
+          <tr><td><strong>Candidate pool / homepage cache after a strong signal</strong> (e.g., member just finished a show)</td><td><strong>Invalidated immediately</strong>, not just TTL-expired</td><td>A completed-episode event is exactly the kind of signal that should visibly change "Continue Watching" and trigger a fresh Because-You-Watched row on the <em>next</em> request &mdash; waiting out a multi-minute TTL here would feel broken to the member.</td></tr>
+        </table>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 300" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-nf-6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-nf-6m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="15" width="220" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="130" y="38" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Strong signal (e.g. member</text>
+            <text x="130" y="53" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">just finished a show)</text>
+
+            <line x1="240" y1="42" x2="273" y2="42" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nf-6)"></line>
+
+            <rect x="275" y="15" width="220" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="385" y="38" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Nearline: immediate cache</text>
+            <text x="385" y="53" text-anchor="middle" fill="var(--color-primary)" font-size="8">invalidation, not TTL wait</text>
+
+            <line x1="495" y1="42" x2="528" y2="42" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nf-6)"></line>
+
+            <rect x="530" y="15" width="185" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="622" y="38" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Candidate + homepage</text>
+            <text x="622" y="53" text-anchor="middle" fill="#6b4a10" font-size="8">cache entries cleared</text>
+
+            <line x1="622" y1="70" x2="622" y2="118" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-nf-6)" marker-start="url(#arrow-nf-6)"></line>
+
+            <rect x="480" y="120" width="245" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="602" y="143" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Client's next homepage GET</text>
+            <text x="602" y="158" text-anchor="middle" fill="#cbd8ef" font-size="8">cache miss &rarr; recompute fresh</text>
+
+            <line x1="480" y1="148" x2="90" y2="148" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-nf-6m)"></line>
+
+            <rect x="20" y="120" width="200" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="120" y="143" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Cache lookup</text>
+            <text x="120" y="158" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">(per-user, per-resource)</text>
+
+            <text x="370" y="230" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">Everything else (candidate pool, homepage) stays cached until this signal or a bounded TTL</text>
+            <text x="370" y="248" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">fires &mdash; this is what lets millions of repeat homepage loads never re-run the ranking pass.</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. Cache invalidation flow: most homepage/candidate state is cached and reused; a strong signal (e.g., a completed episode) triggers immediate invalidation rather than waiting on a TTL, so the next request is recomputed fresh.</div>
+        </div>
+
+        <h2 id="monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</h2>
+        <p><strong>Key SLIs / metrics:</strong></p>
+        <ul>
+          <li><strong>Click-through rate (CTR) and watch-through rate per row and per algorithm variant</strong> &mdash; the primary engagement signal, sliced by row type and by the ranking-model/layout variant a member was assigned to (see Experimentation).</li>
+          <li><strong>Ranking-model latency</strong> (P50/P95/P99 for the batched scoring call), tracked separately from candidate-fetch and feature-fetch latency, so a regression can be attributed to the right stage of the pipeline.</li>
+          <li><strong>A/B/bandit experiment metrics</strong> &mdash; engagement lift of a variant vs. control, with statistical-significance guardrails before a variant is promoted to 100% rollout.</li>
+          <li><strong>Candidate-generation recall/coverage</strong> &mdash; of titles a member eventually watched, what fraction had actually made it into their candidate pool beforehand; a low or dropping figure here means the candidate stage is silently filtering out relevant titles before ranking ever gets a chance to rank them.</li>
+          <li><strong>Feature-store / nearline staleness lag</strong> &mdash; time between an interaction event landing and it being reflected in <code>recent_activity_summary</code>; a growing lag is the earliest signal the nearline tier needs more capacity.</li>
+          <li><strong>Fallback-homepage rate</strong> &mdash; how often Page Generation Service had to serve a cached or popularity-based homepage instead of a freshly ranked one (see Replication and Fault Tolerance); a spike here is an incident, not background noise.</li>
+        </ul>
+        <p><strong>Notifications</strong> are a minor downstream consumer here, not a core concern of this design: re-engagement pushes/emails ("New episodes of a show you watched are now available") can reference the same recommendation signals, delivered asynchronously off the event/feature pipeline and never on the homepage-render critical path.</p>
+
+        <h2 id="security-considerations">Security Considerations</h2>
+        <ul>
+          <li><strong>Interaction-event data is sensitive personal data.</strong> A member's viewing history reveals a great deal about them and is treated as sensitive PII &mdash; encrypted in transit and at rest, access-controlled, and retained/aggregated according to applicable privacy regulation (e.g., video-viewing-history-specific rules in some jurisdictions, plus general privacy law elsewhere).</li>
+          <li><strong>Preventing manipulation of ranking signals.</strong> Bot or click-farm activity attempting to inflate a title's engagement metrics (and thus its ranking/trending placement) must be detected and down-weighted before it reaches model training or nearline feature updates &mdash; anomaly detection on the event stream (implausible event velocity/patterns per account or device) is a first-class defense, not an afterthought.</li>
+          <li><strong>Fairness and diversity as an explicit design trade-off.</strong> A purely engagement-maximizing ranker can over-narrow what a member sees over time (a filter bubble). Diversity-aware re-ranking and an exploration budget (the same bandit-style mechanism used for artwork and new-title cold start) are a deliberate trade-off of a little short-term engagement for a healthier long-term catalog exposure &mdash; worth calling out explicitly as a design choice, not just an accuracy metric to optimize away.</li>
+          <li><strong>Access control around models and features.</strong> Feature vectors and trained embeddings can themselves leak sensitive inferred attributes about a member; internal access to raw feature stores and training data is scoped and audited, and features used for ranking are minimized to what's needed rather than including every attribute available.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <p>Interviewers commonly push into these areas after the base design. Rehearse the reasoning out loud, not just the one-line answer.</p>
+
+        <h3>Candidate Generation &amp; Ranking</h3>
+        <div class="qa-item">
+          <div class="qa-q">Q1. Why split recommendation into candidate generation and ranking as two separate stages instead of one model that scores the whole catalog?</div>
+          <div class="qa-a">Cost and latency. Scoring an entire &asymp;20,000-title eligible catalog with an expensive, feature-rich ranking model for every one of thousands of homepage requests per second would multiply the ranking compute by roughly the same factor as the candidate-to-catalog narrowing ratio (&asymp;40&times; in this design) &mdash; that compute simply doesn't fit inside a sub-second budget at hundreds of millions of users. Candidate generation is a cheap, high-recall filter whose only job is to make sure the right titles are somewhere in a few-hundred-item pool; ranking is an expensive, high-precision pass that only has to run over that much smaller pool. Splitting the concerns lets each stage be optimized for a different objective (recall vs. precision) at a cost the system can actually afford.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q2. You run five different candidate generators. What happens if they disagree, or if one generator dominates the pool?</div>
+          <div class="qa-a">Their outputs are unioned and de-duplicated, not voted on &mdash; a title only needs to be surfaced by <em>one</em> generator to enter the ranking stage, since ranking is the stage responsible for the final precise ordering. To stop one generator (say, trending) from crowding out the others, each generator is typically given a soft quota within the combined pool, and row assembly further constrains which generator's candidates are even eligible for a given row template (a genre row shouldn't be filled entirely by the trending generator's output).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q3. How would you measure whether candidate generation itself is doing a good job, separately from ranking?</div>
+          <div class="qa-a">Candidate-generation recall/coverage: of the titles a member actually went on to watch, what fraction were present in their candidate pool <em>before</em> ranking ever ran. If that number is low or falling, the problem is upstream of ranking &mdash; no ranking model can recommend a title that never made it into the candidate set in the first place, so this metric has to be tracked and alerted on independently of ranking-quality metrics like CTR.</div>
+        </div>
+
+        <h3>Cold Start</h3>
+        <div class="qa-item">
+          <div class="qa-q">Q4. Walk me through what a brand-new member with zero watch history sees on day one.</div>
+          <div class="qa-a">A layered fallback: an onboarding taste survey (if completed) seeds an initial pseudo-taste-vector via content-based similarity to the picks; otherwise a popularity/demographic prior (trending titles for their region/language/device cohort) fills the gap, entirely non-personalized. As soon as the member's very first real interactions land &mdash; within minutes, via the nearline layer &mdash; the ranking stage starts applying an immediate session-level boost from that signal, blended with the prior. Over the first week the mix shifts increasingly toward personalized candidates as real signal accumulates, until the member is swept into the next offline training run and gets a properly model-trained taste vector like everyone else.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q5. And a brand-new title with no engagement data yet &mdash; how does that ever get recommended?</div>
+          <div class="qa-a">Content-based similarity places it near existing titles with similar metadata/embeddings, so it can ride into a genre or Because-You-Watched row purely on content grounds. An editorial promotion slot can guarantee it some impressions independent of any model, common for a marquee release. And the ranking layer can carry a small exploration bonus for very-low-engagement-data titles &mdash; trading a little precision to deliberately surface it to a slice of users and collect the first real signal, which then feeds its own popularity/embedding features in the next nearline cycle.</div>
+        </div>
+
+        <h3>Freshness &amp; Real-Time Signals</h3>
+        <div class="qa-item">
+          <div class="qa-q">Q6. A member finishes an episode two minutes ago. How does that show up on their homepage right now, without waiting for the next offline model retrain?</div>
+          <div class="qa-a">The event goes through the nearline layer, not the offline layer: it's published to the event stream, consumed within minutes by the Nearline Signal Processor, and used to update <code>recent_activity_summary</code> in the Feature Store and to trigger a candidate-pool refresh for that member. The very next homepage request reads that updated state directly &mdash; there's no dependency on the offline training pipeline, which only needs to run periodically to fold this kind of signal into the deeper, model-trained taste vector eventually.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q7. What happens if the nearline stream processor falls behind &mdash; does the homepage break?</div>
+          <div class="qa-a">No &mdash; it degrades gracefully rather than failing. Homepage requests simply serve the most recent feature/candidate state the Feature Store has, which is now a bit more stale than usual, until the backlog clears. Freshness quality drops smoothly; nothing on the request path blocks or errors waiting for the nearline tier to catch up.</div>
+        </div>
+
+        <h3>Experimentation</h3>
+        <div class="qa-item">
+          <div class="qa-q">Q8. How would you safely A/B test a brand-new ranking algorithm on a live service serving hundreds of millions of users?</div>
+          <div class="qa-a">Start with a small, sticky, randomly-assigned holdout (the <code>experiment_assignment</code> table's per-user-per-experiment bucketing keeps a member consistently in the same variant across sessions, which is required for valid attribution). Run it as a true controlled experiment against a control group over the same time window, with clear guardrail metrics (CTR, watch-through, and operational metrics like ranking latency) that trigger an automatic rollback if they regress. Only after the new variant clears statistical-significance and guardrail checks at a small traffic percentage does it get ramped up gradually, with a kill switch available at every step.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q9. How do you make sure an observed engagement lift is actually caused by the new ranking algorithm and not, say, a new blockbuster release that week?</div>
+          <div class="qa-a">By comparing the treatment and control groups over the exact same time window rather than before/after the same group over time &mdash; a randomized, concurrent holdout means both groups are equally exposed to that week's catalog changes, seasonality, and marketing pushes, so any measured difference between them is attributable to the algorithm change itself, not to external factors that affected everyone equally.</div>
+        </div>
+
+        <h3>Scale, Latency &amp; Fault Tolerance</h3>
+        <div class="qa-item">
+          <div class="qa-q">Q10. The homepage has to render in under a second for hundreds of millions of users. What's the single biggest lever that makes that possible?</div>
+          <div class="qa-a">Doing almost all the expensive work before the request arrives. Candidate generation, most feature computation, and all model training happen offline/nearline; the online path only does a cache fetch for precomputed candidates, a batched (not per-candidate) scoring pass over a few hundred items, and row assembly. If ranking had to score the full catalog per request, or if candidates were generated synchronously per request, the latency budget wouldn't close at this scale no matter how the rest of the system were optimized.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q11. The Ranking Service is completely down. What does a member actually see?</div>
+          <div class="qa-a">Not an error page. Page Generation Service times out the call and falls back first to the member's last successfully computed, cached homepage; if that's also unavailable, it falls back further to a non-personalized, popularity-based default homepage for their region. A degraded (less personalized) homepage is always preferred over no homepage.</div>
+        </div>
+
+        <h3>Fairness &amp; Diversity</h3>
+        <div class="qa-item">
+          <div class="qa-q">Q12. How do you stop the system from just recommending the same narrow slice of content to a member forever?</div>
+          <div class="qa-a">By treating pure engagement-maximization as a deliberate trade-off, not the only objective. Diversity-aware re-ranking can down-weight showing too many highly-similar titles back to back, and the same exploration-budget mechanism used for new-title cold start and artwork selection can be applied more broadly &mdash; occasionally surfacing something outside the member's tightest inferred taste cluster, both to avoid a filter bubble and to keep gathering signal about whether their taste is actually broader than the model currently believes.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The whole design rests on two ideas working together. First, a <strong>two-stage funnel</strong>: cheap, high-recall candidate generation narrows a large catalog to a few hundred titles, and only that narrowed set is scored by an expensive, high-precision ranking model &mdash; this split, not any single clever algorithm, is what makes real-time personalization affordable at hundreds of millions of users. Second, an <strong>offline/nearline/online architecture</strong> that puts each kind of work at the right latency tier: offline batch training captures deep, slow-moving taste signal from a huge historical dataset; the nearline layer folds in today's activity within minutes; and the online layer does only the cheapest, most immediate work &mdash; a cache fetch and one batched ranking pass &mdash; at request time. Layered on top of both: cold start is handled as a graceful cascade of fallbacks (survey/popularity prior &rarr; rapid session-level adaptation &rarr; full offline-trained personalization) rather than a special case that breaks the pipeline, experimentation (A/B tests and bandits) is a first-class capability that governs which algorithm or layout a member sees, and fault tolerance means falling back to a cached or popularity-based homepage rather than ever failing outright.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Netflix Technology Blog, <a href="http://techblog.netflix.com/2012/04/netflix-recommendations-beyond-5-stars.html" target="_blank" rel="noopener">"Netflix Recommendations: Beyond the 5 stars (Part 1)"</a> &mdash; how Netflix's recommendation focus evolved beyond simple star-rating prediction into the broader personalization problem.</li>
+          <li>Netflix Technology Blog, <a href="http://techblog.netflix.com/2012/06/netflix-recommendations-beyond-5-stars.html" target="_blank" rel="noopener">"Netflix Recommendations: Beyond the 5 stars (Part 2)"</a> &mdash; the personalization technology and algorithms (ranking, similarity, rows) behind the homepage.</li>
+          <li>Netflix Technology Blog, <a href="http://techblog.netflix.com/2013/03/system-architectures-for.html" target="_blank" rel="noopener">"System Architectures for Personalization and Recommendation"</a> &mdash; the source for this design's offline/nearline/online architecture split.</li>
+          <li>Netflix Technology Blog, <a href="http://techblog.netflix.com/2015/04/learning-personalized-homepage.html" target="_blank" rel="noopener">"Learning a Personalized Homepage"</a> &mdash; row selection, row ordering, and in-row ranking as three distinct personalization problems.</li>
+          <li>Netflix Technology Blog, <a href="https://netflixtechblog.com/artwork-personalization-c589f074ad76" target="_blank" rel="noopener">"Artwork Personalization at Netflix"</a> &mdash; the contextual-bandit approach behind personalized thumbnail/artwork selection (FR7).</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="notification-system.html"><span class="dir">Previous</span>Design a Notification System</a>
+          <a class="next" href="url-shortener.html"><span class="dir">Next</span>Design a URL Shortener</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed Job Scheduler | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">Job Scheduler</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-leader-follower-vs-consensus-based-scheduling">Deep Dive — Leader-Follower vs. Consensus-Based Scheduling</a></li>
+        <li><a href="#deep-dive-sharding-the-job-space-across-scheduler-replicas">Deep Dive — Sharding the Job Space Across Scheduler Replicas</a></li>
+        <li><a href="#deep-dive-distributed-locking-and-exactly-once-effective-firing">Deep Dive — Distributed Locking and Exactly-Once-Effective Firing</a></li>
+        <li><a href="#deep-dive-dag-execution-and-dependency-resolution">Deep Dive — DAG Execution and Dependency Resolution</a></li>
+        <li><a href="#deep-dive-worker-heartbeats-timeouts-and-retry-with-backoff">Deep Dive — Worker Heartbeats, Timeouts, and Retry-with-Backoff</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#feature-specific-logic-missed-job-catch-up-after-scheduler-downtime">Feature-Specific Logic: Missed-Job Catch-Up After Scheduler Downtime</a></li>
+        <li><a href="#rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Distributed Job Scheduler</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough: requirements, capacity estimation, API design, a data model split across MySQL and MongoDB, leader-follower vs. consensus-based scheduling, sharding the job space, distributed locking for exactly-once-effective firing, DAG dependency resolution, worker heartbeats and retry/backoff, missed-job catch-up semantics, and a large bank of follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a distributed job scheduler: a system that lets any internal service say "run this job at 3:00am tomorrow," "run this job every 5 minutes," or "run job C only after jobs A and B have both succeeded," and have it happen reliably, at a scale of millions of active job definitions and tens of thousands of firings per second at peak. The core architectural insight is that <strong>scheduling</strong> (deciding <em>when</em> a job becomes due) and <strong>execution</strong> (actually doing the work) are different problems with different scaling profiles, and the design must decouple them: a Scheduler component decides when a job is due, a distributed Queue holds jobs that are ready to run, and a fleet of Workers pulls from the queue and executes — each layer scaling independently. A bursty backfill of ten million catch-up jobs must never stall a time-critical billing run scheduled for 2:00am, and a single slow-running job must never block the scheduler from noticing the next thousand jobs that are also due right now.</p>
+        <p>Above all, the system must survive <em>its own</em> failures. A scheduler process crashing mid-decision, a network partition between scheduler replicas, or a fleet-wide rolling restart must never silently cause a due job to be skipped — and, symmetrically, must never cause the same job to fire twice with a non-idempotent, user-visible side effect (charging a customer twice, sending a duplicate paycheck).</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It's a compact vehicle for several classic distributed-systems sub-problems that show up nowhere else quite so cleanly: leader election and consensus, distributed mutual exclusion (locks) under an unreliable network, idempotency in the presence of at-least-once delivery, sharding a huge keyspace across independent workers, and dependency-graph (DAG) scheduling. A strong candidate treats "a due job must fire, and must fire effectively once" as the load-bearing correctness property, and every other decision — locking, heartbeats, sharding, CDC vs. polling — gets justified in terms of how it protects that property under failure.</p>
+
+        <h3>Where this pattern shows up in production</h3>
+        <ul>
+          <li><strong>Slack's internal cron rewrite</strong> — a leader-follower design: one leader pod makes all scheduling decisions at a time, several standby followers wait on a lease, and a new leader is promoted within seconds of the old one disappearing.</li>
+          <li><strong>Google's distributed cron service</strong> — built on Paxos consensus across a small cluster of scheduler replicas, trading a slightly higher per-decision latency for stronger consistency guarantees in an unreliable multi-datacenter environment.</li>
+          <li><strong>Apache Airflow / Temporal / Kubernetes CronJob / AWS EventBridge Scheduler</strong> — all variations on the same theme: durable job/DAG definitions, a component that detects "due now," and a decoupled execution fleet.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope before drawing boxes — this problem has a lot of surface area and the "right" answer changes a lot depending on the answers below.</p>
+        <ol>
+          <li>Are one-off delayed jobs, recurring cron-style jobs, and DAGs of dependent jobs all in scope, or should I focus on one and mention the others as extensions?</li>
+          <li>What execution guarantee do we need: strict exactly-once, or at-least-once with an idempotency contract the caller must honor?</li>
+          <li>What are the bounds on job payload size and expected execution duration — are these short (seconds), long-running (hours), or a mix?</li>
+          <li>Is this a single internal team's scheduler, or a multi-tenant platform serving many independent teams/clients with isolated quotas?</li>
+          <li>What's the acceptable scheduling latency — how many seconds after a job's due time is it acceptable for it to actually fire?</li>
+          <li>Roughly how many active job definitions do we need to support, and what's the peak fan-out (e.g. many cron jobs all due at the same top-of-hour timestamp)?</li>
+          <li>If the scheduler fleet is down for an hour, what should happen to the jobs that were due during that window — run all of them, run once, or skip to the next scheduled occurrence?</li>
+          <li>Do jobs need to be cancellable or reschedulable after creation, and do we need to preserve execution history for audit/compliance?</li>
+          <li>For DAGs specifically, what happens when an upstream job fails — does the whole DAG halt, or can independent branches continue?</li>
+          <li>Single region to start, or does the design need to anticipate multi-region deployment and failover from day one?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't stall waiting for every answer — state a reasonable assumption out loud ("I'll assume at-least-once execution with a caller-supplied idempotency contract, since true exactly-once execution of arbitrary side effects is impossible in a distributed system without cooperation from the job itself") and keep moving. Naming the CAP-theorem-shaped trade-off explicitly is exactly the signal interviewers are listening for.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Schedule a one-off job to run at a specific future timestamp (a delayed job).</li>
+          <li>Schedule a recurring job on a cron expression or simple rate (every N minutes/hours), in a specified timezone.</li>
+          <li>Support DAGs of dependent jobs, where a downstream job only becomes eligible to run once all of its declared upstream jobs have completed successfully.</li>
+          <li>Allow a caller to cancel a pending job, cancel an entire recurring schedule, or reschedule (change the run time or cron expression) without losing the job's identity or history.</li>
+          <li>Retry a failed job automatically per a configurable policy: maximum attempts and a backoff strategy.</li>
+          <li>Expose job and execution status (pending, running, succeeded, failed, retrying, cancelled) via a query API.</li>
+          <li>Support a per-job priority so that operationally urgent jobs (e.g. a security patch rollout) can be drained ahead of routine, low-priority batch work under contention.</li>
+          <li>Define explicit catch-up ("misfire") semantics for jobs that were due while the scheduler fleet was unavailable — configurable per job as skip, run-once, or run-all-missed-occurrences.</li>
+          <li>Support job payloads that reference (rather than embed) large inputs, and both short, bounded executions and long-running executions with heartbeats.</li>
+          <li>Be multi-tenant: isolate job namespaces, quotas, and execution fairness per owning team or client.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>At-least-once execution with idempotent semantics:</strong> a job might be dispatched twice (a redelivered message, a heartbeat timeout that was actually a false positive) — the effect must be safe to apply twice, and the system must make that easy for job authors, not just possible.</li>
+          <li><strong>Horizontal scalability</strong> to millions of active scheduled jobs and tens of thousands of due-job firings per second at peak, by sharding the scheduling decision itself, not just the execution fleet.</li>
+          <li><strong>Low scheduling latency:</strong> a due job should fire within a few seconds of its due time (e.g. p99 &lt; 5s) even at scale — this is the scheduler's core SLA and the reason change-detection latency matters so much.</li>
+          <li><strong>High availability with fast failover:</strong> no single scheduler process is a permanent single point of failure; a crashed leader or a failed consensus node is detected and replaced within a bounded, short window.</li>
+          <li><strong>No missed jobs, even across a scheduler crash:</strong> the durability of a "this job is due" decision must never depend on any single scheduler process staying alive.</li>
+          <li><strong>Effectively-once firing under normal operation:</strong> distributed locking ensures two scheduler replicas practically never both fire the same due job, and idempotency keys provide a second line of defense when they do.</li>
+          <li><strong>Observability:</strong> scheduling latency, missed-job rate, worker failure rate, and queue backlog must be visible in near real time, since a silent regression here (a job quietly never firing) is the worst possible failure mode.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on the scheduler/execution split, leader-follower vs. consensus-based coordination, sharding, distributed locking, DAG resolution, and heartbeat-based retry. We call out but don't build the internals of a full workflow-authoring UI (a DAG visual editor), a general-purpose expression/scripting language for job payloads, or a dedicated cost-allocation/chargeback system for multi-tenant compute usage — real products, but layered on top of this core.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly and let them drive every downstream decision.</p>
+
+        <h3>Job Population and Firing-Rate Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          50 million active job definitions across all tenants: ~20 million recurring (cron-style) and ~30 million one-off (delayed) job definitions in flight at any time
+          <br>Recurring jobs fire at very different cadences (every minute, hourly, daily); blended average &asymp; 12 firings/job/day
+          <br>Recurring firings/day &asymp; 20,000,000 &times; 12 &asymp; 240 million/day
+          <br>One-off firings/day &asymp; ~5 million newly-created one-off jobs executing that day
+          <br>Total job firings/day &asymp; 245 million/day
+          <br>Average QPS = 245,000,000 &divide; 86,400 &asymp; 2,835/sec
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Thundering-herd peak</span>
+          Cron jobs cluster at "round" timestamps — top of the hour, midnight, 9:00am — because that's how humans write cron expressions
+          <br>A conservative peak multiplier of 5&times; average at these synchronized instants &asymp; 14,000&ndash;15,000/sec for a few seconds
+          <br>Design the priority queue and worker fleet's auto-scaling for &ge;15,000/sec sustained bursts, and design the scheduler itself (see "Thundering Herd" below) to smooth this out with jitter rather than merely absorbing it downstream
+        </div>
+
+        <h3>Storage Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Job / cron metadata (MySQL)</span>
+          50M job rows &times; &asymp;500 bytes (job_id, tenant_id, type, cron_expr/run_at, next_run_time, priority, status, retry policy) &asymp; 25 GB raw
+          <br>Comfortably fits a sharded MySQL fleet (e.g. 32&ndash;64 shards) with room to grow 10&times; before re-sharding is needed
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">DAG structure (MongoDB)</span>
+          2 million active DAG definitions &times; &asymp;2 KB/document (nodes, edges, per-node config, embedded as a single flexible document) &asymp; 4 GB raw
+          <br>Small in absolute terms, but the *shape* (variable fan-in/fan-out per DAG) is the reason it lives in a document store rather than a fixed-arity relational join table
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Execution history (job_runs)</span>
+          245M firings/day &times; &asymp;300 bytes (run_id, job_id, attempt, worker_id, status, timestamps, error) &asymp; 73.5 GB/day
+          <br>Retained 30 days for debugging/audit &asymp; 2.2 TB raw; time-partitioned so old partitions can be dropped/archived cheaply rather than deleted row-by-row
+        </div>
+
+        <h3>Scheduling Detection Latency: Polling vs. Change-Data-Capture</h3>
+        <div class="formula-box">
+          <span class="formula-label">Why polling doesn't scale to a 5-second SLA</span>
+          A naive scheduler polling "SELECT * WHERE next_run_time &le; now()" every 30 seconds across 50M rows means a job can sit due-but-undetected for up to 30 seconds before anyone even looks &mdash; before it's even locked, queued, or dispatched
+          <br>Polling more frequently (every 1&ndash;2s) to hit a tight SLA multiplies read load on the primary metadata store by 15&ndash;30&times; for zero new information most of the time, since &gt;99% of rows aren't due
+          <br>CDC via Kafka Connect (e.g. a Debezium connector) reading the MySQL binlog turns "a row's next_run_time was just set to a due-soon value" into a change event delivered in tens to a few hundred milliseconds &mdash; sub-second detection with none of the wasted scan cost
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Active job definitions (recurring / one-off)</td><td>50M (~20M / ~30M)</td></tr>
+          <tr><td>Average job firings / sec</td><td>~2,835</td></tr>
+          <tr><td>Peak (thundering-herd instants)</td><td>~14,000&ndash;15,000/sec</td></tr>
+          <tr><td>Target scheduling-latency SLA</td><td>p99 &lt; 5s from due time to fire</td></tr>
+          <tr><td>Job/cron metadata footprint (MySQL)</td><td>~25 GB raw, sharded</td></tr>
+          <tr><td>DAG structure footprint (MongoDB)</td><td>~4 GB raw</td></tr>
+          <tr><td>Execution-history footprint, 30-day retention</td><td>~2.2 TB raw</td></tr>
+          <tr><td>Change-detection latency (CDC vs. 30s poll)</td><td>~100&ndash;300ms vs. up to 30s</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Callers talk to the scheduler through a small, versioned API. A single create-job call supports three shapes of "when": a one-off timestamp, a cron expression, or a reference to a node inside a DAG definition — so the ingestion path doesn't need three different endpoints for what is fundamentally the same lifecycle.</p>
+
+        <h3>Create Job API</h3>
+        <pre><code>POST /v1/jobs
+
+Request body:
+{
+  "tenant_id": string,              // required
+  "job_key": string,                // required, caller-supplied idempotent identifier
+  "handler": string,                // e.g. "billing.charge_invoice", routes to a worker capability
+  "payload_ref": { ... },           // pointer to job input (blob store URI + small inline args), not the raw payload
+  "priority": "P0"|"P1"|"P2",       // optional, default P1
+  "schedule": {
+    "type": "ONE_OFF" | "CRON" | "DAG_NODE",
+    "run_at": string,                // ISO-8601, required if type == ONE_OFF
+    "cron_expression": string,       // required if type == CRON, e.g. "0 2 * * *"
+    "timezone": string,              // IANA tz, e.g. "America/Los_Angeles"
+    "catch_up_policy": "SKIP" | "RUN_ONCE" | "RUN_ALL",  // misfire behavior, default SKIP
+    "dag_id": string,                // required if type == DAG_NODE
+    "depends_on": [string, ...]      // required if type == DAG_NODE, upstream job_keys
+  },
+  "retry_policy": { "max_attempts": 5, "backoff": "EXPONENTIAL", "base_delay_sec": 2 },
+  "timeout_sec": 900
+}
+
+Response 202 Accepted:
+{ "job_id": "job_7fa2...", "status": "SCHEDULED", "next_run_time": "2026-07-19T02:00:00-07:00" }
+
+Errors: 400 invalid cron expression or missing schedule fields &middot; 401 unauthenticated tenant
+        409 duplicate job_key (already exists) &middot; 422 DAG dependency cycle detected
+        429 tenant-level active-job quota exceeded</code></pre>
+
+        <h3>Cancel and Reschedule</h3>
+        <pre><code>DELETE /v1/jobs/{job_id}
+Response 200: { "job_id": "job_7fa2...", "status": "CANCELLED" }
+
+PATCH /v1/jobs/{job_id}
+{ "cron_expression": "0 */4 * * *" }        // or { "run_at": "..." } for a one-off
+Response 200: { "job_id": "job_7fa2...", "status": "SCHEDULED", "next_run_time": "..." }</code></pre>
+
+        <h3>Get Job Status</h3>
+        <pre><code>GET /v1/jobs/{job_id}
+
+Response 200:
+{
+  "job_id": "job_7fa2...",
+  "status": "SCHEDULED | QUEUED | RUNNING | SUCCEEDED | FAILED | RETRYING | CANCELLED | DEAD_LETTERED",
+  "next_run_time": "2026-07-19T02:00:00-07:00",
+  "last_run": { "run_id": "run_91cd...", "attempt": 1, "status": "SUCCEEDED", "started_at": "...", "completed_at": "..." }
+}
+
+GET /v1/jobs/{job_id}/runs             // paginated execution history
+GET /v1/dags/{dag_id}/status           // rolled-up status across every node in the DAG</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          <code>job_key</code> is the field that makes job creation itself idempotent (a caller retrying a timed-out create call must not create a duplicate schedule), which is a distinct concern from the <em>execution-time</em> idempotency key discussed in the locking deep dive below. Call out both explicitly — interviewers often probe whether a candidate conflates "idempotent to create" with "idempotent to execute."
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>Job and cron metadata is narrow, high-write, and state-machine-shaped: a job moves through SCHEDULED &rarr; QUEUED &rarr; RUNNING &rarr; SUCCEEDED/FAILED, and a distributed lock acquisition must be atomic with that state flip or two replicas can both believe they own the same due job.</li>
+          <li>DAG structure is hierarchical and variable-shaped: one DAG might have 3 nodes, another 300, with arbitrary fan-in/fan-out — an awkward fit for a fixed set of relational join tables at scale, a natural fit for a single nested document per DAG.</li>
+          <li>Execution history is an append-mostly, time-ordered log, read far less often than it's written, and needs cheap time-based retention/archival.</li>
+        </ul>
+
+        <h3>Why MySQL + MongoDB, Not Just One</h3>
+        <p>Job and cron metadata gets a relational store (MySQL) specifically <em>because</em> of the ACID guarantee on state transitions: "acquire the lock for job X and flip it to RUNNING" must be a single atomic operation, and a unique constraint plus a transaction is the simplest, most battle-tested way to get that. DAG structure gets a document store (MongoDB) specifically because a workflow's shape is naturally a tree/graph of arbitrary width, and modeling that as normalized relational tables (a job_dependencies join table with recursive joins to compute "has everything upstream succeeded?") is both slower and more awkward than reading one document and walking its embedded edge list. The pattern mirrors a broader lesson: pick the storage engine to match the <em>access pattern and consistency need</em> of each entity, not one engine for the whole system.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If pushed on "why not just Mongo everywhere, including job/cron state": a document store's default eventual-consistency and lack of true cross-document transactions make "exactly one replica wins the lock for this job" much harder to get right under contention than a relational unique constraint plus a row-level transaction. Reach for the ACID store where correctness under concurrent writers is the requirement, and the document store where flexible shape is the requirement — say that trade-off out loud rather than defending one database as universally better.
+        </div>
+        <p>See "Database Schema" below for the full table-by-table design; this section covers the storage-technology choice, not every column.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Job and cron metadata lives in MySQL; DAG structure lives in MongoDB. A CDC pipeline (Kafka Connect reading MySQL's binlog) turns "a row just became due" into a low-latency change-stream event instead of an expensive poll. A fleet of Scheduler shards consumes that stream, each shard responsible for only its own partition of the job space; when a shard sees one of its jobs is due, it acquires a distributed lock, verifies an idempotency key, and publishes the job onto a priority-aware Queue. A Worker fleet pulls from the queue, executes, sends periodic heartbeats, and writes the execution outcome back into the datastore.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MySQL job and cron metadata plus MongoDB DAG structure feed a CDC change detector (Kafka Connect reading the binlog), which fans out to four scheduler shards. Each shard acquires a distributed lock and checks an idempotency store before publishing to a priority job queue. A worker fleet of three pools pulls from the queue, executes jobs, and an execution tracker writes status and heartbeats back into the datastore.">
+            <style>
+              .js-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .js-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .js-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .js-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .js-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .js-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .js-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .js-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .js-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:#dbe6ff;}
+              .js-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .js-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;}
+              .js-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-js-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-js-1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="40" y="15" width="330" height="50" rx="6" class="js-box"></rect>
+            <text x="205" y="35" text-anchor="middle" class="js-title">MySQL</text>
+            <text x="205" y="50" text-anchor="middle" class="js-sub">job + cron metadata (ACID state transitions)</text>
+
+            <rect x="390" y="15" width="330" height="50" rx="6" class="js-box"></rect>
+            <text x="555" y="35" text-anchor="middle" class="js-title">MongoDB</text>
+            <text x="555" y="50" text-anchor="middle" class="js-sub">DAG structure (flexible nested edges)</text>
+
+            <line x1="230" y1="65" x2="345" y2="104" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <line x1="530" y1="65" x2="415" y2="104" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+
+            <rect x="170" y="105" width="420" height="50" rx="6" class="js-box-strong"></rect>
+            <text x="380" y="126" text-anchor="middle" class="js-title">CDC Change Detector</text>
+            <text x="380" y="141" text-anchor="middle" class="js-sub">Kafka Connect / Debezium reads the MySQL binlog &mdash; sub-second, no polling</text>
+
+            <line x1="380" y1="155" x2="105" y2="193" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <line x1="380" y1="155" x2="285" y2="193" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <line x1="380" y1="155" x2="465" y2="193" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <line x1="380" y1="155" x2="645" y2="193" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+
+            <rect x="20" y="194" width="170" height="55" rx="6" class="js-box-strong"></rect>
+            <text x="105" y="214" text-anchor="middle" class="js-title">Shard 0</text>
+            <text x="105" y="228" text-anchor="middle" class="js-sub">hash(job_id) % N == 0</text>
+            <text x="105" y="240" text-anchor="middle" class="js-label">own partition only</text>
+
+            <rect x="200" y="194" width="170" height="55" rx="6" class="js-box"></rect>
+            <text x="285" y="214" text-anchor="middle" class="js-title">Shard 1</text>
+            <text x="285" y="228" text-anchor="middle" class="js-sub">hash(job_id) % N == 1</text>
+
+            <rect x="380" y="194" width="170" height="55" rx="6" class="js-box"></rect>
+            <text x="465" y="214" text-anchor="middle" class="js-title">Shard 2</text>
+            <text x="465" y="228" text-anchor="middle" class="js-sub">hash(job_id) % N == 2</text>
+
+            <rect x="560" y="194" width="170" height="55" rx="6" class="js-box-muted"></rect>
+            <text x="645" y="214" text-anchor="middle" class="js-title">&hellip; Shard N-1</text>
+            <text x="645" y="228" text-anchor="middle" class="js-sub">own next_run_time bucket</text>
+
+            <line x1="105" y1="249" x2="272" y2="288" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <line x1="285" y1="249" x2="278" y2="288" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <line x1="465" y1="249" x2="290" y2="288" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <line x1="645" y1="249" x2="300" y2="288" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+
+            <rect x="20" y="289" width="505" height="55" rx="6" class="js-box-strong"></rect>
+            <text x="272" y="309" text-anchor="middle" class="js-title">Scheduler Shard &mdash; Lock and Dispatch</text>
+            <text x="272" y="323" text-anchor="middle" class="js-sub">acquires distributed lock before firing a due job</text>
+            <text x="272" y="336" text-anchor="middle" class="js-sub">verifies idempotency key before publish</text>
+
+            <rect x="545" y="289" width="175" height="55" rx="6" class="js-box"></rect>
+            <text x="632" y="309" text-anchor="middle" class="js-title">Distributed Lock +</text>
+            <text x="632" y="322" text-anchor="middle" class="js-title">Idempotency Store</text>
+            <text x="632" y="336" text-anchor="middle" class="js-label">checked per due job</text>
+
+            <line x1="525" y1="316" x2="545" y2="316" class="js-arrow" marker-start="url(#arrow-js-1)" marker-end="url(#arrow-js-1)"></line>
+
+            <line x1="632" y1="344" x2="632" y2="383" class="js-arrow-store" marker-start="url(#arrow-js-1s)" marker-end="url(#arrow-js-1s)"></line>
+            <text x="645" y="367" class="js-label">read / write</text>
+
+            <rect x="545" y="384" width="175" height="70" rx="6" class="js-box-store"></rect>
+            <text x="632" y="405" text-anchor="middle" class="js-title">etcd/Redis + MySQL</text>
+            <text x="632" y="419" text-anchor="middle" class="js-sub">lock leases + job_runs status</text>
+            <text x="632" y="431" text-anchor="middle" class="js-sub">+ heartbeat/outcome from Tracker</text>
+
+            <line x1="272" y1="344" x2="272" y2="383" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <text x="272" y="377" text-anchor="middle" class="js-label">publish if lock acquired</text>
+
+            <rect x="20" y="384" width="505" height="50" rx="6" class="js-box-bus"></rect>
+            <text x="272" y="405" text-anchor="middle" class="js-title-inv">Priority Job Queue</text>
+            <text x="272" y="419" text-anchor="middle" class="js-sub-inv">P0 critical &rarr; P1 standard &rarr; P2 batch, drained highest-first</text>
+
+            <line x1="97" y1="434" x2="97" y2="468" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <line x1="272" y1="434" x2="272" y2="468" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <line x1="447" y1="434" x2="447" y2="468" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <line x1="500" y1="419" x2="558" y2="468" class="js-arrow" marker-end="url(#arrow-js-1)"></line>
+            <text x="272" y="461" text-anchor="middle" class="js-label">workers pull at their own pace</text>
+
+            <rect x="20" y="469" width="155" height="55" rx="6" class="js-box"></rect>
+            <text x="97" y="491" text-anchor="middle" class="js-title">Worker Pool</text>
+            <text x="97" y="505" text-anchor="middle" class="js-sub">standard / leaf jobs</text>
+
+            <rect x="195" y="469" width="155" height="55" rx="6" class="js-box"></rect>
+            <text x="272" y="491" text-anchor="middle" class="js-title">Worker Pool</text>
+            <text x="272" y="505" text-anchor="middle" class="js-sub">DAG executors</text>
+
+            <rect x="370" y="469" width="155" height="55" rx="6" class="js-box"></rect>
+            <text x="447" y="491" text-anchor="middle" class="js-title">Worker Pool</text>
+            <text x="447" y="505" text-anchor="middle" class="js-sub">batch / backfill</text>
+
+            <rect x="545" y="469" width="175" height="55" rx="6" class="js-box"></rect>
+            <text x="632" y="491" text-anchor="middle" class="js-title">Execution Tracker</text>
+            <text x="632" y="505" text-anchor="middle" class="js-sub">heartbeat + status + retry decision</text>
+
+            <line x1="632" y1="468" x2="632" y2="455" class="js-arrow-store" marker-end="url(#arrow-js-1s)"></line>
+            <text x="500" y="462" text-anchor="end" class="js-label">writes status + heartbeat</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; CDC turns due-row changes in MySQL/MongoDB into a low-latency stream; sharded Scheduler replicas lock and dispatch onto a priority queue; a Worker fleet executes and an Execution Tracker writes status back into the datastore.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Change detection, not polling, drives the SLA:</strong> CDC turns "a row just became due" into an event in tens to hundreds of milliseconds, which is most of the scheduling-latency budget spent before a job is even locked.</li>
+          <li><strong>Sharding happens before locking:</strong> each Scheduler shard only ever sees its own partition of the job space, so the distributed lock only has to arbitrate contention among the (small) set of replicas that could plausibly race for the same shard, not the whole fleet.</li>
+          <li><strong>The queue decouples "decided to fire" from "actually executed":</strong> the Worker fleet scales on execution load (which can spike independently, e.g. a few jobs that each run for hours), while the Scheduler fleet scales on job-population size.</li>
+          <li><strong>Status flows back through the same datastore</strong> that drove the original decision, closing the loop so retries, catch-up, and monitoring all read a single source of truth.</li>
+        </ul>
+
+        <h2 id="deep-dive-leader-follower-vs-consensus-based-scheduling">Deep Dive — Leader-Follower vs. Consensus-Based Scheduling</h2>
+        <p>Sharding (next section) parallelizes the scheduler fleet, but within a single shard someone still has to be the one process making scheduling decisions at any given moment, or two replicas will race for the same job. There are two well-proven production patterns for that, and they trade off differently.</p>
+
+        <h3>Leader-Follower (Slack-style)</h3>
+        <p>One pod holds a time-boxed lease and acts as the leader for a shard; every other replica is a passive standby follower, continuously renewing its watch on the lease but making zero scheduling decisions. If the leader stops renewing its lease (crash, network partition, deploy), the lease expires and a follower acquires it, becoming the new leader within roughly one lease-TTL's worth of time — typically single-digit seconds. This is operationally simple: at any instant, "who is deciding right now" has exactly one, easily-inspectable answer, and there's no multi-node agreement protocol to reason about on the hot path.</p>
+
+        <h3>Consensus-Based (Google-style, Paxos)</h3>
+        <p>Instead of one process unilaterally deciding, a small cluster of scheduler replicas runs a consensus protocol (Paxos, or a Paxos-derivative like Raft) and a scheduling decision is only considered durable once a majority of replicas have agreed to it. This survives a wider range of failure/partition scenarios without any window where the "wrong" node could believe it's in charge (a stale leader that hasn't yet noticed its lease expired), at the cost of every decision requiring a network round-trip to a quorum rather than a purely local check — higher per-decision latency and materially more implementation complexity.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: leader-follower pattern with one leader pod issuing scheduling decisions and two standby followers watching a lease, promoting a new leader on failure. Right panel: consensus-based pattern with three scheduler nodes that must reach a majority vote before a scheduling decision is considered durable.">
+            <style>
+              .js-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .js-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .js-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .js-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .js-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .js-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .js-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .js-arrow-dash{stroke:var(--color-accent);stroke-width:1.4;fill:none;stroke-dasharray:3 3;}
+            </style>
+            <defs>
+              <marker id="arrow-js-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="20" y="20" class="js-title">Leader-Follower (Slack-style)</text>
+            <rect x="90" y="35" width="180" height="45" rx="6" class="js-box-strong"></rect>
+            <text x="180" y="55" text-anchor="middle" class="js-title">Leader Pod</text>
+            <text x="180" y="69" text-anchor="middle" class="js-sub">holds lease, makes all decisions</text>
+
+            <path d="M170,80 C120,105 100,115 90,130" class="js-arrow-dash" marker-end="url(#arrow-js-2)"></path>
+            <path d="M190,80 C240,105 260,115 270,130" class="js-arrow-dash" marker-end="url(#arrow-js-2)"></path>
+            <text x="180" y="100" text-anchor="middle" class="js-label">lease heartbeat</text>
+
+            <rect x="20" y="131" width="140" height="45" rx="6" class="js-box"></rect>
+            <text x="90" y="151" text-anchor="middle" class="js-title">Follower A</text>
+            <text x="90" y="165" text-anchor="middle" class="js-sub">standby, zero decisions</text>
+
+            <rect x="200" y="131" width="140" height="45" rx="6" class="js-box"></rect>
+            <text x="270" y="151" text-anchor="middle" class="js-title">Follower B</text>
+            <text x="270" y="165" text-anchor="middle" class="js-sub">standby, zero decisions</text>
+
+            <line x1="90" y1="176" x2="180" y2="209" class="js-arrow" marker-end="url(#arrow-js-2)"></line>
+            <line x1="270" y1="176" x2="180" y2="209" class="js-arrow" marker-end="url(#arrow-js-2)"></line>
+            <text x="180" y="196" text-anchor="middle" class="js-label">lease expires &rarr; fastest follower promoted</text>
+
+            <rect x="40" y="210" width="280" height="50" rx="6" class="js-box-muted"></rect>
+            <text x="180" y="230" text-anchor="middle" class="js-title">New Leader (was Follower A or B)</text>
+            <text x="180" y="244" text-anchor="middle" class="js-sub">failover in ~one lease TTL (single-digit seconds)</text>
+
+            <text x="180" y="290" text-anchor="middle" class="js-sub">Simple mental model: exactly one decider at any instant</text>
+
+            <line x1="370" y1="20" x2="370" y2="320" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <text x="400" y="20" class="js-title">Consensus-Based (Google-style, Paxos)</text>
+            <rect x="410" y="60" width="110" height="45" rx="6" class="js-box"></rect>
+            <text x="465" y="80" text-anchor="middle" class="js-title">Node A</text>
+            <text x="465" y="94" text-anchor="middle" class="js-sub">proposer / acceptor</text>
+
+            <rect x="545" y="60" width="110" height="45" rx="6" class="js-box"></rect>
+            <text x="600" y="80" text-anchor="middle" class="js-title">Node B</text>
+            <text x="600" y="94" text-anchor="middle" class="js-sub">proposer / acceptor</text>
+
+            <rect x="480" y="140" width="110" height="45" rx="6" class="js-box"></rect>
+            <text x="535" y="160" text-anchor="middle" class="js-title">Node C</text>
+            <text x="535" y="174" text-anchor="middle" class="js-sub">proposer / acceptor</text>
+
+            <line x1="465" y1="105" x2="535" y2="140" class="js-arrow-dash"></line>
+            <line x1="600" y1="105" x2="535" y2="140" class="js-arrow-dash"></line>
+            <line x1="465" y1="82" x2="545" y2="82" class="js-arrow-dash"></line>
+            <text x="535" y="120" text-anchor="middle" class="js-label">majority (2 of 3) must agree</text>
+
+            <rect x="440" y="205" width="220" height="45" rx="6" class="js-box-muted"></rect>
+            <text x="550" y="225" text-anchor="middle" class="js-title">Decision durable once quorum agrees</text>
+            <text x="550" y="239" text-anchor="middle" class="js-sub">no window where a stale node can misfire</text>
+
+            <text x="550" y="290" text-anchor="middle" class="js-sub">Stronger consistency; a network round-trip per decision</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Leader-follower trades a small failover window for operational simplicity; consensus removes that window at the cost of a quorum round-trip on every scheduling decision.</div>
+        </div>
+
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Leader-Follower (Slack-style)</th><th>Consensus-Based (Google-style, Paxos)</th></tr>
+          <tr><td>Per-decision latency</td><td>Local, near-instant</td><td>Network round-trip to a quorum</td></tr>
+          <tr><td>Failover window</td><td>~one lease TTL (seconds)</td><td>Effectively none &mdash; no single node is ever solely trusted</td></tr>
+          <tr><td>Implementation complexity</td><td>Low-to-medium (lease + heartbeat)</td><td>High (full consensus protocol)</td></tr>
+          <tr><td>Failure modes it protects against</td><td>Clean crash of the leader</td><td>Crash, partition, and split-brain scenarios alike</td></tr>
+          <tr><td>Good fit when&hellip;</td><td>A few seconds of late firing during failover is tolerable</td><td>Zero tolerance for a stale-leader misfire, worth the complexity</td></tr>
+        </table>
+
+        <h2 id="deep-dive-sharding-the-job-space-across-scheduler-replicas">Deep Dive — Sharding the Job Space Across Scheduler Replicas</h2>
+        <p>Neither leader-follower nor consensus scales to millions of jobs if there's only one shard to lead or agree on — a single process (or a single quorum) scanning tens of millions of rows every few seconds is the real bottleneck long before lock contention is. The fix is to shard the job space itself: partition all active jobs across many independent scheduler shards, each of which runs its own leader-follower (or consensus) group and scans/fires only its own slice.</p>
+        <p>Two shard-key choices are common, and they optimize for different things. Sharding by <strong>hash(job_id)</strong> spreads load evenly regardless of when jobs are due, and is simple to reason about, but means every shard must still scan its full slice on every tick looking for due rows. Sharding by <strong>next_run_time bucket</strong> (e.g. one bucket per minute) means a shard only ever has to look at the (small) set of jobs due in its current bucket, which is far cheaper per tick, at the cost of uneven load across shards if job due-times cluster (the thundering-herd problem again) — the two are often combined: hash(job_id) to pick a shard, next_run_time bucketing within that shard to keep the scan cheap.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six scheduler shards arranged in a ring, each owning hash(job_id) mod 6 equals its shard number, and each independently scanning only the jobs due in its own next_run_time bucket. Adding a seventh shard only requires reassigning a small slice from its two neighbors under consistent hashing.">
+            <style>
+              .js-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .js-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .js-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .js-sub{font-family:var(--font-sans);font-weight:400;font-size:8.5px;fill:var(--color-text-muted);}
+              .js-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <text x="20" y="20" class="js-title">Consistent-hash ring of scheduler shards &mdash; each owns a slice of hash(job_id), sub-bucketed by next_run_time</text>
+
+            <circle cx="380" cy="175" r="120" fill="none" stroke="var(--color-border)" stroke-dasharray="3 3"></circle>
+
+            <rect x="330" y="35" width="100" height="42" rx="6" class="js-box-strong"></rect>
+            <text x="380" y="53" text-anchor="middle" class="js-title">Shard 0</text>
+            <text x="380" y="67" text-anchor="middle" class="js-sub">jobs due :00&ndash;:09</text>
+
+            <rect x="470" y="70" width="100" height="42" rx="6" class="js-box"></rect>
+            <text x="520" y="88" text-anchor="middle" class="js-title">Shard 1</text>
+            <text x="520" y="102" text-anchor="middle" class="js-sub">jobs due :10&ndash;:19</text>
+
+            <rect x="530" y="190" width="100" height="42" rx="6" class="js-box"></rect>
+            <text x="580" y="208" text-anchor="middle" class="js-title">Shard 2</text>
+            <text x="580" y="222" text-anchor="middle" class="js-sub">jobs due :20&ndash;:29</text>
+
+            <rect x="330" y="278" width="100" height="42" rx="6" class="js-box"></rect>
+            <text x="380" y="296" text-anchor="middle" class="js-title">Shard 3</text>
+            <text x="380" y="310" text-anchor="middle" class="js-sub">jobs due :30&ndash;:39</text>
+
+            <rect x="130" y="190" width="100" height="42" rx="6" class="js-box"></rect>
+            <text x="180" y="208" text-anchor="middle" class="js-title">Shard 4</text>
+            <text x="180" y="222" text-anchor="middle" class="js-sub">jobs due :40&ndash;:49</text>
+
+            <rect x="190" y="70" width="100" height="42" rx="6" class="js-box"></rect>
+            <text x="240" y="88" text-anchor="middle" class="js-title">Shard 5</text>
+            <text x="240" y="102" text-anchor="middle" class="js-sub">jobs due :50&ndash;:59</text>
+
+            <text x="380" y="180" text-anchor="middle" class="js-label">hash(job_id) mod 6</text>
+            <text x="380" y="195" text-anchor="middle" class="js-label">picks a shard;</text>
+            <text x="380" y="210" text-anchor="middle" class="js-label">next_run_time bucket</text>
+            <text x="380" y="225" text-anchor="middle" class="js-label">narrows the scan within it</text>
+
+            <text x="20" y="300" class="js-sub">Adding Shard 6 under consistent hashing reassigns only a thin</text>
+            <text x="20" y="314" class="js-sub">slice from two neighbors &mdash; not a full fleet-wide reshuffle.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. The job space is partitioned across scheduler shards by hash(job_id), with each shard further bucketing by next_run_time so it only ever scans jobs that could plausibly be due right now.</div>
+        </div>
+
+        <table>
+          <tr><th>Shard key</th><th>Scan cost per tick</th><th>Load evenness</th><th>Weakness</th></tr>
+          <tr><td>hash(job_id)</td><td>Higher &mdash; must still filter the full slice for due rows</td><td>Excellent &mdash; independent of scheduling patterns</td><td>Doesn't reduce the thundering-herd spike within a shard</td></tr>
+          <tr><td>next_run_time bucket</td><td>Low &mdash; only look at the current bucket</td><td>Poor alone &mdash; a popular cron minute overloads one bucket</td><td>Needs jitter/re-bucketing to avoid hot buckets</td></tr>
+          <tr><td>Combined (recommended)</td><td>Low</td><td>Good &mdash; hash spreads jobs, bucket narrows the scan</td><td>Slightly more bookkeeping (two-level key)</td></tr>
+        </table>
+
+        <h2 id="deep-dive-distributed-locking-and-exactly-once-effective-firing">Deep Dive — Distributed Locking and Exactly-Once-Effective Firing</h2>
+        <p>Even within one shard, a rolling deploy, a brief network blip, or an overlapping lease-renewal race can leave two scheduler replicas both believing they own the same due job for a moment. A distributed lock (a short-TTL lease in etcd, ZooKeeper, or Redis, keyed by <code>job_id</code>) makes only one of them the actual dispatcher: replica A's <code>SET lock:job_7fa2 A NX PX 5000</code>-style call succeeds; replica B's identical call fails because the key already exists, and B backs off rather than publishing a duplicate. The lock's TTL is deliberately short and renewed while work is in progress, so a crashed lock-holder's lease expires on its own and another replica can safely take over — no permanently stuck lock waiting on a human.</p>
+        <p>The lock alone isn't a complete guarantee, though: a replica can acquire the lock, crash <em>after</em> publishing to the queue but <em>before</em> renewing or releasing it, and its lease can still expire and be re-acquired by someone else who — not knowing the job was already published — could publish it again. This is exactly why the design layers a second, independent defense: an idempotency key attached to the job at creation time, checked with an insert-if-absent ("claim") write into the execution-history store immediately before publish. If the claim fails because a row for that firing already exists, the second attempt is a no-op. The lock minimizes double-firing in the common case (cheap, fast); the idempotency claim makes double-firing safe in the rare case the lock alone can't prevent.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two scheduler replicas both detect the same due job. Replica A's lock acquisition succeeds via an atomic SET-if-not-exists; replica B's attempt fails and it backs off. Replica A then performs a claim write with an idempotency key before publishing to the queue; if a later replica retries the same job, its claim write fails against the already-claimed row and it is treated as a no-op.">
+            <style>
+              .js-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .js-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .js-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .js-diamond{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+              .js-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .js-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .js-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .js-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-js-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="30" y="15" width="200" height="45" rx="6" class="js-box"></rect>
+            <text x="130" y="34" text-anchor="middle" class="js-title">Replica A sees due job X</text>
+            <text x="130" y="48" text-anchor="middle" class="js-sub">SET lock:X A NX PX 5000</text>
+
+            <rect x="530" y="15" width="200" height="45" rx="6" class="js-box"></rect>
+            <text x="630" y="34" text-anchor="middle" class="js-title">Replica B sees due job X</text>
+            <text x="630" y="48" text-anchor="middle" class="js-sub">SET lock:X B NX PX 5000</text>
+
+            <line x1="130" y1="60" x2="230" y2="99" class="js-arrow" marker-end="url(#arrow-js-3)"></line>
+            <line x1="630" y1="60" x2="530" y2="99" class="js-arrow" marker-end="url(#arrow-js-3)"></line>
+
+            <polygon points="270,140 380,100 490,140 380,180" class="js-diamond"></polygon>
+            <text x="380" y="136" text-anchor="middle" class="js-title">lock:X held?</text>
+            <text x="380" y="150" text-anchor="middle" class="js-label">first writer wins</text>
+
+            <line x1="310" y1="160" x2="200" y2="199" class="js-arrow" marker-end="url(#arrow-js-3)"></line>
+            <text x="240" y="175" text-anchor="middle" class="js-label">A: no (first)</text>
+
+            <line x1="450" y1="160" x2="560" y2="199" class="js-arrow" marker-end="url(#arrow-js-3)"></line>
+            <text x="520" y="175" text-anchor="middle" class="js-label">B: yes (loses)</text>
+
+            <rect x="60" y="200" width="280" height="55" rx="6" class="js-box-strong"></rect>
+            <text x="200" y="220" text-anchor="middle" class="js-title">Replica A: claim write</text>
+            <text x="200" y="234" text-anchor="middle" class="js-sub">INSERT run WHERE idempotency_key absent</text>
+            <text x="200" y="246" text-anchor="middle" class="js-label">succeeds &rarr; publish to queue</text>
+
+            <rect x="420" y="200" width="280" height="55" rx="6" class="js-box"></rect>
+            <text x="560" y="220" text-anchor="middle" class="js-title">Replica B: back off</text>
+            <text x="560" y="234" text-anchor="middle" class="js-sub">lock held by A &mdash; does not publish</text>
+            <text x="560" y="246" text-anchor="middle" class="js-label">retries next tick if still due</text>
+
+            <line x1="200" y1="255" x2="200" y2="284" class="js-arrow" marker-end="url(#arrow-js-3)"></line>
+
+            <rect x="60" y="285" width="280" height="45" rx="6" class="js-box-store"></rect>
+            <text x="200" y="304" text-anchor="middle" class="js-title">Published exactly once</text>
+            <text x="200" y="318" text-anchor="middle" class="js-sub">even a stale re-acquired lock's claim would now fail</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. A short-TTL distributed lock resolves the common case cheaply (first writer wins, second backs off); an idempotency-keyed claim write is the second, independent guard that makes even a rare lock-edge-case double-fire safe.</div>
+        </div>
+
+        <h3>Idempotency Keys at the Execution Layer</h3>
+        <p>The idempotency key is deterministic and derivable from the job and its scheduled occurrence &mdash; typically <code>hash(job_id, scheduled_time)</code> &mdash; so that any replica computing it for "job X's 2:00am firing" arrives at the same value, regardless of which replica does the computing or how many times it's retried. This is what turns "at-least-once dispatch" into "effectively-once execution" without needing a perfect lock: the lock is an optimization that avoids most duplicate work, and the idempotency claim is the correctness guarantee that holds even when the optimization fails.</p>
+
+        <h2 id="deep-dive-dag-execution-and-dependency-resolution">Deep Dive — DAG Execution and Dependency Resolution</h2>
+        <p>A DAG is a set of jobs (nodes) with directed edges expressing "B depends on A." A node becomes eligible to run only once every node it depends on has completed with status SUCCEEDED — the dependency resolver's entire job is answering "are all of this node's upstream dependencies satisfied?" cheaply, at scale, without re-walking the whole graph on every check.</p>
+        <p>The practical mechanism: each DAG node carries a materialized "pending dependency count." When an upstream node succeeds, the resolver decrements the pending-count of every direct downstream node in a single atomic operation; any node whose count reaches zero is immediately eligible and gets scheduled. This turns "is B ready?" from an O(graph size) traversal into an O(1) check on a counter, at the cost of maintaining that counter correctly as the DAG structure or execution state changes — which is why the counter lives alongside the relational job_runs state (MySQL) even though the DAG's edges live in MongoDB: the state-transition-with-a-counter-decrement needs the same ACID guarantee that the plain job locking does.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A DAG with job A at the root, jobs B and C both depending on A, and job D depending on both B and C. When A succeeds, both B and C become eligible and run in parallel. D remains blocked until both B and C have succeeded, at which point its pending dependency count reaches zero and it is scheduled.">
+            <style>
+              .js-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .js-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .js-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .js-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .js-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .js-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .js-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-js-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="300" y="20" width="160" height="55" rx="6" class="js-box-strong"></rect>
+            <text x="380" y="42" text-anchor="middle" class="js-title">Job A</text>
+            <text x="380" y="56" text-anchor="middle" class="js-sub">SUCCEEDED</text>
+            <text x="380" y="68" text-anchor="middle" class="js-label">root, no dependencies</text>
+
+            <line x1="340" y1="75" x2="220" y2="129" class="js-arrow" marker-end="url(#arrow-js-4)"></line>
+            <line x1="420" y1="75" x2="540" y2="129" class="js-arrow" marker-end="url(#arrow-js-4)"></line>
+
+            <rect x="130" y="130" width="160" height="55" rx="6" class="js-box"></rect>
+            <text x="210" y="152" text-anchor="middle" class="js-title">Job B</text>
+            <text x="210" y="166" text-anchor="middle" class="js-sub">pending_deps: 0 &mdash; RUNNING</text>
+            <text x="210" y="178" text-anchor="middle" class="js-label">depends_on: [A]</text>
+
+            <rect x="470" y="130" width="160" height="55" rx="6" class="js-box"></rect>
+            <text x="550" y="152" text-anchor="middle" class="js-title">Job C</text>
+            <text x="550" y="166" text-anchor="middle" class="js-sub">pending_deps: 0 &mdash; RUNNING</text>
+            <text x="550" y="178" text-anchor="middle" class="js-label">depends_on: [A]</text>
+
+            <text x="380" y="160" text-anchor="middle" class="js-label">B and C run in parallel &mdash;</text>
+            <text x="380" y="173" text-anchor="middle" class="js-label">both only needed A</text>
+
+            <line x1="240" y1="185" x2="340" y2="239" class="js-arrow" marker-end="url(#arrow-js-4)"></line>
+            <line x1="520" y1="185" x2="420" y2="239" class="js-arrow" marker-end="url(#arrow-js-4)"></line>
+
+            <rect x="300" y="240" width="160" height="60" rx="6" class="js-box-muted"></rect>
+            <text x="380" y="260" text-anchor="middle" class="js-title">Job D</text>
+            <text x="380" y="274" text-anchor="middle" class="js-sub">pending_deps: 2 &rarr; 0 once both succeed</text>
+            <text x="380" y="288" text-anchor="middle" class="js-label">depends_on: [B, C] &mdash; blocked until then</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Job D's pending-dependency counter starts at 2 (B and C) and is atomically decremented as each upstream job succeeds; D is scheduled the instant it reaches zero, without re-walking the DAG.</div>
+        </div>
+
+        <h3>Fan-in / Fan-out and Partial Failure in a DAG</h3>
+        <p>Fan-out (A feeding both B and C) is the easy case — both simply become eligible independently. Fan-in (D depending on both B and C) is where partial failure matters: if B fails after retries are exhausted, D's dependency can never be satisfied, and the resolver marks D (and anything downstream of D) as UPSTREAM_FAILED rather than leaving it pending forever. Whether a sibling branch that doesn't depend on the failed node (an unrelated E depending only on A) should keep running is a per-DAG policy choice — the default is "yes, independent branches proceed," with an opt-in "halt entire DAG on any node failure" mode for workflows where partial completion is meaningless (e.g. a financial close process).</p>
+
+        <h2 id="deep-dive-worker-heartbeats-timeouts-and-retry-with-backoff">Deep Dive — Worker Heartbeats, Timeouts, and Retry-with-Backoff</h2>
+        <p>Once a job is dispatched to a worker, the scheduler's job isn't done — it needs to detect a worker that has silently died (crashed process, OOM-killed container, severed network) rather than waiting indefinitely for a result that will never come. Every worker sends a periodic heartbeat while executing; the scheduler (or a dedicated heartbeat monitor) tracks the last-seen heartbeat per in-flight job and, if it exceeds a timeout threshold (typically 2&ndash;3&times; the heartbeat interval, to tolerate a missed beat or two without overreacting), treats the job as abandoned: the worker's lease on that job is revoked, and the job is returned to RETRYING with its attempt counter incremented, ready to be picked up by a different worker.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Numbered sequence: the scheduler dispatches a job to Worker 1 with a heartbeat interval configured. Worker 1 sends heartbeats while running, then crashes and heartbeats stop. After the timeout threshold elapses the heartbeat monitor detects the missed heartbeats, revokes Worker 1's lease, and marks the job RETRYING. The scheduler re-dispatches with an incremented attempt count and the same idempotency key to Worker 2, which runs the job to success and the execution tracker records the outcome, fencing off any late, stale result from Worker 1.">
+            <style>
+              .js-circle{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+              .js-num{font-family:var(--font-sans);font-weight:700;font-size:13px;fill:#ffffff;}
+              .js-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .js-sub{font-family:var(--font-sans);font-weight:400;font-size:10px;fill:var(--color-text-muted);}
+              .js-line{stroke:var(--color-border);stroke-width:2;}
+            </style>
+            <line x1="40" y1="40" x2="40" y2="425" class="js-line"></line>
+
+            <circle cx="40" cy="40" r="16" class="js-circle"></circle>
+            <text x="40" y="45" text-anchor="middle" class="js-num">1</text>
+            <text x="75" y="34" class="js-title">Scheduler dispatches job to Worker 1</text>
+            <text x="75" y="49" class="js-sub">heartbeat interval = 10s, timeout threshold = 30s</text>
+
+            <circle cx="40" cy="95" r="16" class="js-circle"></circle>
+            <text x="40" y="100" text-anchor="middle" class="js-num">2</text>
+            <text x="75" y="89" class="js-title">Worker 1 sends heartbeats while running</text>
+            <text x="75" y="104" class="js-sub">scheduler records last_seen_heartbeat per in-flight job</text>
+
+            <circle cx="40" cy="150" r="16" class="js-circle"></circle>
+            <text x="40" y="155" text-anchor="middle" class="js-num">3</text>
+            <text x="75" y="144" class="js-title">Worker 1 crashes (OOM / network partition)</text>
+            <text x="75" y="159" class="js-sub">heartbeats silently stop &mdash; no error is ever sent</text>
+
+            <circle cx="40" cy="205" r="16" class="js-circle"></circle>
+            <text x="40" y="210" text-anchor="middle" class="js-num">4</text>
+            <text x="75" y="199" class="js-title">Heartbeat monitor detects the timeout</text>
+            <text x="75" y="214" class="js-sub">30s since last heartbeat elapses &mdash; job flagged abandoned</text>
+
+            <circle cx="40" cy="260" r="16" class="js-circle"></circle>
+            <text x="40" y="265" text-anchor="middle" class="js-num">5</text>
+            <text x="75" y="254" class="js-title">Worker 1's lease is revoked</text>
+            <text x="75" y="269" class="js-sub">job status &rarr; RETRYING, attempt counter incremented</text>
+
+            <circle cx="40" cy="315" r="16" class="js-circle"></circle>
+            <text x="40" y="320" text-anchor="middle" class="js-num">6</text>
+            <text x="75" y="309" class="js-title">Scheduler re-dispatches to Worker 2</text>
+            <text x="75" y="324" class="js-sub">same idempotency_key travels with the retry (exponential backoff applied)</text>
+
+            <circle cx="40" cy="370" r="16" class="js-circle"></circle>
+            <text x="40" y="375" text-anchor="middle" class="js-num">7</text>
+            <text x="75" y="364" class="js-title">Worker 2 runs the job to completion</text>
+            <text x="75" y="379" class="js-sub">if Worker 1 later resurfaces with a late result, its claim fails and is ignored</text>
+
+            <circle cx="40" cy="425" r="16" class="js-circle"></circle>
+            <text x="40" y="430" text-anchor="middle" class="js-num">8</text>
+            <text x="75" y="419" class="js-title">Execution Tracker records SUCCEEDED</text>
+            <text x="75" y="434" class="js-sub">both attempts logged in job_runs for audit; only one counted as effective</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. Heartbeat-based failure detection: a missing heartbeat past the timeout threshold triggers lease revocation and reassignment; the idempotency claim from the Locking deep dive fences off a stale, late-arriving result from the original worker.</div>
+        </div>
+
+        <h3>Tuning the Heartbeat Timeout</h3>
+        <table>
+          <tr><th>Timeout multiple of interval</th><th>False-positive risk (healthy worker reassigned)</th><th>Detection latency for a truly dead worker</th></tr>
+          <tr><td>1&times; (timeout == interval)</td><td>High &mdash; a single slow heartbeat triggers a needless reassignment</td><td>Fastest</td></tr>
+          <tr><td>2&ndash;3&times; (recommended)</td><td>Low &mdash; tolerates a missed beat or two under load</td><td>Bounded, still fast (tens of seconds)</td></tr>
+          <tr><td>5&times;+</td><td>Very low</td><td>Slow &mdash; a genuinely dead worker's job sits stalled longer than necessary</td></tr>
+        </table>
+        <p>Exponential backoff on the retry itself (e.g. 2s &rarr; 4s &rarr; 8s &rarr; 16s, capped at a configurable max attempts) avoids hammering a downstream dependency that's the actual root cause of repeated failures (a database the job writes to being temporarily overloaded), and a job that exhausts its retry budget is marked DEAD_LETTERED for alerting and manual or scheduled reprocessing, mirroring the retry/DLQ pattern used throughout distributed messaging systems generally.</p>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>The full table-by-table design, split across MySQL (job/cron metadata and execution history, both needing ACID state transitions) and MongoDB (DAG structure, needing flexible shape).</p>
+
+        <table>
+          <tr><th colspan="2">Table: jobs (MySQL, PK: job_id, sharded by hash(job_id))</th></tr>
+          <tr><td>job_id (PK)</td><td>uuid</td></tr>
+          <tr><td>tenant_id</td><td>text</td></tr>
+          <tr><td>job_key (unique per tenant)</td><td>text &mdash; caller-supplied idempotent create key</td></tr>
+          <tr><td>handler</td><td>text &mdash; routes to a worker capability, e.g. "billing.charge_invoice"</td></tr>
+          <tr><td>type</td><td>enum(ONE_OFF, CRON, DAG_NODE)</td></tr>
+          <tr><td>priority</td><td>enum(P0, P1, P2)</td></tr>
+          <tr><td>status</td><td>enum(SCHEDULED, QUEUED, RUNNING, SUCCEEDED, FAILED, RETRYING, CANCELLED, DEAD_LETTERED)</td></tr>
+          <tr><td>next_run_time</td><td>timestamp, indexed &mdash; the field CDC watches</td></tr>
+          <tr><td>payload_ref</td><td>text &mdash; pointer to job input, not the raw payload</td></tr>
+          <tr><td>retry_policy</td><td>json (max_attempts, backoff strategy, base_delay_sec)</td></tr>
+          <tr><td>lock_owner / lock_expires_at</td><td>text / timestamp &mdash; the distributed lock lease</td></tr>
+          <tr><td>created_at / updated_at</td><td>timestamp</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: cron_schedules (MySQL, PK: job_id, FK to jobs)</th></tr>
+          <tr><td>job_id (PK, FK)</td><td>uuid</td></tr>
+          <tr><td>cron_expression</td><td>text, e.g. "0 2 * * *"</td></tr>
+          <tr><td>timezone</td><td>text (IANA tz)</td></tr>
+          <tr><td>last_run_time / next_run_time</td><td>timestamp</td></tr>
+          <tr><td>catch_up_policy</td><td>enum(SKIP, RUN_ONCE, RUN_ALL)</td></tr>
+          <tr><td>misfire_grace_period_sec</td><td>int &mdash; how late a firing can be before it's considered missed</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: job_runs / execution_history (MySQL, PK: run_id, time-partitioned, unique on idempotency_key)</th></tr>
+          <tr><td>run_id (PK)</td><td>uuid</td></tr>
+          <tr><td>job_id</td><td>uuid, indexed</td></tr>
+          <tr><td>idempotency_key (unique)</td><td>text &mdash; hash(job_id, scheduled_time)</td></tr>
+          <tr><td>attempt_number</td><td>int</td></tr>
+          <tr><td>worker_id</td><td>text</td></tr>
+          <tr><td>status</td><td>enum(CLAIMED, DISPATCHED, RUNNING, SUCCEEDED, FAILED, TIMED_OUT)</td></tr>
+          <tr><td>scheduled_time / started_at / completed_at</td><td>timestamp</td></tr>
+          <tr><td>last_heartbeat_at</td><td>timestamp</td></tr>
+          <tr><td>error_message</td><td>text (nullable)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: dag_dependencies (MySQL, materialized edge list, kept in sync from the MongoDB DAG document)</th></tr>
+          <tr><td>dag_id + downstream_job_id (composite PK)</td><td>uuid + uuid</td></tr>
+          <tr><td>upstream_job_id</td><td>uuid</td></tr>
+          <tr><td>pending_dependency_count</td><td>int &mdash; atomically decremented as each upstream node succeeds</td></tr>
+          <tr><td>dependency_status</td><td>enum(PENDING, SATISFIED, UPSTREAM_FAILED)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Document: dag_definitions (MongoDB, PK: dag_id)</th></tr>
+          <tr><td>dag_id (PK)</td><td>uuid</td></tr>
+          <tr><td>tenant_id</td><td>text</td></tr>
+          <tr><td>nodes</td><td>array of {job_key, handler, config} &mdash; variable length, arbitrary shape</td></tr>
+          <tr><td>edges</td><td>array of {from, to} &mdash; embedded, no join needed to read the whole graph</td></tr>
+          <tr><td>on_node_failure</td><td>enum(HALT_DAG, CONTINUE_INDEPENDENT_BRANCHES)</td></tr>
+          <tr><td>version</td><td>int &mdash; DAG definitions are versioned, not mutated in place</td></tr>
+        </table>
+        <p>The <code>dag_dependencies</code> table is a deliberate, denormalized bridge: the authoritative graph shape lives in MongoDB (easy to author, version, and read as a whole), but the scheduler's hot-path question — "is job X's pending-dependency count now zero?" — needs the same atomic-decrement-and-check guarantee as the distributed lock, which only a relational store with transactions gives cheaply at high concurrency. This is the same storage-choice principle as the top-level Data Model decision, applied one level deeper.</p>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+        <p>Sharding follows the same principle throughout: keep everything needed to make one decision atomically on the same shard, and let unrelated shards scale independently.</p>
+        <ul>
+          <li><strong>jobs / cron_schedules / job_runs</strong> are sharded by <code>hash(job_id)</code> across a MySQL fleet (e.g. via a proxy layer like Vitess), so a job's metadata, its lock, and its execution history are always co-located &mdash; no cross-shard transaction is ever needed to lock and dispatch a single job.</li>
+          <li><strong>dag_definitions</strong> are sharded by <code>dag_id</code> in MongoDB, matching the unit callers actually read and write (the whole graph at once).</li>
+          <li><strong>job_runs is additionally partitioned by time</strong> (daily partitions) so that 30-day retention is enforced by dropping old partitions outright, rather than issuing expensive row-by-row deletes against a table with hundreds of millions of rows.</li>
+          <li><strong>The priority job queue</strong> is implemented as topics/partitions per priority tier (P0/P1/P2), mirroring the same "physically isolate the urgent lane" pattern used in other high-fan-out systems: a P2 batch flood can only ever back up its own partitions.</li>
+        </ul>
+        <table>
+          <tr><th>Data</th><th>Sharded by</th><th>Replication</th></tr>
+          <tr><td>jobs / cron_schedules</td><td>hash(job_id)</td><td>MySQL semi-sync replication, 1 primary + 2 replicas per shard</td></tr>
+          <tr><td>job_runs (execution history)</td><td>hash(job_id), time-partitioned</td><td>Same MySQL fleet; old partitions archived to cold storage</td></tr>
+          <tr><td>dag_definitions</td><td>hash(dag_id)</td><td>MongoDB replica set, 3 members per shard</td></tr>
+          <tr><td>Distributed locks / leases</td><td>hash(job_id)</td><td>etcd/Redis cluster, quorum-write for lease acquisition</td></tr>
+          <tr><td>Priority job queue</td><td>one topic per priority tier, partitioned by job_id</td><td>Kafka RF=3 per topic</td></tr>
+        </table>
+
+        <h2 id="feature-specific-logic-missed-job-catch-up-after-scheduler-downtime">Feature-Specific Logic: Missed-Job Catch-Up After Scheduler Downtime</h2>
+        <p>If the scheduler fleet (or a shard of it) is unavailable for a stretch of time, some recurring jobs will have one or more occurrences that were due during the outage and never fired. What should happen when the shard comes back is a genuine product decision, not a purely technical one — different jobs want different answers, which is why <code>catch_up_policy</code> is a per-job field rather than a global setting.</p>
+        <table>
+          <tr><th>Policy</th><th>Behavior on recovery</th><th>Good fit for</th></tr>
+          <tr><td>SKIP (default)</td><td>Discard every missed occurrence; resume from the next naturally scheduled time</td><td>Frequent, "freshness doesn't compound" jobs &mdash; a metrics-refresh job that runs every 5 minutes doesn't need 12 backfilled runs after an hour-long outage</td></tr>
+          <tr><td>RUN_ONCE</td><td>Fire exactly one catch-up run representing "the job needs to happen," then resume normal cadence</td><td>Jobs where the effect isn't cumulative &mdash; a daily cache-warm job just needs to have run once, not once per missed day</td></tr>
+          <tr><td>RUN_ALL (backfill)</td><td>Fire once per missed occurrence, in order, as fast as capacity allows</td><td>Jobs whose effect is cumulative or order-sensitive &mdash; an hourly billing-ledger rollup where each hour's numbers must actually be computed</td></tr>
+        </table>
+        <p>A <code>misfire_grace_period</code> bounds how "missed" is defined in the first place: an occurrence detected within the grace period of its due time is treated as a normal, slightly-late firing, not a misfire requiring catch-up logic at all. Beyond the grace period, the catch-up policy takes over. RUN_ALL deserves special care operationally: backfilling, say, six hours of missed hourly jobs the instant a shard recovers can itself create a mini thundering herd, so a well-built scheduler enqueues RUN_ALL catch-up firings at a lower priority tier and paces them rather than dumping them all onto the queue simultaneously.</p>
+
+        <h2 id="rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</h2>
+        <ul>
+          <li><strong>Per-tenant active-job quota</strong> (maximum concurrently-scheduled jobs, and a rate limit on job-creation calls per minute), enforced at the API gateway, so one team's misconfigured retry loop creating jobs in a tight loop can't exhaust shared scheduler or storage capacity.</li>
+          <li><strong>Runaway-job circuit breaker:</strong> a job that fails N consecutive times in a row (distinct from N attempts within one firing's retry budget) is automatically suspended rather than continuing to re-fire on its normal cadence, since a recurring job stuck in a fail-immediately loop can otherwise burn worker capacity indefinitely while producing zero value.</li>
+          <li><strong>Fair-share worker allocation:</strong> the worker fleet enforces a per-tenant concurrency ceiling so one tenant's enormous DAG (thousands of parallel nodes becoming eligible at once) can't starve every other tenant's jobs of execution slots.</li>
+          <li><strong>Priority-aware shedding under genuine overload:</strong> if ingestion or execution capacity is truly exceeded, shed P2 (batch) first, then P1, protecting P0 &mdash; the priority-tiered queue makes this a natural, already-built-in policy.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Multi-tenant isolation:</strong> every table is keyed by <code>tenant_id</code> as the leading key element, so a query or a bug can't cross tenant boundaries by construction; quotas, priorities, and catch-up policies are all configured per tenant.</li>
+          <li><strong>Payload references, not raw payloads:</strong> job definitions store a pointer to input data in a separate, access-controlled blob store rather than embedding potentially sensitive payloads directly in job metadata, limiting the blast radius of a metadata-store leak.</li>
+          <li><strong>Least-privilege execution sandboxing:</strong> workers execute each job's handler in an isolated container/sandbox scoped to only the credentials that handler needs, so a compromised or buggy job can't reach another tenant's data or another handler's credentials.</li>
+          <li><strong>Per-caller authentication and authorization:</strong> API keys or mTLS identify the calling service on every create/cancel/reschedule call, and permission checks ensure a caller can only manage jobs it owns (or that its tenant owns).</li>
+          <li><strong>Audit logging:</strong> every create, cancel, reschedule, and manual DLQ-replay action is logged with the acting principal, since "who cancelled the nightly billing job" is exactly the kind of question that comes up during an incident review.</li>
+          <li><strong>Transport security:</strong> TLS everywhere; secrets (database credentials, lock-store credentials) stored in a secrets manager, rotated regularly, and never logged.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <ol>
+          <li>Between callers and the ingestion API — a standard L7 load balancer, health-checked, in front of a stateless API tier.</li>
+          <li>Across scheduler shards — consistent hashing on the job-space partition key, so adding or removing a shard reassigns only a thin slice of the keyspace rather than triggering a full-fleet reshuffle.</li>
+          <li>Across the worker fleet — inherently self-balancing, since workers <em>pull</em> from the priority queue at their own pace rather than being pushed work; a slow or busy worker simply pulls less often, and auto-scaling adds workers as queue depth per priority tier grows.</li>
+        </ol>
+        <p>The one place that benefits from active load-awareness rather than passive pulling is DAG fan-out bursts: when a wide DAG's root succeeds and dozens of downstream nodes become eligible simultaneously, a rate-aware dispatcher that paces publication to the queue (rather than dumping all of them at once) avoids a self-inflicted mini thundering herd.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Run each region active-active, with each job pinned to a "home" region for scheduling decisions — this avoids the alternative of cross-region consensus on every single due-job decision, which would blow the scheduling-latency SLA.</li>
+          <li>The distributed lock and idempotency store are region-local for a job's home region; cross-region replication of job/cron metadata is asynchronous, used for disaster-recovery failover rather than every-decision coordination.</li>
+          <li>If a whole region fails, jobs homed there fail over to a designated secondary region after a bounded detection window; because the idempotency key is deterministic (derived from job_id and scheduled_time, not from which region computed it), the secondary region can safely resume firing without risking a double-fire for occurrences the primary region already completed and replicated before failing.</li>
+          <li>Workers execute in the same region as the job's data dependencies where possible, to avoid needless cross-region latency on the execution path itself — the scheduler's job is to decide "when," not to force execution somewhere inconvenient for "where."</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Leader-election failover window (leader-follower mode)</td><td>Short lease TTL bounds the gap; jobs due during the gap fire slightly late rather than never &mdash; tune TTL against false-positive-failover risk</td></tr>
+          <tr><td>Thundering herd &mdash; many jobs due at the same top-of-hour timestamp</td><td>Add small random jitter (a few seconds) to next_run_time at creation time for recurring jobs, and pace dispatch from the priority queue rather than publishing an entire minute's worth of due jobs instantly</td></tr>
+          <tr><td>Hot shard from an unevenly popular next_run_time bucket</td><td>Combined hash(job_id) + bucket sharding spreads load; jitter further smooths bucket popularity</td></tr>
+          <tr><td>Two replicas race for the same due job</td><td>Distributed lock resolves the common case; idempotency-keyed claim write is the correctness backstop for the rare case the lock alone misses</td></tr>
+          <tr><td>Worker crash mid-execution</td><td>Heartbeat timeout detects it; job reassigned with an incremented attempt and the same idempotency key</td></tr>
+          <tr><td>CDC pipeline lag or outage</td><td>Fall back to a coarse, low-frequency poll as a safety net so the system degrades to "slower" rather than "blind" if CDC is unhealthy</td></tr>
+          <tr><td>Noisy tenant (huge DAG or job-creation loop)</td><td>Per-tenant quota at the gateway plus a fair-share worker concurrency ceiling</td></tr>
+          <tr><td>Region-wide outage</td><td>Deterministic idempotency keys make cross-region failover safe; async replication bounds data loss to the replication lag window</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor consistency for the lock-and-dispatch decision specifically &mdash; a stale or partitioned scheduler replica must not be able to fire a job the current lock-holder already fired, so this path leans on a quorum-backed lock store rather than an eventually-consistent one. Favor availability for status reads and monitoring &mdash; a slightly stale "is job X still running?" read is far better than blocking an operator's dashboard, and the idempotency claim (not the read path) is what actually protects correctness.</p>
+
+        <h3>Leader-Follower vs. Consensus, Revisited</h3>
+        <p>This is the design's single biggest philosophical trade-off, worth restating here: leader-follower buys operational simplicity and near-zero decision latency at the cost of a small, bounded window of potential lateness during failover; consensus buys a stronger guarantee (no window at all) at the cost of a network round-trip on every decision and materially higher implementation complexity. Most teams should default to leader-follower and reserve full consensus for the small subset of job classes where even a few seconds of potential lateness during a rare failover is unacceptable.</p>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Scheduling latency</strong> (due-time to actual-fire-time), tracked as a distribution (p50/p99), is the single most important SLI &mdash; a regression here means the core promise of the system is degrading, often silently.</li>
+          <li><strong>Missed-job rate</strong> &mdash; jobs whose next_run_time passed without ever transitioning to QUEUED within the misfire grace period; ideally zero, and any non-zero rate deserves an immediate alert, not a dashboard glance.</li>
+          <li><strong>Worker failure rate</strong> &mdash; heartbeat-timeout-triggered reassignments as a fraction of total dispatches; a rising rate often signals infrastructure trouble (OOM kills, node churn) rather than job-logic bugs.</li>
+          <li><strong>Queue depth / backlog per priority tier</strong> &mdash; a growing P2 backlog is expected and fine; a growing P0 backlog is an incident.</li>
+          <li><strong>Lock contention rate</strong> &mdash; how often a replica's lock-acquisition attempt fails because another replica already holds it; a rising rate can indicate shard imbalance or a leader that isn't failing over cleanly.</li>
+          <li><strong>Catch-up backlog size</strong> after an incident &mdash; how many missed occurrences are queued for RUN_ALL backfill, to gauge how long "back to normal" will actually take.</li>
+          <li><strong>Per-tenant quota utilization</strong> &mdash; surfaced to tenants themselves so a team approaching its active-job quota gets a warning before it starts seeing 429s.</li>
+        </ul>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Core split</td><td>Scheduler decides "when," Queue holds "ready now," Workers handle "execute" &mdash; each scales independently</td></tr>
+          <tr><td>Change detection</td><td>CDC (Kafka Connect / Debezium on MySQL binlog) instead of polling &mdash; sub-second due-job detection</td></tr>
+          <tr><td>Coordination pattern</td><td>Leader-follower (fast, simple) by default; consensus (Paxos) for job classes needing zero failover-window tolerance</td></tr>
+          <tr><td>Scaling the scheduler</td><td>Shard the job space by hash(job_id), sub-bucketed by next_run_time</td></tr>
+          <tr><td>Preventing double-fire</td><td>Short-TTL distributed lock (common case) + idempotency-keyed claim write (correctness backstop)</td></tr>
+          <tr><td>DAG dependency resolution</td><td>Atomically-decremented pending-dependency counter per node, materialized in the relational store</td></tr>
+          <tr><td>Failure detection</td><td>Worker heartbeats with a 2&ndash;3&times; interval timeout, then reassignment with an incremented attempt</td></tr>
+          <tr><td>Retry handling</td><td>Exponential backoff, capped attempts, then DEAD_LETTERED with alerting</td></tr>
+          <tr><td>Missed-job catch-up</td><td>Per-job policy: SKIP / RUN_ONCE / RUN_ALL, paced at low priority to avoid a self-inflicted herd</td></tr>
+          <tr><td>Primary datastores</td><td>MySQL (job/cron metadata + execution history, ACID) + MongoDB (DAG structure, flexible shape)</td></tr>
+          <tr><td>Job queue</td><td>Priority-tiered (P0/P1/P2), physically isolated per tier</td></tr>
+          <tr><td>Multi-tenancy</td><td>tenant_id leading key everywhere; per-tenant quotas and fair-share worker concurrency</td></tr>
+          <tr><td>Multi-region</td><td>Active-active, home-region pinning per job, deterministic idempotency keys make cross-region failover safe</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect a real interview to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Coordination and Scheduling</h3>
+        <div class="qa-item">
+          <div class="qa-q">Leader-follower vs. Paxos-based consensus &mdash; how do you decide which one to use?</div>
+          <div class="qa-a">Leader-follower gives near-instant local decisions and a simple mental model, at the cost of a small, bounded failover window (roughly one lease TTL) where the "wrong" node could theoretically still believe it's leading. Consensus removes that window entirely by requiring a quorum to agree on every decision, at the cost of a network round-trip per decision and much higher implementation complexity. Default to leader-follower; reserve consensus for job classes where zero tolerance for a stale-leader misfire is worth the cost.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you scale scheduling itself to millions of jobs, not just execution?</div>
+          <div class="qa-a">Shard the job space across many independent scheduler replicas (by hash(job_id), sub-bucketed by next_run_time), each running its own leader-follower or consensus group and scanning only its own partition. A single process or quorum scanning the entire job population is the real bottleneck long before lock contention becomes one.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why shard by both hash(job_id) and next_run_time bucket instead of just one?</div>
+          <div class="qa-a">hash(job_id) alone spreads jobs evenly but still forces every shard to scan its whole slice looking for due rows every tick. next_run_time bucketing alone narrows the scan cheaply but creates hot buckets when due-times cluster (the thundering-herd pattern). Combining them gets even load distribution from the hash and a cheap per-tick scan from the bucket.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you mitigate a thundering herd of jobs all due at the same top-of-hour timestamp?</div>
+          <div class="qa-a">Add a small random jitter to next_run_time at job-creation time so a batch of "top of the hour" cron jobs spreads across, say, a 30&ndash;60 second window instead of firing in the same instant; pace dispatch from the priority queue rather than publishing an entire due-minute's jobs simultaneously; and size the priority queue and worker auto-scaling for the peak multiplier anyway, since jitter smooths but doesn't eliminate the spike.</div>
+        </div>
+
+        <h3>Correctness: Idempotency and Locking</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you achieve exactly-once execution when the system only guarantees at-least-once delivery?</div>
+          <div class="qa-a">You don't try to make delivery exactly-once — you make the effect of duplicate delivery a no-op. A deterministic idempotency key (hash of job_id and scheduled_time) backed by a unique constraint and a conditional "claim" insert into the execution-history store means a redelivered or duplicate-dispatched job fails its claim and is treated as already-handled, rather than re-executed.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Isn't the distributed lock enough to prevent double-firing by itself?</div>
+          <div class="qa-a">Almost, but not quite: a replica can acquire the lock, publish, then crash before releasing or renewing it, and its short-TTL lease can expire and be re-acquired by another replica that doesn't know the job was already published. The lock minimizes duplicate work in the common case; the idempotency claim is the independent guarantee that makes even that edge case safe.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What if the job's side effect (e.g. calling a third-party payment API) isn't naturally idempotent?</div>
+          <div class="qa-a">Pass the idempotency key through to the downstream call if the third party supports idempotency keys (most modern payment/webhook APIs do); if it doesn't, the job author is responsible for making the effect idempotent internally (e.g. checking "has this charge already been recorded?" before charging) — the scheduler's guarantee is "effectively-once dispatch," and true effect-level idempotency for an arbitrary external system ultimately requires cooperation from that system or the job's own logic.</div>
+        </div>
+
+        <h3>DAGs and Dependency Resolution</h3>
+        <div class="qa-item">
+          <div class="qa-q">How does the scheduler know when a downstream job's dependencies are satisfied?</div>
+          <div class="qa-a">Each node maintains a pending-dependency counter, atomically decremented whenever a direct upstream node succeeds. A node becomes eligible the instant its counter reaches zero — an O(1) check rather than re-walking the whole graph on every upstream completion.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens to a DAG when one of its jobs fails permanently?</div>
+          <div class="qa-a">Any node depending (directly or transitively) on the failed node is marked UPSTREAM_FAILED rather than left pending forever. Whether unrelated sibling branches keep running is a per-DAG policy (HALT_DAG vs. CONTINUE_INDEPENDENT_BRANCHES) — the default lets independent branches proceed, since most workflows have partially-useful partial results.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why store the DAG structure in MongoDB but the dependency-resolution counters in MySQL?</div>
+          <div class="qa-a">The DAG's shape (which nodes, which edges) is read and authored as a whole document and varies wildly in width/depth per DAG — a natural fit for a flexible document store. The moment-to-moment "is this counter now zero?" check is a high-concurrency atomic read-modify-write that needs the same ACID guarantee as job locking generally, which is why a denormalized, relational dag_dependencies table mirrors the counters even though the graph's source of truth lives elsewhere.</div>
+        </div>
+
+        <h3>Failure Handling: Heartbeats and Retries</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you detect a worker that has silently crashed mid-execution?</div>
+          <div class="qa-a">Workers send periodic heartbeats while running; the scheduler tracks last-seen-heartbeat per in-flight job and treats a job as abandoned once the gap exceeds a timeout (typically 2&ndash;3&times; the heartbeat interval). The job's lease is revoked and it's reassigned with an incremented attempt count and the same idempotency key.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What if the "crashed" worker actually wasn't dead and finishes late, after reassignment?</div>
+          <div class="qa-a">Its result is fenced off by the same idempotency-claim mechanism used for locking: by the time it tries to record its outcome, the reassigned attempt has already claimed that idempotency key, so the late result is recognized as stale and discarded (though both attempts remain visible in job_runs for audit).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you choose the heartbeat timeout threshold?</div>
+          <div class="qa-a">Too tight (near 1&times; the heartbeat interval) causes false-positive reassignments of healthy-but-momentarily-slow workers; too loose (5&times;+) delays detecting genuinely dead workers. 2&ndash;3&times; the interval is the common sweet spot, tunable per job class based on how costly a false-positive reassignment is versus how costly a delayed detection is.</div>
+        </div>
+
+        <h3>Missed-Job Catch-Up and Multi-Region</h3>
+        <div class="qa-item">
+          <div class="qa-q">The scheduler fleet was down for two hours &mdash; what happens to jobs that were due during that window?</div>
+          <div class="qa-a">Depends on the job's catch_up_policy: SKIP discards the missed occurrences and resumes normal cadence; RUN_ONCE fires a single catch-up run representing "this needs to happen" and resumes; RUN_ALL fires once per missed occurrence, paced at lower priority to avoid creating a self-inflicted thundering herd on recovery. This is a per-job product decision, not a one-size-fits-all technical default.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you fail a job over to a secondary region safely without risking a double-fire?</div>
+          <div class="qa-a">Because the idempotency key is deterministic (derived from job_id and scheduled_time, independent of which region computes it), the secondary region can safely resume firing occurrences the primary hadn't yet completed and replicated — any occurrence the primary already finished and replicated will simply fail its claim in the secondary, exactly as it would against a same-region duplicate.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why pin each job to a home region instead of a fully active-active global scheduler?</div>
+          <div class="qa-a">Cross-region consensus on every single due-job decision would add a cross-datacenter round-trip to the scheduling-latency SLA for every job, everywhere, all the time — an expensive tax paid on the common case to protect against the rare case of a full regional outage. Home-region pinning pays that cost only during an actual failover.</div>
+        </div>
+
+        <h3>Scaling and Multi-Tenancy</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent one tenant's huge DAG or job-creation loop from degrading the system for everyone else?</div>
+          <div class="qa-a">A per-tenant active-job quota and job-creation rate limit at the API gateway, plus a fair-share worker concurrency ceiling so one tenant's sudden fan-out of thousands of eligible DAG nodes can't monopolize the worker fleet's execution slots — both are independent of the global priority-tier budget.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why CDC instead of polling for detecting due jobs?</div>
+          <div class="qa-a">Polling forces a trade-off between wasted read load (polling frequently against a mostly-not-due table) and detection latency (polling infrequently means a job can sit due-but-undetected for the whole poll interval). CDC via the database's binlog turns "a row just became due" into a push-style event within tens to hundreds of milliseconds, with no wasted scanning of rows that aren't due yet.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Decoupling "when" from "execute" is the design's spine: a Scheduler, a Queue, and a Worker fleet that each scale on their own axis. Sharding the job space is what actually lets scheduling itself scale to millions of jobs — locking and consensus only need to arbitrate within a shard, not across the whole fleet. Treat the distributed lock as an optimization and the idempotency key as the correctness guarantee; state that distinction explicitly, since a lock alone cannot survive every crash timing. Leader-follower and Paxos-based consensus are both legitimate answers to "who decides" — know the failover-window-vs-decision-latency trade-off between them rather than treating one as universally correct. And because missed-job catch-up, DAG partial failure, and multi-region failover all hinge on the same deterministic idempotency key, get that one design decision right first — nearly everything else in the system leans on it.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Slack Engineering &mdash; blog posts on rebuilding their internal job scheduler with a leader-follower design</li>
+          <li>Google &mdash; "The Chubby Lock Service for Loosely-Coupled Distributed Systems" and public writing on Google's Paxos-based distributed cron infrastructure</li>
+          <li>Apache Airflow documentation &mdash; DAGs, operators, dependency resolution, and misfire/catch-up scheduling semantics</li>
+          <li>Martin Kleppmann, <em>Designing Data-Intensive Applications</em> &mdash; chapters on distributed transactions, consensus, and fault tolerance</li>
+          <li>Leslie Lamport, "Paxos Made Simple" &mdash; the foundational consensus algorithm referenced by Google-style scheduler designs</li>
+          <li>Debezium / Kafka Connect documentation &mdash; change-data-capture from a relational binlog for low-latency event detection</li>
+          <li>Quartz Scheduler documentation &mdash; misfire instructions as a concrete precedent for SKIP / RUN_ONCE / RUN_ALL catch-up semantics</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="eta-location-sharing.html"><span class="dir">Previous</span>ETA Service &amp; Location Sharing</a>
+          <a class="next" href="surge-pricing-system.html"><span class="dir">Next</span>Surge Pricing System</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design a Pastebin-like Service | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Design a Pastebin-like Service</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-storage-strategy">Data Model and Storage Strategy</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-generating-the-paste-key">Deep Dive — Generating the Paste Key</a></li>
+        <li><a href="#deep-dive-write-path-creating-a-paste">Deep Dive — Write Path (Creating a Paste)</a></li>
+        <li><a href="#deep-dive-read-path-retrieving-a-paste">Deep Dive — Read Path (Retrieving a Paste)</a></li>
+        <li><a href="#deep-dive-tiered-storage-database-vs-object-store">Deep Dive — Tiered Storage (Database vs. Object Store)</a></li>
+        <li><a href="#deep-dive-caching-strategy">Deep Dive — Caching Strategy</a></li>
+        <li><a href="#deep-dive-content-deduplication-optional-extension">Deep Dive — Content Deduplication (Optional Extension)</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#deep-dive-analytics-pipeline">Deep Dive — Analytics Pipeline</a></li>
+        <li><a href="#rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#expiration-and-storage-cleanup">Expiration and Storage Cleanup</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Design a Pastebin-like Service</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough: requirements, capacity estimation, API &amp; data model, architecture, tiered storage (database vs. object store), key generation, caching &amp; sharding, abuse prevention, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a Pastebin-like web service: users paste a block of plain text and receive a short, unique URL that anyone holding the link can use to retrieve it. Comparable real-world services include pastebin.com, GitHub Gist, ghostbin, and dpaste.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It's deliberately similar to the URL-shortener problem — unique key generation, redirects, caching — but adds a new dimension: the payload itself can be large (up to megabytes), which forces a real conversation about where content should physically live, tiered storage, and cost — topics that a pure URL shortener never has to confront.</p>
+
+        <h3>Why do people use a Pastebin-like service?</h3>
+        <ul>
+          <li>Quickly sharing source code, logs, configs, or error output with a teammate or on a forum/Slack channel, without email attachments.</li>
+          <li>Fast, no-signup sharing — paste, get a link, send the link.</li>
+          <li>Time-boxed sharing — a paste that auto-expires is safer than a permanent public gist for sensitive debug output.</li>
+          <li>Version-free "drop and go" — unlike a wiki or doc, there is no expectation of collaborative editing.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>As with any system design question, narrow the scope before designing — the first few minutes should be spent turning an open-ended prompt into a concrete spec.</p>
+        <ol>
+          <li>What's the maximum paste size we need to support (a few KB, or up to megabytes)?</li>
+          <li>Is content strictly plain text, or do we need to support images/binary attachments too?</li>
+          <li>Can users edit a paste after creation, or is content immutable once submitted?</li>
+          <li>Do links expire? Is there a default TTL, and can users override it or disable it?</li>
+          <li>Do we need visibility controls (public / unlisted / private-shared-with-specific-users)?</li>
+          <li>Do we need a "burn after reading" (self-destruct after first view) option?</li>
+          <li>Do we need view/access analytics?</li>
+          <li>Should the service expose a public REST API for scripted/CLI use (a very common real-world use case for this product)?</li>
+          <li>Anonymous pastes allowed, or must every paste belong to an authenticated account?</li>
+          <li>What scale are we targeting — pastes/day, reads/day?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          State reasonable defaults out loud and move on: "I'll assume plain text only, up to 10 MB per paste, immutable once created, a default expiration with user override, and anonymous + authenticated users" — then keep building. This is exactly the assumption set the rest of this document uses.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Users can submit ("paste") a block of text and receive a unique URL that retrieves it.</li>
+          <li>Only plain text is supported for the core product (no binary/image uploads in scope).</li>
+          <li>A paste and its link expire automatically after a default timespan; users may specify their own expiration.</li>
+          <li>Users may optionally choose a custom alias for their paste's URL.</li>
+          <li>Once created, a paste's content is immutable — there is no edit-in-place (a "new paste" is the mechanism for a revision).</li>
+          <li>(Extended) Visibility control: public, unlisted (link-only), or private shared with a specific list of users.</li>
+          <li>(Extended) "Burn after reading" — a paste that self-destructs after being viewed once.</li>
+          <li>(Extended) View analytics per paste.</li>
+          <li>(Extended) A public REST API — in practice, a very large share of real Pastebin-style traffic comes from scripts and CLIs (e.g., piping a build log straight to the service), not a browser.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>High reliability:</strong> an uploaded paste must never be silently lost before its expiration — users treat this as their copy of the data, not just a cache of it.</li>
+          <li><strong>High availability:</strong> read access to existing pastes should degrade gracefully, not go fully down, since shared links are often embedded in tickets, chat threads, and documentation elsewhere.</li>
+          <li><strong>Low-latency reads:</strong> retrieving a paste should feel instant, including for pastes at the multi-MB end of the size range.</li>
+          <li><strong>Non-guessable links:</strong> paste links must not be easily guessable — no sequential/enumerable keys.</li>
+          <li><strong>Wide size distribution:</strong> the system must gracefully handle a wide size distribution — the overwhelming majority of pastes are small (a log snippet, a config file) while a small minority approach the maximum allowed size, and the storage design has to serve both well.</li>
+        </ol>
+
+        <h3>Design Considerations Specific to Pastebin (vs. a URL Shortener)</h3>
+        <ul>
+          <li>Payload size varies enormously (bytes to megabytes) — a URL shortener's payload is always a short string; here the payload itself needs its own storage strategy.</li>
+          <li>Cap the maximum paste size (e.g., 10 MB) to bound worst-case storage/bandwidth cost and reduce abuse potential.</li>
+          <li>Cap custom-alias length (e.g., 16 characters) for a consistent, predictable key space, exactly as with a URL shortener.</li>
+          <li>Content is immutable and self-contained (no links to crawl, no relationships to traverse) — this simplifies caching enormously versus a service like a wiki.</li>
+        </ul>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>Pastebin-scale traffic is much smaller than a mainstream social feed, but it is still read-heavy. We'll assume a 5:1 read/write ratio — lower than a URL shortener's typical 100:1, since a paste's links are shared less broadly on average (mostly 1:1 or small-team sharing) than a marketed short link.</p>
+
+        <h3>Traffic Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          1 million new pastes created per day
+          <br>Reads / day = 5 &times; 1M = 5 million
+          <br>New pastes / second = 1,000,000 &divide; 86,400 &asymp; 11.6 &rarr; round to ~12 writes/sec
+          <br>Reads / second = 5,000,000 &divide; 86,400 &asymp; 58 reads/sec
+          <br>Assume peak traffic runs 3&ndash;5&times; average (a single paste going viral on a forum can spike reads sharply) &rarr; design for ~250&ndash;300 peak read QPS and ~40&ndash;60 peak write QPS.
+        </div>
+
+        <h3>Storage Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Paste size is capped at 10 MB, but the distribution is heavily skewed — most pastes are small snippets (logs, configs, code), so we model the average at ~10 KB while still designing for the long tail up to the 10 MB cap
+          <br>Content stored per day = 1M &times; 10 KB = 10 GB/day
+          <br>Retaining data for 10 years: 10 GB &times; 365 &times; 10 &asymp; 36.5 TB &asymp; 36 TB of raw content
+          <br>Total pastes over 10 years = 1M &times; 365 &times; 10 = 3.65 billion &asymp; 3.6 billion records
+          <br>With a 70% max-utilization buffer (never run storage hotter than 70% full): &asymp; 36 TB &divide; 0.7 &asymp; 51 TB of provisioned capacity
+        </div>
+
+        <h3>Key Storage / Keyspace</h3>
+        <div class="formula-box">
+          <span class="formula-label">Keyspace</span>
+          Base62 alphabet ([a-z, A-Z, 0-9] = 62 symbols), 7-character key: 62&#8319; &asymp; 3.5 trillion — comfortably covers 3.6 billion keys with roughly 1,000&times; headroom
+          <br>Metadata for 3.6B keys at 7 bytes/key &asymp; 25 GB — negligible next to the 36 TB of paste content
+        </div>
+        <p>(The original reference material for this problem uses base64 with 6-character keys — 64&#8310; &asymp; 68.7 billion — which also works, but introduces "." and "-" into the URL path, which then need escaping; base62 avoids that at a trivial cost of one extra character.)</p>
+
+        <h3>Bandwidth Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Bandwidth</span>
+          Incoming (writes): 12/sec &times; 10 KB &asymp; 120 KB/sec
+          <br>Outgoing (reads): 58/sec &times; 10 KB &asymp; 0.6 MB/sec
+        </div>
+
+        <h3>Memory / Cache Estimates</h3>
+        <p>Applying the 80/20 rule to the 5 million daily reads:</p>
+        <div class="formula-box">
+          <span class="formula-label">Cache sizing</span>
+          20% of daily reads &asymp; 1 million requests
+          <br>Cache size &asymp; 0.2 &times; 5M &times; 10 KB &asymp; 10 GB — small enough to fit comfortably on a single modest Redis instance, with a second for HA
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>New pastes / sec</td><td>~12 (peak ~40&ndash;60)</td></tr>
+          <tr><td>Reads / sec</td><td>~58 (peak ~250&ndash;300)</td></tr>
+          <tr><td>Incoming bandwidth</td><td>~120 KB/sec</td></tr>
+          <tr><td>Outgoing bandwidth</td><td>~0.6 MB/sec</td></tr>
+          <tr><td>Content storage (10 yrs, 70% util. buffer)</td><td>~51 TB provisioned (~36 TB actual)</td></tr>
+          <tr><td>Cache memory (hot set)</td><td>~10 GB</td></tr>
+          <tr><td>Recommended key length</td><td>7 characters (base62)</td></tr>
+          <tr><td>Max paste size</td><td>10 MB (abuse/cost control)</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>As with the URL shortener, REST is the natural fit: simple resource-oriented operations, and the read path maps cleanly onto standard HTTP GET semantics and caching headers.</p>
+
+        <h3>Create a Paste</h3>
+        <pre><code>POST /api/v1/pastes
+
+Request body:
+{
+  "content": string,          // required, plain text, <= 10 MB
+  "custom_alias": string,     // optional, max 16 chars
+  "title": string,            // optional
+  "syntax": string,           // optional, e.g. "python", "json", "plaintext"
+  "expire_at": string,        // optional ISO-8601 timestamp (default applied if omitted)
+  "visibility": "public" | "unlisted" | "private", // optional, default unlisted
+  "allowed_users": [user_id, ...], // optional, only used when visibility = private
+  "burn_after_read": boolean, // optional, default false
+  "api_key": string           // required — identifies caller, used for quota
+}
+
+Response 201 Created:
+{ "paste_url": "https://paste.bin/aB3xQ9z", "expire_at": "2026-10-16T00:00:00Z" }
+
+Errors: 400 invalid input / too large &middot; 409 alias already taken &middot; 401 unauthenticated &middot; 429 rate-limited</code></pre>
+
+        <h3>Retrieve a Paste</h3>
+        <pre><code>GET /api/v1/pastes/{key}
+
+Response 200:
+{ "content": "...", "syntax": "python", "created_at": "...", "title": "..." }
+
+Not found -> HTTP 404
+Expired -> HTTP 410 Gone
+No permission (private paste) -> HTTP 401 / 403
+
+Note: if burn_after_read is set, a successful 200 response atomically deletes the paste server-side.</code></pre>
+
+        <h3>Delete a Paste</h3>
+        <pre><code>DELETE /api/v1/pastes/{key}
+Auth: must be the owning user (or an admin)
+Response 200: { "status": "removed" }</code></pre>
+
+        <h3>Analytics (Extended)</h3>
+        <pre><code>GET /api/v1/pastes/{key}/stats
+Response 200: { "total_views": 482, "views_by_day": [ ... ], "top_referrers": [ ... ] }</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Notice this API is nearly identical in shape to a URL shortener's — the interesting differences are all in what happens after validation: where the content physically lives (see "Two-Tier Content Storage" below) and what "retrieve" has to check (expiry, visibility, burn-after-read) before returning 200.
+        </div>
+
+        <h2 id="data-model-and-storage-strategy">Data Model and Storage Strategy</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>Billions of records over the service's lifetime, but far fewer than a URL shortener at comparable popularity (write volume here is ~15&times; lower in our estimate).</li>
+          <li>Each metadata object is small (well under 1 KB), but the associated content object varies from bytes to megabytes — a completely different profile from a URL shortener's fixed-size payload.</li>
+          <li>No relationships between pastes; only an optional owner (user) relationship and, for private pastes, an allow-list of viewer user IDs.</li>
+          <li>Content is immutable and write-once — no in-place updates to worry about, which simplifies caching and replication considerably.</li>
+        </ul>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">Collection: paste</th></tr>
+          <tr><td>key (PK)</td><td>varchar(16)</td></tr>
+          <tr><td>content (inline, only if size &le; 100 KB)</td><td>text / binary, nullable</td></tr>
+          <tr><td>object_store_ref (only if size &gt; 100 KB)</td><td>varchar(512), nullable</td></tr>
+          <tr><td>size_bytes</td><td>int</td></tr>
+          <tr><td>syntax / language hint</td><td>varchar(32)</td></tr>
+          <tr><td>owner_user_id (nullable — anonymous allowed)</td><td>bigint</td></tr>
+          <tr><td>created_at</td><td>datetime</td></tr>
+          <tr><td>expires_at</td><td>datetime</td></tr>
+          <tr><td>visibility</td><td>enum(public, unlisted, private)</td></tr>
+          <tr><td>allowed_user_ids (private only)</td><td>array&lt;bigint&gt;</td></tr>
+          <tr><td>burn_after_read</td><td>boolean</td></tr>
+          <tr><td>view_count (denormalized, async-updated)</td><td>bigint</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: user</th></tr>
+          <tr><td>user_id (PK)</td><td>bigint</td></tr>
+          <tr><td>name / email</td><td>varchar(64) / varchar(128)</td></tr>
+          <tr><td>plan (free / paid — drives quota + max paste size)</td><td>varchar(16)</td></tr>
+          <tr><td>created_at / last_login</td><td>datetime</td></tr>
+        </table>
+
+        <h3>Two-Tier Content Storage — the Key Pastebin-Specific Decision</h3>
+        <p>A URL shortener's payload is always a short string, so one datastore handles everything. A Pastebin payload ranges from bytes to 10 MB, which makes a single storage tier a poor fit either way: a document/metadata store optimized for fast small-object lookups gets bloated and slow if it also has to hold multi-megabyte blobs, while object storage alone adds unnecessary latency for the common case of a tiny snippet.</p>
+        <p>The recommended approach — and the one reflected in the reference design notes for this problem — is a size-based threshold, e.g. 100 KB:</p>
+        <ul>
+          <li>Content &le; 100 KB (the large majority of pastes, given our ~10 KB average): store inline as part of the metadata document. One read, one round-trip, lowest possible latency.</li>
+          <li>Content &gt; 100 KB: store the blob in object storage (e.g., Amazon S3 or equivalent), and keep only a reference (<code>object_store_ref</code>) in the metadata document. The read path fetches metadata first, then streams/redirects to the object store only when needed.</li>
+        </ul>
+        <p>This split is also a cost decision: general-purpose object storage runs roughly 5&ndash;15&times; cheaper per GB than keeping the same bytes in a database or document store's primary storage (illustrative public cloud list-pricing ballpark, not a specific quote). Since a small number of large pastes can account for a disproportionate share of total bytes stored, routing exactly that tail to the cheapest tier — while keeping the fast common case inline — gets most of the latency benefit and most of the cost benefit at the same time.</p>
+
+        <h3>SQL vs. NoSQL</h3>
+        <p>The metadata/content-inline store should be a horizontally-scalable document or wide-column store (MongoDB, Cassandra, or DynamoDB) — the variable-size, schema-flexible content field (plain inline text vs. an object-store pointer) maps naturally onto a document model, and the access pattern is a simple lookup by key. As with the URL shortener, keep the Key Generation Service's key pool on a small, strictly ACID-compliant relational store (MySQL/Postgres) even though the bulk data plane is NoSQL — that coordination-heavy, low-volume piece is exactly where ACID guarantees earn their cost.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Clients go through an API Gateway (authentication, rate limiting) and a load balancer to a fleet of stateless application servers exposing separate Read and Write APIs. Application servers check a Bloom filter and Redis cache before falling back to a sharded MongoDB metadata store; content larger than the inline threshold is stored in and served from S3, fronted by a CDN for hot large objects. A Key Generation Service (backed by an ACID-compliant MySQL key pool) supplies unique paste keys. Access events are emitted asynchronously to Kafka, aggregated by Spark Streaming, and landed in an analytics store. A cleanup cron reclaims expired pastes from both MongoDB and S3, and recycles their keys.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/pastebin-fig1-architecture.png" alt="High-level architecture diagram showing clients going through a CDN, load balancer, and API gateway to Read/Write application servers, which fan out to a Bloom filter, a Redis cache, a sharded MongoDB metadata store, S3 object storage, a MySQL-backed Key Generation Service with available_keys/used_keys tables, a cleanup cron that purges expired pastes from Mongo and S3 and recycles keys, and an asynchronous Kafka-to-Spark-Streaming-to-analytics-store pipeline">
+          <div class="diagram-caption">Figure 1. High-level architecture — clients pass through a CDN, load balancer, and API gateway to stateless Read/Write application servers, which check a Bloom filter and Redis cache before falling back to sharded MongoDB, route large content directly to S3, pull keys from a MySQL-backed Key Generation Service, emit view events to Kafka for analytics, and rely on a cleanup cron to purge expired pastes from both storage tiers and recycle their keys.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Read/write split at the API level:</strong> dedicated Read API / Write API, since their scaling characteristics, caching behavior, and failure modes differ.</li>
+          <li><strong>Two storage tiers reachable directly from the application layer:</strong> inline metadata-store content vs. object storage, chosen per-request by a simple size check.</li>
+          <li><strong>Asynchronous by default:</strong> everything not required to answer "what does this key point to?" (analytics, cleanup) is asynchronous and off the critical path.</li>
+          <li><strong>CDN in front of two tiers:</strong> a CDN sits in front of both the metadata read path (for very hot small pastes) and the object-storage path (for hot large pastes) — the same caching principle applied at two different size tiers.</li>
+        </ul>
+
+        <h2 id="deep-dive-generating-the-paste-key">Deep Dive — Generating the Paste Key</h2>
+        <p>This is functionally identical to the URL-shortener problem: we need a short, unique, non-guessable identifier for each paste. The same four approaches apply, with the same recommended default.</p>
+        <table class="sortable">
+          <tr><th>Approach</th><th>Summary</th><th>Verdict for Pastebin</th></tr>
+          <tr><td>A. Hash content + Base62-encode</td><td>Hash the paste content (optionally salted), truncate, encode</td><td>Content-hash keys enable dedup (see "Content Deduplication" below) but reintroduce collisions and are deterministic unless salted</td></tr>
+          <tr><td>B. Auto-increment counter + Base62</td><td>Convert a DB auto-increment ID to a Base62 string</td><td>Simple but sequential/guessable and a write bottleneck — avoid for a public-facing key</td></tr>
+          <tr><td>C. Offline Key Generation Service (recommended)</td><td>Pre-generate random unique keys in a small ACID key pool; app servers check out batches</td><td>Best default — no runtime collisions, keys are non-guessable, minimal per-request latency</td></tr>
+          <tr><td>D. Distributed generators (Zookeeper / Snowflake)</td><td>Coordinator-free ID minting for multi-region writes</td><td>Only needed once multiple regions must mint keys concurrently</td></tr>
+        </table>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/pastebin-fig2-kgs.png" alt="Key Generation Service internals diagram showing an app server requesting a batch of 10,000 keys via getKey(), MySQL moving keys from an available_keys table to a used_keys table inside a transaction, a low-watermark trigger firing when available keys drop below 30 percent, and a generateKey() API bulk-inserting the next 1 million base62 keys">
+          <div class="diagram-caption">Figure 2. Key Generation Service internals — an app server requests a batch of 10,000 keys via <code>getKey()</code>; MySQL moves them from <code>available_keys</code> to <code>used_keys</code> inside a transaction, and a low-watermark trigger (available &lt; 30%) calls <code>generateKey()</code> to bulk-insert the next 1 million Base62 keys — identical mechanism to the URL-shortener design.</div>
+        </div>
+
+        <p>Mechanics: a standalone service pre-generates random Base62 strings and stores them split across <code>available_keys</code> and <code>used_keys</code> tables in a small MySQL instance chosen specifically for its ACID guarantees. Application servers check out batches of ~10,000 keys into local memory; a trigger fires the generator to mint the next ~1 million keys once the available pool drops below ~30%. If an application server crashes holding an unused batch, those keys are simply lost — acceptable, since 62&#8311; &asymp; 3.5 trillion keys dwarfs the 3.6 billion we expect to actually use over 10 years.</p>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Because paste keys and URL-shortener keys solve the exact same sub-problem, this is a natural moment in an interview to say so explicitly: "This is the same Key Generation Service pattern as a URL shortener — I'd reuse the service rather than reinvent it if both products existed at the same company." Recognizing reusable sub-systems is a signal interviewers look for.
+        </div>
+
+        <h2 id="deep-dive-write-path-creating-a-paste">Deep Dive — Write Path (Creating a Paste)</h2>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/pastebin-fig3-write-path.png" alt="Write path diagram showing the client submitting paste text, the server validating size/auth/rate-limit, branching on whether a custom alias or a KGS-issued key is used, branching again on whether content is at or under 100KB to store inline in Mongo or in S3, writing the metadata row, populating the cache and Bloom filter, and returning the paste URL">
+          <div class="diagram-caption">Figure 3. Request flow for creating a paste: validate and authenticate, resolve a key (custom-alias collision check or a batch from the Key Generation Service), branch on the 100 KB storage threshold, write the metadata row, populate the cache and Bloom filter, then return the paste URL.</div>
+        </div>
+
+        <ol>
+          <li>Client submits paste content plus optional metadata (custom alias, expiry, visibility, syntax hint, burn-after-read).</li>
+          <li>The application server validates size (&le; 10 MB), authenticates the caller, and checks the rate-limit quota.</li>
+          <li>If a custom alias was requested: check the Bloom filter, then the database, for a collision. Otherwise, pull the next key from the app server's local Key Generation Service batch.</li>
+          <li>Decide the storage tier: content &le; 100 KB is written inline into the metadata document; content &gt; 100 KB is written to object storage first, and the metadata document stores only the resulting reference.</li>
+          <li>Write the metadata row: <code>{key, owner, created_at, expires_at, visibility, size, syntax, burn_after_read, ...}</code>.</li>
+          <li>Populate the Redis cache and Bloom filter so the very next read (often seconds later, from the same user pasting to share with a colleague) is fast.</li>
+          <li>Return the paste URL to the client.</li>
+        </ol>
+        <p>Step 5 is the only step that must be strongly consistent — a lost or duplicated key here is a correctness bug. Cache population and analytics can be eventually consistent.</p>
+
+        <h2 id="deep-dive-read-path-retrieving-a-paste">Deep Dive — Read Path (Retrieving a Paste)</h2>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/pastebin-fig4-read-path.png" alt="Read path diagram showing the client requesting a paste URL, a CDN/edge cache check, a Bloom filter plus Redis metadata lookup, a gate for expired/private/already-consumed pastes returning 404/410/401, a branch on whether content is inline in Mongo or fetched/streamed from S3, an atomic delete for burn-after-read pastes, and an asynchronous view event emitted to Kafka">
+          <div class="diagram-caption">Figure 4. Request flow for retrieving a paste: CDN/edge check, Bloom filter plus Redis lookup, an expiry/permission/burn-after-read gate, a branch on whether content is stored inline or in S3, an atomic delete for burn-after-read pastes, then an asynchronous view event to Kafka.</div>
+        </div>
+
+        <ol>
+          <li>Client requests the paste URL.</li>
+          <li>CDN / edge cache is checked first for hot public pastes (and for hot large S3 objects).</li>
+          <li>On a miss, check the Bloom filter (instant 404 for nonexistent keys) then the Redis metadata cache.</li>
+          <li>Check whether the paste has expired, is private without permission, or was already consumed by a prior "burn after reading" view — if so, return 410 / 401 / 404 as appropriate.</li>
+          <li>If content is stored inline in the metadata document, return it directly — a single round-trip.</li>
+          <li>If content lives in object storage, fetch/stream it from S3 (or issue a short-lived presigned URL so the client downloads directly, bypassing the app server entirely for very large pastes).</li>
+          <li>If <code>burn_after_read</code> is set, atomically delete the paste as part of this same request (see below) so it cannot be viewed a second time.</li>
+          <li>Asynchronously emit a view event to Kafka for analytics — never blocking the response.</li>
+        </ol>
+
+        <h3>Burn-After-Read — a Genuine Concurrency Hazard</h3>
+        <div class="callout">
+          <div class="callout-title">Concurrency hazard</div>
+          "Delete after the first view" sounds simple but is a classic race condition: if two requests for the same key arrive concurrently, a naive "read, then delete" sequence lets both see the content before either deletion completes — the guarantee silently breaks under load (e.g., a link-preview bot and the intended recipient hitting it within the same second).
+          <ul>
+            <li>Fix: make the read-and-delete a single atomic operation at the data layer — e.g., MongoDB's <code>findOneAndDelete</code> (or an equivalent conditional delete with a compare-and-swap on a "consumed" flag) — so exactly one caller ever receives the content and every other concurrent caller gets a 404.</li>
+            <li>This has to happen at the source-of-truth store, not the cache: a cache-first read could return content to N callers before the delete ever reaches the database.</li>
+            <li>If content is also in the CDN/edge cache, issue an immediate purge alongside the atomic delete — otherwise the edge could keep serving a "burned" paste until its TTL naturally expires.</li>
+          </ul>
+        </div>
+
+        <h2 id="deep-dive-tiered-storage-database-vs-object-store">Deep Dive — Tiered Storage (Database vs. Object Store)</h2>
+        <p>This is the design decision that most distinguishes Pastebin from a URL shortener, so it's worth its own section rather than folding it into the data model.</p>
+
+        <h3>Why not store everything in the metadata database?</h3>
+        <ul>
+          <li>Document/metadata stores are tuned for many small, fast lookups — multi-megabyte blobs bloat indexes, slow down backups/compaction, and crowd out the working set that should be living in memory/cache.</li>
+          <li>Per-GB storage cost in a database or document store is typically 5&ndash;15&times; higher than commodity object storage (illustrative public list-pricing ballpark) — paying database-tier prices for bytes that are just being held, not queried, is wasteful at billions-of-records scale.</li>
+        </ul>
+
+        <h3>Why not store everything in object storage?</h3>
+        <ul>
+          <li>Object storage typically adds tens of milliseconds of extra latency versus an in-memory/cache hit — fine for a rare multi-MB paste, wasteful overhead for the common 1&ndash;10 KB snippet that is the bulk of traffic.</li>
+          <li>A pure object-storage design still needs a fast index (key &rarr; object location, expiry, visibility) somewhere — you end up building a metadata store anyway.</li>
+        </ul>
+
+        <h3>The Threshold-Based Hybrid (Recommended)</h3>
+        <p>Pick a size threshold (100 KB, per the reference design) and branch the write path on it: inline for everything at or below the threshold, object storage above it. Because the average paste in our estimate is only ~10 KB, the large majority of traffic never leaves the fast, single-round-trip path — only the minority of pastes near the 10 MB cap pay the extra object-storage hop, and those are precisely the requests where a few extra milliseconds matter least relative to transfer time.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If asked "how did you pick 100 KB?" — be honest that it's a tunable knob, not a law of physics: you'd pick it empirically from the real size-percentile distribution (e.g., set it near the p90 or p95 paste size) and revisit it if traffic patterns shift, rather than treating it as fixed forever.
+        </div>
+
+        <h2 id="deep-dive-caching-strategy">Deep Dive — Caching Strategy</h2>
+
+        <h3>Redis Cache (Cache-Aside)</h3>
+        <ul>
+          <li>Cache metadata and small inline content together (they're fetched together anyway); cache large-paste metadata but let the CDN/object-store layer handle the blob itself.</li>
+          <li>Eviction: LRU, sized to the ~10 GB hot-set estimate from the capacity-estimation section above — comfortably a single small Redis instance plus a replica for HA.</li>
+        </ul>
+
+        <h3>Bloom Filter for Fast Negative Lookups</h3>
+        <p>Exactly as in a URL shortener: a Bloom filter of all active paste keys lets the read path reject nonexistent/scanned keys before touching Redis or MongoDB.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/pastebin-fig5-bloom-lookup.png" alt="Hand-drawn diagram of a Bloom filter membership check for the word car, showing that a no answer means the element is definitely not present with 100 percent certainty, while a yes answer only means the element may be present and is not 100 percent certain">
+          <div class="diagram-caption">Figure 5. Bloom filter membership check: checking for "car" returns either a certain "no" (definitely not present) or an uncertain "yes" (may not actually be present) — a "no" never needs a real lookup, but a "yes" still does.</div>
+        </div>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/pastebin-fig6-bloom-hash.png" alt="Hand-drawn diagram of a Bloom filter bit array showing k hash functions mapping the words cat and dog to specific bit positions, with a note that if any of the hash-generated bits is empty the word is definitely not present">
+          <div class="diagram-caption">Figure 6. Each element sets k bits via k hash functions — inserting "cat" sets bits at positions 24 and 45, and "dog" sets bits at positions 5 and 6; a lookup is a "yes" only if every one of an element's k bits is already set.</div>
+        </div>
+
+        <p><strong>Worked sizing example</strong> (carried over from the reference notes): for ~40 million entries at a reasonable false-positive rate, a bit array of about 159 MB with k &asymp; 25 hash functions is sufficient.</p>
+        <div class="callout">
+          <div class="callout-title">Caveat — deletes</div>
+          Since pastes expire and get deleted, use a Counting Bloom Filter (an int array instead of a bit array) so deletes can decrement counters safely, rather than a classic Bloom filter that can't support deletion.
+        </div>
+
+        <h3>CDN</h3>
+        <p>Front both the metadata read path (for hot public pastes) and the object-storage path (for hot large pastes) with a CDN. This is especially valuable here because a single popular paste (a widely-shared error log or leaked snippet) can spike reads by orders of magnitude with no warning.</p>
+
+        <h2 id="deep-dive-content-deduplication-optional-extension">Deep Dive — Content Deduplication (Optional Extension)</h2>
+        <p>At scale, many users paste byte-identical content (a common stack trace, a popular config template, a widely-copied snippet). Content-addressable storage — keying stored objects by a hash (e.g., SHA-256) of their content rather than by the paste's own key — lets identical pastes share the same underlying storage.</p>
+        <ul>
+          <li><strong>Benefit:</strong> meaningful storage savings when duplication is common, without changing the user-facing key scheme (the paste key still maps to a hash pointer, one extra layer of indirection).</li>
+          <li><strong>Cost — deletion:</strong> multiple paste keys can now reference the same stored blob, so a naive delete-on-expiry would break other still-active pastes pointing at the same content. This requires reference counting (only physically delete the blob when its last referencing paste expires).</li>
+          <li><strong>Cost — a subtle privacy leak:</strong> content-addressing lets anyone who already knows a piece of content confirm someone else pasted the exact same bytes (by computing the same hash and checking existence), which matters if pastes are meant to be confidential.</li>
+          <li><strong>Verdict:</strong> worthwhile for a public, non-sensitive paste tier (e.g., public code snippets) where storage savings are real and confidentiality isn't a concern; skip it (or scope it only to the public-visibility tier) for anything private.</li>
+        </ul>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+        <ul>
+          <li>Hash-based partitioning of the metadata store by paste key, using consistent hashing so a shard add/remove only reshuffles a small, bounded fraction of keys (as opposed to range partitioning by key prefix, which risks unbalanced shards if key generation happens to skew toward certain prefixes).</li>
+          <li>Replicate each metadata shard (e.g., 3&times;) across availability zones for durability and to absorb the 5:1 read skew via read replicas.</li>
+          <li>Object storage (S3 or equivalent) already provides its own durability/replication guarantees — no additional partitioning scheme is needed at the application layer for that tier.</li>
+        </ul>
+
+        <h2 id="deep-dive-analytics-pipeline">Deep Dive — Analytics Pipeline</h2>
+        <p>Identical pattern to a URL shortener: view events (paste key, timestamp, referrer, viewer geo/IP, user agent) are emitted asynchronously to Kafka right after the response is sent, batched (e.g., 100&ndash;500 events) to reduce I/O overhead, and aggregated by Spark Streaming into a separate analytics store that powers the stats API. Losing a handful of events on a consumer crash is an acceptable trade — Kafka is not the source of truth for paste content or metadata.</p>
+
+        <h2 id="rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</h2>
+        <p>Pastebin-style services have a well-documented real-world problem: their easy, low-friction, often-anonymous publishing model makes them a popular dumping ground for malware command-and-control configuration, phishing-kit source, and leaked/exfiltrated credentials or data. This deserves more attention here than in a typical URL shortener design.</p>
+        <ul>
+          <li>Per-<code>api_key</code> / per-IP token-bucket rate limiting on paste creation, enforced at the API gateway, exactly as with a URL shortener.</li>
+          <li>Automated content scanning at write time: pattern/regex and secret-scanning rules (AWS/API key formats, private key headers, common credential-dump shapes) to flag likely-sensitive or malicious content for review or automatic quarantine.</li>
+          <li>Integration with threat-intel/malware-signature feeds so known malicious payloads are blocked or flagged automatically rather than relying solely on manual abuse reports.</li>
+          <li>A clear, fast abuse-report &rarr; review &rarr; takedown workflow, since legal/compliance requests (copyright, malware hosting, doxxing) are a normal and recurring operational reality for this product category.</li>
+          <li>CAPTCHA or proof-of-work for anonymous, unauthenticated high-volume posting to raise the cost of automated abuse without blocking legitimate low-volume anonymous use.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li>Visibility model: public (listed/discoverable), unlisted (accessible only via the exact link — the default), and private (restricted to an explicit <code>allowed_user_ids</code> list) — matching the visibility field in the schema.</li>
+          <li>Private paste content in object storage should use short-lived presigned URLs rather than public object URLs, and ideally server-side encryption at rest.</li>
+          <li>Non-guessable keys double as a security control for unlisted pastes — the "security" of "unlisted" entirely depends on the key space not being enumerable.</li>
+          <li>Input handling: enforce the size cap server-side (never trust a client-declared size), and treat paste content as inert data everywhere it's rendered (escape/sandbox on display to prevent stored-XSS if pastes are ever rendered as HTML rather than plain text).</li>
+          <li>TLS everywhere; audit logging on private-paste access and on any administrative content takedown.</li>
+        </ul>
+
+        <h2 id="expiration-and-storage-cleanup">Expiration and Storage Cleanup</h2>
+        <ul>
+          <li>Apply a default TTL if the user doesn't specify one; honor a user-specified expiration otherwise.</li>
+          <li>Lazy deletion on access for the common case: an expired paste is deleted the moment someone tries to view it, returning 410 Gone.</li>
+          <li>A periodic Cleanup Cron job (low-traffic window) sweeps expired rows out of the metadata store, deletes the corresponding object-storage blob when one exists, and updates/rebuilds the Bloom filter.</li>
+          <li>Ordering matters for the two-tier storage model: delete (or mark tombstoned) the metadata row first, then delete the object-storage blob — this ordering fails safe (a dangling, harmless orphaned S3 object) rather than fails dangerous (a metadata row pointing at content that no longer exists).</li>
+          <li>After cleanup, return the freed key to the Key Generation Service's available pool for reuse.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Load-balancing layers sit between clients and the API gateway, between application servers and the metadata store, and between application servers and the cache tier — the same three-tier pattern as a URL shortener. Start with round-robin; move to least-connections or latency-weighted balancing if specific shards or object-storage regions become hot.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Run each region active-active with its own application tier, cache, and metadata replica set; route users to the nearest region via Geo-DNS/anycast.</li>
+          <li>Object storage: most cloud object stores natively support cross-region replication — lean on that rather than building custom blob replication.</li>
+          <li>Use a coordination-free key generation approach (Zookeeper-assigned ranges or Snowflake IDs) once multiple regions must mint keys concurrently, exactly as in the URL-shortener design.</li>
+          <li>Analytics pipelines can run per-region and roll up centrally on a slower cadence — clickstream/view aggregation has no need to be synchronous across regions.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Key Generation Service / key-DB down</td><td>Hot standby replica; app servers hold a local batch of pre-fetched keys so a brief outage doesn't stall writes</td></tr>
+          <tr><td>A viral paste overwhelms one shard / the object store</td><td>CDN edge caching in front of both tiers; cache replication absorbs read spikes before they reach MongoDB or S3</td></tr>
+          <tr><td>Metadata store bloated by large inline content</td><td>Size-based tiering threshold routes large blobs to object storage instead</td></tr>
+          <tr><td>Burn-after-read race condition</td><td>Atomic read-and-delete at the data layer, never cache-first for this flow</td></tr>
+          <tr><td>Orphaned object-storage blobs after a partial delete</td><td>Delete metadata first, blob second — fails safe toward a harmless orphan rather than a dangling pointer</td></tr>
+          <tr><td>Service used to host malware / leaked secrets</td><td>Content scanning at write time, threat-intel integration, fast takedown workflow</td></tr>
+          <tr><td>Guessable/enumerable paste keys</td><td>KGS-style random key issuance (Approach C/D), never a raw incrementing counter</td></tr>
+        </table>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Paste key alphabet / length</td><td>Base62, 7 characters (&asymp;3.5 trillion keyspace)</td></tr>
+          <tr><td>Key generation</td><td>Offline Key Generation Service (shared pattern with URL shorteners)</td></tr>
+          <tr><td>Metadata store</td><td>Sharded document/wide-column store (MongoDB / Cassandra / DynamoDB)</td></tr>
+          <tr><td>Content storage</td><td>Two-tier: inline in metadata doc if &le; 100 KB, else object storage (S3) with a reference</td></tr>
+          <tr><td>Partitioning</td><td>Hash-based with consistent hashing on the paste key</td></tr>
+          <tr><td>Caching</td><td>Redis (cache-aside, LRU) + Bloom filter for negative lookups + CDN for hot small and large pastes alike</td></tr>
+          <tr><td>Analytics</td><td>Async via Kafka &rarr; Spark Streaming &rarr; analytics store</td></tr>
+          <tr><td>Abuse prevention</td><td>Per-key/IP rate limiting + automated content/secret scanning + takedown workflow</td></tr>
+          <tr><td>Burn-after-read</td><td>Atomic read-and-delete at the source-of-truth store, plus CDN purge</td></tr>
+          <tr><td>Cleanup</td><td>Lazy delete on access + periodic cron across both storage tiers; keys recycled to KGS</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Beyond the core design, expect the interviewer to pressure-test individual components — these are organized by theme for focused rehearsal.</p>
+
+        <h3>Storage and Scaling</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Where did the 100 KB inline-vs-object-storage threshold come from, and how would you validate it?</div>
+          <div class="qa-a">Treat it as a tunable knob, not a law of physics: pick it empirically from the real paste-size percentile distribution (e.g., near p90/p95), instrument actual size distributions in production, and be ready to revisit the number if traffic patterns shift.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A paste goes viral on a forum and receives 100,000 reads in an hour — walk through what happens.</div>
+          <div class="qa-a">The CDN edge cache absorbs the bulk of the spike at both the metadata and object-storage tiers; whatever isn't caught there is absorbed by the Bloom filter and Redis before it ever reaches MongoDB or S3. A strong answer also raises cache replication and a possible dedicated "hot key" fast path for the rare extreme outlier.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you shard the metadata store once it outgrows a single cluster's capacity?</div>
+          <div class="qa-a">Use hash-based partitioning with consistent hashing on the paste key so adding or removing shards only reshuffles a small, bounded fraction of keys; pair each shard with read replicas to absorb the 5:1 read skew.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support paste sizes larger than the 10 MB cap for an enterprise customer without rearchitecting the system?</div>
+          <div class="qa-a">Raise the size cap for that specific tier only, route those pastes straight to object storage with resumable/multipart upload, and consider a client-side direct-to-S3 presigned upload so huge payloads never have to pass through the application tier at all.</div>
+        </div>
+
+        <h3>Correctness and Concurrency</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you guarantee a burn-after-read paste is served to exactly one viewer, even under concurrent requests?</div>
+          <div class="qa-a">Perform an atomic read-and-delete (e.g., MongoDB's findOneAndDelete) at the source-of-truth store rather than a separate read-then-delete, never serve this flow from the cache first, and issue an immediate CDN purge alongside the delete so an edge cache can't keep serving the burned paste.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Two identical delete requests for the same paste arrive at the same time — what happens?</div>
+          <div class="qa-a">Delete should be idempotent: the first request succeeds, and the second finds nothing left to delete and can safely return either success or 404 — the important part is defining that contract explicitly rather than leaving it ambiguous.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you guarantee a paste key is never handed out twice, even under concurrent key generation?</div>
+          <div class="qa-a">The Key Generation Service moves keys from available_keys to used_keys inside a transaction on its ACID-compliant store, application servers check out keys in batches to reduce contention, and a database-level uniqueness constraint acts as a final backstop — the identical mechanism used by the URL-shortener design.</div>
+        </div>
+
+        <h3>Product and API Design</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you add syntax highlighting for dozens of languages without overloading the application servers?</div>
+          <div class="qa-a">Do the highlighting entirely client-side with a JavaScript highlighting library rather than rendering it server-side; the server only needs to store a language hint alongside the paste, keeping highlighting a pure display concern fully decoupled from storage.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Product now wants pastes to be editable with version history — how does that change the design?</div>
+          <div class="qa-a">It breaks the immutability assumption that caching and content-addressed deduplication both currently rely on. You'd need a revision model instead: each edit creates a new immutable version, the paste key points to the "latest" version by default, and users can optionally view or link a specific historical revision.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you let a user configure a paste to expire after N views instead of after a fixed time?</div>
+          <div class="qa-a">Track view_count with an atomic increment-and-check on every read, and delete the paste once the counter reaches N — this is exactly the burn-after-read race condition generalized from N=1 to an arbitrary N, so the same atomic-operation discipline applies.</div>
+        </div>
+
+        <h3>Security and Abuse</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you stop the service from being used to host and distribute malware or leaked credentials?</div>
+          <div class="qa-a">Automated content and secret scanning at write time, threat-intelligence signature matching against known-malicious payloads, and a fast report-review-takedown pipeline — treat this as a first-class design concern for this product category, not an afterthought bolted on later.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A user scripts around the 10 MB paste limit by splitting content across many small pastes — how do you detect and respond?</div>
+          <div class="qa-a">Look at behavior over a time window rather than judging any single request in isolation: rate-limit and pattern-detect on account/IP behavior for signals like many rapid small pastes with sequential or related content, since per-request size checks alone won't catch this.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">You receive a legal takedown request for a specific paste — walk through your process end to end.</div>
+          <div class="qa-a">Verify the legitimacy of the request, then locate every copy of the content: the metadata row, any object-storage blob, and any CDN-cached copies. Remove or tombstone all three, log the action for compliance, and communicate resolution back to the requester. The CDN purge step is the one that's easy to forget, which is exactly why the burn-after-read discussion calls it out explicitly.</div>
+        </div>
+
+        <h3>Reliability and Operations</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">The object storage tier (S3) suffers a regional outage — what's the customer-visible impact?</div>
+          <div class="qa-a">Reads and writes of large, object-stored pastes fail or degrade, but small pastes stored inline in the metadata store are completely unaffected — this is precisely the resilience benefit of never putting all content in a single storage tier.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you migrate the inline/object-storage threshold from 100 KB down to 10 KB without reprocessing billions of existing rows?</div>
+          <div class="qa-a">Apply the new threshold only to newly-written pastes going forward — a purely additive change that requires no backfill. If the cost savings justify it, optionally run a slow background migration job to move existing inline pastes above the new threshold out to object storage over time.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the disaster-recovery story if an entire region goes down?</div>
+          <div class="qa-a">Run multi-region active-active with Geo-DNS failover, lean on the object store's native cross-region replication, and use a coordination-free key-generation approach so failing over traffic to another region doesn't risk handing out colliding keys.</div>
+        </div>
+
+        <h3>Extensions</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you add support for image or binary attachments alongside plain text?</div>
+          <div class="qa-a">Binary content is a natural fit for the existing object-storage tier regardless of size — the real work is in the API and validation layer (content-type handling, per-type size limits) rather than in the storage architecture itself, which barely needs to change.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you implement content deduplication, and what would you deliberately leave out of scope?</div>
+          <div class="qa-a">Use content-addressable storage keyed by a hash of the paste bytes, with reference-counted deletion so a blob is only physically removed once its last referencing paste expires. Deliberately scope this to public, non-sensitive pastes only, since content-addressing lets someone confirm that identical — possibly private — content was pasted elsewhere.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you notify a paste owner before their paste is about to expire, similar to a URL shortener's link-expiry notifications?</div>
+          <div class="qa-a">A scheduled job periodically scans expires_at for pastes falling within a lookahead window and enqueues a notification — a separate, low-priority path that stays completely off the hot read/write flow.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Recognize the overlap with a URL shortener explicitly — key generation, non-guessability, caching, and sharding are all shared territory — and don't waste time re-deriving them from scratch, but do call out clearly where Pastebin genuinely differs. The single biggest differentiator is variable, sometimes-large payload size: this is what drives the two-tier storage decision, which in turn drives most of the interesting trade-off discussion in this problem. Immutability of paste content is a simplifying assumption worth stating out loud — it's precisely why caching and optional content-addressed deduplication are both viable here in ways they wouldn't be for editable content. Burn-after-read is a small feature with an outsized correctness lesson: any state change triggered by a read must be atomic at the source of truth, never layered on top of a cache. And abuse prevention deserves real airtime in this design — unlike many system-design staples, Pastebin has a well-documented history of being used to host malicious content, and interviewers may specifically probe whether a candidate raises this risk unprompted.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Educative — "Grokking the System Design Interview": Designing Pastebin (course material, user-provided reference); the same source explicitly notes Pastebin shares its partitioning, caching, load-balancing, and security design with the URL-shortener chapter.</li>
+          <li>Community write-ups on Pastebin-style system design consulted for storage-tiering cost trade-offs, content-addressable deduplication, and burn-after-read concurrency handling (<a href="https://grokkingthesystemdesign.com" target="_blank" rel="noopener">grokkingthesystemdesign.com</a>, <a href="https://systemdesigninterview.com" target="_blank" rel="noopener">systemdesigninterview.com</a>, <a href="https://enjoyalgorithms.com" target="_blank" rel="noopener">enjoyalgorithms.com</a>, and related public system-design guides).</li>
+          <li>User's personal prep notes (Paste Bin.docx): MongoDB + S3 tiering at a 100 KB threshold, Kafka + Spark analytics pipeline, MySQL-backed Key Generation Service, Bloom filter sizing example, and the public/private/allowed-user visibility model — incorporated throughout the Data Model, Key Generation, Tiered Storage, Caching, and Security sections above.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="url-shortener.html"><span class="dir">Previous</span>Design a URL Shortener</a>
+          <a class="next" href="facebook.html"><span class="dir">Next</span>Facebook / Twitter Feed</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

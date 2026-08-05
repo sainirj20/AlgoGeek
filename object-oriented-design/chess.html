@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess | Object Oriented Design | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Object Oriented Design</a><span class="sep">/</span><span class="current">Chess</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Object Oriented Design overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#actors-and-use-cases">Actors &amp; Use Cases</a></li>
+        <li><a href="#key-classes">Key Classes</a></li>
+        <li><a href="#class-diagram">Class Diagram</a></li>
+        <li><a href="#key-flow-activity-diagram">Key Flow: Validating a Move</a></li>
+        <li><a href="#key-flow-sequence-diagram">Key Flow: Polymorphic canMove()</a></li>
+        <li><a href="#design-patterns-applied">Design Patterns Applied</a></li>
+        <li><a href="#code-skeleton">Code Skeleton</a></li>
+        <li><a href="#extensibility-and-edge-cases">Extensibility &amp; Edge Cases</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">OBJECT ORIENTED DESIGN</span>
+          <h1>Design Chess</h1>
+        </div>
+
+        <p><em>Where most of this section's problems model a single physical resource &mdash; a parking spot, a hotel room &mdash; Chess models a rules engine: an 8x8 grid where six different piece types each answer the exact same question, "can I legally move from A to B?", with a completely different algorithm. The tempting naive design is one giant <code>Board.isLegalMove(pieceType, from, to)</code> method with a switch on piece type; the design interviewers actually want to see is the opposite instinct &mdash; push each piece's movement rule down onto the piece itself, so the caller never branches on type at all. That's the classic Strategy-via-polymorphism move, and Chess is one of the cleanest LLD problems to demonstrate it in, because the "strategy" isn't a contrived example &mdash; every piece genuinely does move differently. Layered on top is a second, equally common OOD signal: modeling a Move as its own object (not just a pair of coordinates) so it can be replayed, undone, and accumulated into a history &mdash; the same Command-pattern shape interviewers reach for whenever they want to test undo/redo.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the core rules engine for a two-player game of Chess. The system tracks an 8x8 <strong>Board</strong> made up of <strong>Cells</strong> (Squares), each of which is either empty or occupied by exactly one <strong>Piece</strong>. There are six piece types &mdash; King, Queen, Rook, Bishop, Knight, and Pawn &mdash; and each has its own movement and capture rule; a Bishop's diagonal-only rule has nothing in common with a Knight's L-shaped jump, and a design that tries to express all six as branches of one big conditional collapses under its own complexity the moment a seventh rule (a chess-variant piece, say) needs to be added. Two <strong>Players</strong>, White and Black, alternate turns; a proposed move must be validated as legal for that piece type, must not pass through or land on a cell occupied by a piece of the mover's own color (except a Knight, which jumps over everything in its path), and &mdash; critically &mdash; must not leave the mover's own King in check, even when the piece-type rule alone would otherwise permit it. After every legal move the system must detect three distinct end-of-turn conditions &mdash; <strong>Check</strong>, <strong>Checkmate</strong>, and <strong>Stalemate</strong> &mdash; and it must maintain a <strong>move history</strong> precise enough to reconstruct the game move-by-move or support undo. Interviewers use this problem specifically to see whether a candidate reaches for per-piece polymorphism instead of a type-switch, and whether they can state the checkmate-vs-stalemate distinction precisely rather than hand-waving "the king can't move."</p>
+
+        <h2 id="requirements">Requirements</h2>
+        <ol>
+          <li>The <strong>Board</strong> is an 8x8 grid of <strong>Cells</strong> (Squares); each Cell is either empty or holds exactly one <strong>Piece</strong>.</li>
+          <li>There are six <strong>Piece</strong> types &mdash; King, Queen, Rook, Bishop, Knight, and Pawn &mdash; each with its own movement and capture rule.</li>
+          <li>There are two <strong>Players</strong>, White and Black, who alternate turns; only the player whose turn it is may move a piece of their own color.</li>
+          <li>A move must be validated as <strong>legal for the moving piece's type</strong>, must not move through or onto a Cell occupied by a friendly piece (a Knight is the one exception &mdash; it jumps over any piece in its path), and must <strong>not leave the mover's own King in check</strong> as a result of the move.</li>
+          <li>After every move the system must detect <strong>Check</strong> (the mover's opponent's King is under attack), <strong>Checkmate</strong> (the opponent is in check with no legal move to escape it), and <strong>Stalemate</strong> (the opponent is not in check but has no legal move at all).</li>
+          <li>Basic support for <strong>Pawn promotion</strong> (a Pawn reaching the board's far rank is promoted to a Queen/Rook/Bishop/Knight of the player's choosing) is required. <strong>Castling</strong> and <strong>en passant</strong> are known-tricky special moves that should at least be identified and reasoned about &mdash; see Extensibility &amp; Edge Cases &mdash; even if not fully specified in the base design.</li>
+          <li>The system must maintain a <strong>move history</strong> detailed enough to reconstruct the full game move-by-move or to support undo.</li>
+        </ol>
+
+        <h2 id="actors-and-use-cases">Actors &amp; Use Cases</h2>
+        <p>Two actors touch this system, and they own genuinely different responsibilities:</p>
+        <ul>
+          <li><strong>Player</strong> (White or Black) &mdash; makes moves, resigns, and offers/accepts a draw. Only a Player initiates play; the Player never validates their own move or decides whether it results in check.</li>
+          <li><strong>System / Game</strong> &mdash; validates every proposed move against the moving piece's rule and the "does this expose my own King" gate, detects Check/Checkmate/Stalemate after each move, and maintains the move history. It never initiates a move &mdash; it only referees and records what the Players do.</li>
+        </ul>
+        <p>Primary use cases: <strong>Make Move</strong>, <strong>Validate Move</strong>, <strong>Detect Check / Checkmate / Stalemate</strong>, <strong>Promote Pawn</strong>, and <strong>View Move History</strong> &mdash; the last of these is shared, since a Player views it and the System is the one that maintains it. Players also have two use cases that never touch the Board at all: <strong>Resign</strong> and <strong>Offer / Accept Draw</strong>.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 840 620" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Use case diagram: Player and System/Game actors connected to use cases inside the Chess Game boundary">
+            <rect x="150" y="50" width="520" height="520" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+            <text x="410" y="74" text-anchor="middle" font-size="14" font-weight="700" fill="var(--color-primary-dark)">Chess Game</text>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="72" y1="144" x2="165" y2="110"/>
+              <line x1="72" y1="144" x2="165" y2="190"/>
+              <line x1="72" y1="144" x2="165" y2="270"/>
+              <line x1="72" y1="144" x2="165" y2="350"/>
+
+              <line x1="72" y1="384" x2="435" y2="110"/>
+              <line x1="72" y1="384" x2="435" y2="230"/>
+              <line x1="72" y1="384" x2="435" y2="350"/>
+              <line x1="72" y1="384" x2="165" y2="350"/>
+            </g>
+
+            <g font-size="12" fill="var(--color-text)">
+              <circle cx="55" cy="110" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="120" x2="55" y2="154" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="134" x2="70" y2="134" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="42" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="68" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="196" text-anchor="middle">Player</text>
+              <text x="55" y="210" text-anchor="middle" font-size="9" fill="var(--color-text-muted)">(White / Black)</text>
+
+              <circle cx="55" cy="350" r="10" fill="none" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="360" x2="55" y2="394" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="40" y1="374" x2="70" y2="374" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="394" x2="42" y2="419" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="394" x2="68" y2="419" stroke="var(--color-accent)" stroke-width="2"/>
+              <text x="55" y="436" text-anchor="middle" fill="var(--color-accent-dark)">System /</text>
+              <text x="55" y="450" text-anchor="middle" fill="var(--color-accent-dark)">Game</text>
+            </g>
+
+            <g font-size="11" fill="var(--color-text)">
+              <ellipse cx="275" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="114" text-anchor="middle">Make Move</text>
+
+              <ellipse cx="275" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="194" text-anchor="middle">Resign</text>
+
+              <ellipse cx="275" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="266" text-anchor="middle">Offer / Accept</text>
+              <text x="275" y="280" text-anchor="middle">Draw</text>
+
+              <ellipse cx="275" cy="350" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="346" text-anchor="middle">View Move</text>
+              <text x="275" y="360" text-anchor="middle">History</text>
+
+              <ellipse cx="545" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="114" text-anchor="middle">Validate Move</text>
+
+              <ellipse cx="545" cy="230" rx="115" ry="34" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="226" text-anchor="middle">Detect Check /</text>
+              <text x="545" y="240" text-anchor="middle">Checkmate / Stalemate</text>
+
+              <ellipse cx="545" cy="350" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="354" text-anchor="middle">Promote Pawn</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 1. Use-case diagram: Player initiates the human-facing use cases &mdash; Make Move, Resign, Offer/Accept Draw &mdash; while System/Game owns move validation and check/checkmate/stalemate detection. The two share View Move History: the Player looks at it, the System is what maintains it.</div>
+        </div>
+
+        <h2 id="key-classes">Key Classes</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td>Board</td><td>Owns the 8x8 grid of Cells; exposes <code>getCell(row, col)</code>, applies a validated move to the grid, and answers structural queries like "is the path between two cells clear?" and "where is a given color's King?"</td></tr>
+            <tr><td>Cell / Square</td><td>One grid position; holds at most one Piece (0..1) and knows its own row/column.</td></tr>
+            <tr><td>Piece (abstract)</td><td>Declares the one polymorphic contract every concrete piece implements: <code>canMove(Board, from, to)</code>. Holds shared state &mdash; color and whether it has moved (needed for castling and a Pawn's first-move rule) &mdash; but never the movement logic itself.</td></tr>
+            <tr><td>King, Queen, Rook, Bishop, Knight, Pawn</td><td>Concrete Piece subclasses; each overrides <code>canMove()</code> with its own rule &mdash; King: one square any direction; Queen: straight or diagonal, path clear; Rook: straight line, path clear; Bishop: diagonal, path clear; Knight: L-shape, ignores blockers; Pawn: forward-only, diagonal only to capture, two squares on its first move. This is the polymorphism/Strategy angle the whole page turns on.</td></tr>
+            <tr><td>Player</td><td>One of the two participants; holds a color (White/Black) and initiates moves, resignation, and draw offers.</td></tr>
+            <tr><td>Move</td><td>An immutable record of one ply: the piece that moved, the from/to Cells, the captured piece (if any), and a special-move flag (promotion; an extended design adds isCastle/isEnPassant). Doubles as a Command object supporting <code>execute()</code>/<code>undo()</code>.</td></tr>
+            <tr><td>Game</td><td>Orchestrates turns, holds the Board and the <code>List&lt;Move&gt;</code> history, and owns the top-level <code>makeMove()</code> flow: validate, apply, detect check/checkmate/stalemate, switch turn.</td></tr>
+            <tr><td>GameStatus</td><td>Enum: InProgress, Check, Checkmate, Stalemate, Resigned, Draw &mdash; what the Game currently reports to both players.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="class-diagram">Class Diagram</h2>
+        <p>The diagram below is really two clusters glued together: a <strong>type hierarchy</strong> (Piece, abstract, with six hollow-triangle subclasses &mdash; each overriding the same <code>canMove(Board, from, to)</code> signature with its own rule) and a small <strong>engine</strong> (Game, Board, Cell, Move) wired together mostly with filled-diamond composition. Board <strong>composed-of</strong> Cell (destroy the board, the 64 cells go with it); Cell <strong>associates</strong> with at most one Piece (0..1); Game <strong>composed-of</strong> Board and <strong>composed-of</strong> the <code>List&lt;Move&gt;</code> history; Move <strong>associates</strong> with the Piece that moved and with its from/to Cells.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1320 700" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="UML class diagram for Chess: Piece abstract base with six subclasses, Board composed of Cell, Game composed of Board and Move history, Move associated with Piece and two Cells">
+            <defs>
+              <marker id="chTriangle" viewBox="0 0 20 14" refX="18" refY="7" markerWidth="18" markerHeight="14" orient="auto">
+                <path d="M1,1 L18,7 L1,13 Z" fill="#ffffff" stroke="var(--color-primary)" stroke-width="1.2"/>
+              </marker>
+              <marker id="chDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-primary-dark)" stroke="var(--color-primary-dark)" stroke-width="1"/>
+              </marker>
+              <marker id="chArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)"/>
+              </marker>
+            </defs>
+
+            <!-- Piece inheritance fan -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="530" y1="150" x2="145" y2="260" marker-end="url(#chTriangle)"/>
+              <line x1="562" y1="150" x2="335" y2="260" marker-end="url(#chTriangle)"/>
+              <line x1="594" y1="150" x2="525" y2="260" marker-end="url(#chTriangle)"/>
+              <line x1="626" y1="150" x2="715" y2="260" marker-end="url(#chTriangle)"/>
+              <line x1="658" y1="150" x2="905" y2="260" marker-end="url(#chTriangle)"/>
+              <line x1="690" y1="150" x2="1095" y2="260" marker-end="url(#chTriangle)"/>
+            </g>
+            <g font-size="10" fill="var(--color-text-muted)" font-style="italic" text-anchor="middle">
+              <text x="620" y="195">Same call site, six different rules</text>
+              <text x="620" y="210">(polymorphism / Strategy &mdash; Game never</text>
+              <text x="620" y="225">branches on piece type)</text>
+            </g>
+
+            <!-- Piece (abstract) -->
+            <g>
+              <rect x="520" y="20" width="200" height="130" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="520" y1="54" x2="720" y2="54" stroke="var(--color-accent-dark)"/>
+              <line x1="520" y1="96" x2="720" y2="96" stroke="var(--color-accent-dark)"/>
+              <text x="620" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Piece {abstract}</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="528" y="68">- color: Color</text>
+                <text x="528" y="82">- hasMoved: boolean</text>
+                <text x="528" y="112">+ canMove(Board, Cell from, Cell to):</text>
+                <text x="536" y="124">boolean {abstract}</text>
+                <text x="528" y="138">+ getSymbol(): char</text>
+              </g>
+            </g>
+
+            <!-- Piece subclasses -->
+            <g font-size="9" fill="var(--color-text)" text-anchor="middle">
+              <rect x="60" y="260" width="170" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="60" y1="286" x2="230" y2="286" stroke="var(--color-accent-dark)"/>
+              <text x="145" y="278" font-weight="700">King</text>
+              <text x="145" y="300">+ canMove(): 1 square,</text>
+              <text x="145" y="314">any direction (+castle*)</text>
+
+              <rect x="250" y="260" width="170" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="250" y1="286" x2="420" y2="286" stroke="var(--color-accent-dark)"/>
+              <text x="335" y="278" font-weight="700">Queen</text>
+              <text x="335" y="300">+ canMove(): straight or</text>
+              <text x="335" y="314">diagonal, path clear</text>
+
+              <rect x="440" y="260" width="170" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="440" y1="286" x2="610" y2="286" stroke="var(--color-accent-dark)"/>
+              <text x="525" y="278" font-weight="700">Rook</text>
+              <text x="525" y="300">+ canMove(): straight</text>
+              <text x="525" y="314">line, path clear</text>
+
+              <rect x="630" y="260" width="170" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="630" y1="286" x2="800" y2="286" stroke="var(--color-accent-dark)"/>
+              <text x="715" y="278" font-weight="700">Bishop</text>
+              <text x="715" y="300">+ canMove(): diagonal,</text>
+              <text x="715" y="314">path clear</text>
+
+              <rect x="820" y="260" width="170" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="820" y1="286" x2="990" y2="286" stroke="var(--color-accent-dark)"/>
+              <text x="905" y="278" font-weight="700">Knight</text>
+              <text x="905" y="300">+ canMove(): L-shape,</text>
+              <text x="905" y="314">ignores blockers</text>
+
+              <rect x="1010" y="260" width="170" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <line x1="1010" y1="286" x2="1180" y2="286" stroke="var(--color-accent-dark)"/>
+              <text x="1095" y="278" font-weight="700">Pawn</text>
+              <text x="1095" y="300">+ canMove(): fwd only,</text>
+              <text x="1095" y="314">diag capture, 2-sq first</text>
+            </g>
+
+            <!-- composition + association lines for engine cluster -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="290" y1="535" x2="340" y2="535" marker-start="url(#chDiamond)"/>
+              <line x1="550" y1="530" x2="600" y2="530" marker-start="url(#chDiamond)"/>
+              <polyline points="175,460 175,430 955,430 955,460" marker-start="url(#chDiamond)"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <polyline points="790,460 1220,460 1220,85 720,85" marker-end="url(#chArrow)"/>
+              <polyline points="950,460 1260,460 1260,110 720,110" marker-end="url(#chArrow)"/>
+              <line x1="840" y1="500" x2="790" y2="500" marker-end="url(#chArrow)"/>
+              <line x1="840" y1="540" x2="790" y2="540" marker-end="url(#chArrow)"/>
+            </g>
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="298" y="525">1</text>
+              <text x="345" y="525">1</text>
+              <text x="558" y="520">1</text>
+              <text x="608" y="520">64</text>
+              <text x="180" y="424">1</text>
+              <text x="915" y="424">0..*</text>
+              <text x="1130" y="78">0..1</text>
+              <text x="1130" y="103">1</text>
+              <text x="797" y="493">from</text>
+              <text x="797" y="533">to</text>
+            </g>
+
+            <!-- Game -->
+            <g>
+              <rect x="60" y="460" width="230" height="170" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="60" y1="496" x2="290" y2="496" stroke="var(--color-primary)"/>
+              <line x1="60" y1="568" x2="290" y2="568" stroke="var(--color-primary)"/>
+              <text x="175" y="484" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Game</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="68" y="512">- board: Board</text>
+                <text x="68" y="526">- history: List&lt;Move&gt;</text>
+                <text x="68" y="540">- currentTurn: Color</text>
+                <text x="68" y="554">- status: GameStatus</text>
+                <text x="68" y="584">+ makeMove(from, to): MoveResult</text>
+                <text x="68" y="598">+ isInCheck(color): boolean</text>
+              </g>
+            </g>
+
+            <!-- Board -->
+            <g>
+              <rect x="340" y="460" width="210" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="340" y1="496" x2="550" y2="496" stroke="var(--color-primary)"/>
+              <line x1="340" y1="532" x2="550" y2="532" stroke="var(--color-primary)"/>
+              <text x="445" y="484" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Board</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="348" y="512">- cells: Cell[8][8]</text>
+                <text x="348" y="546">+ getCell(row, col): Cell</text>
+                <text x="348" y="560">+ movePiece(from, to): Piece</text>
+                <text x="348" y="574">+ isPathClear(from, to): boolean</text>
+                <text x="348" y="588">+ findKing(color): Cell</text>
+              </g>
+            </g>
+
+            <!-- Cell -->
+            <g>
+              <rect x="600" y="460" width="190" height="130" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="600" y1="496" x2="790" y2="496" stroke="var(--color-primary)"/>
+              <line x1="600" y1="540" x2="790" y2="540" stroke="var(--color-primary)"/>
+              <text x="695" y="484" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Cell</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="608" y="512">- row, col: int</text>
+                <text x="608" y="526">- piece: Piece (0..1)</text>
+                <text x="608" y="556">+ isEmpty(): boolean</text>
+                <text x="608" y="570">+ getPiece(): Piece</text>
+              </g>
+            </g>
+
+            <!-- Move -->
+            <g>
+              <rect x="840" y="460" width="230" height="170" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="840" y1="496" x2="1070" y2="496" stroke="var(--color-primary)"/>
+              <line x1="840" y1="568" x2="1070" y2="568" stroke="var(--color-primary)"/>
+              <text x="955" y="484" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Move</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="848" y="512">- piece: Piece</text>
+                <text x="848" y="526">- from, to: Cell</text>
+                <text x="848" y="540">- capturedPiece: Piece (nullable)</text>
+                <text x="848" y="554">- isPromotion: boolean</text>
+                <text x="848" y="584">+ execute(board): void</text>
+                <text x="848" y="598">+ undo(board): void</text>
+              </g>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 2. Piece is abstract with six hollow-triangle subclasses, each overriding <code>canMove(Board, from, to)</code>. Board &mdash;filled diamond&rarr; Cell (composition: 64 cells die with the board). Cell associates with at most one Piece (0..1). Game &mdash;filled diamond&rarr; Board and &mdash;filled diamond&rarr; the Move history (<code>List&lt;Move&gt;</code>). Move associates with the Piece that moved and with its from/to Cells.</div>
+        </div>
+        <p><strong>The polymorphism is the whole point of this diagram.</strong> Every one of the six subclasses answers the identical question &mdash; <code>canMove(board, from, to)</code> &mdash; but none of them answer it the same way, and that's exactly the signal that should make a candidate reach for inheritance rather than a data field (contrast this with the Parking Lot page elsewhere in this section, where five spot "types" behave <em>identically</em> and are correctly modeled as one class plus an enum field, not five subclasses). Game and Board are written once, against the abstract <code>Piece</code> type, and never re-opened when a new piece type is added &mdash; the fan of hollow-triangle arrows above is doing real architectural work, not just decorating the diagram.</p>
+
+        <h2 id="key-flow-activity-diagram">Key Flow: Validating and Making a Move (Activity Diagram)</h2>
+        <p>Making a move is a two-gate legality check followed by a three-way classification of the resulting position. Gate one asks whether the piece's own rule permits the from&rarr;to path at all (with the path-clear requirement that every piece except the Knight must satisfy). Gate two &mdash; easy to forget &mdash; asks whether the move, even though it's legal for that piece type, would leave the mover's own King in check; a pinned piece can satisfy gate one and still fail gate two. Only after both gates pass does the move get applied and recorded, at which point the flow classifies the opponent's position into exactly one of: continue as normal, Check, Checkmate, or Stalemate.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1160 1180" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Activity diagram for validating and making a chess move, including check, checkmate, and stalemate detection">
+            <defs>
+              <marker id="chActArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <circle cx="300" cy="20" r="10" fill="var(--color-primary)"/>
+            <g stroke="var(--color-primary)" stroke-width="1.6" fill="none" marker-end="url(#chActArrow)">
+              <line x1="300" y1="30" x2="300" y2="50"/>
+              <line x1="300" y1="105" x2="300" y2="175"/>
+              <line x1="300" y1="275" x2="300" y2="345"/>
+              <line x1="300" y1="445" x2="300" y2="470"/>
+              <line x1="300" y1="530" x2="300" y2="600"/>
+              <line x1="300" y1="700" x2="300" y2="880"/>
+              <line x1="300" y1="980" x2="300" y2="1010"/>
+              <line x1="300" y1="1065" x2="300" y2="1093"/>
+
+              <line x1="440" y1="225" x2="520" y2="225"/>
+              <line x1="440" y1="395" x2="520" y2="395"/>
+              <line x1="440" y1="650" x2="580" y2="650"/>
+              <line x1="700" y1="695" x2="700" y2="740"/>
+              <line x1="820" y1="650" x2="890" y2="650"/>
+              <line x1="440" y1="930" x2="590" y2="930"/>
+            </g>
+
+            <rect x="170" y="50" width="260" height="55" rx="22" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="72" text-anchor="middle" font-size="11" fill="var(--color-text)">Player selects a piece and</text>
+            <text x="300" y="87" text-anchor="middle" font-size="11" fill="var(--color-text)">a target cell (from &rarr; to)</text>
+
+            <polygon points="300,175 440,225 300,275 160,225" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="220" text-anchor="middle" font-size="10" fill="var(--color-text)">Piece's movement rule</text>
+            <text x="300" y="234" text-anchor="middle" font-size="10" fill="var(--color-text)">permits this from&rarr;to path?</text>
+            <text x="360" y="205" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="270" y="296" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="520" y="195" width="260" height="60" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="650" y="219" text-anchor="middle" font-size="10" fill="var(--color-text)">Reject move</text>
+            <text x="650" y="233" text-anchor="middle" font-size="10" fill="var(--color-text)">(illegal for this piece type)</text>
+            <circle cx="660" cy="300" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="660" cy="300" r="6" fill="var(--color-primary)"/>
+            <line x1="650" y1="255" x2="655" y2="288" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#chActArrow)"/>
+
+            <polygon points="300,345 440,395 300,445 160,395" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="390" text-anchor="middle" font-size="10" fill="var(--color-text)">Does this move leave the</text>
+            <text x="300" y="404" text-anchor="middle" font-size="10" fill="var(--color-text)">mover's own King in check?</text>
+            <text x="360" y="375" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+            <text x="266" y="466" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+
+            <rect x="520" y="365" width="260" height="60" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="650" y="389" text-anchor="middle" font-size="10" fill="var(--color-text)">Reject move</text>
+            <text x="650" y="403" text-anchor="middle" font-size="10" fill="var(--color-text)">(exposes own King &mdash; illegal)</text>
+            <circle cx="660" cy="485" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="660" cy="485" r="6" fill="var(--color-primary)"/>
+            <line x1="650" y1="425" x2="657" y2="473" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#chActArrow)"/>
+
+            <rect x="170" y="470" width="260" height="60" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="494" text-anchor="middle" font-size="10" fill="var(--color-text)">Apply move (capture if occupied</text>
+            <text x="300" y="508" text-anchor="middle" font-size="10" fill="var(--color-text)">by opponent); append to history</text>
+
+            <polygon points="300,600 440,650 300,700 160,650" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="645" text-anchor="middle" font-size="10" fill="var(--color-text)">Does this move put the</text>
+            <text x="300" y="659" text-anchor="middle" font-size="10" fill="var(--color-text)">opponent's King in check?</text>
+            <text x="360" y="630" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+            <text x="266" y="770" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+
+            <polygon points="700,605 820,650 700,695 580,650" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="700" y="645" text-anchor="middle" font-size="9.5" fill="var(--color-text)">Opponent has ANY legal</text>
+            <text x="700" y="658" text-anchor="middle" font-size="9.5" fill="var(--color-text)">move to escape check?</text>
+            <text x="700" y="595" text-anchor="middle" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="835" y="640" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="590" y="740" width="220" height="56" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="700" y="763" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Checkmate</text>
+            <text x="700" y="778" text-anchor="middle" font-size="10.5" fill="var(--color-text)">&mdash; game over</text>
+            <circle cx="700" cy="840" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="700" cy="840" r="6" fill="var(--color-primary)"/>
+            <line x1="700" y1="796" x2="700" y2="828" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#chActArrow)"/>
+
+            <rect x="890" y="622" width="230" height="56" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="1005" y="645" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Mark Check;</text>
+            <text x="1005" y="660" text-anchor="middle" font-size="10.5" fill="var(--color-text)">switch turn</text>
+            <circle cx="1005" cy="725" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="1005" cy="725" r="6" fill="var(--color-primary)"/>
+            <line x1="1005" y1="678" x2="1005" y2="713" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#chActArrow)"/>
+
+            <polygon points="300,880 440,930 300,980 160,930" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="925" text-anchor="middle" font-size="9.5" fill="var(--color-text)">Opponent has zero legal</text>
+            <text x="300" y="938" text-anchor="middle" font-size="9.5" fill="var(--color-text)">moves, and is NOT in check?</text>
+            <text x="360" y="910" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+            <text x="266" y="1000" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+
+            <rect x="590" y="902" width="260" height="56" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="720" y="925" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Stalemate</text>
+            <text x="720" y="940" text-anchor="middle" font-size="10.5" fill="var(--color-text)">&mdash; game over (draw)</text>
+            <circle cx="720" cy="1010" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="720" cy="1010" r="6" fill="var(--color-primary)"/>
+            <line x1="720" y1="958" x2="720" y2="998" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#chActArrow)"/>
+
+            <rect x="170" y="1010" width="260" height="55" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="1033" text-anchor="middle" font-size="10.5" fill="var(--color-text)">Switch turn</text>
+            <text x="300" y="1047" text-anchor="middle" font-size="10.5" fill="var(--color-text)">(game continues)</text>
+            <circle cx="300" cy="1105" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="300" cy="1105" r="6" fill="var(--color-primary)"/>
+          </svg>
+          <div class="diagram-caption">Figure 3. Two legality gates (piece-type rule, then "does this expose my own King") must both pass before a move is applied. What happens next classifies the opponent's position into exactly one of four outcomes: normal continuation, Check, Checkmate, or Stalemate &mdash; Checkmate and Stalemate are mirror images of the same "zero legal moves" test, distinguished only by whether the side to move is currently in check.</div>
+        </div>
+
+        <h2 id="key-flow-sequence-diagram">Key Flow: Polymorphic Move Validation per Piece Type</h2>
+        <p>This isn't a strict sequence diagram so much as an illustration of the single idea the whole page is built around: <code>Game</code> calls <code>piece.canMove(board, from, to)</code> &mdash; the exact same method, on the exact same abstract type &mdash; no matter which of the six concrete Piece classes it's actually holding a reference to. The diagram below shows that one call site hitting a Bishop, a Knight, and a Pawn in turn, with a callout next to each showing the wildly different rule that piece actually runs. <code>Game</code>'s code does not change at all between the three calls.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1000 610" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Illustration of Game calling the same canMove method on Bishop, Knight, and Pawn instances, each running a different rule">
+            <defs>
+              <marker id="chSeqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-border)" stroke-width="1.3" stroke-dasharray="4,4">
+              <line x1="100" y1="60" x2="100" y2="590"/>
+              <line x1="340" y1="60" x2="340" y2="590"/>
+              <line x1="540" y1="60" x2="540" y2="590"/>
+              <line x1="760" y1="60" x2="760" y2="590"/>
+            </g>
+            <g fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5">
+              <rect x="40" y="20" width="120" height="40"/>
+              <rect x="270" y="20" width="140" height="40"/>
+              <rect x="470" y="20" width="140" height="40"/>
+              <rect x="690" y="20" width="140" height="40"/>
+            </g>
+            <g font-size="11" font-weight="700" fill="var(--color-text)" text-anchor="middle">
+              <text x="100" y="44">Game</text>
+              <text x="340" y="44">bishop: Bishop</text>
+              <text x="540" y="44">knight: Knight</text>
+              <text x="760" y="44">pawn: Pawn</text>
+            </g>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#chSeqArrow)">
+              <line x1="100" y1="140" x2="340" y2="140"/>
+              <line x1="100" y1="270" x2="540" y2="270"/>
+              <line x1="100" y1="400" x2="760" y2="400"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#chSeqArrow)">
+              <line x1="340" y1="165" x2="100" y2="165"/>
+              <line x1="540" y1="295" x2="100" y2="295"/>
+              <line x1="760" y1="425" x2="100" y2="425"/>
+            </g>
+            <g font-size="10" fill="var(--color-text)">
+              <text x="130" y="132">canMove(board, from, to)</text>
+              <text x="130" y="158">boolean</text>
+              <text x="150" y="262">canMove(board, from, to)</text>
+              <text x="150" y="288">boolean</text>
+              <text x="160" y="392">canMove(board, from, to)</text>
+              <text x="160" y="418">boolean</text>
+            </g>
+
+            <rect x="390" y="110" width="310" height="70" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.3"/>
+            <g font-size="10" fill="var(--color-text)">
+              <text x="400" y="128" font-weight="700">Bishop's rule:</text>
+              <text x="400" y="144">diagonal only; every intermediate</text>
+              <text x="400" y="158">cell must be empty (path check).</text>
+            </g>
+
+            <rect x="590" y="240" width="340" height="70" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.3"/>
+            <g font-size="10" fill="var(--color-text)">
+              <text x="600" y="258" font-weight="700">Knight's rule:</text>
+              <text x="600" y="274">L-shape &mdash; |dRow|=2 &amp; |dCol|=1, or</text>
+              <text x="600" y="288">|dRow|=1 &amp; |dCol|=2. Ignores blockers.</text>
+            </g>
+
+            <rect x="460" y="460" width="440" height="90" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.3"/>
+            <g font-size="10" fill="var(--color-text)">
+              <text x="470" y="478" font-weight="700">Pawn's rule:</text>
+              <text x="470" y="494">forward-only in the piece's color direction;</text>
+              <text x="470" y="508">diagonal step only when capturing; 2-square</text>
+              <text x="470" y="522">advance only from the piece's starting rank.</text>
+            </g>
+
+            <text x="500" y="580" text-anchor="middle" font-size="10.5" font-style="italic" fill="var(--color-text-muted)">Game's call is identical all three times &mdash; there is no "if (piece instanceof Bishop)" anywhere in Game.</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. The same call site &mdash; <code>piece.canMove(board, from, to)</code> &mdash; hits three completely different rule implementations. Game never inspects what kind of Piece it's holding; each Piece answers for itself.</div>
+        </div>
+
+        <h2 id="design-patterns-applied">Design Patterns Applied</h2>
+        <p>Name the pattern and the forcing function together, not just the label:</p>
+        <ul>
+          <li><strong>Strategy (via plain polymorphism)</strong> &mdash; the star of this page. Each concrete Piece subclass implements its own <code>canMove(Board, from, to)</code>; Game and Board call the same abstract method and never ask "what type of piece is this?" Contrast this with the tempting centralized alternative &mdash; a single <code>Board.isLegalMove(pieceType, from, to)</code> method with a switch over all six piece types: every new piece type (a chess-variant's custom piece, say a "Cannon" that must jump exactly one piece to capture) forces that method to be reopened, and it's easy for an edit to one branch to silently break another. With per-piece <code>canMove()</code>, adding a seventh piece type is a brand-new class implementing one method &mdash; Game and Board are not touched at all. This is the Open/Closed Principle made concrete: closed for modification, open for extension.</li>
+          <li><strong>Command</strong> (Move as execute()/undo()) &mdash; modeling each ply as a Move object, rather than just mutating the Board in place and forgetting what happened, is what makes move history, undo, and replay possible at all. <code>Move.execute()</code> applies itself to the Board; <code>Move.undo()</code> reverses itself using state it captured at construction time (the captured piece, if any); <code>Game.history</code> is simply a <code>List&lt;Move&gt;</code> that can be walked forward or backward. This is the textbook Command pattern &mdash; encapsulating a request, and how to reverse it, as an object.</li>
+          <li><strong>Memento</strong> (an alternative/complement to Command for undo) &mdash; instead of each Move knowing how to undo itself, a Memento-based design snapshots the entire Board state before each move and restores a prior snapshot to undo. Trade-off: Memento is simpler to reason about (undo is just "restore this snapshot") but far more memory-heavy for a long game, since it copies a whole 8x8 board per ply rather than one small Move object. Command's per-move <code>undo()</code> fits better here specifically because chess moves are cheap to invert (put the piece back, restore any captured piece) &mdash; Memento earns its keep more in domains where undo is genuinely hard to compute forward but trivial to snapshot.</li>
+          <li><strong>Observer</strong> (optional) &mdash; notifying a UI, a spectator view, or a clock whenever the Board changes or GameStatus transitions (to Check, Checkmate, etc.), without Game needing to know anything about how those subscribers render or react. The same decoupling idea used for the housekeeping queue in the Hotel Management System page and the display boards in the Parking Lot page, both elsewhere in this section.</li>
+        </ul>
+
+        <h2 id="code-skeleton">Code Skeleton</h2>
+        <p>Fields and method signatures only &mdash; not a runnable program. <code>Knight.canMove()</code> is worked out in full, since the L-shape check is short, exact, and exactly what interviewers probe on.</p>
+
+        <pre><code>public abstract class Piece {
+    protected final Color color;
+    protected boolean hasMoved;
+
+    protected Piece(Color color) {
+        this.color = color;
+    }
+
+    // The one polymorphic contract every subclass answers differently.
+    // Deliberately does NOT check "does this leave my own King in check" --
+    // Game applies that as a second, separate gate after this one passes.
+    public abstract boolean canMove(Board board, Cell from, Cell to);
+
+    public abstract char getSymbol(); // 'K','Q','R','B','N','P' (lowercase for Black)
+
+    public Color getColor() { return color; }
+    public boolean hasMoved() { return hasMoved; }
+    public void markMoved() { this.hasMoved = true; }
+}</code></pre>
+
+        <pre><code>public class Knight extends Piece {
+    public Knight(Color color) { super(color); }
+
+    @Override
+    public boolean canMove(Board board, Cell from, Cell to) {
+        if (to.getPiece() != null &amp;&amp; to.getPiece().getColor() == this.color) {
+            return false; // can't capture your own piece
+        }
+        int dRow = Math.abs(to.getRow() - from.getRow());
+        int dCol = Math.abs(to.getCol() - from.getCol());
+        // L-shape jump -- deliberately does NOT call board.isPathClear(),
+        // since a Knight jumps over anything in between.
+        return (dRow == 2 &amp;&amp; dCol == 1) || (dRow == 1 &amp;&amp; dCol == 2);
+    }
+
+    @Override
+    public char getSymbol() { return color == Color.WHITE ? 'N' : 'n'; }
+}</code></pre>
+
+        <pre><code>public class Board {
+    private final Cell[][] cells; // 8x8
+
+    public Board() { cells = new Cell[8][8]; /* ... populate + place starting pieces ... */ }
+
+    public Cell getCell(int row, int col) { return cells[row][col]; }
+
+    // Moves a piece with NO legality checking -- callers (Game) must already
+    // have run canMove() and the "does this expose my own King" gate.
+    public Piece movePiece(Cell from, Cell to) {
+        Piece moving = from.getPiece();
+        Piece captured = to.getPiece();
+        to.setPiece(moving);
+        from.setPiece(null);
+        moving.markMoved();
+        return captured; // null if this was not a capture
+    }
+
+    // Used by every non-Knight piece's canMove(): every cell strictly
+    // between from and to (exclusive) must be empty.
+    public boolean isPathClear(Cell from, Cell to) { /* ... */ return true; }
+
+    public Cell findKing(Color color) { /* scan the grid for this color's King */ return null; }
+
+    // Raw reachability test -- ignores the "leaves own king in check" gate,
+    // since it is itself used to implement that very check.
+    public boolean isCellAttackedBy(Cell target, Color byColor) { /* ... */ return false; }
+}</code></pre>
+
+        <pre><code>public class Move {
+    private final Piece piece;
+    private final Cell from;
+    private final Cell to;
+    private final Piece capturedPiece; // null if this was not a capture
+    private final boolean isPromotion;
+
+    public Move(Piece piece, Cell from, Cell to, Piece capturedPiece, boolean isPromotion) {
+        this.piece = piece;
+        this.from = from;
+        this.to = to;
+        this.capturedPiece = capturedPiece;
+        this.isPromotion = isPromotion;
+    }
+
+    // Command.execute(): apply this move to the board.
+    public void execute(Board board) {
+        board.movePiece(from, to);
+    }
+
+    // Command.undo(): restore the board to its pre-move state.
+    public void undo(Board board) {
+        board.movePiece(to, from);
+        to.setPiece(capturedPiece); // put any captured piece back
+    }
+
+    public Piece getPiece() { return piece; }
+    public Cell getFrom() { return from; }
+    public Cell getTo() { return to; }
+    public Piece getCapturedPiece() { return capturedPiece; }
+    public boolean isPromotion() { return isPromotion; }
+}</code></pre>
+
+        <pre><code>public class Game {
+    private final Board board = new Board();
+    private final List&lt;Move&gt; history = new ArrayList&lt;&gt;();
+    private Color currentTurn = Color.WHITE;
+    private GameStatus status = GameStatus.IN_PROGRESS;
+
+    public MoveResult makeMove(Cell from, Cell to) {
+        Piece piece = from.getPiece();
+        if (piece == null || piece.getColor() != currentTurn) {
+            return MoveResult.reject("No piece of yours on that cell.");
+        }
+        if (!piece.canMove(board, from, to)) {
+            return MoveResult.reject("Illegal move for this piece type.");
+        }
+        if (movingExposesOwnKing(piece, from, to)) {
+            return MoveResult.reject("Illegal move -- exposes your own King to check.");
+        }
+
+        Piece captured = to.getPiece();
+        Move move = new Move(piece, from, to, captured, isPromotionMove(piece, to));
+        move.execute(board);
+        history.add(move);
+
+        Color opponent = opposite(currentTurn);
+        boolean opponentInCheck = isInCheck(opponent);
+        boolean opponentHasLegalMove = hasAnyLegalMove(opponent);
+
+        if (opponentInCheck &amp;&amp; !opponentHasLegalMove) {
+            status = GameStatus.CHECKMATE;
+        } else if (!opponentInCheck &amp;&amp; !opponentHasLegalMove) {
+            status = GameStatus.STALEMATE;
+        } else {
+            status = opponentInCheck ? GameStatus.CHECK : GameStatus.IN_PROGRESS;
+            currentTurn = opponent;
+        }
+        return MoveResult.ok(status);
+    }
+
+    private boolean movingExposesOwnKing(Piece piece, Cell from, Cell to) { /* simulate, check, undo */ return false; }
+    private boolean isInCheck(Color color) { return board.isCellAttackedBy(board.findKing(color), opposite(color)); }
+    private boolean hasAnyLegalMove(Color color) { /* try every piece x every cell */ return true; }
+    private boolean isPromotionMove(Piece piece, Cell to) { /* Pawn reaching the far rank */ return false; }
+    private Color opposite(Color c) { return c == Color.WHITE ? Color.BLACK : Color.WHITE; }
+
+    public List&lt;Move&gt; getHistory() { return Collections.unmodifiableList(history); }
+    public GameStatus getStatus() { return status; }
+}</code></pre>
+
+        <h2 id="extensibility-and-edge-cases">Extensibility &amp; Edge Cases</h2>
+        <ul>
+          <li><strong>Castling.</strong> A King+Rook special move (the King moves two squares toward a Rook, and that Rook jumps to the square the King crossed) with several simultaneous preconditions: neither the King nor that specific Rook has moved yet this game (hence the <code>hasMoved</code> flag on Piece), every square between them is empty, and the King is not currently in check, does not pass through an attacked square, and does not land on one. This doesn't fit inside a single piece's <code>canMove(from, to)</code> &mdash; it's a two-piece, multi-condition special move &mdash; so it's best modeled as its own explicit operation (e.g. <code>Game.tryCastle(side)</code>) that checks every precondition directly, rather than being shoehorned into <code>King.canMove()</code>.</li>
+          <li><strong>En passant.</strong> A Pawn-specific capture available only on the very next move immediately after an opponent's Pawn advances two squares from its starting rank and lands beside your Pawn; you may capture it as if it had only moved one square. This requires tracking one extra piece of transient state on Game (e.g. <code>lastMoveWasTwoSquarePawnAdvance</code>, or the specific cell such a capture would land on), because the capture's legality depends on the immediately preceding move, not just the current board position &mdash; something a stateless <code>canMove(board, from, to)</code> signature cannot express by itself without that extra context.</li>
+          <li><strong>Chess variants / custom pieces.</strong> This is the concrete payoff of the Strategy-based Piece design: supporting a variant piece with a genuinely novel movement rule (say, a "Cannon" that must jump exactly one piece to capture) is a new Piece subclass implementing <code>canMove()</code> &mdash; zero changes to Game, Board, or any existing Piece subclass. It's the same argument made in the Design Patterns section, made concrete with a specific example.</li>
+          <li><strong>Pluggable AI opponent.</strong> A computer player is naturally modeled as a "move chooser" strategy &mdash; something that, given a Board and a color, returns a Move (via minimax/alpha-beta search or a simpler heuristic). <code>Game.makeMove()</code> doesn't care whether the from/to came from a human clicking a UI or an AI's search; both are just a proposed move fed into the same validate-apply-detect flow.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">Why does giving each Piece subclass its own <code>canMove(Board, from, to)</code> beat a single, centralized <code>Board.isLegalMove(pieceType, from, to)</code> method with a switch on piece type?</div>
+          <div class="qa-a">The centralized version has to be reopened and edited every time a new piece type is added &mdash; a chess-variant piece, or even just reorganizing the existing six &mdash; and a switch statement that large is exactly the kind of code where an edit meant for one branch (say, fixing Rook) accidentally breaks a neighboring one (Queen, which shares the straight-line logic). With per-piece <code>canMove()</code>, adding a new piece type is a brand-new class implementing one method; Game and Board are never touched. This is the Open/Closed Principle in concrete form: the design is closed for modification (the caller never changes) and open for extension (new Piece subclasses).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you detect Checkmate vs. Stalemate precisely &mdash; what's the exact distinguishing test?</div>
+          <div class="qa-a">Both conditions reduce to the identical underlying question: does the side to move have zero legal moves? (A legal move is one that both (a) the piece type's rule permits, and (b) does not leave that side's own King in check.) If the answer is yes and that side's King is currently in check, it's Checkmate. If the answer is yes and that side's King is NOT in check, it's Stalemate &mdash; a draw. If the answer is no, the game simply continues, possibly flagged as Check if the King happens to be under attack but still has an escape. The common mistake is checking only whether the King itself can move; the correct test has to consider every piece's every legal move, including ones that block the check or capture the attacker.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you implement undo using the Command pattern here?</div>
+          <div class="qa-a">Each applied Move is pushed onto <code>Game.history</code> as it's played. To undo, pop the most recent Move and call its <code>undo(board)</code>, which reverses exactly what <code>execute()</code> did &mdash; move the piece back to <code>from</code> and restore any <code>capturedPiece</code> to <code>to</code>. One real subtlety: <code>hasMoved</code> shouldn't simply be reset to false on undo unless this was genuinely that piece's first move ever, since a piece can move more than once in a game &mdash; either track a move-count instead of a boolean, or have the Move record the piece's <code>hasMoved</code> value immediately before it executed, and restore exactly that value on undo. After the board is restored, recompute GameStatus and currentTurn rather than trying to reverse-engineer them incrementally.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would castling's multiple preconditions be represented in the model?</div>
+          <div class="qa-a">As an explicit method (e.g. <code>Game.tryCastle(color, side)</code>) rather than inside any single piece's <code>canMove()</code>, because it genuinely depends on two pieces at once: check <code>hasMoved()</code> is false on both the King and the specific Rook on that side, use <code>Board.isPathClear()</code> to confirm every square between them is empty, and use <code>Board.isCellAttackedBy()</code> to confirm the King is not currently in check, does not pass through an attacked square, and does not land on one. Only if every one of those checks passes does the method move both pieces at once and record it as a single special Move (with a castle flag) in history.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent a move that's legal for the piece type but would leave your own King in check?</div>
+          <div class="qa-a">Simulate first: tentatively apply the move to the board, ask <code>isInCheck(mover's color)</code>, then always undo the simulation before deciding. If the simulated position leaves the mover's own King in check, reject the move outright; otherwise it's safe to actually commit it. As an optimization, most moves can skip the simulation entirely &mdash; only pieces on the same rank, file, or diagonal as the King (or the King itself) can possibly expose it, so a "pinned piece" pre-check can avoid simulating the vast majority of moves.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you determine whether a given King's cell is "in check" at all?</div>
+          <div class="qa-a">For every piece the opponent still has on the board, ask "could this piece legally reach the King's cell?" &mdash; which is exactly what <code>Board.isCellAttackedBy(kingCell, opponentColor)</code> does, effectively calling each opposing piece's <code>canMove(board, pieceCell, kingCell)</code> (a raw reachability test, deliberately not gated by the "does this expose my own king" rule, since that check itself depends on this one) and returning true the moment any one of them says yes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why model Move as its own class instead of just passing two Cell references around?</div>
+          <div class="qa-a">Because replay and undo both need more state than a bare from/to pair carries: which Piece moved, what (if anything) was captured, and whether it was a special move like a promotion. A Move is the unit of both "do" and "undo" in the Command pattern, and a <code>List&lt;Move&gt;</code> is a complete, replayable transcript of the entire game &mdash; something two raw Cell references could never reconstruct on their own.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support Pawn promotion, including letting the player choose which piece to promote to?</div>
+          <div class="qa-a">Detect the condition &mdash; a Pawn reaching the board's far rank &mdash; as part of applying the move, then instead of leaving the Pawn object on the destination Cell, construct a new Piece of the player's chosen type (Queen, Rook, Bishop, or Knight) and place that on the Cell instead. Record the chosen type on the Move object itself (the <code>isPromotion</code> flag, extended with the chosen type) so that <code>undo()</code> can remove the promoted piece and restore the original Pawn exactly.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support a chess variant with a brand-new piece that has a totally custom movement rule?</div>
+          <div class="qa-a">Add one new Piece subclass implementing <code>canMove()</code> with the new rule. Board, Game, and every existing Piece subclass are untouched &mdash; Game still just calls <code>piece.canMove(board, from, to)</code> without caring what concrete type it's holding. This is the concrete payoff of the Strategy-based design emphasized throughout this page, and it's the single strongest argument for why per-piece polymorphism was worth the up-front six-subclass investment.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Key Takeaways</div>
+          <ul>
+            <li>Every Piece subclass answers <code>canMove(Board, from, to)</code> for itself &mdash; Game and Board never branch on piece type. That's Strategy via plain polymorphism, not a fancy pattern needing extra machinery.</li>
+            <li>Move is modeled as its own Command-shaped object (<code>execute()</code>/<code>undo()</code>), which is what makes history and undo possible without a heavier, Memento-style whole-board snapshot per ply.</li>
+            <li>Checkmate and Stalemate are two answers to the same underlying question &mdash; "does the side to move have zero legal moves?" &mdash; that differ only in whether that side's King is currently in check.</li>
+            <li>A move can satisfy its piece type's own rule and still be illegal, because it would leave the mover's own King in check &mdash; legality is always a two-part gate, never just the piece's rule alone.</li>
+            <li>Castling and en passant don't fit a plain <code>canMove(from, to)</code> signature &mdash; they need extra state (<code>hasMoved</code>, "last move was a two-square Pawn advance") and are best modeled as their own explicit operations rather than folded into one piece's movement rule.</li>
+          </ul>
+        </div>
+
+        <h2 id="references">References</h2>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Strategy_pattern" target="_blank" rel="noopener">"Strategy pattern"</a> &mdash; general reference for the per-piece <code>canMove()</code> polymorphism discussed throughout this page.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Command_pattern" target="_blank" rel="noopener">"Command pattern"</a> &mdash; general reference for modeling Move as an execute()/undo() object, discussed in the Design Patterns section.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Memento_pattern" target="_blank" rel="noopener">"Memento pattern"</a> &mdash; general reference for the whole-board-snapshot alternative to Command-based undo, discussed above.</p>
+
+        <div class="page-nav">
+          <a class="prev" href="restaurant-management-system.html"><span class="dir">Previous</span>Restaurant Management System</a>
+          <a class="next" href="online-stock-brokerage-system.html"><span class="dir">Next</span>Online Stock Brokerage System</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

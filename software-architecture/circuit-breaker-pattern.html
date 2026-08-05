@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Circuit Breaker Pattern | Software Architecture Patterns | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Software Architecture Patterns</a><span class="sep">/</span><span class="current">Circuit Breaker Pattern</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Software Architecture Patterns overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#the-problem-cascading-failures-in-distributed-systems">The Problem: Cascading Failures in Distributed Systems</a></li>
+        <li><a href="#the-circuit-breaker-solution-closed-open-and-half-open">The Circuit Breaker Solution: Closed, Open, and Half-Open</a></li>
+        <li><a href="#an-example-charging-a-card-through-a-circuit-breaker">An Example: Charging a Card Through a Circuit Breaker</a></li>
+        <li><a href="#performance-implications-and-special-considerations">Performance Implications and Special Considerations</a></li>
+        <li><a href="#system-design-examples">System Design Examples</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SOFTWARE ARCHITECTURE PATTERNS</span>
+          <h1>Circuit Breaker Pattern</h1>
+        </div>
+
+                <div class="toc-box">
+          <h2>Table of Contents</h2>
+          <ul class="toc-list">
+            <li><a href="#overview">Overview</a>
+            </li>
+            <li><a href="#the-problem-cascading-failures-in-distributed-systems">The Problem: Cascading Failures in Distributed Systems</a>
+            </li>
+            <li><a href="#the-circuit-breaker-solution-closed-open-and-half-open">The Circuit Breaker Solution: Closed, Open, and Half-Open</a>
+            </li>
+            <li><a href="#an-example-charging-a-card-through-a-circuit-breaker">An Example: Charging a Card Through a Circuit Breaker</a>
+            </li>
+            <li><a href="#performance-implications-and-special-considerations">Performance Implications and Special Considerations</a>
+            </li>
+            <li><a href="#system-design-examples">System Design Examples</a>
+            </li>
+            <li><a href="#common-interview-questions">Common Interview Questions</a>
+            </li>
+            <li><a href="#key-takeaways">Key Takeaways</a>
+            </li>
+          </ul>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Imagine a customer-facing app that talks to ten other services behind the scenes. Most of the time everything works, but every so often one of those services gets slow or stops responding entirely. The Circuit Breaker pattern exists to protect an application when that happens, so that one struggling dependency doesn't drag down everything connected to it.</p>
+        <p>The idea is borrowed directly from electrical engineering. A household circuit breaker watches the current flowing through the wiring, and if it senses something dangerous — a surge that could start a fire — it "trips" and cuts the power immediately, rather than waiting for the wires to melt first. A software circuit breaker plays the same role for network calls: it watches for repeated failures, and once it sees enough of them, it stops sending new requests to the troubled service for a while.</p>
+        <p>The pattern was first described in detail by Michael Nygard in his book <em>Release It!</em> and was later popularized for a wider audience by software architect Martin Fowler. Today it's rarely built from scratch — libraries such as Resilience4j (Java), Polly (.NET), and the older Netflix Hystrix implement it directly, and modern service mesh tools like Istio/Envoy can apply it automatically at the network level. Circuit breakers show up anywhere one piece of software depends on another over a network: microservices calling each other, apps calling third-party APIs, or services calling a database — anywhere a remote call can fail or hang.</p>
+        <p>See also this section's own <a href="bulkhead-pattern.html">Bulkhead Pattern</a> and <a href="retry-pattern.html">Retry Pattern</a> pages, which cover two closely related resilience patterns often paired with a circuit breaker.</p>
+
+        <h2 id="the-problem-cascading-failures-in-distributed-systems">The Problem: Cascading Failures in Distributed Systems</h2>
+        <p>In a single, monolithic application, one part of the code calling another is just a function call in memory — it either works or throws an error almost instantly, with no network involved and very little room for slow, unpredictable failure. Microservices architectures give up that safety: services talk to each other over a network, and networks are unreliable. A service can be slow because it's overloaded, it can be mid-deployment, or it can have simply crashed.</p>
+        <p>The dangerous part isn't that a service fails — it's that the failure can spread. Picture an online store where the checkout service calls a recommendations service to show "you might also like" items. If the recommendations service doesn't fail fast but instead hangs for several seconds before timing out, every checkout request that touches it also hangs, tying up a thread or connection while it waits. If enough shoppers check out at the same time, the checkout service runs out of available threads or connections just waiting on a feature that was never critical in the first place.</p>
+        <p>This is how a small, low-priority problem becomes a big one. If another service depends on checkout, its threads start piling up too, waiting on a service that is itself waiting on something else. This chain reaction is called a <strong>cascading failure</strong> — a single weak link causes services further up the chain to slow down or fail, until the whole system is affected, even though only one component was actually broken. Without something like a circuit breaker in place, an application has no way to "give up" on a bad dependency: it keeps sending requests, keeps waiting on timeouts, and if it's also blindly retrying failed calls, it can make matters worse by adding even more load onto a service that's already struggling to recover.</p>
+
+        <h2 id="the-circuit-breaker-solution-closed-open-and-half-open">The Circuit Breaker Solution: Closed, Open, and Half-Open</h2>
+        <p>Instead of letting a service call a dependency directly, the Circuit Breaker pattern places a small "gatekeeper" object in between. This gatekeeper remembers recent history — how many calls succeeded, how many failed — and uses that history to decide whether it's safe to let the next call through at all. The gatekeeper behaves like a state machine with three states:</p>
+        <ul>
+          <li><strong>Closed</strong> — the normal, healthy state. Every request passes through to the real service, and the breaker quietly counts successes and failures in the background, usually over a rolling window such as "the last 20 requests" or "the last 10 seconds."</li>
+          <li><strong>Open</strong> — if failures cross a defined threshold (for example, more than half of recent requests failed), the breaker "trips" and moves to Open. While open, it doesn't even attempt to contact the real service — it fails immediately or returns a fallback response. This protects the caller from wasting time on a doomed call, and it gives the struggling service breathing room to recover instead of being bombarded with more traffic.</li>
+          <li><strong>Half-Open</strong> — after a cool-down period, the breaker cautiously lets a small number of "test" requests through. If those succeed, it assumes the dependency has recovered and moves back to Closed. If they still fail, it goes straight back to Open and the timer restarts.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <img src="../images/software-architecture/circuit-breaker-state-machine.png" alt="Circuit Breaker state machine diagram showing Closed, Open, and Half-Open states">
+          <div class="diagram-caption">Circuit Breaker state machine — Closed, Open, and Half-Open states</div>
+        </div>
+
+        <p>Deciding what to do while the breaker is Open matters just as much as tripping it in the first place. A well-designed system returns something useful instead of a raw error — cached data from an earlier successful call, a sensible default value, or a clear "try again shortly" message. This is called a <strong>fallback</strong>, and it's what turns a hard failure into a graceful degradation that customers barely notice.</p>
+
+        <h2 id="an-example-charging-a-card-through-a-circuit-breaker">An Example: Charging a Card Through a Circuit Breaker</h2>
+        <p>Consider an order service in an e-commerce app that needs to call a payment service to charge the customer's card. Here is roughly how a call flows through a circuit breaker:</p>
+        <ol>
+          <li>The order service asks the circuit breaker to make the "charge card" call instead of calling the payment service directly.</li>
+          <li>The breaker checks its current state. If it's Closed, it forwards the request to the payment service as normal.</li>
+          <li>The payment service responds successfully — the breaker records a success and resets its failure count.</li>
+          <li>Later, the payment service starts timing out. The breaker records each failure, and once the failure count crosses its threshold, it flips to Open.</li>
+          <li>For the next 30 seconds (a configurable cool-down), every new charge request is stopped by the breaker before it ever reaches the payment service. The order service immediately gets back a "payment temporarily unavailable, please try again" message instead of waiting on a hung connection.</li>
+          <li>After 30 seconds, the breaker allows one test request through (Half-Open). If it succeeds, the breaker closes and normal traffic resumes; if it fails, the breaker reopens and waits another cool-down period.</li>
+        </ol>
+        <p>In simplified pseudo-code, the same flow looks like this:</p>
+        <pre><code>function chargeCard(order):
+    if breaker.state == OPEN:
+        if breaker.coolDownExpired():
+            breaker.state = HALF_OPEN
+        else:
+            return fallbackResponse("Payment temporarily unavailable")
+
+    try:
+        result = paymentService.charge(order)
+        breaker.recordSuccess()
+        return result
+    catch (error):
+        breaker.recordFailure()
+        if breaker.failureThresholdExceeded():
+            breaker.state = OPEN
+        return fallbackResponse("Payment temporarily unavailable")</code></pre>
+
+        <h2 id="performance-implications-and-special-considerations">Performance Implications and Special Considerations</h2>
+        <p>The breaker itself is cheap to run — it's really just a few counters and a timer — so it adds almost no measurable overhead to a normal request. The real engineering effort goes into tuning it correctly. If the failure threshold is too sensitive, the breaker trips on ordinary, temporary blips and starts rejecting requests the service could actually have handled (a false positive). If it's too lenient, it fails to trip in time and the cascading failure it was meant to prevent happens anyway.</p>
+        <p>Key settings to think about include the failure-rate threshold (what percentage of calls must fail), a minimum volume of requests before the breaker even starts judging (so one unlucky call doesn't trip it), the length of the rolling window used to measure failures, and how long the cool-down period should last before trying Half-Open again.</p>
+        <p>Circuit breakers work best as one piece of a bigger resilience strategy, not as a standalone fix. They're usually paired with timeouts (so a single call can't hang forever) and with the Retry pattern (so transient errors get a reasonable second try, but the breaker stops the retries once the failure looks persistent). Each downstream dependency should generally get its own breaker instance — lumping all outbound calls under one shared breaker means an unrelated failure can needlessly block traffic to a perfectly healthy service.</p>
+        <p>Finally, because a breaker's whole job is to react to failure, teams should actually test that it works — for example using fault-injection or "chaos engineering" style testing, deliberately failing a dependency in a controlled way to confirm the breaker trips, the fallback behaves correctly, and the system recovers cleanly once the dependency comes back. It's also worth logging and alerting on state changes (Closed to Open), since that's a strong early signal that a dependency is in trouble.</p>
+
+        <h2 id="system-design-examples">System Design Examples</h2>
+        <p>Netflix is one of the best-known examples of this pattern at scale. Its internal library, Hystrix, wrapped every call between Netflix's many backend services in a circuit breaker, so that if one service — say, a ratings or recommendations service — became slow, it wouldn't take down unrelated parts of the streaming experience like browsing or playback. Hystrix has since been succeeded by newer libraries like Resilience4j, but the underlying idea it popularized remains standard practice in large-scale microservices systems.</p>
+        <p>A more everyday example is an e-commerce checkout that depends on an external payment gateway. The order service wraps its call to the gateway in a circuit breaker. When the gateway is healthy, checkouts flow normally. If the gateway starts failing, the breaker trips, the order service stops hammering it, and the app can either fall back to a secondary payment provider or show shoppers a clear message — keeping the rest of the site (browsing, cart, account pages) fully functional the whole time.</p>
+
+        <div class="diagram-box">
+          <img src="../images/software-architecture/circuit-breaker-example.png" alt="Circuit Breaker protecting an Order Service call to a Payment Gateway, with a fallback path diagram">
+          <div class="diagram-caption">Circuit Breaker protecting an Order Service call to a Payment Gateway, with a fallback path</div>
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">What problem does the Circuit Breaker pattern solve?</div>
+          <div class="qa-a">It prevents cascading failures in distributed systems. When a downstream dependency becomes slow or unresponsive instead of failing fast, callers pile up threads or connections waiting on it, and that congestion can propagate up the call chain until unrelated parts of the system are affected. A circuit breaker detects the failing dependency and stops sending it new traffic, containing the damage to just that one dependency.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Walk through the three states of a circuit breaker.</div>
+          <div class="qa-a">Closed is the normal state where all requests pass through while the breaker counts successes and failures over a rolling window. Open is triggered when failures cross a defined threshold — the breaker stops calling the real service entirely and immediately returns a fallback. Half-Open occurs after a cool-down period, where the breaker lets a small number of test requests through: success moves it back to Closed, continued failure sends it back to Open and restarts the timer.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What is a fallback, and why does it matter?</div>
+          <div class="qa-a">A fallback is what the breaker returns while it's Open instead of a raw error — cached data from an earlier successful call, a sensible default, or a clear "try again shortly" message. It turns a hard failure into graceful degradation that customers barely notice, rather than exposing them to a hung request or an ugly error.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What settings do you need to tune when configuring a circuit breaker, and what happens if you get them wrong?</div>
+          <div class="qa-a">Key settings include the failure-rate threshold, a minimum request volume before the breaker starts judging, the size of the rolling window, and the length of the cool-down before Half-Open. A threshold that's too sensitive trips on ordinary temporary blips (false positives, rejecting requests the service could have handled); a threshold that's too lenient fails to trip in time, letting the cascading failure happen anyway.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How does Circuit Breaker relate to timeouts and the Retry pattern, and should one breaker cover all outbound calls?</div>
+          <div class="qa-a">Circuit breakers work best paired with timeouts (so a single call can't hang forever) and the Retry pattern (so transient errors get a reasonable second try, but the breaker stops retries once failure looks persistent). Each downstream dependency should get its own breaker instance — sharing one breaker across unrelated dependencies means an unrelated failure can needlessly block traffic to a perfectly healthy service.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The Circuit Breaker pattern protects a distributed system from the ripple effects of one failing dependency. By wrapping remote calls in a gatekeeper that tracks Closed, Open, and Half-Open states, an application can stop wasting resources on doomed calls, give a struggling service room to recover, and respond to users quickly with a sensible fallback instead of a long hang. It doesn't fix the underlying problem with the dependency, but it prevents that problem from cascading into a much bigger outage — and it works best alongside timeouts and the Retry pattern as part of a broader resilience strategy.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="service-discovery-pattern.html"><span class="dir">Previous</span>Service Discovery Pattern</a>
+          <a class="next" href="bulkhead-pattern.html"><span class="dir">Next</span>Bulkhead Pattern</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

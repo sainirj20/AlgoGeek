@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design a URL Shortener (TinyURL) | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Design a URL Shortener</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-generating-the-short-code">Deep Dive — Generating the Short Code</a></li>
+        <li><a href="#deep-dive-write-path-shortening-a-url">Deep Dive — Write Path (Shortening a URL)</a></li>
+        <li><a href="#deep-dive-read-path-resolving-redirecting">Deep Dive — Read Path (Resolving / Redirecting)</a></li>
+        <li><a href="#deep-dive-caching-strategy">Deep Dive — Caching Strategy</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#deep-dive-analytics-pipeline">Deep Dive — Analytics Pipeline</a></li>
+        <li><a href="#rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#expiration-and-database-cleanup">Expiration and Database Cleanup</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Design a URL Shortener (like TinyURL / bit.ly)</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough: requirements, capacity estimation, API &amp; data model, architecture, key-generation trade-offs, caching &amp; sharding, security &amp; abuse prevention, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a URL shortening service like TinyURL. Given a long URL, the service generates a much shorter alias (a "short link"). When a user visits the short link, the service redirects them to the original, full-length URL. Comparable real-world services include bit.ly, ow.ly, t.co, and the now-retired goo.gl.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It looks simple on the surface ("just store a key &rarr; value mapping"), which is exactly why it's a popular screening question — it rewards candidates who probe the read/write skew, think about uniqueness and collisions, and reason about caching, sharding, and failure modes, while punishing candidates who jump straight to a database schema.</p>
+
+        <h3>Why do people use a URL shortener?</h3>
+        <ul>
+          <li>Shorter links are easier to share, print, message, or paste into character-limited fields.</li>
+          <li>Users are less likely to mistype a short link than a long one.</li>
+          <li>Shortened links can be swapped without changing the printed/shared reference — useful for tracking campaign performance or fixing a broken destination.</li>
+          <li>Click analytics (who clicked, when, from where) support marketing and product use cases.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Always clarify scope before designing. A strong candidate spends the first 3&ndash;5 minutes narrowing the problem rather than assuming defaults.</p>
+        <ol>
+          <li>What scale are we targeting — how many new URLs per day/month, and how many redirects?</li>
+          <li>Can users choose a custom alias (vanity URL), or are all short codes system-generated?</li>
+          <li>Do links expire? Is there a default TTL, and can users override it?</li>
+          <li>Do we need user accounts / authentication, or can anonymous users shorten URLs too?</li>
+          <li>Do we need click analytics (count, geography, referrer, device)?</li>
+          <li>Should the service expose a public REST API for third-party integrations?</li>
+          <li>Is strong consistency required (e.g. a link must be resolvable immediately after creation), or is eventual consistency acceptable?</li>
+          <li>Do we need to support private/permissioned links, or are all links public once created?</li>
+          <li>Any requirement to screen destination URLs for phishing/malware (safe-browsing)?</li>
+          <li>Single region or multi-region / global low-latency redirects?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          In a real interview, don't wait for every answer before moving on — state a reasonable assumption out loud ("I'll assume anonymous + authenticated users, 100:1 read/write, and links expire in 2 years by default unless told otherwise") and keep going. This shows judgment, not indecision.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Given a long URL, generate a shorter, unique alias ("short link") that can be easily copied, pasted, and shared.</li>
+          <li>When a user opens a short link, redirect them to the original long URL.</li>
+          <li>Allow users to optionally choose a custom alias for their URL (vanity links).</li>
+          <li>Links expire after a default timespan; users may optionally specify their own expiration date.</li>
+          <li>(Extended) Allow the owner to view analytics for a link (click count, timeline, referrers, geography).</li>
+          <li>(Extended) Allow the owner to delete / deactivate a link before it naturally expires.</li>
+          <li>(Extended) Expose the shortening and redirect functionality through a public REST API.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>High availability:</strong> the redirect path is on the critical path of every link the service has ever issued — if it goes down, every shared link everywhere breaks at once.</li>
+          <li><strong>Low latency redirection:</strong> users should perceive the redirect as effectively instant (target: well under 100 ms server-side).</li>
+          <li><strong>Short links should not be easily guessable or sequentially enumerable</strong>, to stop scraping of the entire URL corpus and to avoid leaking creation order/volume.</li>
+          <li><strong>Uniqueness:</strong> no two different long URLs may ever resolve from the same short code, and a short code, once issued, must not be reissued to a different URL while still active.</li>
+          <li><strong>Durability:</strong> a created link must survive server/DB failures until its expiration.</li>
+          <li><strong>Horizontal scalability:</strong> the system must scale independently on the read side (redirects) and the write side (shortens), since the two have very different volumes.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>For this design we'll go deep on the shortening + redirect + caching + partitioning core, and touch on analytics, rate-limiting and security. We explicitly call out — but don't build — the internals of a full user-authentication system, an ML-based phishing classifier, or a billing system, since these are large sub-systems of their own.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>This system is heavily read-skewed: far more people click a short link than create one. We'll assume a 100:1 read/write ratio, which is a standard, defensible assumption for this class of service — state it explicitly and adjust the rest of the math from there.</p>
+
+        <h3>Traffic Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          500 million new short links created per month
+          <br>Redirects / month = 100 &times; 500M = 50 billion
+          <br>New URLs / second = 500,000,000 &divide; (30 &times; 24 &times; 3600) &asymp; 193 &rarr; round to ~200 writes/sec
+          <br>Redirects / second = 100 &times; 200 = ~20,000 reads/sec (20K QPS)
+          <br>Peak traffic runs 2&ndash;3&times; average &rarr; design for ~50&ndash;60K peak read QPS and ~500&ndash;600 peak write QPS.
+        </div>
+
+        <h3>Storage Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Retain every record for 5 years; each stored record (short code + long URL + metadata) averages ~500 bytes
+          <br>Total objects stored = 500M &times; 12 months &times; 5 years = 30 billion records
+          <br>Raw storage = 30 billion &times; 500 bytes = 15 TB
+          <br>With 3&times; replication for durability/availability, plan for &asymp; 45 TB of physical storage, plus headroom for indexes.
+        </div>
+
+        <h3>Bandwidth Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Bandwidth</span>
+          Incoming (writes): 200/sec &times; 500 bytes &asymp; 100 KB/sec
+          <br>Outgoing (reads): 20,000/sec &times; 500 bytes &asymp; 10 MB/sec (excluding HTTP/TLS overhead)
+        </div>
+
+        <h3>Memory / Cache Estimates</h3>
+        <p>Applying the 80/20 rule (20% of links generate 80% of traffic), we want to cache the hottest 20% of daily reads.</p>
+        <div class="formula-box">
+          <span class="formula-label">Cache sizing</span>
+          Daily redirects = 20,000/sec &times; 86,400 sec &asymp; 1.73 billion/day
+          <br>20% of daily redirects &asymp; 345 million requests — but many of these are repeat hits on the same small set of hot links, so the number of distinct hot keys is far smaller
+          <br>Cache size &asymp; 0.2 &times; 1.73B &times; 500 bytes &asymp; 173 GB (upper bound; real usage is lower due to duplicate hits)
+        </div>
+        <p>&asymp;175 GB fits comfortably across a small Redis cluster (e.g. 3 primary shards &times; 2 replicas), which is preferable to a single large box for availability during failover and rolling upgrades.</p>
+
+        <h3>Short-Code Length (Keyspace)</h3>
+        <p>Using a base62 alphabet ([a-z, A-Z, 0-9] = 62 symbols), the keyspace grows as 62<sup>n</sup> for an n-character code. We need enough headroom to cover 30 billion stored objects with room to grow for years without re-architecting.</p>
+        <table class="sortable">
+          <tr><th>Code length (n)</th><th>Keyspace (62&#8319;)</th><th>Verdict for 30B records over 5 yrs</th></tr>
+          <tr><td>5</td><td>&asymp; 916 million</td><td>Too small — exhausted almost immediately</td></tr>
+          <tr><td>6</td><td>&asymp; 56.8 billion</td><td>Workable, but thin margin as volume grows</td></tr>
+          <tr><td>7</td><td>&asymp; 3.5 trillion</td><td>Recommended — ~115&times; headroom over 30B, safe for a decade+</td></tr>
+          <tr><td>8</td><td>&asymp; 218 trillion</td><td>Overkill for this scale; longer than needed</td></tr>
+        </table>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>New URLs / sec</td><td>~200</td></tr>
+          <tr><td>Redirects / sec</td><td>~20,000 (peak ~50&ndash;60K)</td></tr>
+          <tr><td>Incoming bandwidth</td><td>~100 KB/sec</td></tr>
+          <tr><td>Outgoing bandwidth</td><td>~10 MB/sec</td></tr>
+          <tr><td>Storage (5 yrs, 3&times; replicated)</td><td>~45 TB</td></tr>
+          <tr><td>Cache memory (hot set)</td><td>~175 GB</td></tr>
+          <tr><td>Recommended short-code length</td><td>7 characters (base62)</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>A REST API is preferred over SOAP here: it's simpler, stateless, and maps naturally onto HTTP semantics — the redirect endpoint in particular piggybacks directly on HTTP's own redirect status codes and caching headers.</p>
+
+        <h3>Create a Short URL</h3>
+        <pre><code>POST /api/v1/shorten
+
+Request body:
+{
+  "long_url": string,       // required
+  "custom_alias": string,   // optional, max 16 chars
+  "expire_at": string,      // optional ISO-8601 timestamp
+  "visibility": "public" | "private", // optional, default public
+  "api_key": string         // required — identifies caller, used for quota
+}
+
+Response 201 Created:
+{ "short_url": "https://tiny.url/aB3xQ9z", "expire_at": "2028-07-16T00:00:00Z" }
+
+Errors: 400 invalid URL &middot; 409 alias already taken &middot; 401 unauthenticated &middot; 429 rate-limited</code></pre>
+
+        <h3>Redirect</h3>
+        <pre><code>GET /{short_code}
+
+Success -> HTTP 301/302, Location: &lt;original long URL&gt;  (see "301 vs. 302" below)
+Not found -> HTTP 404
+Expired -> HTTP 410 Gone
+No permission (private link) -> HTTP 401 / 403</code></pre>
+
+        <h3>Delete a Short URL</h3>
+        <pre><code>DELETE /api/v1/urls/{short_code}
+Auth: must be the owning user (or an admin)
+Response 200: { "status": "removed" }</code></pre>
+
+        <h3>Analytics (Extended)</h3>
+        <pre><code>GET /api/v1/urls/{short_code}/stats
+Response 200:
+{
+  "total_clicks": 48213,
+  "clicks_by_day": [ ... ],
+  "top_referrers": [ ... ],
+  "top_countries": [ ... ]
+}</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          How do we stop a malicious caller from exhausting the entire keyspace? Every write/read call is scoped to an <code>api_key</code>, which is throttled to N creations and M redirects per time window (see "Rate Limiting and Abuse Prevention" below).
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>Billions of rows, growing linearly with usage.</li>
+          <li>Each object is small (well under 1 KB): a short code, a long URL, and a handful of metadata fields.</li>
+          <li>Virtually no relationships between records beyond "which user created this link" — no joins needed on the hot path.</li>
+          <li>The workload is overwhelmingly read-heavy (100:1) and is a pure key lookup by short code.</li>
+        </ul>
+        <p>These properties — huge volume, tiny objects, no joins, simple key-based access — are the textbook case for a NoSQL key-value / wide-column store over a traditional relational database for the primary URL-mapping table.</p>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">Table: url_mapping</th></tr>
+          <tr><td>short_code (PK)</td><td>varchar(16)</td></tr>
+          <tr><td>long_url</td><td>varchar(2048)</td></tr>
+          <tr><td>user_id (nullable, FK)</td><td>bigint</td></tr>
+          <tr><td>created_at</td><td>datetime</td></tr>
+          <tr><td>expires_at (nullable)</td><td>datetime</td></tr>
+          <tr><td>is_custom_alias</td><td>boolean</td></tr>
+          <tr><td>visibility</td><td>enum(public, private)</td></tr>
+          <tr><td>click_count (denormalized, async-updated)</td><td>bigint</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: user</th></tr>
+          <tr><td>user_id (PK)</td><td>bigint</td></tr>
+          <tr><td>name</td><td>varchar(64)</td></tr>
+          <tr><td>email</td><td>varchar(128)</td></tr>
+          <tr><td>created_at / last_login</td><td>datetime</td></tr>
+          <tr><td>plan / tier (drives rate-limit quota)</td><td>varchar(16)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: url_permission (only if private links supported)</th></tr>
+          <tr><td>short_code + user_id (composite PK)</td><td>varchar(16) + bigint</td></tr>
+          <tr><td>granted_at</td><td>datetime</td></tr>
+        </table>
+
+        <h3>SQL vs. NoSQL — the Recommended Hybrid</h3>
+        <p>The main <code>url_mapping</code> table should live in a horizontally-scalable NoSQL store (e.g. DynamoDB, Cassandra, or MongoDB — the choice among these is largely about ops/ecosystem preference, since access patterns are simple key lookups all three handle well). It needs to scale to tens of billions of rows and tens of thousands of QPS with simple partition-by-key access — exactly NoSQL's sweet spot, and it sidesteps the operational pain of manually sharding a relational database at this scale.</p>
+        <p>The Key Generation Service's key pool (see below, Approach C), however, is a small, low-volume dataset that absolutely must never hand out the same key twice — a textbook case for strict ACID transactions. Keep that piece on a conventional relational database (MySQL/Postgres) even though the bulk data plane is NoSQL. This "SQL for the coordination-heavy control plane, NoSQL for the bulk data plane" split mirrors how several production systems are actually built.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If the interviewer pushes back and wants an all-SQL answer: that's fine at moderate scale (tens of millions of rows) with manual application-level sharding — just be upfront that a single MySQL instance will not hold 30 billion rows, and you'd need to shard it yourself (Vitess/ProxySQL-style) rather than getting that sharding for free the way you would with Cassandra/DynamoDB.
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Clients talk to a CDN / edge cache first (so repeat hits on very hot links never even reach our infrastructure), then a load balancer, then a fleet of stateless application servers exposing the Shorten and Redirect APIs. Application servers check an in-memory Bloom filter and a Redis cache before falling back to a horizontally-sharded NoSQL store. A separate Key Generation Service (backed by a small ACID-compliant MySQL key pool) supplies unique short codes. Click events are emitted asynchronously to Kafka, aggregated by Spark Streaming, and landed in an analytics store — fully decoupled from the low-latency redirect path. A lightweight cleanup cron reclaims expired links and their keys.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/url-shortener-fig1-architecture.png" alt="High-level architecture diagram showing clients, CDN, load balancer, application servers, Bloom filter, Redis cache, sharded NoSQL store, Key Generation Service, Key-DB, cleanup cron, and Kafka/Spark analytics pipeline">
+          <div class="diagram-caption">Figure 1. High-level architecture — read path (CDN &rarr; Bloom filter &rarr; Redis &rarr; sharded NoSQL) and write path (Key Generation Service &rarr; Key-DB) share the application tier but fan out to independent downstream dependencies.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Stateless application servers:</strong> any server can handle any request, which makes horizontal scaling and load balancing trivial.</li>
+          <li><strong>Read path and write path share the app tier but fan out to different downstream dependencies</strong> (cache/DB vs. KGS), so they can be scaled independently.</li>
+          <li><strong>Everything that isn't strictly needed to answer "where does this redirect go?"</strong> (analytics, cleanup) is pushed off the critical path and handled asynchronously.</li>
+          <li><strong>Multiple layers of defense before hitting the database:</strong> CDN &rarr; Bloom filter &rarr; Redis cache &rarr; sharded DB — each layer absorbs load so only genuine cache misses reach storage.</li>
+        </ul>
+
+        <h2 id="deep-dive-generating-the-short-code">Deep Dive — Generating the Short Code</h2>
+        <p>This is the crux of the interview. The last 7 characters of <code>https://tiny.url/aB3xQ9z</code> are the "key" we need to generate — unique, short, and not easily guessable. There are four common approaches; a strong candidate can compare all four and pick one with clear reasoning.</p>
+
+        <h3>Approach A — Hash the Long URL, then Base62-Encode</h3>
+        <p>Compute MD5/SHA-256 of the input (optionally salted with a sequence number or user ID to prevent two identical URLs from colliding on the exact same hash), then Base62/Base64-encode the result and truncate to n characters.</p>
+        <ul>
+          <li><strong>Pros:</strong> stateless — no shared counter or coordination service required.</li>
+          <li><strong>Cons:</strong> truncating a cryptographic hash reintroduces collisions (defeats the point of using a strong hash); needs a DB uniqueness check + retry loop anyway; if left unsalted, it's deterministic and therefore guessable/reversible by an attacker who hashes candidate URLs; URL-encoding differences (e.g. <code>?id=design</code> vs <code>%3Fid%3Ddesign</code>) must be normalized first or "identical" URLs get different codes.</li>
+        </ul>
+
+        <h3>Approach B — Auto-Increment Counter, Base62-Encode the ID</h3>
+        <p>Use a database auto-increment primary key as the source of uniqueness, and convert that integer to a Base62 string for display.</p>
+        <ul>
+          <li><strong>Pros:</strong> trivially unique, simple to implement and reason about.</li>
+          <li><strong>Cons:</strong> sequential and therefore enumerable — a competitor can scrape your entire URL corpus by iterating IDs, and the growth rate of your business leaks through link volume; a single counter is a write bottleneck and single point of failure unless you shard it (e.g. reserve disjoint ID ranges per shard/node).</li>
+        </ul>
+
+        <h3>Approach C — Pre-Generated Key Generation Service (KGS) — Recommended Default</h3>
+        <p>A standalone service pre-generates random, unique Base62 strings offline and stores them in a small coordination datastore split into two tables — <code>available_keys</code> and <code>used_keys</code>. Application servers check out a batch of keys (e.g. 10,000 at a time) into local memory and hand them out to writers one at a time; once a batch is checked out it's immediately moved to <code>used_keys</code> inside a transaction, so two app servers can never receive overlapping keys. A trigger/watermark (e.g. "available_keys below 30%") fires the generator to bulk-mint the next ~1 million keys ahead of demand.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/url-shortener-fig2-kgs.png" alt="Key Generation Service internals diagram showing app server requesting a batch of keys, the getKey API, MySQL available_keys/used_keys tables, and the generateKey API">
+          <div class="diagram-caption">Figure 2. Key Generation Service internals — app servers check out batches of pre-minted keys; a low-watermark trigger bulk-mints the next batch ahead of demand.</div>
+        </div>
+
+        <ul>
+          <li><strong>Pros:</strong> no runtime hashing or collision retries; keys look random (not guessable/sequential); very fast on the write path (just "pop a pre-made key").</li>
+          <li><strong>Cons:</strong> one more service to build, run, and monitor; if an app server crashes holding an unused batch, those keys are wasted (acceptable — 62<sup>7</sup> &asymp; 3.5 trillion keys, losing a few thousand is noise); the KGS/key-DB needs a hot standby replica so it isn't a single point of failure.</li>
+        </ul>
+
+        <h3>Approach D — Distributed ID Generators (Zookeeper-Coordinated Ranges, or Snowflake)</h3>
+        <p>For very large, multi-region deployments: use Zookeeper/etcd to atomically hand out disjoint numeric ranges (e.g. blocks of 1,000 IDs) to each node, or generate Twitter Snowflake-style 64-bit IDs locally (timestamp + datacenter/worker ID + sequence number) with zero per-request coordination, then Base62-encode the result.</p>
+        <ul>
+          <li><strong>Pros:</strong> no central write bottleneck; scales cleanly across regions/data centers; Snowflake IDs need no shared state at request time at all.</li>
+          <li><strong>Cons:</strong> added operational complexity (running Zookeeper/etcd); Snowflake is sensitive to clock skew across nodes; encoded IDs tend to be a bit longer than a purpose-built KGS key.</li>
+        </ul>
+
+        <h3>Comparison</h3>
+        <table class="sortable">
+          <tr><th>Approach</th><th>Uniqueness</th><th>Guessable?</th><th>Coordination cost</th><th>Best fit</th></tr>
+          <tr><td>A. Hash + encode</td><td>Needs DB check + retry</td><td>Yes, if unsalted</td><td>Low</td><td>Simple/low-scale prototypes</td></tr>
+          <tr><td>B. Counter + Base62</td><td>Guaranteed</td><td>Yes (sequential)</td><td>Medium (sharded counters)</td><td>Internal tools, not public-facing</td></tr>
+          <tr><td>C. Offline KGS (recommended)</td><td>Guaranteed</td><td>No (random)</td><td>Low (batch checkout)</td><td>Most production URL shorteners</td></tr>
+          <tr><td>D. Zookeeper / Snowflake</td><td>Guaranteed</td><td>No, if randomized post-encode</td><td>Medium-High (extra infra)</td><td>Multi-region, very large scale</td></tr>
+        </table>
+        <p>Regardless of approach, keep a uniqueness constraint (conditional write / unique index) at the database layer as a last line of defense against any residual collision.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Good default answer: "I'd start with Approach C (offline KGS) since it gives us non-guessable, collision-free keys with minimal per-request work, and evolve to Approach D only once we need multiple, independently-writing regions." This shows you understand both the simple answer and how it evolves under scale — exactly what follow-up questions will probe.
+        </div>
+
+        <h2 id="deep-dive-write-path-shortening-a-url">Deep Dive — Write Path (Shortening a URL)</h2>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/url-shortener-fig3-write-path.png" alt="Write path diagram showing the sequence of steps for creating a short URL">
+          <div class="diagram-caption">Figure 3. Request flow for creating a short URL.</div>
+        </div>
+
+        <ol>
+          <li>Client submits a long URL (optionally a custom alias and/or expiration date) along with its <code>api_key</code>.</li>
+          <li>The application server validates the URL, authenticates the caller, and checks the caller's rate-limit quota.</li>
+          <li>If a custom alias was requested: check the Bloom filter, then the database, to make sure it isn't already taken. If no alias was requested: pull the next available key from the app server's local KGS cache.</li>
+          <li>Write a new row: <code>{short_code, long_url, user_id, created_at, expires_at}</code>.</li>
+          <li>Populate the Redis cache and add the new code to the Bloom filter so subsequent redirects are served from the fast path immediately.</li>
+          <li>Return the fully-formed short URL to the client.</li>
+        </ol>
+        <p>Note that step 4 is the only step that must be strongly consistent — a duplicate or lost key here is a correctness bug, not just a performance hiccup. Everything downstream (cache population, analytics) can be eventually consistent.</p>
+
+        <h2 id="deep-dive-read-path-resolving-redirecting">Deep Dive — Read Path (Resolving / Redirecting)</h2>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/url-shortener-fig4-read-path.png" alt="Read path diagram showing the sequence of steps for resolving and redirecting a short URL">
+          <div class="diagram-caption">Figure 4. Request flow for resolving a short URL.</div>
+        </div>
+
+        <ol>
+          <li>Client requests the short URL.</li>
+          <li>CDN / edge cache is checked first; a hit short-circuits the entire request (huge win for viral links).</li>
+          <li>On a miss, the application server checks the Bloom filter: a "definitely not present" answer returns 404 immediately without touching Redis or the DB — this is what protects the backend from bots/scanners probing random codes.</li>
+          <li>On a "maybe present" answer, check the Redis cache.</li>
+          <li>On a cache miss, fall through to the sharded database, then repopulate the cache.</li>
+          <li>Check whether the link has expired or the caller lacks permission (private link) — if so, return 410 Gone or 401/403.</li>
+          <li>Otherwise, issue an HTTP redirect (301 or 302 — see below) with <code>Location</code> set to the long URL.</li>
+          <li>Asynchronously emit a click event to Kafka for analytics — this never blocks the redirect response.</li>
+        </ol>
+
+        <h3>301 vs. 302 — a Genuine Trade-Off, Not a Right/Wrong Answer</h3>
+        <table>
+          <tr><th></th><th>301 (Moved Permanently)</th><th>302 / 307 (Temporary)</th></tr>
+          <tr><td>Browser caching</td><td>Cached by the browser — repeat clicks never hit our servers again</td><td>Not cached by default — every click re-hits our service</td></tr>
+          <tr><td>Server load</td><td>Lower — only the first click per browser reaches us</td><td>Higher — mitigated by CDN/Redis caching</td></tr>
+          <tr><td>Click analytics</td><td>Broken after the first click (we never see subsequent clicks)</td><td>Accurate — every click is observable</td></tr>
+          <tr><td>Ability to change/revoke destination later</td><td>Poor — clients may keep using their cached mapping</td><td>Full control — we can always re-point or expire a link</td></tr>
+        </table>
+        <p><strong>Recommendation:</strong> use 302 (or 307 to preserve the HTTP method) since click analytics and the ability to revoke/expire/re-point a link are explicit product requirements here. Offload the resulting extra load with short-TTL CDN edge caching (e.g. 30&ndash;60 seconds) as a middle ground — this still lets a viral link's redirect be served from the edge without fully losing click visibility. Reserve 301 for an opt-in "permanent vanity link, no analytics needed" tier if the product wants to offer it.</p>
+
+        <h2 id="deep-dive-caching-strategy">Deep Dive — Caching Strategy</h2>
+
+        <h3>Redis Cache (Cache-Aside)</h3>
+        <ul>
+          <li><strong>Pattern:</strong> application server checks Redis first; on a miss it reads the database and populates the cache before responding.</li>
+          <li><strong>Eviction policy:</strong> Least Recently Used (LRU) — Redis's built-in <code>allkeys-lru</code> policy is a direct production equivalent of the LinkedHashMap-based LRU often described in textbooks.</li>
+          <li><strong>Sizing:</strong> ~175 GB (see capacity estimation above) fits on a small Redis Cluster — e.g. 3 primary shards with a replica each — rather than one large box, so a single node failure doesn't take the whole cache down mid-failover.</li>
+          <li><strong>Cache warm-up:</strong> on deploy or failover, a cold cache briefly increases DB load; mitigate with cache replication (a replica takes over instantly) and/or a brief pre-warm of the historically-hottest keys.</li>
+        </ul>
+
+        <h3>Bloom Filter for Fast Negative Lookups</h3>
+        <p>A Bloom filter is a compact, probabilistic set membership structure: a "no" answer is 100% certain (the key is definitely not present), while a "yes" answer only means "maybe present" (false positives are possible, false negatives are not). Keeping a Bloom filter of all active short codes in front of the cache/DB lets the redirect path reject nonexistent codes — the bulk of scanner/bot traffic — almost for free, without a single cache or DB round-trip.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/url-shortener-fig5-bloom-lookup.png" alt="Bloom filter membership check diagram showing a certain no answer versus a maybe-present yes answer">
+          <div class="diagram-caption">Figure 5. Bloom filter membership check: a "no" is certain, a "yes" still requires a real lookup.</div>
+        </div>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-classics/url-shortener-fig6-bloom-hash.png" alt="Bloom filter bit array diagram showing an element setting k bits via k hash functions">
+          <div class="diagram-caption">Figure 6. Each element sets k bits (via k hash functions); a lookup is a "yes" only if every one of those bits is already set.</div>
+        </div>
+
+        <p><strong>Worked sizing example:</strong> for roughly 40 million entries at a reasonable false-positive rate, a bit array of about 159 MB with k &asymp; 25 hash functions is sufficient. For the full ~30 billion-record corpus, shard the Bloom filter alongside the database shards (one filter per shard, sized proportionally) rather than maintaining one filter for the entire keyspace.</p>
+        <div class="callout">
+          <div class="callout-title">Caveat — deletes</div>
+          A classic Bloom filter cannot un-set a bit safely (another key may share that bit), so it doesn't support deletion natively. Since links do expire/get deleted here, use a <strong>Counting Bloom Filter</strong> — replace each bit with a small integer counter (an int array instead of a bit array) so a delete can decrement the counters — or periodically rebuild the filter from the source of truth.
+        </div>
+
+        <h3>CDN Edge Caching</h3>
+        <p>For the hottest links (a viral tweet, a marketing campaign), front the redirect endpoint with a CDN caching the 301/302 response at the edge for a short TTL. This absorbs traffic spikes before they ever reach the application tier, at the cost of a short analytics blind-spot for cached hits (bounded by the TTL).</p>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+
+        <h3>Range-Based (e.g. First Letter of the Short Code)</h3>
+        <p>Simple to reason about, but prone to unbalanced shards — if unusually many keys happen to start with a particular letter (or a KGS batch is skewed), that shard becomes a hotspot while others sit idle.</p>
+
+        <h3>Hash-Based (Recommended)</h3>
+        <p>Hash the short code and use the hash to pick a shard — this distributes keys uniformly and independently of any pattern in the codes themselves. To avoid a full data reshuffle every time a shard is added or removed, use consistent hashing so only a small, bounded fraction of keys move when the cluster resizes.</p>
+
+        <h3>Replication</h3>
+        <ul>
+          <li>Each shard is replicated (e.g. 3&times;) across availability zones for durability and to survive a node/AZ failure.</li>
+          <li>Read replicas absorb the 100:1 read skew, letting redirect traffic scale horizontally without adding write capacity.</li>
+          <li>Writes go to the primary of a shard; reads can be served from any in-sync replica, trading a small staleness window for much higher read throughput.</li>
+        </ul>
+
+        <h2 id="deep-dive-analytics-pipeline">Deep Dive — Analytics Pipeline</h2>
+        <p>Click tracking must never sit on the redirect's latency budget. The application server emits a fire-and-forget click event (short code, timestamp, referrer, user agent, source IP/geo) to Kafka immediately after issuing the redirect.</p>
+        <ul>
+          <li>Kafka absorbs bursty write volume and decouples producers (app servers) from consumers (the analytics pipeline); events are batched (e.g. 100&ndash;500 per batch) to cut I/O overhead.</li>
+          <li>Losing a small number of click events on a consumer crash is an acceptable trade — Kafka is not the source of truth for the URL mapping itself, only for derived analytics.</li>
+          <li>A stream processor (Spark Streaming or Flink) consumes the topic and aggregates click counts, geography (IP &rarr; country), referrer, and device/browser into a separate analytics store (e.g. a columnar warehouse), which powers the stats API and any dashboards.</li>
+          <li>Keeping this pipeline fully decoupled from the serving path means an analytics outage or backlog never affects redirect availability or latency.</li>
+        </ul>
+
+        <h2 id="rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</h2>
+        <p>Without controls, a single bad actor could exhaust the keyspace with mass-generated links, scrape the entire URL corpus, or DDoS the redirect endpoint.</p>
+        <ul>
+          <li>Every API call is scoped to an <code>api_key</code>; enforce a token-bucket quota per key (e.g. N shortenings/minute, M redirects/minute), with limits tunable per account tier.</li>
+          <li>Enforce the limit at the load balancer / API gateway layer so rejected requests never reach application servers.</li>
+          <li>Return HTTP 429 Too Many Requests with a <code>Retry-After</code> header when a caller exceeds quota.</li>
+          <li>Separate, more generous limits for the (largely anonymous, very high-volume) redirect path vs. the (authenticated, lower-volume) shorten path.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Public vs. private visibility:</strong> store a visibility flag per link; private links check the <code>url_permission</code> table and return 401/403 to unauthorized callers.</li>
+          <li><strong>Malicious destination screening:</strong> check submitted long URLs against a safe-browsing / threat-intel blocklist (e.g. Google Safe Browsing) at creation time, and periodically re-scan existing links, so the service isn't co-opted as a phishing or malware redirector.</li>
+          <li><strong>Input validation:</strong> reject unsupported URL schemes (e.g. <code>javascript:</code>), enforce a maximum long-URL length, and normalize URL-encoding (<code>%3F</code> vs <code>?</code>) before hashing/dedup so semantically-identical URLs aren't treated as different.</li>
+          <li><strong>Transport security:</strong> TLS everywhere; for particularly sensitive private links, consider short-lived signed URLs in addition to the permission table.</li>
+          <li><strong>Non-guessability:</strong> this is also a security property, not just a UX one — Approach C/D key generation is deliberately chosen so the short-code space can't be enumerated to discover other users' private content.</li>
+        </ul>
+
+        <h2 id="expiration-and-database-cleanup">Expiration and Database Cleanup</h2>
+        <ul>
+          <li>Apply a default TTL (e.g. 2 years) if the user doesn't specify one.</li>
+          <li><strong>Lazy deletion:</strong> when an expired link is accessed, delete it on the spot and return 410 Gone — this avoids constant background scanning purely to catch expirations nobody will ever hit.</li>
+          <li>A lightweight Cleanup Cron job runs periodically during low-traffic windows to sweep expired rows out of the database, the Redis cache, and the Bloom filter (or trigger a filter rebuild), independent of whether anyone happened to click them.</li>
+          <li>After removing an expired link, return its short code to the KGS's <code>available_keys</code> pool so it can be reused — the keyspace is finite (if enormous), so recycling matters over a long enough time horizon.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>A load-balancing layer sits at three points in the system:</p>
+        <ol>
+          <li>Between clients and application servers.</li>
+          <li>Between application servers and the database shards.</li>
+          <li>Between application servers and the cache tier.</li>
+        </ol>
+        <p>Start with simple round-robin — cheap, introduces no real overhead, and automatically drains traffic away from a server that fails its health check. If servers show uneven load (e.g. due to a few unusually hot keys pinning specific shards), evolve to a least-connections or latency-weighted balancing strategy.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Run each region active-active with its own application tier, cache, and database replica set, so redirects are always served from the region closest to the requester (via Geo-DNS or anycast) for the lowest possible latency.</li>
+          <li>Use Approach D ID generation (Zookeeper-assigned ranges or Snowflake IDs) so two regions can mint keys concurrently without a cross-region write on every single request.</li>
+          <li>Replicate the URL table across regions asynchronously; eventual consistency is acceptable here since a newly-created link is normally read back from the same region it was written in, and full propagation to other regions within a few seconds is a non-issue for correctness.</li>
+          <li>Analytics pipelines (Kafka/Spark) can run per-region and roll up into a global analytics store on a slower cadence — there's no reason clickstream aggregation needs to be synchronous across regions.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Key Generation Service / key-DB down</td><td>Hot standby replica; app servers hold a local batch of pre-fetched keys so a brief KGS outage doesn't stall writes</td></tr>
+          <tr><td>A single viral link overwhelms one shard/cache node</td><td>CDN edge caching + cache replication absorb spikes before they reach the DB shard</td></tr>
+          <tr><td>Cache node failure</td><td>Redis Cluster with replicas per shard; cache-aside pattern degrades gracefully to the DB on a miss</td></tr>
+          <tr><td>Sequential/guessable short codes</td><td>Use KGS-style random key issuance (Approach C/D), not a raw incrementing counter (Approach B)</td></tr>
+          <tr><td>Central write bottleneck (single counter/DB)</td><td>Batch key checkout, sharded/partitioned writes, consistent hashing</td></tr>
+          <tr><td>Analytics backlog affecting redirects</td><td>Fully async (Kafka) — analytics failure/lag never blocks or slows the redirect response</td></tr>
+          <tr><td>Region-wide outage</td><td>Multi-region active-active with independent ID generation</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor availability + partition tolerance (AP) on the read/redirect path — serving a slightly stale cached mapping is far better than a broken link, and links rarely change once created. Favor consistency (C) on the write path for key allocation specifically — the system must never hand out the same short code to two different URLs, even at the cost of a brief write-side retry under contention.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Short code alphabet / length</td><td>Base62, 7 characters (&asymp;3.5 trillion keyspace)</td></tr>
+          <tr><td>Key generation</td><td>Offline Key Generation Service (available/used key tables); Zookeeper/Snowflake if multi-region</td></tr>
+          <tr><td>Primary datastore</td><td>Sharded NoSQL (Cassandra / DynamoDB / MongoDB) for url_mapping; small ACID SQL store for the KGS key pool</td></tr>
+          <tr><td>Partitioning</td><td>Hash-based with consistent hashing</td></tr>
+          <tr><td>Caching</td><td>Redis Cluster (cache-aside, LRU) + Bloom filter for negative lookups + CDN edge cache for hot links</td></tr>
+          <tr><td>Redirect status code</td><td>302/307 (accurate analytics + revocability), CDN-cached with a short TTL</td></tr>
+          <tr><td>Analytics</td><td>Async via Kafka &rarr; Spark Streaming &rarr; analytics store</td></tr>
+          <tr><td>Abuse prevention</td><td>Per-api_key token-bucket rate limiting, HTTP 429</td></tr>
+          <tr><td>Cleanup</td><td>Lazy delete on access + periodic low-traffic cron; keys recycled back to KGS</td></tr>
+          <tr><td>Consistency model</td><td>AP for reads/redirects, strict consistency for key allocation</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Beyond the core design, interviewers love to pressure-test one component at a time. These are organized by theme — use them to rehearse, or expect a real interview to pick 3&ndash;5 of these as "and then what?" follow-ups.</p>
+
+        <h3>Scaling and Performance</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">A single celebrity tweet drives a huge spike of clicks to one short link — walk through what happens.</div>
+          <div class="qa-a">The CDN edge cache absorbs most of it; the Bloom filter + Redis absorb the rest before the DB. A strong answer also discusses cache replication and possibly a dedicated "hot key" path for the very small set of extreme outliers.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you scale ID generation across multiple data centers without a central coordinator on every request?</div>
+          <div class="qa-a">Snowflake-style IDs (timestamp + worker/datacenter ID + sequence) or Zookeeper-assigned disjoint ranges per node — both avoid per-request coordination, letting every region mint keys independently.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Your Redis cluster loses a node at 3 a.m. — what happens to traffic, and how do you find out before your users do?</div>
+          <div class="qa-a">Replica promotion takes over the failed shard; traffic gracefully falls back to the DB with a temporary latency/load bump. You find out via alerting on cache hit-rate drop and a DB QPS spike, not by waiting for user complaints.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you shard a Bloom filter alongside 50 database shards?</div>
+          <div class="qa-a">One filter per shard (or per shard-group), sized proportionally to that shard's key count; route the filter check the same way you route the DB read, so the filter and the data it describes always stay co-located.</div>
+        </div>
+
+        <h3>Correctness and Data</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Two requests to shorten the exact same long URL arrive in the same millisecond — should they get the same short code?</div>
+          <div class="qa-a">Depends on requirements: dedup by content (same code, needs a reverse index on long_url — extra cost) vs. always-unique-per-request (simpler, matches the KGS design). State the trade-off explicitly rather than assuming one answer.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you guarantee a short code is never handed out twice under concurrent key generation?</div>
+          <div class="qa-a">A transactional move from available_keys to used_keys in the KGS's ACID store, with batch checkout per app server to reduce contention, and a DB-level uniqueness constraint as a backstop against any residual bug.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you migrate the URL table from MySQL to a NoSQL store with zero downtime?</div>
+          <div class="qa-a">A dual-write phase, backfilling historical data, then a shadow-read + compare period before cutting over reads. Feature-flag the switch and keep a rollback path the entire time.</div>
+        </div>
+
+        <h3>Product and API Design</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you support custom branded domains (e.g. pypl.link/abc) for enterprise customers?</div>
+          <div class="qa-a">A domain-to-tenant mapping table, TLS cert provisioning per custom domain, and routing the app tier to resolve the tenant from the Host header before the short-code lookup happens.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you let a user change the destination of an existing short link, and what could break?</div>
+          <div class="qa-a">Update long_url in place so the code stays stable — but flag cache invalidation across all replicas/CDN edges as the real risk, and consider version history for auditability/abuse review.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you design the analytics API so it works for a single link and for a 10,000-link campaign?</div>
+          <div class="qa-a">Pre-aggregate at write time by campaign_id, support batched/paginated stats queries, and avoid a fan-out read across 10,000 keys on every dashboard refresh.</div>
+        </div>
+
+        <h3>Security and Abuse</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you stop the service from being used to mass-shorten phishing or malware URLs?</div>
+          <div class="qa-a">A safe-browsing/threat-intel check at creation time and on a recurring re-scan, plus automatic takedown and notification if a link is later flagged after the fact.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you rate-limit fairly so one noisy free-tier caller can't degrade service for paying customers?</div>
+          <div class="qa-a">Per-api_key token buckets sized by plan tier, isolated resource pools/queues per tier, and load-shedding lowest-priority traffic first under pressure.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Should short codes be predictable/sequential or random — what follows from each choice?</div>
+          <div class="qa-a">Sequential leaks volume/order and enables scraping — bad for privacy and competitive intel. Random avoids that but must still guarantee uniqueness, which is exactly why the design prefers KGS/Snowflake over a raw counter.</div>
+        </div>
+
+        <h3>Reliability and Operations</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">The Key Generation Service goes down for 10 minutes — what's the customer-visible impact?</div>
+          <div class="qa-a">None initially, since app servers hold a local batch of pre-fetched keys. Only an outage that outlasts every server's local buffer causes write failures — a strong answer quantifies "how long is safe" given batch size and write QPS.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you roll out a change from 6-character to 7-character codes without breaking existing links?</div>
+          <div class="qa-a">Existing 6-char codes keep resolving unchanged, since the lookup is by exact string, not by length. Only new codes are minted at the new length — a purely additive, backward-compatible change.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the disaster-recovery story if an entire region goes down?</div>
+          <div class="qa-a">Multi-region active-active, Geo-DNS failover, and async cross-region replication with a defined RPO/RTO target — the same architecture already described for multi-region scaling above.</div>
+        </div>
+
+        <h3>Extensions</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to also generate a QR code for each short link?</div>
+          <div class="qa-a">QR generation is a pure, stateless function of the short URL string — generate on demand or lazily cache the rendered image alongside the link, with no change to the core mapping design.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you notify a link owner before their link expires?</div>
+          <div class="qa-a">A scheduled job scans expires_at within a lookahead window and enqueues a notification — a separate, low-priority path that never touches the hot redirect flow.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A right-to-be-forgotten/GDPR request arrives for a URL cached across hundreds of CDN edge nodes — how do you honor it?</div>
+          <div class="qa-a">Immediate DB deletion plus Bloom filter/cache invalidation at origin, paired with a CDN purge API call. A strong answer also discusses the gap between "deleted at origin" and "fully purged at every edge," bounded by short TTLs.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Always start with requirements and capacity estimation before drawing any boxes — the numbers (100:1 read/write, ~20K QPS reads, 7-character codes) should visibly drive every downstream decision. The read-heavy skew is the single most important fact about this system: it justifies aggressive caching, read replicas, and CDN usage, and it's why the redirect path optimizes for availability over strict consistency. Have one clear, defensible default design (offline KGS + sharded NoSQL + Redis/Bloom-filter caching), but know 2&ndash;3 credible alternatives — especially for key generation — since "how else could you do this?" is almost guaranteed to come up. State trade-offs explicitly and out loud (CAP, 301 vs. 302, SQL vs. NoSQL) — interviewers are grading your reasoning process, not just the final architecture diagram. Keep the write path narrowly focused on correctness (never double-issue a key) and push everything else — analytics, cleanup, notifications — onto asynchronous, decoupled paths.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Educative — "Grokking the System Design Interview": Designing a URL Shortening Service like TinyURL (course material)</li>
+          <li>Shashi Bhushan Kumar, <a href="https://leetcode.com/discuss/post/124658/design-url-shortening-service-like-tinyu-047o/" target="_blank" rel="noopener">"Design URL Shortening service like TinyURL"</a> (LeetCode Discuss)</li>
+          <li>GeeksforGeeks, <a href="https://www.geeksforgeeks.org/how-to-design-a-tiny-url-or-url-shortener/" target="_blank" rel="noopener">"How to Design a Tiny URL or URL Shortener"</a></li>
+          <li>Gainlo, <a href="http://blog.gainlo.co/index.php/2016/03/08/system-design-interview-question-create-tinyurl-system/" target="_blank" rel="noopener">"System Design Interview Question: Create TinyURL System"</a></li>
+          <li>Community write-ups on distributed ID generation for URL shorteners (ZooKeeper-coordinated counter ranges, Twitter Snowflake, Base62 encoding)</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="netflix-recommendations.html"><span class="dir">Previous</span>Netflix Recommendations</a>
+          <a class="next" href="pastebin.html"><span class="dir">Next</span>Design a Pastebin</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

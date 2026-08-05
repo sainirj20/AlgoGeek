@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Stock Brokerage System | Object Oriented Design | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Object Oriented Design</a><span class="sep">/</span><span class="current">Online Stock Brokerage System</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Object Oriented Design overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#actors-and-use-cases">Actors &amp; Use Cases</a></li>
+        <li><a href="#key-classes">Key Classes</a></li>
+        <li><a href="#class-diagram">Class Diagram</a></li>
+        <li><a href="#key-flow-activity-diagram">Key Flow: Limit Order</a></li>
+        <li><a href="#key-flow-sequence-diagram">Key Flow: Order Execution</a></li>
+        <li><a href="#design-patterns-applied">Design Patterns Applied</a></li>
+        <li><a href="#code-skeleton">Code Skeleton</a></li>
+        <li><a href="#extensibility-and-edge-cases">Extensibility &amp; Edge Cases</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">OBJECT ORIENTED DESIGN</span>
+          <h1>Design an Online Stock Brokerage System</h1>
+        </div>
+
+        <p><em>Where the interval-scheduling problems elsewhere in this section (Hotel, Movie Ticket, Airline) are fundamentally about not double-promising one finite resource, the Online Stock Brokerage System is fundamentally about two very different execution models sharing one <code>Order</code> abstraction: a Market order that must execute the instant it's placed, and a Limit order that has to sit and wait &mdash; sometimes for hours or days &mdash; for a price condition that may or may not ever be met. That waiting is exactly why this problem is the canonical home for the Observer pattern in this section: a Limit order isn't polled on a timer, it's notified the moment a price tick makes it eligible. Layered underneath both order types is the same forcing function tested by the ATM page's withdrawal logic elsewhere in this section: a member's available funds (or available shares, for a sell) must be checked and reserved in one atomic step, or two orders racing the same balance can both slip through. Treat this page purely as class-design: the concern here is the classes, the state machine, and the patterns &mdash; not sharding, replication, or throughput.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the core domain model for an online stock brokerage platform &mdash; the class-design (OOD/LLD) level of the problem, not a distributed-systems capacity or scaling discussion. A registered <strong>Member</strong> can browse supported stocks and their near-real-time prices, add stocks to a personal <strong>Watchlist</strong>, and place <strong>Buy</strong> or <strong>Sell</strong> orders. An order can be a <strong>Market order</strong> (execute immediately at whatever price the exchange currently reports) or a <strong>Limit order</strong> (execute only once the market price crosses a member-specified limit price, however long that takes). Every order has to be validated against the member's real, un-reserved funds (for a buy) or real, un-reserved shares (for a sell) before it's ever accepted, and once it fills it has to update the member's holdings and balance as one consistent operation. Members track their current holdings and market value as a <strong>StockPosition</strong>, review past activity as order history, and receive periodic <strong>Statements</strong> for tax and record-keeping purposes. An <strong>Admin</strong> role manages which stocks are supported and administers member accounts, but never touches an individual member's orders or holdings. Interviewers use this problem to see whether a candidate correctly separates the two order-execution strategies behind one clean interface, reaches for Observer instead of polling to trigger limit orders, and proactively raises the same funds-reservation race condition that shows up anywhere a balance is checked and then spent.</p>
+
+        <h2 id="requirements">Requirements</h2>
+        <ol>
+          <li>Members can view near-real-time stock prices and add any <strong>Stock</strong> to a personal <strong>Watchlist</strong> to track it without owning it.</li>
+          <li>Members place <strong>Buy</strong> or <strong>Sell</strong> orders as either a <strong>Market order</strong> (execute immediately at the current price) or a <strong>Limit order</strong> (execute only once the market price crosses the specified limit price).</li>
+          <li>An order must be validated before it's accepted: a Buy order against the member's <strong>available funds</strong> (funds not already reserved by another open order); a Sell order against the member's <strong>available shares</strong> of that stock in their current holdings.</li>
+          <li>A filled order updates the member's <strong>StockPosition</strong> (adds shares on a buy, removes shares on a sell) and their available/total funds &mdash; as one atomic operation, so two orders racing against the same balance or the same holding can't both succeed.</li>
+          <li>Members can view their current <strong>portfolio</strong> &mdash; every position plus its live market value &mdash; and their full <strong>order history</strong> (open, filled, cancelled, expired).</li>
+          <li>Members receive periodic <strong>Statements</strong> (quarterly and annual) summarizing trades, ending positions, and realized gains/losses for tax purposes.</li>
+          <li><strong>Admin</strong> manages the supported universe of stocks/exchanges (add, remove, update metadata) and member accounts, but has no funds, positions, or orders of their own.</li>
+        </ol>
+
+        <h2 id="actors-and-use-cases">Actors &amp; Use Cases</h2>
+        <p>Three actors touch the system, only one of whom is a human customer:</p>
+        <ul>
+          <li><strong>Member</strong> &mdash; the trading customer: watches stocks, places and cancels Buy/Sell orders, and views their own portfolio and Statements. The only actor whose money and holdings are actually at stake.</li>
+          <li><strong>Admin</strong> &mdash; manages the supported-stock universe and member accounts. Never places an order and never touches an individual member's holdings, mirroring the Admin/Guest split used on the Hotel Management page elsewhere in this section.</li>
+          <li><strong>StockExchange</strong> &mdash; not a human actor but a secondary, external-system actor: the real exchange that supplies live prices and actually executes a trade. It's modeled inside the system as a <strong>Singleton</strong> boundary class (see Class Diagram) precisely because the whole application shares exactly one connection to it.</li>
+        </ul>
+        <p>Primary use cases: <strong>Add to Watchlist</strong>, <strong>Place Buy/Sell Order</strong>, <strong>Cancel Order</strong>, <strong>View Portfolio</strong>, <strong>View Statement</strong>, and <strong>Manage Stocks &amp; Accounts</strong> (Admin only).</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 840 620" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Use case diagram: Member, StockExchange, and Admin actors connected to six use cases inside the Online Stock Brokerage System boundary">
+            <rect x="150" y="50" width="520" height="520" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+            <text x="410" y="74" text-anchor="middle" font-size="14" font-weight="700" fill="var(--color-primary-dark)">Online Stock Brokerage System</text>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="72" y1="144" x2="165" y2="110"/>
+              <line x1="72" y1="144" x2="165" y2="190"/>
+              <line x1="72" y1="144" x2="165" y2="270"/>
+              <line x1="72" y1="144" x2="165" y2="350"/>
+              <line x1="72" y1="144" x2="435" y2="110"/>
+
+              <line x1="72" y1="264" x2="165" y2="190"/>
+
+              <line x1="72" y1="504" x2="435" y2="350"/>
+            </g>
+
+            <g font-size="12" fill="var(--color-text)">
+              <circle cx="55" cy="110" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="120" x2="55" y2="154" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="134" x2="70" y2="134" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="42" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="154" x2="68" y2="179" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="196" text-anchor="middle">Member</text>
+
+              <circle cx="55" cy="230" r="10" fill="none" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="240" x2="55" y2="274" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="40" y1="254" x2="70" y2="254" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="274" x2="42" y2="299" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="55" y1="274" x2="68" y2="299" stroke="var(--color-accent)" stroke-width="2"/>
+              <text x="55" y="316" text-anchor="middle" fill="var(--color-accent-dark)">Stock</text>
+              <text x="55" y="330" text-anchor="middle" fill="var(--color-accent-dark)">Exchange</text>
+
+              <circle cx="55" cy="470" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="480" x2="55" y2="514" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="494" x2="70" y2="494" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="514" x2="42" y2="539" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="514" x2="68" y2="539" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="556" text-anchor="middle">Admin</text>
+            </g>
+
+            <g font-size="11" fill="var(--color-text)">
+              <ellipse cx="275" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="106" text-anchor="middle">Add to</text>
+              <text x="275" y="120" text-anchor="middle">Watchlist</text>
+
+              <ellipse cx="275" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="186" text-anchor="middle">Place Buy/Sell</text>
+              <text x="275" y="200" text-anchor="middle">Order</text>
+
+              <ellipse cx="275" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="274" text-anchor="middle">Cancel Order</text>
+
+              <ellipse cx="275" cy="350" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="354" text-anchor="middle">View Portfolio</text>
+
+              <ellipse cx="545" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="114" text-anchor="middle">View Statement</text>
+
+              <ellipse cx="545" cy="350" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="346" text-anchor="middle">Manage Stocks &amp;</text>
+              <text x="545" y="360" text-anchor="middle">Accounts</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 1. Use-case diagram: Member is the primary actor behind every trading use case. StockExchange is a secondary, external-system actor &mdash; the boundary class (a Singleton in the Class Diagram below) that actually fills a Place Buy/Sell Order request. Admin owns Manage Stocks &amp; Accounts exclusively and never touches a Member's individual orders or portfolio.</div>
+        </div>
+
+        <h2 id="key-classes">Key Classes</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td>Account (abstract)</td><td>Common identity for every login &mdash; id, name/contact, status. Holds only what a Member and an Admin both need; concrete trading or administrative behavior lives in the two subclasses.</td></tr>
+            <tr><td>Member</td><td>The trading account: totalFunds, availableFunds (funds not reserved by an open order), a StockPosition (current holdings), a Watchlist, and order/Statement history. The class that actually places orders.</td></tr>
+            <tr><td>Admin</td><td>The administrative arm of the same Account hierarchy: adds/removes supported Stocks, manages Member accounts. Deliberately has no funds, positions, or orders of its own.</td></tr>
+            <tr><td>StockExchange (Singleton)</td><td>The single gateway to the real exchange: fetches the tradable-stock universe and current prices, executes trades, and publishes price ticks to subscribers. Exactly one instance per running application, because there's exactly one real connection worth reusing.</td></tr>
+            <tr><td>Stock</td><td>A tradable symbol plus the current trading price last reported by StockExchange.</td></tr>
+            <tr><td>StockInventory</td><td>Fetches and caches the latest prices from StockExchange so the rest of the app reads a fast local cache instead of round-tripping to the real exchange on every lookup; refreshed on every price tick.</td></tr>
+            <tr><td>StockPosition</td><td>The stocks (and quantities) a Member currently holds &mdash; the thing a filled Buy/Sell order actually mutates.</td></tr>
+            <tr><td>Order (abstract)</td><td>Common order data (which Stock, how many shares, which Member, OrderStatus, filledQuantity vs. totalQuantity) plus the one abstract hook &mdash; <code>tryExecute(currentPrice)</code> &mdash; that MarketOrder and LimitOrder each implement differently.</td></tr>
+            <tr><td>MarketOrder</td><td>A concrete Order that always executes immediately, in full, at whatever price StockExchange currently reports.</td></tr>
+            <tr><td>LimitOrder</td><td>A concrete Order that only executes once the market price crosses a member-specified limit price; until then it sits OPEN, watching price updates.</td></tr>
+            <tr><td>OrderStatus</td><td>OPEN / PARTIALLY_FILLED / FILLED / CANCELLED / EXPIRED &mdash; a small, closed state machine every Order moves through exactly once, in one direction.</td></tr>
+            <tr><td>Watchlist</td><td>A Member-curated list of Stocks to track without owning any of them &mdash; the lightweight, no-funds-at-stake counterpart to StockPosition.</td></tr>
+            <tr><td>Statement</td><td>A generated, point-in-time report (quarterly/annual) of a Member's trade activity, ending positions, and realized gains/losses for tax purposes.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="class-diagram">Class Diagram</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1100 970" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="UML class diagram for the Online Stock Brokerage System">
+            <defs>
+              <marker id="sboTriangle" viewBox="0 0 20 14" refX="18" refY="7" markerWidth="18" markerHeight="14" orient="auto">
+                <path d="M1,1 L18,7 L1,13 Z" fill="#ffffff" stroke="var(--color-primary)" stroke-width="1.2"/>
+              </marker>
+              <marker id="sboDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-primary-dark)" stroke="var(--color-primary-dark)" stroke-width="1"/>
+              </marker>
+              <marker id="sboArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)"/>
+              </marker>
+            </defs>
+
+            <!-- relationship lines drawn first so boxes sit on top -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="265" y1="210" x2="380" y2="150" marker-end="url(#sboTriangle)"/>
+              <line x1="680" y1="210" x2="460" y2="150" marker-end="url(#sboTriangle)"/>
+              <line x1="170" y1="830" x2="340" y2="760" marker-end="url(#sboTriangle)"/>
+              <line x1="450" y1="830" x2="470" y2="760" marker-end="url(#sboTriangle)"/>
+              <line x1="200" y1="385" x2="170" y2="415" marker-start="url(#sboDiamond)"/>
+              <line x1="340" y1="385" x2="360" y2="415" marker-start="url(#sboDiamond)"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="390" y1="260" x2="560" y2="480" marker-end="url(#sboArrow)"/>
+              <polyline points="260,385 260,600 280,600" marker-end="url(#sboArrow)"/>
+              <line x1="530" y1="650" x2="850" y2="260" marker-end="url(#sboArrow)"/>
+              <line x1="530" y1="690" x2="570" y2="690" marker-end="url(#sboArrow)"/>
+              <line x1="960" y1="415" x2="950" y2="310" marker-end="url(#sboArrow)"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none">
+              <line x1="1050" y1="415" x2="1050" y2="175" marker-end="url(#sboArrow)"/>
+            </g>
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="215" y="378">1</text>
+              <text x="175" y="410">1</text>
+              <text x="355" y="378">1</text>
+              <text x="365" y="410">1</text>
+              <text x="395" y="255">1</text>
+              <text x="545" y="475">0..*</text>
+              <text x="266" y="595">1</text>
+              <text x="282" y="618">0..*</text>
+              <text x="540" y="645">0..*</text>
+              <text x="835" y="255">1</text>
+              <text x="965" y="410">1</text>
+              <text x="935" y="315">0..*</text>
+              <text x="1057" y="300" font-style="italic">&laquo;queries&raquo;</text>
+            </g>
+
+            <!-- Account (abstract) -->
+            <g>
+              <rect x="300" y="20" width="220" height="130" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="300" y1="46" x2="520" y2="46" stroke="var(--color-accent-dark)"/>
+              <line x1="300" y1="102" x2="520" y2="102" stroke="var(--color-accent-dark)"/>
+              <text x="410" y="38" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Account {abstract}</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="310" y="62">- accountId: String</text>
+                <text x="310" y="77">- name, email: String</text>
+                <text x="310" y="92">- status: AccountStatus</text>
+                <text x="310" y="118">+ login(): boolean</text>
+                <text x="310" y="133">+ logout(): void</text>
+              </g>
+            </g>
+
+            <!-- Member -->
+            <g>
+              <rect x="140" y="210" width="250" height="175" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="140" y1="236" x2="390" y2="236" stroke="var(--color-primary)"/>
+              <line x1="140" y1="322" x2="390" y2="322" stroke="var(--color-primary)"/>
+              <text x="265" y="228" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Member</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="150" y="252">- totalFunds: Money</text>
+                <text x="150" y="267">- availableFunds: Money // for trading</text>
+                <text x="150" y="282">- position: StockPosition</text>
+                <text x="150" y="297">- watchlist: Watchlist</text>
+                <text x="150" y="312">- statements: List&lt;Statement&gt;</text>
+                <text x="150" y="338">+ placeOrder(order): void</text>
+                <text x="150" y="353">+ cancelOrder(orderId): void</text>
+                <text x="150" y="368">+ viewPortfolio(): PortfolioView</text>
+              </g>
+            </g>
+
+            <!-- Admin -->
+            <g>
+              <rect x="570" y="210" width="220" height="90" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="570" y1="236" x2="790" y2="236" stroke="var(--color-accent-dark)"/>
+              <text x="680" y="228" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Admin</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="580" y="252">+ addStock(stock): void</text>
+                <text x="580" y="267">+ removeStock(symbol): void</text>
+                <text x="580" y="282">+ manageAccount(accountId): void</text>
+              </g>
+            </g>
+
+            <!-- StockExchange (Singleton) -->
+            <g>
+              <rect x="850" y="20" width="230" height="155" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="850" y1="58" x2="1080" y2="58" stroke="var(--color-primary)"/>
+              <line x1="850" y1="99" x2="1080" y2="99" stroke="var(--color-primary)"/>
+              <text x="965" y="36" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;Singleton&raquo;</text>
+              <text x="965" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">StockExchange</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="860" y="74">- instance: StockExchange {static}</text>
+                <text x="860" y="89">- priceObservers: List&lt;PriceObserver&gt;</text>
+                <text x="860" y="115">+ getInstance(): StockExchange {static}</text>
+                <text x="860" y="130">+ getCurrentPrice(stock): Money</text>
+                <text x="860" y="145">+ executeTrade(order, price): Trade</text>
+                <text x="860" y="160">+ registerPriceObserver(o): void</text>
+              </g>
+            </g>
+
+            <!-- Stock -->
+            <g>
+              <rect x="850" y="210" width="200" height="100" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="850" y1="236" x2="1050" y2="236" stroke="var(--color-primary)"/>
+              <line x1="850" y1="277" x2="1050" y2="277" stroke="var(--color-primary)"/>
+              <text x="950" y="228" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Stock</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="860" y="252">- symbol: String</text>
+                <text x="860" y="267">- currentPrice: Money</text>
+                <text x="860" y="293">+ getCurrentPrice(): Money</text>
+              </g>
+            </g>
+
+            <!-- StockInventory -->
+            <g>
+              <rect x="850" y="415" width="220" height="100" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="850" y1="441" x2="1070" y2="441" stroke="var(--color-primary)"/>
+              <line x1="850" y1="467" x2="1070" y2="467" stroke="var(--color-primary)"/>
+              <text x="960" y="433" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">StockInventory</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="860" y="457">- prices: Map&lt;String, Money&gt;</text>
+                <text x="860" y="483">+ refreshPrices(): void</text>
+                <text x="860" y="498">+ getCurrentPrice(symbol): Money</text>
+              </g>
+            </g>
+
+            <!-- StockPosition -->
+            <g>
+              <rect x="20" y="415" width="220" height="115" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="20" y1="441" x2="240" y2="441" stroke="var(--color-primary)"/>
+              <line x1="20" y1="467" x2="240" y2="467" stroke="var(--color-primary)"/>
+              <text x="130" y="433" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">StockPosition</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="30" y="457">- holdings: Map&lt;Stock, Integer&gt;</text>
+                <text x="30" y="483">+ addShares(stock, qty): void</text>
+                <text x="30" y="498">+ removeShares(stock, qty): void</text>
+                <text x="30" y="513">+ getMarketValue(inv): Money</text>
+              </g>
+            </g>
+
+            <!-- Watchlist -->
+            <g>
+              <rect x="280" y="415" width="210" height="100" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="280" y1="441" x2="490" y2="441" stroke="var(--color-primary)"/>
+              <line x1="280" y1="467" x2="490" y2="467" stroke="var(--color-primary)"/>
+              <text x="385" y="433" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Watchlist</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="290" y="457">- stocks: List&lt;Stock&gt;</text>
+                <text x="290" y="483">+ addStock(stock): void</text>
+                <text x="290" y="498">+ removeStock(stock): void</text>
+              </g>
+            </g>
+
+            <!-- Order (abstract) -->
+            <g>
+              <rect x="280" y="600" width="250" height="160" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="280" y1="626" x2="530" y2="626" stroke="var(--color-primary)"/>
+              <line x1="280" y1="712" x2="530" y2="712" stroke="var(--color-primary)"/>
+              <text x="405" y="618" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Order {abstract}</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="290" y="642">- orderId: String</text>
+                <text x="290" y="657">- account: Member</text>
+                <text x="290" y="672">- stock: Stock, side: OrderSide</text>
+                <text x="290" y="687">- totalQuantity, filledQuantity: int</text>
+                <text x="290" y="702">- status: OrderStatus</text>
+                <text x="290" y="728">+ tryExecute(price): boolean {abstract}</text>
+                <text x="290" y="743">+ cancel(): void</text>
+              </g>
+            </g>
+
+            <!-- OrderStatus enum -->
+            <g>
+              <rect x="570" y="600" width="200" height="130" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="570" y1="638" x2="770" y2="638" stroke="var(--color-accent-dark)"/>
+              <text x="670" y="616" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;enum&raquo;</text>
+              <text x="670" y="630" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">OrderStatus</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="580" y="654">OPEN</text>
+                <text x="580" y="669">PARTIALLY_FILLED</text>
+                <text x="580" y="684">FILLED</text>
+                <text x="580" y="699">CANCELLED</text>
+                <text x="580" y="714">EXPIRED</text>
+              </g>
+            </g>
+
+            <!-- MarketOrder -->
+            <g>
+              <rect x="60" y="830" width="220" height="90" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="60" y1="856" x2="280" y2="856" stroke="var(--color-primary)"/>
+              <line x1="60" y1="880" x2="280" y2="880" stroke="var(--color-primary)"/>
+              <text x="170" y="848" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">MarketOrder</text>
+              <g font-size="9" fill="var(--color-text-muted)" font-style="italic">
+                <text x="70" y="872">// inherits all fields from Order</text>
+              </g>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="70" y="896">+ tryExecute(price): boolean</text>
+              </g>
+            </g>
+
+            <!-- LimitOrder -->
+            <g>
+              <rect x="330" y="830" width="240" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="330" y1="856" x2="570" y2="856" stroke="var(--color-primary)"/>
+              <line x1="330" y1="897" x2="570" y2="897" stroke="var(--color-primary)"/>
+              <text x="450" y="848" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">LimitOrder</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="340" y="872">- limitPrice: Money</text>
+                <text x="340" y="887">// side (BUY/SELL) inherited</text>
+                <text x="340" y="913">+ tryExecute(price): boolean</text>
+              </g>
+            </g>
+
+            <!-- Statement -->
+            <g>
+              <rect x="560" y="415" width="230" height="145" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="560" y1="441" x2="790" y2="441" stroke="var(--color-primary)"/>
+              <line x1="560" y1="512" x2="790" y2="512" stroke="var(--color-primary)"/>
+              <text x="675" y="433" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Statement</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="570" y="457">- statementId: String</text>
+                <text x="570" y="472">- member: Member</text>
+                <text x="570" y="487">- periodStart, periodEnd: LocalDate</text>
+                <text x="570" y="502">- transactions: List&lt;Order&gt;</text>
+                <text x="570" y="528">+ generate(): void</text>
+                <text x="570" y="543">+ getRealizedGains(): Money</text>
+              </g>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 2. Member and Admin inherit from the abstract Account (hollow-triangle arrows). Member &mdash;filled diamond&rarr; StockPosition and Member &mdash;filled diamond&rarr; Watchlist (composition: delete the Member and both are meaningless). MarketOrder and LimitOrder inherit from the abstract Order, which associates with the placing Member and with the Stock it trades. StockInventory associates with Stock and queries the StockExchange Singleton for fresh prices.</div>
+        </div>
+        <p>Reading the diagram: <strong>Account</strong> is deliberately abstract &mdash; it holds only what every logged-in identity needs, while <strong>Member</strong> carries the funds, holdings, and watchlist that make it a trading account, and <strong>Admin</strong> carries none of that. <strong>Order</strong> is abstract for the same reason: <strong>MarketOrder</strong> and <strong>LimitOrder</strong> share every field except the one piece of logic that actually differs &mdash; whether/when a given price qualifies as an execution, expressed as the single <code>tryExecute(currentPrice)</code> method (see Design Patterns &mdash; Strategy). <strong>StockPosition</strong> and <strong>Watchlist</strong> both internally reference <code>Stock</code> (a <code>Map&lt;Stock, Integer&gt;</code> of holdings and a <code>List&lt;Stock&gt;</code> of tracked symbols, respectively) &mdash; omitted from the diagram itself to keep it legible, but worth stating out loud in an interview. <strong>StockExchange</strong> is the one class every price-dependent path ultimately reaches, whether directly (an order needing the current price) or indirectly through <strong>StockInventory</strong>'s cache.</p>
+
+        <h2 id="key-flow-activity-diagram">Key Flow: Placing a Limit Buy Order (Activity Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Activity diagram for placing a Limit Buy order, validating funds, and waiting for a qualifying price update before executing">
+            <defs>
+              <marker id="sboActArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#sboActArrow)" fill="none">
+              <line x1="300" y1="30" x2="300" y2="54"/>
+              <line x1="300" y1="110" x2="300" y2="134"/>
+              <line x1="300" y1="185" x2="300" y2="209"/>
+              <line x1="300" y1="310" x2="300" y2="344"/>
+              <line x1="420" y1="260" x2="480" y2="260"/>
+              <line x1="605" y1="288" x2="605" y2="323"/>
+              <line x1="300" y1="400" x2="300" y2="424"/>
+              <line x1="300" y1="475" x2="300" y2="499"/>
+              <line x1="300" y1="600" x2="300" y2="624"/>
+              <line x1="420" y1="550" x2="550" y2="550"/>
+              <line x1="620" y1="595" x2="620" y2="614"/>
+              <line x1="300" y1="685" x2="300" y2="709"/>
+              <line x1="620" y1="670" x2="620" y2="694"/>
+            </g>
+            <polyline points="620,505 620,450 440,450" stroke="var(--color-primary)" stroke-width="1.6" fill="none" marker-end="url(#sboActArrow)"/>
+            <circle cx="300" cy="20" r="10" fill="var(--color-primary)"/>
+
+            <rect x="160" y="55" width="280" height="55" rx="22" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="77" text-anchor="middle" font-size="11" fill="var(--color-text)">Member submits a Limit Buy order</text>
+            <text x="300" y="91" text-anchor="middle" font-size="11" fill="var(--color-text)">(stock, quantity, limit price)</text>
+
+            <rect x="160" y="135" width="280" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="155" text-anchor="middle" font-size="10" fill="var(--color-text)">Validate: availableFunds &ge;</text>
+            <text x="300" y="169" text-anchor="middle" font-size="10" fill="var(--color-text)">quantity &times; limitPrice</text>
+
+            <polygon points="300,210 420,260 300,310 180,260" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="264" text-anchor="middle" font-size="10" fill="var(--color-text)">Sufficient funds available?</text>
+            <text x="335" y="236" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="252" y="330" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="480" y="232" width="250" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="605" y="253" text-anchor="middle" font-size="10" fill="var(--color-text)">Reject order; notify Member</text>
+            <text x="605" y="267" text-anchor="middle" font-size="10" fill="var(--color-text)">(insufficient available funds)</text>
+
+            <circle cx="605" cy="338" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="605" cy="338" r="6" fill="var(--color-primary)"/>
+
+            <rect x="160" y="345" width="280" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="366" text-anchor="middle" font-size="10" fill="var(--color-text)">Accept order: status = OPEN;</text>
+            <text x="300" y="380" text-anchor="middle" font-size="10" fill="var(--color-text)">reserve funds (qty &times; limitPrice)</text>
+
+            <rect x="160" y="425" width="280" height="50" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="445" text-anchor="middle" font-size="10" fill="var(--color-text)">StockExchange publishes a price</text>
+            <text x="300" y="459" text-anchor="middle" font-size="10" fill="var(--color-text)">update for this stock (async)</text>
+
+            <polygon points="300,500 420,550 300,600 180,550" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="554" text-anchor="middle" font-size="10" fill="var(--color-text)">Current price &le; limit price?</text>
+            <text x="335" y="526" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="252" y="620" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <polygon points="620,505 690,550 620,595 550,550" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="620" y="544" text-anchor="middle" font-size="9" fill="var(--color-text)">Still within</text>
+            <text x="620" y="558" text-anchor="middle" font-size="9" fill="var(--color-text)">trading day?</text>
+            <text x="626" y="490" font-size="10" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+            <text x="626" y="612" font-size="10" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="480" y="440" font-size="9" font-style="italic" fill="var(--color-text-muted)">loop: wait for next price tick</text>
+
+            <rect x="160" y="625" width="280" height="60" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="649" text-anchor="middle" font-size="10" fill="var(--color-text)">Execute at qualifying price: update</text>
+            <text x="300" y="663" text-anchor="middle" font-size="10" fill="var(--color-text)">StockPosition &amp; funds; status = FILLED</text>
+
+            <rect x="490" y="615" width="260" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="620" y="636" text-anchor="middle" font-size="10" fill="var(--color-text)">End of trading day, still unfilled:</text>
+            <text x="620" y="650" text-anchor="middle" font-size="10" fill="var(--color-text)">Day &rarr; EXPIRED, GTC &rarr; stays OPEN</text>
+
+            <circle cx="300" cy="724" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="300" cy="724" r="6" fill="var(--color-primary)"/>
+
+            <circle cx="620" cy="709" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="620" cy="709" r="6" fill="var(--color-primary)"/>
+          </svg>
+          <div class="diagram-caption">Figure 3. The first decision is a one-time funds check at order-placement time. The second decision is re-evaluated every time StockExchange publishes a price tick for this stock &mdash; not on a polling schedule &mdash; and only fires the execution path once the price genuinely qualifies. If the trading day ends first, a third small decision routes the order to either EXPIRED (a Day order) or back to OPEN (a Good-Til-Cancelled order), rather than silently discarding it.</div>
+        </div>
+
+        <h2 id="key-flow-sequence-diagram">Key Flow: Order Execution and Portfolio Update (Sequence Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1080 660" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Sequence diagram for a Market Buy order: fund reservation, price lookup, execution, and the resulting StockPosition and Account updates">
+            <defs>
+              <marker id="sboSeqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-border)" stroke-width="1.3" stroke-dasharray="4,4">
+              <line x1="70" y1="60" x2="70" y2="620"/>
+              <line x1="250" y1="60" x2="250" y2="620"/>
+              <line x1="430" y1="60" x2="430" y2="620"/>
+              <line x1="610" y1="60" x2="610" y2="620"/>
+              <line x1="790" y1="60" x2="790" y2="620"/>
+              <line x1="970" y1="60" x2="970" y2="620"/>
+            </g>
+            <g fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5">
+              <rect x="5" y="20" width="130" height="40"/>
+              <rect x="175" y="20" width="150" height="40"/>
+              <rect x="365" y="20" width="130" height="40"/>
+              <rect x="540" y="20" width="140" height="40"/>
+              <rect x="720" y="20" width="140" height="40"/>
+              <rect x="905" y="20" width="130" height="40"/>
+            </g>
+            <g font-size="10" font-weight="700" fill="var(--color-text)" text-anchor="middle">
+              <text x="70" y="44">Member</text>
+              <text x="250" y="38">Order</text>
+              <text x="250" y="50">Service</text>
+              <text x="430" y="44">Order</text>
+              <text x="610" y="38">Stock</text>
+              <text x="610" y="50">Exchange</text>
+              <text x="790" y="38">Stock</text>
+              <text x="790" y="50">Position</text>
+              <text x="970" y="44">Account</text>
+            </g>
+
+            <text x="20" y="85" font-size="10" font-style="italic" fill="var(--color-text-muted)">Flow: Market Buy order (synchronous)</text>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#sboSeqArrow)">
+              <line x1="70" y1="105" x2="250" y2="105"/>
+              <line x1="250" y1="150" x2="970" y2="150"/>
+              <line x1="250" y1="220" x2="610" y2="220"/>
+              <line x1="250" y1="290" x2="430" y2="290"/>
+              <line x1="430" y1="330" x2="790" y2="330"/>
+              <line x1="430" y1="370" x2="970" y2="370"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#sboSeqArrow)">
+              <line x1="970" y1="180" x2="250" y2="180"/>
+              <line x1="610" y1="250" x2="250" y2="250"/>
+              <line x1="430" y1="400" x2="250" y2="400"/>
+              <line x1="250" y1="440" x2="70" y2="440"/>
+            </g>
+            <g font-size="10" fill="var(--color-text)">
+              <text x="80" y="100">placeOrder(stock, qty, BUY, MARKET)</text>
+              <text x="260" y="145">checkAndReserveFunds(estimatedCost)</text>
+              <text x="620" y="180">reserved: boolean</text>
+              <text x="260" y="215">getCurrentPrice(stock)</text>
+              <text x="620" y="245">price</text>
+              <text x="260" y="285">tryExecute(price)</text>
+              <text x="440" y="325">addShares(stock, qty)</text>
+              <text x="440" y="365">debitFunds(qty &times; price); settleReservation()</text>
+              <text x="440" y="395">filled = true</text>
+              <text x="80" y="435">confirmation(orderId, FILLED, price)</text>
+            </g>
+
+            <rect x="220" y="128" width="770" height="70" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M220,128 L262,128 L262,141 L220,141 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="226" y="138" font-size="9" fill="var(--color-text)">atomic</text>
+            <text x="270" y="138" font-size="9" fill="var(--color-text)">[checked-and-reserved as one conditional update; rejects if availableFunds &lt; estimatedCost]</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. A Market order's happy path is fully synchronous: OrderService reserves funds, fetches the live price, executes, and updates StockPosition and Account before replying to the Member. The funds-check-and-reserve step (OrderService &rarr; Account.checkAndReserveFunds) has to be a single atomic conditional update &mdash; the same technique used for the ATM withdrawal race elsewhere in this section &mdash; or two orders racing the same Member's balance can both read a stale availableFunds and both be allowed through, overdrawing the account.</div>
+        </div>
+
+        <h2 id="design-patterns-applied">Design Patterns Applied</h2>
+        <p>Name the pattern and the forcing function together, not just the label:</p>
+        <ul>
+          <li><strong>Singleton</strong> (StockExchange) &mdash; there is exactly one real, external exchange/price-feed connection the entire application shares; <code>StockExchange.getInstance()</code> guarantees every Member's order and every StockInventory refresh goes through the same connection, the same rate limiter, and the same in-memory price cache, instead of each accidentally opening its own socket to the exchange. Caveat worth stating out loud (the same one this section raises for ParkingLot and Library's Catalog): guard it behind dependency injection/singleton-scope rather than static calls sprinkled through business logic, so tests can substitute a fake exchange.</li>
+          <li><strong>Strategy</strong> (<code>Order.tryExecute(currentPrice)</code>) &mdash; MarketOrder and LimitOrder share identical order data (stock, quantity, account, status) and differ only in one piece of logic: whether or when a given price qualifies as an execution. Putting that single decision behind one abstract method, overridden per subclass, is Strategy in its cleanest form &mdash; whatever calls <code>tryExecute</code> never branches on order type; it just calls the method and reacts to the boolean it returns.</li>
+          <li><strong>Observer</strong> (LimitOrder watching price updates) &mdash; this is the natural home for limit-order triggering, and it's worth being precise about it: StockExchange (or the StockInventory layer sitting in front of it) is the Subject; every open LimitOrder resting on a given stock is registered as an Observer and gets called on every price tick, re-evaluating its own <code>tryExecute(currentPrice)</code>. This is what lets a Limit order fire the instant its condition is met instead of a scheduled job re-scanning every open order on a timer.</li>
+          <li><strong>Factory</strong> (OrderFactory) &mdash; the client-facing "place an order" call takes (stock, quantity, side, type, [limitPrice]), and a small OrderFactory decides whether to construct a MarketOrder or a LimitOrder, so the caller never <code>new</code>'s up a concrete Order subtype directly and adding a future StopLossOrder becomes a change to the factory, not to every call site.</li>
+          <li><strong>State</strong> (OrderStatus, brief mention) &mdash; OPEN &rarr; PARTIALLY_FILLED/FILLED, or OPEN &rarr; CANCELLED/EXPIRED, is a small, closed set of one-directional transitions, worth encoding as guarded transitions on Order rather than a free-form boolean or string &mdash; the same reasoning the ATM and Hotel pages apply to their own status fields elsewhere in this section.</li>
+        </ul>
+
+        <div class="formula-box">
+          <span class="formula-label">Limit order trigger condition</span>
+          A BUY LimitOrder qualifies to execute when <strong>currentPrice &le; limitPrice</strong>; a SELL LimitOrder qualifies when <strong>currentPrice &ge; limitPrice</strong>. Worked example: a BUY LimitOrder with limitPrice&nbsp;=&nbsp;$50.00 sits OPEN while the stock trades at $52.10, and fires the instant a price tick arrives at $49.98 (or lower) &mdash; not necessarily at exactly $50.00, since the market may never trade at that precise price on its way down.
+        </div>
+
+        <h2 id="code-skeleton">Code Skeleton</h2>
+        <p>Fields and method signatures only &mdash; not a runnable program. <code>MarketOrder.tryExecute</code> and <code>LimitOrder.tryExecute</code> are both worked out in full below, since that comparison &mdash; simple as it looks &mdash; is exactly what interviewers probe on; <code>StockExchange</code> shows the double-checked-locking Singleton form, and <code>Account.reserveFunds</code> sketches the concurrency-safe check discussed in the sequence diagram above.</p>
+
+        <pre><code>public enum OrderSide { BUY, SELL }
+
+public enum OrderStatus {
+    OPEN, PARTIALLY_FILLED, FILLED, CANCELLED, EXPIRED
+}
+
+public abstract class Order {
+    protected final String orderId;
+    protected final String accountId;
+    protected final Stock stock;
+    protected final OrderSide side;
+    protected final int totalQuantity;
+    protected int filledQuantity;
+    protected volatile OrderStatus status;
+
+    protected Order(String orderId, String accountId, Stock stock,
+                     OrderSide side, int totalQuantity) {
+        this.orderId = orderId;
+        this.accountId = accountId;
+        this.stock = stock;
+        this.side = side;
+        this.totalQuantity = totalQuantity;
+        this.filledQuantity = 0;
+        this.status = OrderStatus.OPEN;
+    }
+
+    // Strategy hook: each order type decides, given the latest price, whether
+    // (and at what price) it fills. Returns true if the order filled (in full).
+    public abstract boolean tryExecute(BigDecimal currentPrice);
+
+    public String getOrderId() { return orderId; }
+    public OrderStatus getStatus() { return status; }
+    public int getRemainingQuantity() { return totalQuantity - filledQuantity; }
+    public void cancel() { /* only legal while OPEN or PARTIALLY_FILLED */ }
+}</code></pre>
+
+        <pre><code>public class MarketOrder extends Order {
+
+    public MarketOrder(String orderId, String accountId, Stock stock,
+                        OrderSide side, int totalQuantity) {
+        super(orderId, accountId, stock, side, totalQuantity);
+    }
+
+    // A market order has no price condition -- it always executes immediately,
+    // in full, at whatever price the exchange reports right now.
+    @Override
+    public boolean tryExecute(BigDecimal currentPrice) {
+        this.filledQuantity = totalQuantity;
+        this.status = OrderStatus.FILLED;
+        return true;
+    }
+}</code></pre>
+
+        <pre><code>public class LimitOrder extends Order {
+    private final BigDecimal limitPrice;
+
+    public LimitOrder(String orderId, String accountId, Stock stock, OrderSide side,
+                       int totalQuantity, BigDecimal limitPrice) {
+        super(orderId, accountId, stock, side, totalQuantity);
+        this.limitPrice = limitPrice;
+    }
+
+    // A BUY limit order only fills at or below the limit price;
+    // a SELL limit order only fills at or above it.
+    @Override
+    public boolean tryExecute(BigDecimal currentPrice) {
+        boolean priceQualifies = (side == OrderSide.BUY)
+                ? currentPrice.compareTo(limitPrice) &lt;= 0
+                : currentPrice.compareTo(limitPrice) &gt;= 0;
+
+        if (!priceQualifies) {
+            return false; // keep waiting for the next price update
+        }
+        this.filledQuantity = totalQuantity;
+        this.status = OrderStatus.FILLED;
+        return true;
+    }
+}</code></pre>
+
+        <pre><code>public interface PriceObserver {
+    void onPriceUpdate(Stock stock, BigDecimal newPrice);
+}
+
+public class StockExchange {
+    private static volatile StockExchange instance;
+    private final List&lt;PriceObserver&gt; priceObservers = new CopyOnWriteArrayList&lt;&gt;();
+
+    private StockExchange() { /* connect to the real exchange feed */ }
+
+    public static StockExchange getInstance() {
+        if (instance == null) {
+            synchronized (StockExchange.class) {
+                if (instance == null) {
+                    instance = new StockExchange();
+                }
+            }
+        }
+        return instance;
+    }
+
+    public BigDecimal getCurrentPrice(Stock stock) { /* ... */ return null; }
+
+    public List&lt;Stock&gt; getAllStocks() { /* ... */ return null; }
+
+    // LimitOrders (directly, or via StockInventory) subscribe here to be
+    // notified of every price tick -- see the Observer discussion above.
+    public void registerPriceObserver(PriceObserver observer) {
+        priceObservers.add(observer);
+    }
+
+    private void publishPriceUpdate(Stock stock, BigDecimal newPrice) {
+        for (PriceObserver o : priceObservers) {
+            o.onPriceUpdate(stock, newPrice);
+        }
+    }
+}</code></pre>
+
+        <pre><code>public class Account {
+    private final String accountId;
+    private BigDecimal totalFunds;
+    private BigDecimal availableFunds; // funds not currently reserved by an open order
+
+    // Must be atomic: two orders racing for the same member's funds must not
+    // both read "enough funds" before either one reserves its share. In a
+    // single JVM, `synchronized` illustrates the idea; in production this is
+    // really a single conditional UPDATE at the persistence layer (the same
+    // "debit WHERE balance &gt;= amount" idiom used for the ATM withdrawal race).
+    public synchronized boolean reserveFunds(BigDecimal amount) {
+        if (availableFunds.compareTo(amount) &lt; 0) {
+            return false; // insufficient funds -- reject the order
+        }
+        availableFunds = availableFunds.subtract(amount);
+        return true;
+    }
+
+    public synchronized void releaseFunds(BigDecimal amount) {
+        availableFunds = availableFunds.add(amount);
+    }
+
+    // Called once an order fills: reconcile the reserved estimate against the
+    // actual fill price, then finalize the debit against totalFunds.
+    public synchronized void settleFunds(BigDecimal reservedAmount, BigDecimal actualAmount) {
+        BigDecimal refund = reservedAmount.subtract(actualAmount);
+        if (refund.signum() &gt; 0) {
+            availableFunds = availableFunds.add(refund);
+        }
+        totalFunds = totalFunds.subtract(actualAmount);
+    }
+}</code></pre>
+
+        <h2 id="extensibility-and-edge-cases">Extensibility &amp; Edge Cases</h2>
+        <ul>
+          <li><strong>Partial fills.</strong> A 100-share order might only get 60 shares filled before the price moves away (thin liquidity, a partial match at the exchange). Model this directly on Order with <code>filledQuantity</code> tracked separately from <code>totalQuantity</code>, and an OrderStatus value of PARTIALLY_FILLED distinct from FILLED &mdash; the remaining 40 shares stay live under the same order rather than silently disappearing or requiring a brand-new order object.</li>
+          <li><strong>Order expiry: Good-Til-Cancelled vs. Day.</strong> A Day order that never qualifies before the market closes should transition to EXPIRED; a Good-Til-Cancelled (GTC) order should simply remain OPEN and keep watching subsequent trading days' price ticks. This is a property of the Order (or a small OrderDuration field) checked whenever the trading day ends, not a special case bolted onto the price-comparison logic itself.</li>
+          <li><strong>Stop-loss orders.</strong> A further Order subtype: a Stop-Loss order sits dormant until the market price falls to (or below) a trigger price, at which point it converts into a Market order and executes immediately &mdash; the opposite intent of a Limit order (protect against further loss rather than wait for a better price), but implemented with the same Strategy/Observer machinery: it's still just another <code>tryExecute(currentPrice)</code> override subscribed to the same price feed.</li>
+          <li><strong>Margin and short-selling.</strong> Worth raising as a real extension, not fully designing: margin trading lets a Member borrow funds to buy more than their cash covers, and short-selling lets them sell shares they don't yet hold, borrowing them instead. Both change what "sufficient funds" and "sufficient shares" mean in the validation step (a margin/borrowing limit replaces a hard zero floor), but don't change the core Order/tryExecute/StockPosition shape &mdash; they extend the account-level and position-level bookkeeping around it.</li>
+          <li><strong>Two orders for the same Member racing the same available funds.</strong> The same atomic-reservation idea from the sequence diagram above: <code>Account.reserveFunds</code> must be a single conditional check-and-deduct (or an equivalent locked read-modify-write at the database), never a separate read-then-write, or two orders placed nearly simultaneously can both observe "enough funds" and both be accepted, overdrawing the account.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">How should a Limit order actually get triggered when the market price moves &mdash; and why is polling the wrong instinct?</div>
+          <div class="qa-a">Register every open LimitOrder (or a lightweight per-stock watcher holding references to the LimitOrders resting on that stock) as an Observer of StockExchange's price feed. The instant a price tick arrives for that stock, every subscribed LimitOrder re-evaluates its own <code>tryExecute(currentPrice)</code> and fires if the condition is met. Polling &mdash; a scheduled job that wakes up every N seconds and re-scans every open order against the latest price &mdash; adds needless latency (a limit could sit unfilled for up to a full polling interval after it qualifies) and wastes work scanning orders that haven't changed state, whereas Observer only does work exactly when a relevant price actually changes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Two orders for the same Member hit "confirm" against the same available-funds balance at nearly the same instant. Walk through exactly how you stop both from succeeding.</div>
+          <div class="qa-a">The funds check and the funds reservation have to happen as one atomic operation, not a read followed by a separate write. In practice: a single conditional update &mdash; e.g., <code>UPDATE account SET available_funds = available_funds - :amount WHERE account_id = :id AND available_funds &gt;= :amount</code> &mdash; checked for exactly one row affected, or an equivalent row-locked read-modify-write in a transaction. Whichever request's update commits first wins and reserves its funds; the second sees zero rows affected (or the lock already held), reads the now-updated balance, and is correctly rejected. A plain "read balance, check in application code, then write" sequence is exactly the race that lets both orders pass the check before either one's write lands.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you model a partial fill, where only some of the requested shares execute?</div>
+          <div class="qa-a">Track <code>filledQuantity</code> separately from <code>totalQuantity</code> on Order, with <code>getRemainingQuantity()</code> derived as the difference, and introduce a PARTIALLY_FILLED OrderStatus distinct from OPEN and FILLED. Each partial execution updates StockPosition and funds for exactly the shares that filled, increments <code>filledQuantity</code>, and leaves the order live (still subscribed to price updates, in the LimitOrder case) until <code>filledQuantity == totalQuantity</code>, at which point it transitions to FILLED. The alternative &mdash; treating a partial fill as "cancel and create a new order for the remainder" &mdash; loses the order's original identity and timestamp, which matters for both the member's order history and, in real markets, priority/time-in-queue rules.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is StockExchange a defensible Singleton here, and when would you push back on a candidate reaching for Singleton elsewhere?</div>
+          <div class="qa-a">StockExchange earns Singleton the same way ParkingLot does elsewhere in this section: the software's object cardinality genuinely matches an external reality &mdash; there is exactly one real connection to the actual exchange/price feed that the whole application should share, for the same rate limiter, the same socket, and the same in-memory price cache. That's different from the classic Singleton anti-pattern, where a logger or config object is made global purely for programmer convenience despite nothing in the real world requiring exactly one instance &mdash; those usually should just be normal objects passed around via dependency injection. The caveat that applies even to the defensible case: implement it as a singleton-scoped bean in your DI container (or a fake substituted in tests), not as static <code>StockExchange.getInstance()</code> calls scattered through business logic, so a unit test can inject a fake exchange with canned prices instead of hitting a real connection.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is Order abstract with a <code>tryExecute</code> method rather than one concrete Order class with an <code>if (type == MARKET)</code> branch?</div>
+          <div class="qa-a">MarketOrder and LimitOrder share every field (stock, quantity, account, status) and differ in exactly one behavior: whether/when a given price qualifies as an execution. An <code>if/else</code> on a type field forces that branch into every place that touches execution logic, and grows a new branch for every future order type (Stop-Loss, Stop-Limit). Making <code>tryExecute(currentPrice)</code> abstract and overriding it per subclass means OrderService never branches on type at all &mdash; it calls the method polymorphically &mdash; and adding a new order type is purely additive: one new subclass, zero edits to existing classes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would a Stop-Loss order fit into this design?</div>
+          <div class="qa-a">As a third concrete Order subtype alongside MarketOrder and LimitOrder. It carries its own trigger price, and its <code>tryExecute(currentPrice)</code> stays dormant (returns false) until the price falls to or below that trigger &mdash; at which point, unlike a LimitOrder, it doesn't fill at a specific price; it converts into an immediate Market-style execution to protect against further loss. It still plugs into exactly the same Observer registration against StockExchange's price feed and the same OrderFactory construction path &mdash; no changes needed to StockPosition, Account, or the execution pipeline itself.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A LimitOrder never fills and its Day order expires at end-of-trading. What happens to the funds it had reserved?</div>
+          <div class="qa-a"><code>Account.releaseFunds(reservedAmount)</code> runs as part of the same transition that sets the order's status to EXPIRED (or CANCELLED, for an explicit cancel) &mdash; the reservation is undone exactly once, atomically with the status change, so the member's availableFunds goes back to reflecting reality immediately rather than staying artificially locked up. This is the mirror image of the reservation made at order-placement time: whatever reserved the funds is responsible for releasing them on every terminal path that isn't a fill.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this design to support short-selling or margin trading?</div>
+          <div class="qa-a">Both change the validation step, not the core order/execution shape. Margin trading replaces the hard "availableFunds &gt;= cost" floor with a broker-defined borrowing limit (available buying power, which includes a credit line against the account), so <code>reserveFunds</code> checks against that expanded ceiling instead of raw cash. Short-selling lets a Sell order pass its "sufficient shares" check even with zero (or negative) shares actually held, by borrowing the shares from the brokerage's inventory &mdash; which means StockPosition needs a signed quantity (negative for a short position) and Account needs to track a borrow/margin balance alongside totalFunds. Order, tryExecute, and the price-update Observer wiring are untouched by either extension; they're purely a matter of what a Member is allowed to reserve.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Watchlist and StockPosition both boil down to "a list of Stocks tied to a Member." Why are they separate classes?</div>
+          <div class="qa-a">They express fundamentally different relationships to risk and money. A StockPosition entry means the Member owns those shares &mdash; funds were spent, the position has a cost basis, and it directly feeds portfolio market value and realized gains on a Statement. A Watchlist entry means the opposite: the Member is only tracking a Stock's price with zero funds or ownership at stake, and adding or removing one has no effect on funds, orders, or tax reporting. Collapsing them into one class would force every consumer of "the Member's stocks" to first branch on whether a given entry represents real ownership or just casual interest &mdash; exactly the kind of overloaded-class ambiguity this section's Reservation-vs-Stay and Order-vs-Statement splits are also designed to avoid.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Key Takeaways</div>
+          <ul>
+            <li>Order is abstract with one Strategy hook &mdash; <code>tryExecute(currentPrice)</code> &mdash; so MarketOrder and LimitOrder differ in exactly one method instead of forcing an order-type branch through the whole codebase.</li>
+            <li>A LimitOrder is triggered by Observer, subscribing to StockExchange's price feed, not by a polling job re-scanning open orders on a timer &mdash; the single most important design choice on this page.</li>
+            <li>StockExchange is a defensible Singleton because there really is exactly one shared connection to the real exchange, the same reasoning this section applies to ParkingLot &mdash; not because Singleton is a reflex.</li>
+            <li>Funds reservation (and share reservation, for a sell) must be a single atomic conditional update, or two orders racing the same balance can both slip through &mdash; the same technique this section uses for the ATM withdrawal race.</li>
+            <li>filledQuantity vs. totalQuantity on Order models partial fills directly, and Reservation/Watchlist-style "intent vs. real ownership" separation is why StockPosition and Watchlist stay two distinct classes.</li>
+          </ul>
+        </div>
+
+        <h2 id="references">References</h2>
+        <p>This page follows the standard "Grokking the Object Oriented Design Interview"-style treatment of an Online Stock Brokerage System &mdash; an abstract Account with Member/Admin subclasses, a Singleton StockExchange, StockInventory-backed price caching, a StockPosition of current holdings, Market/Limit Order types, and quarterly Statements &mdash; adapted and expanded here with explicit OrderStatus state, partial-fill, and funds-reservation-concurrency treatment.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Singleton_pattern" target="_blank" rel="noopener">"Singleton pattern"</a> &mdash; general reference for the StockExchange Singleton discussion above, and the caveats around using it safely.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Observer_pattern" target="_blank" rel="noopener">"Observer pattern"</a> &mdash; general reference for how LimitOrders subscribe to StockExchange price updates instead of being polled.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Strategy_pattern" target="_blank" rel="noopener">"Strategy pattern"</a> &mdash; general reference for the MarketOrder/LimitOrder <code>tryExecute</code> split discussed above.</p>
+
+        <div class="page-nav">
+          <a class="prev" href="chess.html"><span class="dir">Previous</span>Chess</a>
+          <a class="next" href="car-rental-system.html"><span class="dir">Next</span>Car Rental System</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture &amp; Setup | JPA / Hibernate | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">JPA / Hibernate</a><span class="sep">/</span><span class="current">Architecture &amp; Setup</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to JPA / Hibernate overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#core-components">Core Components</a></li>
+        <li><a href="#maven-setup-pomxml">Maven Setup (pom.xml)</a></li>
+        <li><a href="#persistencexml-configuration">persistence.xml Configuration</a></li>
+        <li><a href="#bootstrapping-an-entitymanager">Bootstrapping an EntityManager</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">JPA / HIBERNATE</span>
+          <h1>Architecture &amp; Setup</h1>
+        </div>
+
+        <p><em>The core building blocks &mdash; EntityManager, Persistence Context, SessionFactory &mdash; plus a fully runnable Maven + Hibernate 6.x + H2 setup you can copy-paste and run immediately.</em></p>
+
+        <h2 id="overview">Overview</h2>
+        <p>JPA (Jakarta Persistence API) is a <strong>specification</strong> &mdash; a set of interfaces and annotations. Hibernate is the most widely used <strong>implementation</strong> of that specification (and predates it &mdash; JPA borrowed heavily from Hibernate's own API when it was first standardized). Interviewers frequently probe whether you understand this distinction, because it explains why code written against JPA's `EntityManager` is portable across providers (Hibernate, EclipseLink), while code against Hibernate's native `Session` API is not.</p>
+
+        <h2 id="core-components">Core Components</h2>
+
+        <h3>EntityManager</h3>
+        <p>The <code>EntityManager</code> is JPA's central API for interacting with the persistence context &mdash; it's what you call to <code>persist()</code>, <code>find()</code>, <code>merge()</code>, <code>remove()</code>, and to build queries. Each <code>EntityManager</code> instance is lightweight, cheap to create, and <strong>not thread-safe</strong> &mdash; in practice you get a fresh one per request/transaction (a Spring-managed application injects this automatically and you rarely construct one by hand).</p>
+
+        <h3>Persistence Context</h3>
+        <p>The persistence context is the set of entity instances an <code>EntityManager</code> is currently managing &mdash; it's JPA's <strong>first-level cache</strong>. Within one persistence context, asking for the same entity by id twice returns the exact same Java object reference, and any field changes on a managed entity are automatically detected (dirty checking) and flushed to the database when the transaction commits &mdash; no explicit <code>save()</code> call required for updates.</p>
+
+        <h3>SessionFactory (and EntityManagerFactory)</h3>
+        <p>Hibernate's <code>SessionFactory</code> (JPA calls the equivalent concept <code>EntityManagerFactory</code>) is the opposite of the <code>EntityManager</code> in every respect that matters for lifecycle: it's <strong>expensive to create</strong> (it parses all entity mappings, builds the second-level cache, and prepares connection pooling), <strong>thread-safe</strong>, and meant to be created exactly <strong>once per application</strong> and reused for the application's entire lifetime. Each call to <code>entityManagerFactory.createEntityManager()</code> (or, in a Spring app, each new transaction) then produces one cheap, short-lived, single-threaded <code>EntityManager</code>/<code>Session</code> from that one expensive factory.</p>
+
+        <div class="callout">
+          <div class="callout-title">The relationship in one line</div>
+          One <code>SessionFactory</code>/<code>EntityManagerFactory</code> per application &rarr; many short-lived <code>Session</code>/<code>EntityManager</code> instances (typically one per request or transaction) &rarr; each one manages its own <strong>persistence context</strong> (first-level cache) for the entities it touches.
+        </div>
+
+        <h2 id="maven-setup-pomxml">Maven Setup (pom.xml)</h2>
+        <p>A minimal, fully runnable setup using Hibernate 6.x directly (plain JPA, no Spring) against an in-memory H2 database &mdash; everything below this page's code samples runs against this exact configuration with zero external services required.</p>
+        <pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.example&lt;/groupId&gt;
+    &lt;artifactId&gt;blogdemo&lt;/artifactId&gt;
+    &lt;version&gt;0.1.0&lt;/version&gt;
+
+    &lt;properties&gt;
+        &lt;maven.compiler.source&gt;17&lt;/maven.compiler.source&gt;
+        &lt;maven.compiler.target&gt;17&lt;/maven.compiler.target&gt;
+        &lt;hibernate.version&gt;6.6.4.Final&lt;/hibernate.version&gt;
+    &lt;/properties&gt;
+
+    &lt;dependencies&gt;
+        &lt;!-- Hibernate 6.x - the JPA provider --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.hibernate.orm&lt;/groupId&gt;
+            &lt;artifactId&gt;hibernate-core&lt;/artifactId&gt;
+            &lt;version&gt;${hibernate.version}&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;!-- H2 - in-memory database, zero external setup required --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.h2database&lt;/groupId&gt;
+            &lt;artifactId&gt;h2&lt;/artifactId&gt;
+            &lt;version&gt;2.3.232&lt;/version&gt;
+        &lt;/dependency&gt;
+
+        &lt;!-- Jakarta Bean Validation (used by @NotNull/@Size in later sections) --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.hibernate.validator&lt;/groupId&gt;
+            &lt;artifactId&gt;hibernate-validator&lt;/artifactId&gt;
+            &lt;version&gt;8.0.1.Final&lt;/version&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/project&gt;
+</code></pre>
+
+        <h2 id="persistencexml-configuration">persistence.xml Configuration</h2>
+        <p>Plain JPA (outside Spring) discovers its configuration from <code>src/main/resources/META-INF/persistence.xml</code>. This is the file that names your persistence unit, lists (or auto-scans) your entity classes, and configures the database connection and Hibernate-specific properties.</p>
+        <pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             version="3.0"&gt;
+    &lt;persistence-unit name="blogdemoPU" transaction-type="RESOURCE_LOCAL"&gt;
+        &lt;provider&gt;org.hibernate.jpa.HibernatePersistenceProvider&lt;/provider&gt;
+
+        &lt;class&gt;com.example.blogdemo.domain.Author&lt;/class&gt;
+        &lt;class&gt;com.example.blogdemo.domain.AuthorProfile&lt;/class&gt;
+        &lt;class&gt;com.example.blogdemo.domain.Post&lt;/class&gt;
+        &lt;class&gt;com.example.blogdemo.domain.Comment&lt;/class&gt;
+        &lt;class&gt;com.example.blogdemo.domain.Tag&lt;/class&gt;
+
+        &lt;properties&gt;
+            &lt;!-- H2 in-memory database - data lives only for the JVM's lifetime --&gt;
+            &lt;property name="jakarta.persistence.jdbc.url"
+                      value="jdbc:h2:mem:blogdemo;DB_CLOSE_DELAY=-1"/&gt;
+            &lt;property name="jakarta.persistence.jdbc.driver" value="org.h2.Driver"/&gt;
+            &lt;property name="jakarta.persistence.jdbc.user" value="sa"/&gt;
+            &lt;property name="jakarta.persistence.jdbc.password" value=""/&gt;
+
+            &lt;!-- Auto-create the schema from entity mappings on startup - fine for this
+                 runnable demo; a real production app owns its schema via Flyway/Liquibase
+                 and sets this to "validate" instead. --&gt;
+            &lt;property name="hibernate.hbm2ddl.auto" value="create-drop"/&gt;
+
+            &lt;!-- See the generated SQL in the console - invaluable while learning/debugging --&gt;
+            &lt;property name="hibernate.show_sql" value="true"/&gt;
+            &lt;property name="hibernate.format_sql" value="true"/&gt;
+
+            &lt;property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/&gt;
+        &lt;/properties&gt;
+    &lt;/persistence-unit&gt;
+&lt;/persistence&gt;
+</code></pre>
+
+        <h2 id="bootstrapping-an-entitymanager">Bootstrapping an EntityManager</h2>
+        <p>With the two files above in place, obtaining a working <code>EntityManager</code> and running your first transaction is exactly four lines:</p>
+        <pre><code>EntityManagerFactory emf = Persistence.createEntityManagerFactory("blogdemoPU"); // once, at app startup
+EntityManager em = emf.createEntityManager();                                   // cheap, per unit-of-work
+
+em.getTransaction().begin();
+Author author = new Author("Ada Lovelace", "ada@example.com");
+em.persist(author);
+em.getTransaction().commit();
+
+em.close();
+emf.close(); // only at application shutdown
+</code></pre>
+        <p>Everything from here on &mdash; entity mapping, relationships, querying, performance, transactions &mdash; builds directly on top of this same <code>EntityManagerFactory</code>/<code>EntityManager</code> pair and <code>blogdemoPU</code> persistence unit.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between JPA and Hibernate?</div>
+          <div class="qa-a">JPA is a specification (a set of interfaces and annotations defined by Jakarta EE); Hibernate is one concrete implementation of that specification. Code written against <code>jakarta.persistence.EntityManager</code> is portable across any JPA provider; code against Hibernate's own <code>org.hibernate.Session</code> API is tied to Hibernate specifically.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is SessionFactory expensive to create, and how does that shape how it's used?</div>
+          <div class="qa-a">It parses every entity mapping, builds the second-level cache region factory, and initializes connection pooling - all upfront work. That's why it's created exactly once per application (typically a singleton) and reused for the app's entire lifetime, in contrast to the cheap, short-lived <code>EntityManager</code>/<code>Session</code> created per unit of work.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is the persistence context, and what does it mean for an entity to be "managed"?</div>
+          <div class="qa-a">The persistence context is the first-level cache of entity instances an <code>EntityManager</code> is currently tracking. A "managed" entity is one that's in this cache: Hibernate automatically detects field changes on it (dirty checking) and flushes them to the database at commit, without an explicit save call.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Is EntityManager thread-safe? Is SessionFactory?</div>
+          <div class="qa-a"><code>EntityManager</code> (and Hibernate's <code>Session</code>) is <strong>not</strong> thread-safe - it's meant for a single thread/unit of work. <code>EntityManagerFactory</code>/<code>SessionFactory</code> <strong>is</strong> thread-safe and designed to be shared across the whole application.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What does hibernate.hbm2ddl.auto=create-drop do, and why is it dangerous in production?</div>
+          <div class="qa-a">It tells Hibernate to generate the database schema from your entity mappings at startup and drop it at shutdown - convenient for demos and tests, but dangerous in production because it can silently drop or alter real tables when entity mappings change. Production systems should use <code>validate</code> (Hibernate checks the schema matches but never changes it) alongside a dedicated migration tool like Flyway or Liquibase.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>JPA is the specification; Hibernate is an implementation of it - prefer coding against <code>jakarta.persistence</code> types for portability.</li>
+          <li>One expensive, thread-safe <code>SessionFactory</code>/<code>EntityManagerFactory</code> per application; many cheap, single-threaded <code>Session</code>/<code>EntityManager</code> instances, one per unit of work.</li>
+          <li>The persistence context is the first-level cache - it's what makes dirty checking and automatic flush-on-commit possible.</li>
+          <li>H2 in-memory + <code>hibernate.hbm2ddl.auto=create-drop</code> gives you a fully runnable setup with zero external services, ideal for learning and this tutorial series - never use it as-is in production.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="index.html"><span class="dir">Previous</span>Topic Overview</a>
+          <a class="next" href="entity-mapping.html"><span class="dir">Next</span>Entity Mapping</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

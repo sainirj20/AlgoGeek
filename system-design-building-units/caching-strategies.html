@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caching | System Design — Building Units | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Building Units</a><span class="sep">/</span><span class="current">Caching</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Building Units overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#redis">In-Memory Caches: Redis</a></li>
+        <li><a href="#memcached">In-Memory Caches: Memcached</a></li>
+        <li><a href="#distributed-caching-architecture">Distributed Caching Architecture</a></li>
+        <li><a href="#caching-strategies-patterns">Caching Strategies / Patterns</a></li>
+        <li><a href="#eviction-policies-invalidation-strategies">Cache Eviction Policies and Invalidation Strategies</a></li>
+        <li><a href="#cache-stampede-avalanche-penetration">Cache Consistency Challenges: Stampede, Avalanche, Penetration</a></li>
+        <li><a href="#cdn-edge-caching">CDN Edge Caching</a></li>
+        <li><a href="#browser-http-caching-headers">Browser/Client-Side Caching and HTTP Caching Headers</a></li>
+        <li><a href="#application-level-caching">Content/Application-Level Caching</a></li>
+        <li><a href="#varnish-cache">Varnish Cache</a></li>
+        <li><a href="#request-coalescing-singleflight">Request Coalescing / Singleflight Pattern</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN — BUILDING UNITS</span>
+          <h1>Caching</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Caching trades a small amount of staleness risk for a large reduction in latency and load on your system of record — and it shows up at every layer of a real system, not just as "add Redis in front of the database." This page moves from the in-memory stores themselves (Redis, Memcached) out to where a cache physically sits relative to the application (distributed, near-cache, and sidecar architectures), the read/write contracts that govern how a cache and its backing store stay in sync (cache-aside, write-through, write-back, and related patterns), how a full cache decides what to evict and when to invalidate, the failure modes a cache can introduce under load (stampede, avalanche, penetration), and finally the network edge and browser layers (CDN edge caching, HTTP caching headers, application-level caching) plus two closely related building blocks — the Varnish HTTP accelerator and the request-coalescing/singleflight pattern that defends against stampedes at the code level.</p>
+
+        <h3 id="redis">In-Memory Caches: Redis</h3>
+        <p>Redis (REmote DIctionary Server) is an open-source, in-memory data structure store that doubles as a cache, primary database, message broker, and streaming engine. A single-threaded event loop executes commands one at a time, which makes multi-step operations like incrementing a counter or pushing onto a list atomic without any explicit locking — the whole operation happens server-side in one round trip. Because the dataset lives natively in memory as strings, hashes, lists, sets, sorted sets (leaderboards, rate limiters), streams, bitmaps/HyperLogLogs, and geospatial indexes, Redis often replaces application-side logic that would otherwise need multiple round trips against a plain key-value store.</p>
+        <p>Durability is optional but well supported: RDB point-in-time snapshots, an append-only file (AOF) command log (tunable from <code>always</code> to <code>everysec</code> durability), or a hybrid of both are the common production setup. Redis Cluster shards data across 16,384 fixed hash slots with masters paired to replicas for failover (a minimum viable HA cluster is 3 masters + 3 replicas), while Sentinel offers monitoring and automatic failover for a single primary/replica pair without sharding. Since Redis 6 and RESP3, client-side caching lets clients keep an automatically-invalidated local "near cache," and the ecosystem now splits between Redis itself (tri-licensed RSALv2/SSPLv1/AGPLv3, restoring OSI-approved open-source status in May 2025) and Valkey, the Linux Foundation's BSD-licensed drop-in fork backed by AWS, Google Cloud, and Oracle. See the <a href="../database-types/key-value-column-stores.html">Key-Value Stores</a> page for deeper Redis/Memcached product profiles.</p>
+        <p><strong>Popular tools:</strong> Redis OSS, Redis Enterprise/Cloud, AWS ElastiCache for Redis/MemoryDB, Google Cloud Memorystore, Azure Cache for Redis, Valkey, Dragonfly.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Session storage, leaderboards/rankings, rate limiting/counters, real-time analytics, pub/sub messaging, job queues — anywhere you need more than plain get/set, durability options alongside cache behavior, horizontal scale-out for a large working set, or atomic multi-step operations. Reach for Memcached instead when you want the simplest, lowest-memory-overhead cache with massive concurrent throughput and no extra features.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Extremely fast, in-memory operations</li><li>Rich data types cut app-side logic</li><li>Built-in persistence, replication, and clustering</li><li>Versatile beyond caching (queues, pub/sub, streams)</li></ul></td>
+            <td><ul><li>Higher per-key memory overhead than Memcached</li><li>Single-threaded core can bottleneck on very large values or heavy scripting</li><li>Cluster/HA setup adds operational complexity</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="memcached">In-Memory Caches: Memcached</h3>
+        <p>Memcached is a simple, high-performance, distributed in-memory key-value store built purely for caching — no persistence, no complex data types, minimal by design. A multi-threaded server design lets it use multiple CPU cores natively, with each thread handling a subset of connections, and it stores arbitrary blobs up to 1MB per item using slab-allocated memory with LRU eviction. Nodes don't talk to each other — there's no built-in clustering — so client libraries handle consistent hashing across a pool of servers, and data is purely volatile: a restart or eviction means it's gone for good.</p>
+        <p>The practical trade-off against Redis is simplicity versus features: Memcached's multi-threaded architecture often edges out Redis on raw GET/SET throughput at high concurrency and carries lower per-item memory overhead, but it offers nothing beyond key-value blobs — no persistence, replication, pub/sub, or transactions. Most new projects in 2026 default to Redis/Valkey unless simplicity or memory efficiency specifically favors Memcached. See the <a href="../database-types/key-value-column-stores.html">Key-Value Stores</a> page for deeper Redis/Memcached product profiles.</p>
+        <p><strong>Popular tools:</strong> Memcached, Mcrouter, AWS ElastiCache for Memcached, Google Cloud Memorystore for Memcached.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          The lightest possible, purely ephemeral cache in front of a database — simple page-fragment or query-result caching — when you want the simplest, lowest-overhead footprint and don't need durability, clustering, or rich data structures.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Simplest operational model</li><li>Very low per-key memory overhead</li><li>Excellent raw throughput at high concurrency</li><li>Multi-threaded — uses multiple cores natively</li></ul></td>
+            <td><ul><li>No persistence — a restart means a fully cold cache</li><li>No native clustering/HA (must build at client/proxy layer)</li><li>No rich data structures, pub/sub, or transactions</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="distributed-caching-architecture">Distributed Caching Architecture</h3>
+        <p>This is less about a specific product and more about where a cache physically lives relative to the application, and how multiple app instances share cached state consistently. A centralized/remote distributed cache — a dedicated Redis Cluster or Memcached pool that every app instance calls over the network — gives everyone a consistent shared view but adds a network hop and a shared failure point. Client-side caching (a "near cache") keeps a local in-process cache inside the application, such as Caffeine/Guava or Redis's client-side tracking, avoiding the network hop entirely for hot keys at the cost of needing an invalidation mechanism to stay reasonably fresh. Cache-aside (look-aside) architecture is the simplest topology of all: the cache is a purely passive store that the application checks first and falls back past on a miss.</p>
+        <p>Two more topologies show up often in interviews: the sidecar cache pattern runs a cache process alongside the app in the same Kubernetes pod, reachable over <code>localhost</code>, trading duplicated memory per instance for reduced cross-pod hops and blast radius versus one shared cluster; and the inline/reverse-proxy cache (Varnish, Nginx, a CDN edge) sits directly in the request path, transparently serving cached responses without the application even being aware a cache is involved. In practice, production systems often layer several of these — local &rarr; distributed &rarr; CDN/edge &rarr; database — each tier trading latency against freshness and hit-rate scope.</p>
+        <p><strong>Popular tools:</strong> Redis Cluster, Memcached + Mcrouter, Hazelcast, Apache Ignite, Amazon DynamoDB Accelerator (DAX), Envoy/Istio sidecars, Caffeine/Guava, Varnish/Nginx.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          A centralized cluster when many services need a shared, consistent cache view and the working set exceeds one node's memory. A client-side/near cache for extremely hot, small, read-heavy keys — usually layered on top of a distributed cache, not instead of one. A sidecar cache in Kubernetes environments that want per-service locality/isolation without standing up a separate shared cluster.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Centralized: one consistent shared view across services</li><li>Near cache: fastest possible reads, no network hop</li><li>Sidecar: strong latency/isolation per service</li></ul></td>
+            <td><ul><li>Centralized: extra network hop, shared failure point</li><li>Near cache: staleness risk, duplicated memory per instance</li><li>Sidecar: more operational units, potential memory duplication</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="caching-strategies-patterns">Caching Strategies / Patterns</h3>
+        <p>These are the different contracts for how reads and writes flow between the application, the cache, and the backing data store — arguably the single most-tested caching concept in system design interviews. In cache-aside (look-aside, lazy loading), the application checks the cache first; on a miss it reads the database and writes the result into the cache with a TTL, and writes typically invalidate rather than update the cached entry. Read-through works the same way from the reader's perspective, except the cache layer itself owns miss-handling, so the application only ever talks to the cache and never falls back to the database directly.</p>
+        <p>On the write side, write-through sends every write to the cache and the store together before acknowledging, so readers always see fresh data at the cost of slightly slower writes; write-behind (write-back) acknowledges the write as soon as it hits the cache and flushes to the store asynchronously, maximizing write throughput but risking data loss if the cache fails before the flush completes. Write-around instead sends writes directly to the database, bypassing the cache entirely, so the cache is populated only on a subsequent read — useful for reducing churn from write-heavy data that's rarely read again soon after.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 690 300" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="24" font-size="13" font-weight="700" fill="#0f2545">Cache-Aside vs. Write-Through vs. Write-Back</text>
+
+            <rect x="15" y="40" width="205" height="235" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="117" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">Cache-Aside</text>
+            <rect x="82" y="72" width="70" height="24" rx="4" fill="#fff" stroke="#94a3b8"/><text x="117" y="88" text-anchor="middle" font-size="10">Client</text>
+            <rect x="82" y="110" width="70" height="26" rx="4" fill="#0f2545"/><text x="117" y="127" text-anchor="middle" font-size="10" fill="#fff">App</text>
+            <rect x="27" y="158" width="75" height="26" rx="4" fill="#fff" stroke="#2563eb"/><text x="64" y="175" text-anchor="middle" font-size="10">Cache</text>
+            <rect x="132" y="158" width="75" height="26" rx="4" fill="#fff" stroke="#94a3b8"/><text x="169" y="175" text-anchor="middle" font-size="10">DB</text>
+            <line x1="117" y1="96" x2="117" y2="110" stroke="#334155" marker-end="url(#cflow1)"/>
+            <line x1="100" y1="136" x2="68" y2="158" stroke="#334155" marker-end="url(#cflow1)" marker-start="url(#cflow1)"/>
+            <text x="70" y="150" font-size="9" fill="#5a6472">1, 3</text>
+            <line x1="136" y1="136" x2="163" y2="158" stroke="#334155" marker-end="url(#cflow1)"/>
+            <text x="150" y="150" font-size="9" fill="#5a6472">2</text>
+            <text x="117" y="205" text-anchor="middle" font-size="9" fill="#5a6472">1,3 check cache (miss),</text>
+            <text x="117" y="217" text-anchor="middle" font-size="9" fill="#5a6472">then populate result</text>
+            <text x="117" y="235" text-anchor="middle" font-size="9" fill="#5a6472">2 read from DB on miss</text>
+            <text x="117" y="253" text-anchor="middle" font-size="9" fill="#5a6472">cached with a TTL for</text>
+            <text x="117" y="265" text-anchor="middle" font-size="9" fill="#5a6472">the next read</text>
+
+            <rect x="242" y="40" width="205" height="235" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="344" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#6b4a10">Write-Through</text>
+            <rect x="309" y="72" width="70" height="24" rx="4" fill="#fff" stroke="#94a3b8"/><text x="344" y="88" text-anchor="middle" font-size="10">Client</text>
+            <rect x="309" y="110" width="70" height="26" rx="4" fill="#0f2545"/><text x="344" y="127" text-anchor="middle" font-size="10" fill="#fff">App</text>
+            <rect x="254" y="158" width="75" height="26" rx="4" fill="#fff" stroke="#d9a441"/><text x="291" y="175" text-anchor="middle" font-size="10">Cache</text>
+            <rect x="359" y="158" width="75" height="26" rx="4" fill="#fff" stroke="#94a3b8"/><text x="396" y="175" text-anchor="middle" font-size="10">DB</text>
+            <line x1="344" y1="96" x2="344" y2="110" stroke="#334155" marker-end="url(#cflow1)"/>
+            <line x1="327" y1="136" x2="300" y2="158" stroke="#334155" marker-end="url(#cflow1)"/>
+            <text x="295" y="150" font-size="9" fill="#5a6472">1</text>
+            <line x1="329" y1="171" x2="359" y2="171" stroke="#334155" marker-end="url(#cflow1)"/>
+            <text x="338" y="166" font-size="9" fill="#5a6472">2</text>
+            <text x="344" y="205" text-anchor="middle" font-size="9" fill="#5a6472">1 write &rarr; cache</text>
+            <text x="344" y="217" text-anchor="middle" font-size="9" fill="#5a6472">2 cache writes through</text>
+            <text x="344" y="229" text-anchor="middle" font-size="9" fill="#5a6472">&rarr; DB (sync)</text>
+            <text x="344" y="247" text-anchor="middle" font-size="9" fill="#5a6472">3 ack returned only</text>
+            <text x="344" y="259" text-anchor="middle" font-size="9" fill="#5a6472">after DB confirms</text>
+
+            <rect x="469" y="40" width="205" height="235" rx="8" fill="#f0fdf4" stroke="#166534"/>
+            <text x="571" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">Write-Back (Write-Behind)</text>
+            <rect x="536" y="72" width="70" height="24" rx="4" fill="#fff" stroke="#94a3b8"/><text x="571" y="88" text-anchor="middle" font-size="10">Client</text>
+            <rect x="536" y="110" width="70" height="26" rx="4" fill="#0f2545"/><text x="571" y="127" text-anchor="middle" font-size="10" fill="#fff">App</text>
+            <rect x="481" y="158" width="75" height="26" rx="4" fill="#fff" stroke="#166534"/><text x="518" y="175" text-anchor="middle" font-size="10">Cache</text>
+            <rect x="586" y="158" width="75" height="26" rx="4" fill="#fff" stroke="#94a3b8"/><text x="623" y="175" text-anchor="middle" font-size="10">DB</text>
+            <line x1="571" y1="96" x2="571" y2="110" stroke="#334155" marker-end="url(#cflow1)"/>
+            <line x1="554" y1="136" x2="527" y2="158" stroke="#334155" marker-end="url(#cflow1)"/>
+            <text x="522" y="150" font-size="9" fill="#5a6472">1</text>
+            <line x1="556" y1="171" x2="586" y2="171" stroke="#334155" stroke-dasharray="4 3" marker-end="url(#cflow1)"/>
+            <text x="562" y="166" font-size="9" fill="#5a6472">2 async</text>
+            <text x="571" y="205" text-anchor="middle" font-size="9" fill="#5a6472">1 write &rarr; cache,</text>
+            <text x="571" y="217" text-anchor="middle" font-size="9" fill="#5a6472">ack immediately</text>
+            <text x="571" y="235" text-anchor="middle" font-size="9" fill="#5a6472">2 async flush to DB,</text>
+            <text x="571" y="247" text-anchor="middle" font-size="9" fill="#5a6472">often batched</text>
+            <text x="571" y="265" text-anchor="middle" font-size="9" fill="#5a6472">risk: loss if cache fails first</text>
+
+            <defs><marker id="cflow1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Cache-aside pulls on miss and populates after; write-through keeps cache and DB in lockstep before acknowledging; write-back acknowledges immediately and flushes asynchronously.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> These patterns are usually implemented in application code or a caching library rather than being tied to one product — Spring Cache/Ehcache annotations, AWS DynamoDB Accelerator (DAX, read-through/write-through), Redis/Memcached client libraries for cache-aside, and message-queue-backed write-behind pipelines (e.g. Kafka plus a batch writer) are common building blocks.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          <strong>Cache-aside</strong> — default for most read-heavy workloads tolerant of some staleness. <strong>Read-through</strong> — when you want caching logic centralized in the cache layer/library rather than scattered through app code. <strong>Write-through</strong> — when correctness matters more than write latency (inventory counts, account balances). <strong>Write-behind</strong> — write-heavy systems tolerant of a small data-loss window in exchange for big throughput gains (view counters, activity logs). <strong>Write-around</strong> — lots of writes to data that's infrequently re-read soon after (audit logs, bulk imports).
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Cache-aside: simple, flexible, only caches what's requested</li><li>Read-through: one interface for hit/miss simplifies app code</li><li>Write-through: strong consistency between cache and store</li><li>Write-behind: fastest possible write throughput</li></ul></td>
+            <td><ul><li>Cache-aside/read-through: cold-miss penalty on the first request</li><li>Write-through: higher write latency (waits on the DB write)</li><li>Write-behind: risk of data loss if the cache node crashes before flushing</li><li>Write-around: first read after a write is always a slow miss</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="eviction-policies-invalidation-strategies">Cache Eviction Policies and Invalidation Strategies</h3>
+        <p>Eviction and invalidation solve two different problems that are easy to conflate: eviction policies decide which entries to remove once the cache is full and something has to make room; invalidation strategies decide when a cached entry should stop being trusted because the underlying source data changed. LRU (Least Recently Used) evicts whatever hasn't been touched in the longest time — cheap to implement and a good general default, though a single one-time scan of cold data can flush out an otherwise-hot working set. LFU (Least Frequently Used) evicts by lowest access count instead, which is more scan-resistant but needs frequency decay so yesterday's popularity doesn't pin an item forever. FIFO simply evicts the oldest-inserted entry — trivial to implement but generally the weakest hit rate of the three. TTL expiration sits in a different category entirely: it's a freshness mechanism, not a capacity-driven policy, removing entries after a fixed lifespan regardless of memory pressure, and it's commonly layered on top of LRU/LFU rather than used alone.</p>
+        <p>On the invalidation side, the options range from passive to active: TTL-based expiration is passive and simplest; active/explicit invalidation on write and write-through propagation keep the cache in lockstep with the source at write time; versioning/cache-busting mints a new key per version (the standard approach for static assets and CDN objects); pub/sub or event-driven invalidation fans a purge message out to every node in a distributed cache; and stale-while-revalidate (RFC 5861) serves the stale value immediately while refreshing it in the background rather than blocking the request.</p>
+        <p><strong>Popular tools:</strong> Redis <code>maxmemory-policy</code> (LRU/LFU/random/TTL variants), Memcached's LRU + slab allocator, Caffeine/Guava (W-TinyLFU), CDN cache-tag/purge APIs, CDC pipelines such as Debezium feeding invalidation events.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          LRU for general-purpose, recency-biased access. LFU for a stable "hot set" of popular items you don't want a transient scan to evict. FIFO for simple queue-like buffers. TTL for anything with a natural freshness window — tokens, DNS records, pricing, feature flags. Event-driven invalidation for multi-instance or CDN caches where strict freshness matters and TTL alone can't be trusted.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>LRU is cheap (O(1)) and fits most web workloads</li><li>LFU protects a stable hot set from transient scans</li><li>Event-driven invalidation gives strict freshness across distributed nodes</li></ul></td>
+            <td><ul><li>LRU can be polluted by a one-off scan of cold keys</li><li>LFU needs extra bookkeeping (frequency counters/decay) and adapts slowly to shifting popularity</li><li>FIFO ignores access patterns and gives the weakest hit rate</li><li>Event-driven invalidation adds fan-out/messaging infrastructure and its own failure modes</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="cache-stampede-avalanche-penetration">Cache Consistency Challenges: Stampede, Avalanche, Penetration</h3>
+        <p>These are three distinct failure modes where the cache, instead of protecting the backing store, amplifies load onto it. A cache stampede (thundering herd) happens when one popular key expires and a large number of concurrent requests all miss at the same instant and all recompute the same expensive value simultaneously. A cache avalanche is the multi-key version: many different keys — often cached in the same batch with the same TTL — expire around the same time, or an entire cache node/cluster goes down, sending a sudden wave of traffic to the database all at once. Cache penetration is different again: repeated requests for keys that don't exist in either the cache or the database (invalid IDs, scraping/probing) never get a cache hit to begin with, so every single request bypasses the cache and lands directly on the database.</p>
+        <p>The mitigations overlap but map roughly to the failure mode. Locking/request coalescing (singleflight) lets only one request recompute a given key while everyone else waits for that result, directly targeting stampedes on a single hot key. Stale-while-revalidate and probabilistic early recomputation smooth out the same problem by refreshing in the background before or right at expiry. TTL jitter — randomizing expiration times rather than expiring an entire batch at once — is the standard defense against avalanche. Cache penetration is addressed differently: negative caching (caching the "not found" result itself) and Bloom filters (cheaply confirming a key definitely doesn't exist before ever touching the cache or DB) stop the repeated pointless lookups, and input validation closes off the crudest probing. Multi-tier caching/redundancy and circuit breakers/rate limiting act as a last-resort backstop regardless of which failure mode is in play.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="24" font-size="13" font-weight="700" fill="#0f2545">Cache Stampede vs. Request Coalescing</text>
+
+            <rect x="20" y="42" width="300" height="190" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="170" y="65" text-anchor="middle" font-size="11.5" font-weight="700" fill="#6b4a10">Stampede (no coalescing)</text>
+            <rect x="40" y="80" width="60" height="20" rx="3" fill="#fff" stroke="#94a3b8"/><text x="70" y="94" text-anchor="middle" font-size="9">Client</text>
+            <rect x="40" y="106" width="60" height="20" rx="3" fill="#fff" stroke="#94a3b8"/><text x="70" y="120" text-anchor="middle" font-size="9">Client</text>
+            <rect x="40" y="132" width="60" height="20" rx="3" fill="#fff" stroke="#94a3b8"/><text x="70" y="146" text-anchor="middle" font-size="9">Client</text>
+            <rect x="40" y="158" width="60" height="20" rx="3" fill="#fff" stroke="#94a3b8"/><text x="70" y="172" text-anchor="middle" font-size="9">Client</text>
+            <rect x="225" y="105" width="70" height="34" rx="4" fill="#0f2545"/><text x="260" y="126" text-anchor="middle" font-size="10" fill="#fff">DB</text>
+            <line x1="100" y1="90" x2="225" y2="115" stroke="#334155" marker-end="url(#cflow2)"/>
+            <line x1="100" y1="116" x2="225" y2="120" stroke="#334155" marker-end="url(#cflow2)"/>
+            <line x1="100" y1="142" x2="225" y2="128" stroke="#334155" marker-end="url(#cflow2)"/>
+            <line x1="100" y1="168" x2="225" y2="135" stroke="#334155" marker-end="url(#cflow2)"/>
+            <text x="170" y="200" text-anchor="middle" font-size="9.5" fill="#5a6472">key expires; every concurrent</text>
+            <text x="170" y="214" text-anchor="middle" font-size="9.5" fill="#5a6472">miss recomputes independently</text>
+
+            <rect x="350" y="42" width="310" height="190" rx="8" fill="#f0fdf4" stroke="#166534"/>
+            <text x="505" y="65" text-anchor="middle" font-size="11.5" font-weight="700" fill="#166534">Coalescing (singleflight)</text>
+            <rect x="370" y="80" width="60" height="20" rx="3" fill="#fff" stroke="#94a3b8"/><text x="400" y="94" text-anchor="middle" font-size="9">Client</text>
+            <rect x="370" y="106" width="60" height="20" rx="3" fill="#fff" stroke="#94a3b8"/><text x="400" y="120" text-anchor="middle" font-size="9">Client</text>
+            <rect x="370" y="132" width="60" height="20" rx="3" fill="#fff" stroke="#94a3b8"/><text x="400" y="146" text-anchor="middle" font-size="9">Client</text>
+            <rect x="370" y="158" width="60" height="20" rx="3" fill="#fff" stroke="#94a3b8"/><text x="400" y="172" text-anchor="middle" font-size="9">Client</text>
+            <rect x="470" y="105" width="90" height="34" rx="4" fill="#166534"/><text x="515" y="126" text-anchor="middle" font-size="9.5" fill="#fff">In-flight lock</text>
+            <rect x="600" y="105" width="50" height="34" rx="4" fill="#0f2545"/><text x="625" y="126" text-anchor="middle" font-size="9.5" fill="#fff">DB</text>
+            <line x1="430" y1="90" x2="470" y2="112" stroke="#334155" marker-end="url(#cflow2)"/>
+            <line x1="430" y1="116" x2="470" y2="118" stroke="#334155" marker-end="url(#cflow2)"/>
+            <line x1="430" y1="142" x2="470" y2="126" stroke="#334155" marker-end="url(#cflow2)"/>
+            <line x1="430" y1="168" x2="470" y2="132" stroke="#334155" marker-end="url(#cflow2)"/>
+            <line x1="560" y1="122" x2="600" y2="122" stroke="#334155" marker-end="url(#cflow2)"/>
+            <text x="505" y="200" text-anchor="middle" font-size="9.5" fill="#5a6472">only the first request reaches</text>
+            <text x="505" y="214" text-anchor="middle" font-size="9.5" fill="#5a6472">the DB; others wait and share the result</text>
+
+            <defs><marker id="cflow2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Without coalescing, N concurrent misses become N duplicate DB queries; singleflight/request coalescing collapses them into one, fanning the shared result back out to every waiting caller.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> Redis <code>SET key value NX PX ttl</code> locks and singleflight libraries for coalescing, Bloom filter implementations (Redis <code>BF.*</code>, Guava), CDN/API-gateway negative-caching and rate-limiting features, and circuit-breaker libraries (Resilience4j and its predecessors) as the backstop.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          High-traffic systems with a few very hot keys — use locking/coalescing plus stale-while-revalidate. Systems where many keys were cached in the same batch — use TTL jitter. Public APIs vulnerable to ID enumeration or scraping — use negative caching and/or Bloom filters. Any system where a cache outage could dump 100% of traffic onto the database — design for graceful degradation as a backstop, not as an afterthought.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Locking/coalescing collapses N duplicate requests into 1</li><li>TTL jitter prevents synchronized mass expiry</li><li>Negative caching/Bloom filters eliminate pointless repeated lookups</li><li>Mitigations compose (jitter + coalescing + stale-while-revalidate)</li></ul></td>
+            <td><ul><li>Locking adds latency/complexity for "losing" requests and a new contention point</li><li>Jitter alone doesn't help a single celebrity key</li><li>Bloom filters have a small false-positive rate and need periodic rebuilding</li><li>None of these substitute for capacity planning on the backing store</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="cdn-edge-caching">CDN Edge Caching</h3>
+        <p>A CDN caches content on edge servers physically close to users, so most requests never make the round trip back to the origin. The nearest edge Point of Presence checks whether it holds a valid cached copy of the requested object: a hit is served directly from the edge; a miss triggers an "origin pull" — the edge fetches from the origin, caches the response for the duration of its TTL, and serves it. Origin shielding adds one more layer: instead of every edge PoP independently pulling from the origin (and each one missing on cold start), a designated "shield" PoP sits between the edge tier and the origin and collapses many independent edge-to-origin requests into far fewer — protecting the origin the same way request coalescing does at a single node.</p>
+        <p>TTL governs how long an edge node is allowed to hold an object before it must revalidate or refetch, and a manual or automated purge lets an operator force immediate removal ahead of that TTL when content changes unexpectedly. Modern CDNs increasingly cache more than static files — via edge compute and cache keys that vary on cookies/headers, they can cache semi-personalized or dynamic responses too, though that requires careful cache-key design to avoid either serving one user's content to another or effectively disabling caching entirely.</p>
+        <p><strong>Popular tools:</strong> Cloudflare, Akamai, Fastly, Amazon CloudFront, Google Cloud CDN, Azure CDN, bunny.net.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Static assets, video/media delivery, and semi-static pages for a geographically spread audience, along with cacheable/shared (non-personalized) API responses. Needs careful cache-key and invalidation design for strictly per-user or write-heavy endpoints — CDN/edge caching is fundamentally a caching strategy applied at the network edge rather than a separate networking concern, which is why it's covered here rather than as its own topic.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Dramatically reduces latency for geographically distributed users</li><li>Offloads a large share of traffic from the origin</li><li>Improves resilience during origin slowdowns or failures</li><li>Origin shielding further protects the origin during cache-cold events</li></ul></td>
+            <td><ul><li>Invalidation/purge across globally distributed edges is harder than a single cache node</li><li>Poor fit for highly personalized or rapidly changing per-user data without careful cache-key design</li><li>A misconfigured cache key can leak one user's content to another</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="browser-http-caching-headers">Browser/Client-Side Caching and HTTP Caching Headers</h3>
+        <p>This is the mechanism by which browsers — and any intermediate shared/proxy cache or CDN edge sitting between browser and origin — decide whether to reuse a previously stored response or go back to the server, governed entirely by a small set of standard HTTP headers rather than any custom logic. <code>Cache-Control</code> carries the actual directives: <code>max-age=N</code> sets the freshness lifetime, <code>no-cache</code> means it must revalidate before reuse (a common point of confusion — it does not mean "don't cache"), <code>no-store</code> means never cache it at all, <code>private</code>/<code>public</code> control who is allowed to cache it, and <code>immutable</code> skips revalidation entirely for content that will never change at that URL. <code>stale-while-revalidate=N</code> extends the same background-refresh idea from server-side caching down into the browser.</p>
+        <p>For content that needs periodic revalidation rather than a long flat TTL, <code>ETag</code> gives a content-derived token that the browser resends via <code>If-None-Match</code>, getting back a cheap <code>304 Not Modified</code> if nothing changed instead of re-downloading the full payload; <code>Last-Modified</code>/<code>If-Modified-Since</code> is the older, time-based equivalent. Because the same headers apply uniformly across the private browser cache, shared proxy caches, and CDN edges, a well-chosen <code>Cache-Control</code> policy does triple duty, and versioned/hashed filenames complement a long <code>max-age</code>/<code>immutable</code> policy by making cache-busting on deploy automatic — the URL itself changes, so there's nothing to invalidate.</p>
+        <p><strong>Popular tools:</strong> Implemented natively by every browser plus any CDN/reverse proxy in the path (Cloudflare, Fastly, Varnish, Nginx) — there's no separate product to adopt, only the headers your origin or CDN sets.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Static assets — long <code>max-age</code> plus <code>immutable</code> plus hashed filenames, so a new deploy is a new URL rather than an invalidation problem. Frequently-updated-but-still-cacheable content — short <code>max-age</code> plus <code>stale-while-revalidate</code>. Sensitive or personalized data — <code>no-store</code>/<code>private</code>. Expensive-but-rarely-changing API payloads — <code>ETag</code>/<code>Last-Modified</code> validators to cut bandwidth via <code>304</code>s instead of re-sending the full body.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Zero infrastructure cost — just headers the origin already controls</li><li>Cuts bandwidth and latency for both validators (304) and immutable assets</li><li>Works uniformly across browser, proxy, and CDN caches</li></ul></td>
+            <td><ul><li>Easy to misconfigure (e.g. caching a private/authenticated response as public)</li><li><code>no-cache</code> is commonly misread as "don't cache" and misused</li><li>No control once a response has left the origin — you can't force-purge a browser's local cache the way you can purge a CDN</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="application-level-caching">Content/Application-Level Caching</h3>
+        <p>This is caching implemented inside the application/backend layer itself, to avoid redundant expensive computation, database queries, or full page renders — distinct from network-edge (CDN) caching or the browser's own cache. Query-result caching stores an expensive database result keyed by the query, refreshed on a TTL or explicitly invalidated on writes. Full-page caching goes further and caches the entire rendered HTML response, serving it directly and bypassing the application and database entirely on a hit. Object/fragment caching sits between the two — caching one reusable widget or aggregate (a sidebar, a computed total) rather than a whole page — and an in-process/local application cache is the fastest option of all, though it isn't shared across instances.</p>
+        <p>The distinction from CDN caching is granularity and awareness: application-level caching is fine-grained and business-logic-aware (it knows what a "product listing query" or a "user's cart total" is), while a CDN cache is coarser and works purely off URL/TTL/tag rules against whole HTTP responses. The two aren't competing choices — a well-layered system typically uses both, with the CDN protecting the network edge and application-level caching protecting the database and compute tier behind it.</p>
+        <p><strong>Popular tools:</strong> Ehcache/Caffeine and Spring Cache (Java), Django's cache framework/<code>cache_page</code>, Rails fragment caching, Redis/Memcached as the backing store for query-result and fragment caches, and full-page cache modules for CMS platforms (e.g. Magento, WordPress full-page cache plugins).</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Query-result caching for dashboards or product listings that repeatedly hit the same expensive query. Full-page caching for content-heavy, mostly non-personalized sites — blogs, marketing pages. Fragment/object caching for pages that are mostly static with a few dynamic pieces. In-process cache for ultra-hot, small, single-instance data like compiled config or small lookup tables.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Fine-grained, business-logic-aware — caches exactly the expensive thing</li><li>Protects the database/compute tier directly, complementing CDN/edge caching</li><li>In-process variants need no network hop at all</li></ul></td>
+            <td><ul><li>Not shared across instances unless backed by a distributed cache</li><li>Invalidation logic lives in application code, so a code path can easily miss invalidating a key</li><li>Full-page caching is a poor fit once a page has meaningfully personalized content</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="varnish-cache">Varnish Cache</h3>
+        <p>Varnish Cache is an open-source HTTP accelerator — a reverse proxy purpose-built to sit in front of web/application servers and serve cacheable HTTP responses at very high speed, entirely from memory. First released in 2006 specifically to stop dynamic websites collapsing under load, it's still actively maintained today, with a commercial Varnish Enterprise edition adding clustering, TLS, and extra modules. The key distinction from a general-purpose reverse proxy or load balancer like Nginx/HAProxy is focus: those tools can cache as one of many features, while Varnish does one thing aggressively — its object store, threading model, and configuration language are all organized purely around maximizing cache hit ratio and minimizing backend load. It has no native TLS termination in the open-source core, typically pairing with Hitch or a load balancer in front of it.</p>
+        <p>Configuration happens through VCL (Varnish Configuration Language), a scripting language compiled all the way down to C and then a shared object, giving fine-grained control at each stage of a request's life — <code>vcl_recv</code> for initial routing/normalization, <code>vcl_hash</code> for building the cache key (normally URL + Host), <code>vcl_hit</code>/<code>vcl_miss</code>, <code>vcl_backend_fetch</code>/<code>vcl_backend_response</code> for the real request to origin and how the response is cached, and <code>vcl_deliver</code> for final response shaping. Compilation to native code is why even complex VCL logic still runs extremely fast, and cached objects are stored close to wire format — either in <code>malloc</code>'d heap memory (fastest) or <code>file</code>/<code>mmap</code> storage (allows caches larger than RAM) — so a cache hit is close to a <code>memcpy</code>/sendfile operation. Varnish's standout capability, though, is automatic request coalescing (see below), on by default for cacheable content — something Nginx only approximates via <code>proxy_cache_lock</code>.</p>
+        <p><strong>Popular tools:</strong> Varnish Cache (open source) and Varnish Enterprise (commercial). Real-world adopters include large media/publishing sites (Future Publishing, NZZ, RTÉ), CDN builders like Telia, e-commerce sites (Boozt Fashion, Sheego, and a very common Magento caching layer), and historically Wikipedia/Wikimedia's caching layer in front of MediaWiki.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          High-traffic content sites (news, media, blogs) with a large share of anonymous/cacheable traffic; e-commerce storefronts facing flash-sale-style spikes; APIs with expensive, cacheable, shared responses requested concurrently by many clients; protecting a slow/expensive origin during cache-cold events like a cluster failover or post-deploy cache invalidation. Less appropriate for highly personalized per-request responses, workloads needing TLS/complex auth at this layer, or mostly non-cacheable writes/mutations.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Extremely fast cache-hit delivery</li><li>Protects origin capacity from duplicate concurrent traffic with zero app code changes</li><li>Fine-grained VCL control over every stage of the request</li><li>Edge Side Includes (ESI) for caching page fragments independently</li></ul></td>
+            <td><ul><li>Real learning curve — VCL is a genuine programming paradigm</li><li>Mistakes in <code>vcl_hash</code> normalization can cause cache poisoning or cross-user data leaks</li><li>No native TLS, auth, or general app-serving</li><li>Coalescing/grace mode trades a little staleness for protection — unsuitable for always-fresh/personalized content</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="request-coalescing-singleflight">Request Coalescing / Singleflight Pattern</h3>
+        <p>Request coalescing (singleflight) is the general software pattern behind Varnish's collapsed forwarding, applied at the application/library layer rather than tied to HTTP: when a system detects that multiple concurrent callers are asking for the exact same piece of work — same cache key, same query, same function arguments — it ensures only one underlying execution actually happens, and every caller shares that one result. A request arrives keyed by an identifier; the coalescing layer checks a registry of "keys currently being fetched." If nothing is in flight, it starts the work and registers it; if something is already in flight, the new caller doesn't duplicate the work — it subscribes to (or blocks on) the pending result, and once the original fetch completes, that result is fanned out to every waiting caller at once.</p>
+        <p>Concrete implementations show up at every layer: Go's <code>singleflight</code> package exposes a <code>Group.Do(key, fn)</code> call where, if invoked concurrently with the same key, only the first <code>fn</code> actually executes and everyone else blocks and gets the same result — used widely in Go backends, including at Cloudflare, to deduplicate cache-fill and downstream calls at the edge. Facebook/Meta's McRouter, a memcached protocol proxy, does the same thing at connection scope — coalescing many clients onto fewer shared backend TCP connections alongside routing, replication, and automatic failover, at a scale of billions of requests/sec. Where an in-process registry can't help — because the callers are spread across a fleet of hosts — teams fall back to a Redis-based distributed lock (<code>SET key value NX PX ttl</code>), where the first process to acquire the lock does the expensive fetch and populates the cache while everyone else waits or polls. Coalescing is one of several stampede mitigations, alongside probabilistic early expiration and stale-while-revalidate/grace periods — it specifically targets duplicate concurrent work, turning one cache miss into one backend call instead of N.</p>
+        <p><strong>Popular tools:</strong> Go's <code>singleflight</code> package, Facebook/Meta's McRouter, Redis-based distributed locks (<code>SET ... NX PX</code>), and Varnish's built-in collapsed forwarding as the HTTP-layer implementation of the same idea.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Any read-heavy system with a hot-key problem (a viral post, a trending product); systems where cache expiry is synchronized across many keys at once; any expensive, idempotent, cacheable computation that many concurrent callers might request simultaneously. Not appropriate for non-idempotent or per-caller-unique work — writes, personalized/audited responses — since coalescing only makes sense when sharing one result across callers is actually correct.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Dramatically reduces load spikes on the origin/database</li><li>Cheap to implement within a single process</li><li>Improves latency for "losing" concurrent requests too, since they share the result instead of queuing behind the DB</li></ul></td>
+            <td><ul><li>In-process implementations don't help across a server fleet unless paired with a proxy or shared coordination</li><li>Distributed locking adds latency and new failure modes like lock contention</li><li>All coalesced callers share fate if the one real request fails</li></ul></td>
+          </tr>
+        </table>
+
+        <div class="page-nav">
+          <a class="prev" href="sharding-replication-rate-limiting.html"><span class="dir">Previous</span>Data Storage &amp; Database Patterns</a>
+          <a class="next" href="load-balancing.html"><span class="dir">Next</span>Networking &amp; Traffic Management</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

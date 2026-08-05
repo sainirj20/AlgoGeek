@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing a Distributed Coordination Service (ZooKeeper-Style) | System Design — Case Studies | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+<!-- ========================================================================
+     PAGE-SCOPED TEST: interactivity/visual-interest pass for this page only.
+     Everything between the ZK-TEST markers below (this <style> block and the
+     matching <script> block near </body>) is self-contained to this one file.
+     To revert: delete both blocks and this page returns to the plain shared
+     styling used by every other page in the site. Nothing here touches
+     ../css/styles.css or ../js/main.js. -->
+<style>
+/* --- ZK-TEST:start --- */
+html { scroll-behavior: smooth; }
+
+#zk-progress {
+  position: fixed; top: var(--topbar-height); left: 0; height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--color-accent), #7c3aed);
+  z-index: 150; transition: width 0.12s ease-out;
+}
+
+/* Colored left-rail on every heading, with a "Deep Dive" badge to break up
+   the wall of near-identical h2s */
+.article h2 {
+  position: relative;
+  padding-left: 1rem;
+  border-left: 5px solid var(--color-accent);
+  transition: border-color 0.25s ease;
+}
+.article h2:hover { border-left-color: #7c3aed; }
+.article h2.zk-deep-dive { border-left-color: #7c3aed; }
+.article h2.zk-deep-dive::after {
+  content: "DEEP DIVE";
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #7c3aed;
+  background: #ede9fe;
+  border-radius: 999px;
+  padding: 0.18rem 0.6rem;
+  margin-left: 0.75rem;
+  vertical-align: middle;
+  transform: translateY(-2px);
+}
+
+/* Small reading-time badge next to the SYSTEM DESIGN tag */
+.zk-readtime {
+  display: inline-block;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-left: 0.6rem;
+  font-weight: 500;
+}
+
+/* Fade-and-rise reveal as sections scroll into view */
+.zk-fade {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.zk-fade.zk-visible { opacity: 1; transform: translateY(0); }
+
+/* Tactile hover for diagrams, callouts, formula boxes, Q&A cards, tables */
+.diagram-box, .qa-item, .callout, .formula-box, .article table {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.diagram-box:hover, .qa-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+/* Diagrams are click-to-enlarge */
+.diagram-box { cursor: zoom-in; position: relative; }
+.diagram-box::before {
+  content: "\2922 click to enlarge";
+  position: absolute; top: 0.6rem; right: 0.9rem;
+  font-size: 0.68rem; color: var(--color-text-muted);
+  opacity: 0; transition: opacity 0.2s ease;
+}
+.diagram-box:hover::before { opacity: 1; }
+
+#zk-lightbox {
+  display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.86);
+  z-index: 500; align-items: center; justify-content: center; padding: 2.5rem;
+  cursor: zoom-out;
+}
+#zk-lightbox.zk-open { display: flex; }
+#zk-lightbox > div {
+  background: #fff; border-radius: 12px; padding: 1.75rem;
+  max-width: 92vw; max-height: 88vh; overflow: auto;
+}
+#zk-lightbox svg { width: 100%; height: auto; }
+
+/* Q&A becomes a click-to-reveal quiz instead of a wall of always-visible text */
+.qa-item { cursor: pointer; }
+.qa-q { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.qa-q::after {
+  content: "+";
+  flex-shrink: 0;
+  font-size: 1.3rem; font-weight: 400; line-height: 1;
+  color: var(--color-accent);
+  transition: transform 0.25s ease;
+}
+.qa-item.zk-open .qa-q::after { transform: rotate(45deg); }
+.qa-a {
+  display: none;
+  padding-top: 0.6rem;
+  margin-top: 0.6rem;
+  border-top: 1px dashed var(--color-border);
+}
+.qa-item.zk-open .qa-a { display: block; animation: zk-slide 0.22s ease; }
+@keyframes zk-slide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Floating back-to-top button */
+#zk-top {
+  position: fixed; bottom: 1.75rem; right: 1.75rem;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--color-accent); color: #fff; border: none;
+  font-size: 1.15rem; line-height: 1; cursor: pointer;
+  opacity: 0; pointer-events: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  transition: transform 0.15s ease, opacity 0.2s ease;
+  z-index: 150;
+}
+#zk-top.zk-show { opacity: 1; pointer-events: auto; }
+#zk-top:hover { transform: translateY(-3px); }
+/* --- ZK-TEST:end --- */
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Case Studies</a><span class="sep">/</span><span class="current">ZooKeeper</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Case Studies overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design">Low-Level Design</a></li>
+        <li><a href="#deep-dive-data-model-znodes-and-the-hierarchical-namespace">Deep Dive &mdash; Data Model: Znodes and the Hierarchical Namespace</a></li>
+        <li><a href="#deep-dive-zab-atomic-broadcast-and-leader-election">Deep Dive &mdash; ZAB: Atomic Broadcast and Leader Election</a></li>
+        <li><a href="#deep-dive-watches-ephemeral-nodes-and-session-management">Deep Dive &mdash; Watches, Ephemeral Nodes, and Session Management</a></li>
+        <li><a href="#deep-dive-building-blocks-on-top-locks-leader-election-recipes-and-config-management">Deep Dive &mdash; Building Blocks on Top: Locks, Leader Election Recipes, and Config Management</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing a Distributed Coordination Service (ZooKeeper-Style)</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough: requirements, capacity estimation, the znode API and data model, ensemble architecture, the ZAB write path, watches/sessions, the classic recipes (locks, leader election, service discovery), replication and fault-tolerance math, security, and follow-up interview questions &mdash; with an explicit, running contrast to the AP (Dynamo/Cassandra-style) systems covered elsewhere in this section.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a distributed coordination service &mdash; a ZooKeeper-style system &mdash; that gives a large fleet of application servers a small set of strongly-consistent primitives that are individually painful to get right whenever a team hand-rolls them inside its own service: <strong>configuration management</strong> (push a value to every instance and have them react to changes), <strong>service discovery / group membership</strong> (know, at all times, exactly which instances of a service are alive), <strong>distributed locks</strong> (let exactly one process hold a critical section across an entire fleet, not just across threads on one box), and <strong>leader election</strong> (elect exactly one coordinator among many peers, and detect its death quickly enough that a new one can take over). The system should expose these as a small set of composable, low-level primitives rather than one bespoke API per use case, because a single building block &mdash; an ordered, watchable namespace of small nodes with session-scoped lifetimes &mdash; turns out to be sufficient to implement every one of them.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>Almost every distributed-systems interview eventually touches "how do two services agree on who's the leader" or "how do I know which instances are alive." This design forces a candidate to reason about consensus, ordering, and failure detection directly, instead of hiding behind a database's transaction guarantees. A strong candidate treats the write path (a single leader, majority-quorum commit) as the load-bearing decision and derives everything else &mdash; the data model, the recipes, the failure behavior &mdash; from it, rather than listing features in isolation.</p>
+
+        <h3>CP, not AP: the deliberate contrast with Dynamo and Cassandra</h3>
+        <p>This is explicitly a <strong>CP</strong> system on the CAP spectrum &mdash; it chooses consistency over availability whenever the two conflict, most visibly during a leader-election window where the ensemble briefly refuses new writes rather than risk two different views of the truth. That is a deliberate, load-bearing design decision, and it is the polar opposite of the AP systems covered elsewhere in this same section (Amazon Dynamo, Cassandra), which stay available during a partition by accepting writes on any replica and reconciling divergence later via read repair, hinted handoff, and vector clocks/last-write-wins. State the contrast explicitly in an interview: a shopping-cart service or a social-media timeline can tolerate a stale or conflicting read &mdash; that's exactly what Dynamo-style systems are built to absorb. A distributed lock or a leader-election result cannot tolerate that: two processes simultaneously believing they hold the same lock, or two nodes simultaneously believing they're the leader (a classic "split brain"), is a correctness bug, not a UX inconvenience. That's why this system trades away availability during partitions/leader failure in exchange for linearizable writes, instead of the other way around.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If the interviewer asks "why not just use Cassandra for this," lead with this exact framing: "Cassandra is tunable toward AP and eventual consistency, which is the wrong default for coordination primitives whose entire value proposition is that at most one client can ever believe it holds a lock or is the leader at any instant. I'd need a single-leader, quorum-committed write path either way &mdash; at which point I'm rebuilding ZooKeeper's core, not saving effort by avoiding it."
+        </div>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope before drawing boxes.</p>
+        <ol>
+          <li>Roughly how many application-server instances need to connect concurrently, and how many watches per instance should we plan for?</li>
+          <li>Is this a single-region deployment, or does the design need to anticipate multiple regions/data centers from day one?</li>
+          <li>Is the data genuinely small coordination metadata (config values, membership markers, lock markers), or could someone try to store larger payloads in it?</li>
+          <li>What's the expected read:write ratio &mdash; is this overwhelmingly watch/read-driven with rare writes, or is write volume also significant?</li>
+          <li>Do we need per-znode ACLs and authenticated clients, or is network-level trust (a private VPC) sufficient for this deployment?</li>
+          <li>How much write unavailability during a leader-election window is acceptable &mdash; low-single-digit seconds, or does it need to be near-zero?</li>
+          <li>Do clients need a linearizable read on every call, or is bounded staleness from whichever follower they're connected to acceptable for the common case?</li>
+          <li>Should we assume well-behaved client SDKs (correct watch re-registration, session handling), or must the design defend against clients that mishandle those contracts?</li>
+          <li>Is this an internal platform built for our own microservice fleet, or a multi-tenant service exposed to many independent teams needing isolation?</li>
+          <li>What ensemble size (and therefore what failure-tolerance budget) is realistic given our infrastructure footprint &mdash; how many availability zones do we have to spread nodes across?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't wait for every answer &mdash; state a reasonable assumption out loud ("I'll assume this backs service discovery, leader election, and configuration for roughly 10,000 microservice instances, is overwhelmingly read/watch-dominated, and runs single-region to start") and keep moving. Naming the assumption is what interviewers are grading, not guessing the "right" number.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Provide a hierarchical namespace of znodes (a filesystem-like tree), each holding a small amount of data plus metadata, addressable by path.</li>
+          <li>Support three znode creation modes: persistent, ephemeral, and sequential (and the ephemeral+sequential combination).</li>
+          <li>Support one-time watches for data changes, znode existence, and children-list changes.</li>
+          <li>Support atomic conditional writes (optimistic concurrency via a version number, i.e. compare-and-swap) and multi-op atomic transactions across several znodes.</li>
+          <li>Provide configuration distribution: a client updates a config znode and every watcher is notified to re-read it.</li>
+          <li>Provide group membership / service discovery: ephemeral children under a well-known path represent the currently-alive members of a service.</li>
+          <li>Provide primitives sufficient to build distributed locks, leader election, and barriers purely from create/watch semantics, with no separate lock-specific API.</li>
+          <li>Guarantee session-based liveness: a client's ephemeral znodes are automatically removed when its session ends, whether by clean disconnect or by timeout.</li>
+          <li>Provide a <code>sync()</code> primitive so a client that cannot tolerate a stale follower read can force a linearizable read-after-write.</li>
+          <li>Support per-znode ACLs for access control.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Strong consistency (linearizable writes):</strong> CP over AP &mdash; every committed write is visible, in the same order, to every server that has applied it.</li>
+          <li><strong>High read availability and throughput:</strong> the workload is watch/read-dominated, and reads must scale horizontally even though writes are serialized through one leader.</li>
+          <li><strong>Durability:</strong> a committed write survives a crash and restart of any single node, and of a minority of the ensemble simultaneously.</li>
+          <li><strong>Bounded failover time:</strong> losing the leader causes at most a few seconds of write unavailability while a new leader is elected, not minutes.</li>
+          <li><strong>Small-data-only performance envelope:</strong> the system is optimized for coordination metadata (well under 1&nbsp;MB per znode, ideally far smaller), not as a general-purpose data store.</li>
+          <li><strong>Horizontal read scalability</strong> via adding followers, explicitly not via sharding the data (see "Data Partitioning and Sharding" below).</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on ZAB (the replication/consensus protocol), the znode data model, watches and session management, and the classic recipes built on top (locks, leader election, membership, barriers, configuration). We will not design a general-purpose distributed database, a message queue, or a blob store on top of this service &mdash; using it that way is a well-known anti-pattern (see "Bottlenecks, Single Points of Failure, and Trade-Offs"). We also won't design a single ensemble stretched across high-latency WAN links for multi-region active-active consensus; that's explicitly discouraged (see "Scaling to Multiple Regions").</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly and let them drive the ensemble-sizing decision below.</p>
+
+        <h3>Fleet and Session Load</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          10,000 microservice instances across the fleet, each holding exactly one persistent session to the ensemble for its lifetime
+          <br>Each instance sets &asymp;3 watches on average (1 on a config znode, 1 as part of leader-election/locking, 1 on a service-registry parent for discovery) &rarr; &asymp;30,000 concurrent watches ensemble-wide
+          <br>Assume a negotiated session timeout of &asymp;12s, with heartbeats sent at roughly 1/3 of the timeout &rarr; a heartbeat every &asymp;4s per session
+          <br>10,000 sessions &divide; 4s &asymp; 2,500 heartbeats/sec sustained, spread across whichever server each client is connected to &mdash; a trivial load, but it's why session timeout tuning is a real operational knob, not a footnote
+        </div>
+
+        <h3>Read:Write Ratio &mdash; the Defining Characteristic</h3>
+        <div class="formula-box">
+          <span class="formula-label">Reads / watch-driven traffic</span>
+          Assume each of the 10,000 instances does a "read + re-register watch" cycle (a watch fires, or a periodic refresh) on average once every &asymp;30s
+          <br>10,000 &divide; 30s &asymp; 333 reads/sec baseline, with sharp bursts to several thousand/sec during a mass restart or rolling deploy when many instances re-register watches at once
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Writes</span>
+          Assume &asymp;200 instance restarts/redeploys per hour fleet-wide (rolling deploys, autoscaling churn) &mdash; each cycle is roughly 1 ephemeral create (new instance registers) + 1 ephemeral delete (old session expires)
+          <br>&asymp;400 ephemeral znode writes/hour &asymp; 0.11/sec, plus a handful of config pushes/day and, ideally, zero-to-a-few leader elections/day (only on coordinator failure) &mdash; both negligible next to the read/watch volume
+          <br><strong>Net read:write ratio on the order of 1,000:1 to 10,000:1</strong> &mdash; heavily read/watch dominated. This is exactly why the design lets followers serve reads locally: paying a full quorum round-trip on every single one of those reads would be enormously wasteful given how rarely the data actually changes.
+        </div>
+
+        <h3>Ensemble Sizing Rationale &mdash; Why 5 (or 7), Not 4 or 6</h3>
+        <p>An ensemble of <code>N</code> servers always uses an odd number, and tolerates <code>floor((N-1)/2)</code> simultaneous failures while still being able to form a majority quorum for both writes and leader elections.</p>
+        <table class="sortable">
+          <tr><th>N (servers)</th><th>Majority needed</th><th>Failures tolerated &mdash; floor((N-1)/2)</th><th>Verdict</th></tr>
+          <tr><td>3</td><td>2</td><td>1</td><td>Minimum viable; a single rolling restart already consumes your one tolerated failure &mdash; no slack for an unplanned failure during maintenance</td></tr>
+          <tr><td>4</td><td>3</td><td>1</td><td>Identical fault tolerance to N=3, but every write now needs one more ACK &mdash; strictly worse, never used in production</td></tr>
+          <tr><td>5</td><td>3</td><td>2</td><td><strong>Most common production size</strong> &mdash; survives a full AZ outage (1 node) plus a concurrent planned maintenance restart (1 more) in a typical 3-AZ, 2-2-1 layout</td></tr>
+          <tr><td>6</td><td>4</td><td>2</td><td>Identical fault tolerance to N=5, with extra write-ack overhead and cost &mdash; strictly worse, never used in production</td></tr>
+          <tr><td>7</td><td>4</td><td>3</td><td>Reserved for very large fleets or when extra Followers are wanted purely to scale read throughput; tolerates 3 simultaneous failures at the cost of a slightly heavier write-commit path</td></tr>
+        </table>
+        <p>For our 10,000-instance fleet with a read/watch-dominated workload and modest write volume, <strong>5 nodes</strong> is the right default: it comfortably absorbs the estimated load, tolerates one AZ loss plus one concurrent maintenance event, and keeps the per-write quorum small (3 of 5) so commit latency stays low. Move to 7 only if read fan-out from more Followers is independently valuable, or the failure-tolerance requirement genuinely calls for surviving 3 simultaneous node losses.</p>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Fleet size (client sessions)</td><td>10,000 instances / sessions</td></tr>
+          <tr><td>Concurrent watches ensemble-wide</td><td>&asymp;30,000</td></tr>
+          <tr><td>Sustained heartbeat rate</td><td>&asymp;2,500/sec</td></tr>
+          <tr><td>Baseline read/watch-refresh rate</td><td>&asymp;333/sec (bursts higher during mass restarts)</td></tr>
+          <tr><td>Baseline write rate</td><td>&asymp;0.1&ndash;1/sec (ephemeral churn + rare config/election writes)</td></tr>
+          <tr><td>Read:write ratio</td><td>&asymp;1,000:1 to 10,000:1</td></tr>
+          <tr><td>Recommended ensemble size</td><td>5 nodes (tolerates 2 failures)</td></tr>
+          <tr><td>Recommended max znode data size</td><td>Well under 1&nbsp;MB; ideally a few bytes to a few KB</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Clients talk to the ensemble through a small, uniform znode API. Every primitive in the system &mdash; config distribution, service discovery, locks, leader election &mdash; is built purely by composing these calls with the three creation-mode flags and the watch mechanism; there is no separate "lock API" or "election API" beneath the surface.</p>
+
+        <h3>The znode API</h3>
+        <pre><code>create(path, data, acl, createMode) -&gt; created_path
+  createMode: PERSISTENT | PERSISTENT_SEQUENTIAL | EPHEMERAL | EPHEMERAL_SEQUENTIAL
+  // SEQUENTIAL modes: the server appends a monotonically increasing,
+  // zero-padded counter to the path, e.g. /locks/mylock/lock-0000000007
+
+delete(path, version) -&gt; void
+  // version = -1 skips the CAS check; otherwise delete only succeeds if the
+  // znode's current version matches (optimistic concurrency)
+
+exists(path, watch) -&gt; Stat | null
+  // watch=true registers a ONE-TIME watch that fires on the next
+  // create, delete, or data change at this exact path
+
+getData(path, watch) -&gt; (data, Stat)
+  // watch=true registers a one-time watch on future data changes
+
+getChildren(path, watch) -&gt; (children[], Stat)
+  // watch=true registers a one-time watch on future child add/remove
+
+setData(path, data, version) -&gt; Stat
+  // version mismatch -&gt; BadVersionException (CAS, not last-write-wins)
+
+sync(path) -&gt; void
+  // flushes the pipeline on the server this client is connected to,
+  // guaranteeing the *next* read on this connection reflects every write
+  // that had committed before sync() was called (linearizable read-after-write)
+
+multi([op1, op2, ...]) -&gt; results[]
+  // atomic, all-or-nothing transaction across several znode operations</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Call out explicitly that watches are <strong>one-time triggers</strong>, not subscriptions: the moment a watch fires, the server forgets it, and the client must call <code>exists</code>/<code>getData</code>/<code>getChildren</code> again with <code>watch=true</code> to keep observing that path. This is the single most common gotcha candidates gloss over &mdash; see the dedicated deep dive below.
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+
+        <h3>The Hierarchical Namespace</h3>
+        <p>Znodes form a tree, addressed by slash-delimited paths, exactly like a filesystem &mdash; except every node, not just "files," can hold data <em>and</em> have children simultaneously. Application teams typically namespace by concern and, in a shared ensemble, by owning service:</p>
+        <table>
+          <tr><th>Path</th><th>Type</th><th>Purpose</th></tr>
+          <tr><td><code>/app/config</code></td><td>Persistent</td><td>A single config blob (e.g. <code>{"max_conns":100}</code>); watched by every instance that needs it</td></tr>
+          <tr><td><code>/services/orderService/instance-0000000001</code></td><td>Ephemeral, sequential</td><td>One currently-alive <code>orderService</code> pod; vanishes automatically if that pod's session dies</td></tr>
+          <tr><td><code>/locks/mylock/lock-0000000007</code></td><td>Ephemeral, sequential</td><td>One client's position in the queue for a distributed lock on <code>mylock</code></td></tr>
+          <tr><td><code>/election/leader/n_0000000003</code></td><td>Ephemeral, sequential</td><td>One candidate's position in a leader-election vote</td></tr>
+        </table>
+
+        <h3>znode Metadata &mdash; the Stat Structure</h3>
+        <p>Every znode carries a small, fixed metadata record (the <code>Stat</code>) alongside its data:</p>
+        <table>
+          <tr><th>Field</th><th>Meaning</th></tr>
+          <tr><td><code>czxid</code></td><td>zxid of the transaction that created this znode</td></tr>
+          <tr><td><code>mzxid</code></td><td>zxid of the transaction that last modified this znode's data</td></tr>
+          <tr><td><code>pzxid</code></td><td>zxid of the transaction that last modified this znode's child list</td></tr>
+          <tr><td><code>ctime</code></td><td>Wall-clock creation time (ms since epoch)</td></tr>
+          <tr><td><code>mtime</code></td><td>Wall-clock time of the last data modification</td></tr>
+          <tr><td><code>version</code></td><td>Number of times this znode's data has changed &mdash; used for optimistic CAS in <code>setData</code></td></tr>
+          <tr><td><code>cversion</code></td><td>Number of times this znode's child list has changed</td></tr>
+          <tr><td><code>aversion</code></td><td>Number of times this znode's ACL has changed</td></tr>
+          <tr><td><code>ephemeralOwner</code></td><td>Session id of the owning session if this is an ephemeral znode; 0 if persistent</td></tr>
+          <tr><td><code>dataLength</code></td><td>Length in bytes of the data field &mdash; small by design (see below)</td></tr>
+          <tr><td><code>numChildren</code></td><td>Number of children currently under this znode</td></tr>
+        </table>
+        <p>Note there's no general-purpose query language, secondary index, or join here &mdash; every operation is a direct path lookup or a children listing. That's a deliberate trade-off: the entire data set is small enough to live in memory on every ensemble member, so there's no need for the indexing machinery a larger data store would require.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>An ensemble of servers (we sized 5 above) elects one <strong>Leader</strong>; the rest are <strong>Followers</strong>. Clients (our 10,000-instance fleet) connect to <em>any</em> ensemble member &mdash; typically via a client-side list of all members, with automatic failover if the connected server dies. A read is served entirely locally by whichever member the client is connected to, with no round-trip to the Leader. A write is forwarded to the Leader if the client isn't already connected to it, ordered and broadcast via ZAB, and only acknowledged back to the client once a majority of the ensemble (including the Leader) has durably persisted it.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A client fleet of 10,000 microservice instances connects to any of five ensemble members: four Followers and one Leader. The Leader replicates every write to all Followers via ZAB proposal and acknowledgment. Writes are forwarded to the Leader and committed only after a majority quorum acknowledges; reads are served locally by whichever member the client is connected to, without a round trip to the Leader.">
+            <style>
+              .zk-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .zk-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .zk-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .zk-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .zk-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .zk-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .zk-arrow-dash{stroke:var(--color-accent);stroke-width:1.4;fill:none;stroke-dasharray:4 3;}
+            </style>
+            <defs>
+              <marker id="arrow-zk-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="210" y="10" width="340" height="48" rx="6" class="zk-box-strong"></rect>
+            <text x="380" y="30" text-anchor="middle" class="zk-title">Client Fleet</text>
+            <text x="380" y="45" text-anchor="middle" class="zk-sub">10,000 microservice instances &mdash; each holds one session, connects to any member</text>
+
+            <line x1="290" y1="58" x2="100" y2="99" class="zk-arrow" marker-end="url(#arrow-zk-1)"></line>
+            <line x1="340" y1="58" x2="240" y2="99" class="zk-arrow" marker-end="url(#arrow-zk-1)"></line>
+            <line x1="380" y1="58" x2="380" y2="99" class="zk-arrow" marker-end="url(#arrow-zk-1)"></line>
+            <line x1="420" y1="58" x2="520" y2="99" class="zk-arrow" marker-end="url(#arrow-zk-1)"></line>
+            <line x1="470" y1="58" x2="660" y2="99" class="zk-arrow" marker-end="url(#arrow-zk-1)"></line>
+
+            <rect x="35" y="100" width="130" height="70" rx="6" class="zk-box"></rect>
+            <text x="100" y="125" text-anchor="middle" class="zk-title">Follower 1</text>
+            <text x="100" y="140" text-anchor="middle" class="zk-sub">local read replica</text>
+            <text x="100" y="153" text-anchor="middle" class="zk-sub">disk-synced log</text>
+
+            <rect x="175" y="100" width="130" height="70" rx="6" class="zk-box"></rect>
+            <text x="240" y="125" text-anchor="middle" class="zk-title">Follower 2</text>
+            <text x="240" y="140" text-anchor="middle" class="zk-sub">local read replica</text>
+            <text x="240" y="153" text-anchor="middle" class="zk-sub">disk-synced log</text>
+
+            <rect x="315" y="100" width="130" height="70" rx="6" class="zk-box-strong"></rect>
+            <text x="380" y="125" text-anchor="middle" class="zk-title">Leader</text>
+            <text x="380" y="140" text-anchor="middle" class="zk-sub">orders + broadcasts</text>
+            <text x="380" y="153" text-anchor="middle" class="zk-sub">every write (ZAB)</text>
+
+            <rect x="455" y="100" width="130" height="70" rx="6" class="zk-box"></rect>
+            <text x="520" y="125" text-anchor="middle" class="zk-title">Follower 3</text>
+            <text x="520" y="140" text-anchor="middle" class="zk-sub">local read replica</text>
+            <text x="520" y="153" text-anchor="middle" class="zk-sub">disk-synced log</text>
+
+            <rect x="595" y="100" width="130" height="70" rx="6" class="zk-box"></rect>
+            <text x="660" y="125" text-anchor="middle" class="zk-title">Follower 4</text>
+            <text x="660" y="140" text-anchor="middle" class="zk-sub">local read replica</text>
+            <text x="660" y="153" text-anchor="middle" class="zk-sub">disk-synced log</text>
+
+            <line x1="315" y1="135" x2="305" y2="135" class="zk-arrow-dash" marker-start="url(#arrow-zk-1)" marker-end="url(#arrow-zk-1)"></line>
+            <line x1="445" y1="135" x2="455" y2="135" class="zk-arrow-dash" marker-start="url(#arrow-zk-1)" marker-end="url(#arrow-zk-1)"></line>
+            <path d="M350,170 C300,205 150,205 100,170" class="zk-arrow-dash" marker-end="url(#arrow-zk-1)"></path>
+            <path d="M410,170 C460,205 610,205 660,170" class="zk-arrow-dash" marker-end="url(#arrow-zk-1)"></path>
+            <text x="380" y="200" text-anchor="middle" class="zk-label">ZAB proposal &rarr; ACK &rarr; commit, replicated to every Follower</text>
+
+            <line x1="380" y1="170" x2="200" y2="249" class="zk-arrow" marker-end="url(#arrow-zk-1)"></line>
+            <line x1="450" y1="170" x2="565" y2="249" class="zk-arrow" marker-end="url(#arrow-zk-1)"></line>
+
+            <rect x="30" y="250" width="330" height="70" rx="6" class="zk-box"></rect>
+            <text x="195" y="272" text-anchor="middle" class="zk-title">Writes</text>
+            <text x="195" y="287" text-anchor="middle" class="zk-sub">forwarded to the Leader; committed only after ACK</text>
+            <text x="195" y="300" text-anchor="middle" class="zk-sub">from a majority (quorum) of the ensemble</text>
+
+            <rect x="400" y="250" width="330" height="70" rx="6" class="zk-box"></rect>
+            <text x="565" y="272" text-anchor="middle" class="zk-title">Reads</text>
+            <text x="565" y="287" text-anchor="middle" class="zk-sub">served locally by whichever member the client is</text>
+            <text x="565" y="300" text-anchor="middle" class="zk-sub">connected to &mdash; may be stale unless client calls sync()</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level ensemble architecture &mdash; a client fleet connects to any of 5 members; the Leader orders and replicates every write via ZAB to a majority before committing, while reads are served locally by whichever Follower (or the Leader) the client happens to be connected to.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>One logical write path, many read paths:</strong> every write funnels through a single Leader for global ordering, but reads fan out across every member &mdash; this asymmetry is the whole reason the read:write ratio from capacity estimation matters so much.</li>
+          <li><strong>No sharding:</strong> every member holds the complete data set in memory (see "Data Partitioning and Sharding" below) &mdash; adding a Follower adds read capacity and fault tolerance, never a shard boundary to reason about.</li>
+          <li><strong>Clients don't need to know who the Leader is:</strong> a client connected to a Follower gets its write silently forwarded; only the ensemble members themselves need to track Leader identity.</li>
+          <li><strong>The quorum, not the Leader alone, is the source of truth:</strong> a write surviving on the Leader's disk but not yet on a majority is not yet committed and is not guaranteed to survive a Leader crash.</li>
+        </ul>
+
+        <h2 id="low-level-design">Low-Level Design</h2>
+
+        <h3>Core Write Flow Walkthrough</h3>
+        <p>Walk through exactly what happens for a single <code>setData</code> (or <code>create</code>/<code>delete</code>) call, from the client's request to the response it receives.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six-step write flow: client sends a write to its connected server; if that server is a Follower it forwards the request to the Leader; the Leader assigns the next zxid and broadcasts a proposal; each Follower appends the proposal to its disk-synced transaction log and acknowledges; once the Leader has acknowledgments from a majority it broadcasts a commit; each Follower applies the write and the originating server returns the response to the client.">
+            <style>
+              .zk-circle{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+              .zk-num{font-family:var(--font-sans);font-weight:700;font-size:13px;fill:#ffffff;}
+              .zk-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .zk-sub{font-family:var(--font-sans);font-weight:400;font-size:10px;fill:var(--color-text-muted);}
+              .zk-line{stroke:var(--color-border);stroke-width:2;}
+            </style>
+            <line x1="40" y1="40" x2="40" y2="335" class="zk-line"></line>
+
+            <circle cx="40" cy="40" r="16" class="zk-circle"></circle>
+            <text x="40" y="45" text-anchor="middle" class="zk-num">1</text>
+            <text x="75" y="34" class="zk-title">Client sends a write (e.g. setData)</text>
+            <text x="75" y="49" class="zk-sub">to whichever server it's currently connected to</text>
+
+            <circle cx="40" cy="99" r="16" class="zk-circle"></circle>
+            <text x="40" y="104" text-anchor="middle" class="zk-num">2</text>
+            <text x="75" y="93" class="zk-title">Follower forwards the request to the Leader</text>
+            <text x="75" y="108" class="zk-sub">skipped entirely if the client is already connected to the Leader</text>
+
+            <circle cx="40" cy="158" r="16" class="zk-circle"></circle>
+            <text x="40" y="163" text-anchor="middle" class="zk-num">3</text>
+            <text x="75" y="152" class="zk-title">Leader assigns the next zxid, broadcasts PROPOSAL</text>
+            <text x="75" y="167" class="zk-sub">zxid (epoch, counter) strictly orders every write ensemble-wide</text>
+
+            <circle cx="40" cy="217" r="16" class="zk-circle"></circle>
+            <text x="40" y="222" text-anchor="middle" class="zk-num">4</text>
+            <text x="75" y="211" class="zk-title">Each Follower fsyncs the proposal to its log, ACKs</text>
+            <text x="75" y="226" class="zk-sub">the write is durable on that Follower's disk before the ACK is sent</text>
+
+            <circle cx="40" cy="276" r="16" class="zk-circle"></circle>
+            <text x="40" y="281" text-anchor="middle" class="zk-num">5</text>
+            <text x="75" y="270" class="zk-title">Leader waits for a majority of ACKs, broadcasts COMMIT</text>
+            <text x="75" y="285" class="zk-sub">majority = ceil((N+1)/2) including the Leader itself</text>
+
+            <circle cx="40" cy="335" r="16" class="zk-circle"></circle>
+            <text x="40" y="340" text-anchor="middle" class="zk-num">6</text>
+            <text x="75" y="329" class="zk-title">Followers apply the write; client gets its response</text>
+            <text x="75" y="344" class="zk-sub">the write is now durable and visible to any member that has applied it</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. The core write flow &mdash; forward to Leader, propose with a zxid, disk-sync and ACK on every Follower, commit on majority, apply and respond. Only step 5's majority wait is on the critical path for durability; nothing here requires <em>every</em> Follower to respond.</div>
+        </div>
+
+        <table>
+          <tr><th>Step</th><th>Guarantee it provides</th></tr>
+          <tr><td>Single Leader assigns zxid</td><td>Total order across all writes &mdash; no two writes ever race for the same position in the log</td></tr>
+          <tr><td>Follower fsync before ACK</td><td>A write a Follower has acknowledged is durable on that Follower's disk, even if it crashes immediately after</td></tr>
+          <tr><td>Commit requires a majority</td><td>A committed write survives the loss of any minority of the ensemble, including the Leader itself</td></tr>
+          <tr><td>Followers apply in zxid order</td><td>Every server's in-memory data tree evolves through the exact same sequence of states</td></tr>
+        </table>
+
+        <h2 id="deep-dive-data-model-znodes-and-the-hierarchical-namespace">Deep Dive &mdash; Data Model: Znodes and the Hierarchical Namespace</h2>
+
+        <h3>Persistent vs. Ephemeral vs. Sequential</h3>
+        <table>
+          <tr><th>Type</th><th>Lifetime</th><th>Typical use</th></tr>
+          <tr><td>Persistent</td><td>Survives until explicitly deleted by a client</td><td>Config values, parent/registry paths that should exist regardless of which clients are connected</td></tr>
+          <tr><td>Ephemeral</td><td>Tied to the creating client's session &mdash; deleted automatically when that session ends (clean close or timeout)</td><td>Liveness markers: "this instance/lock-holder/candidate is currently alive"; the basis for service discovery and leader election</td></tr>
+          <tr><td>Sequential</td><td>Same lifetime as its base type, but the server appends a monotonically increasing, zero-padded counter to the requested name</td><td>Ordering queues: lock waiters and election candidates, where "who arrived first" must be unambiguous and race-free</td></tr>
+        </table>
+        <p>Ephemeral and sequential are independent flags that combine: an <strong>ephemeral sequential</strong> znode is both a liveness marker and a totally ordered queue position &mdash; exactly the primitive the lock and leader-election recipes below are built from. Note there is no "ephemeral children" concept at the parent &mdash; ephemeral-ness is a property of the child znode itself, tied to whichever session created it, not to its parent.</p>
+
+        <h3>Small-Data-Only by Design</h3>
+        <p>Znode data is capped well under 1&nbsp;MB, and the recommended payload is far smaller &mdash; a few bytes to a few kilobytes (a config value, a host:port pair, a version marker). This isn't an arbitrary limit: the entire data tree is held in memory on every ensemble member so that reads never touch disk, and every committed write is written to every member's transaction log before being applied. Both of those properties &mdash; in-memory reads and full-ensemble write replication &mdash; are what make this system fast and simple, and both would degrade badly if znodes routinely held megabytes of data. If an interviewer pushes on "what if I need to store something bigger," the right answer is: store a reference (a URL, an object-store key) in the znode, and the actual payload in a system built for bulk data.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An example znode namespace tree rooted at slash, branching into app config (persistent), a services registry with ephemeral sequential instance nodes representing live pods, and a locks registry with ephemeral sequential nodes representing a lock queue where the lowest sequence number holds the lock.">
+            <style>
+              .zk-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .zk-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .zk-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .zk-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .zk-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .zk-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .zk-arrow{stroke:var(--color-border);stroke-width:1.4;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-zk-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-border)"></path></marker>
+            </defs>
+
+            <rect x="370" y="10" width="60" height="30" rx="5" class="zk-box-muted"></rect>
+            <text x="400" y="30" text-anchor="middle" class="zk-title">/</text>
+
+            <line x1="400" y1="40" x2="110" y2="74" class="zk-arrow" marker-end="url(#arrow-zk-2)"></line>
+            <line x1="400" y1="40" x2="400" y2="74" class="zk-arrow" marker-end="url(#arrow-zk-2)"></line>
+            <line x1="400" y1="40" x2="690" y2="74" class="zk-arrow" marker-end="url(#arrow-zk-2)"></line>
+
+            <rect x="30" y="75" width="160" height="50" rx="5" class="zk-box"></rect>
+            <text x="110" y="96" text-anchor="middle" class="zk-title">/app/config</text>
+            <text x="110" y="110" text-anchor="middle" class="zk-sub">persistent</text>
+            <text x="110" y="121" text-anchor="middle" class="zk-sub">data: {"max_conns":100}</text>
+
+            <rect x="310" y="75" width="180" height="50" rx="5" class="zk-box"></rect>
+            <text x="400" y="96" text-anchor="middle" class="zk-title">/services/orderService</text>
+            <text x="400" y="110" text-anchor="middle" class="zk-sub">persistent registry parent</text>
+            <text x="400" y="121" text-anchor="middle" class="zk-sub">2 children = 2 live pods</text>
+
+            <rect x="610" y="75" width="160" height="50" rx="5" class="zk-box"></rect>
+            <text x="690" y="96" text-anchor="middle" class="zk-title">/locks/mylock</text>
+            <text x="690" y="110" text-anchor="middle" class="zk-sub">persistent registry parent</text>
+            <text x="690" y="121" text-anchor="middle" class="zk-sub">lock-queue root</text>
+
+            <line x1="360" y1="125" x2="290" y2="169" class="zk-arrow" marker-end="url(#arrow-zk-2)"></line>
+            <line x1="440" y1="125" x2="460" y2="169" class="zk-arrow" marker-end="url(#arrow-zk-2)"></line>
+            <line x1="690" y1="125" x2="690" y2="169" class="zk-arrow" marker-end="url(#arrow-zk-2)"></line>
+            <line x1="690" y1="219" x2="690" y2="243" class="zk-arrow" marker-end="url(#arrow-zk-2)"></line>
+
+            <rect x="200" y="170" width="180" height="55" rx="5" class="zk-box-strong"></rect>
+            <text x="290" y="191" text-anchor="middle" class="zk-title">instance-0000000001</text>
+            <text x="290" y="205" text-anchor="middle" class="zk-sub">ephemeral, sequential</text>
+            <text x="290" y="217" text-anchor="middle" class="zk-sub">owner: session of orderService pod-7</text>
+
+            <rect x="400" y="170" width="180" height="55" rx="5" class="zk-box-strong"></rect>
+            <text x="490" y="191" text-anchor="middle" class="zk-title">instance-0000000002</text>
+            <text x="490" y="205" text-anchor="middle" class="zk-sub">ephemeral, sequential</text>
+            <text x="490" y="217" text-anchor="middle" class="zk-sub">owner: session of orderService pod-12</text>
+
+            <rect x="600" y="170" width="180" height="45" rx="5" class="zk-box-strong"></rect>
+            <text x="690" y="191" text-anchor="middle" class="zk-title">lock-0000000007</text>
+            <text x="690" y="205" text-anchor="middle" class="zk-sub">ephemeral, sequential &mdash; lowest seq, HOLDS lock</text>
+
+            <rect x="600" y="244" width="180" height="45" rx="5" class="zk-box-strong"></rect>
+            <text x="690" y="265" text-anchor="middle" class="zk-title">lock-0000000008</text>
+            <text x="690" y="278" text-anchor="middle" class="zk-sub">ephemeral, sequential &mdash; watches 0000000007</text>
+
+            <text x="30" y="335" class="zk-label">Legend: persistent nodes survive explicit delete; ephemeral (highlighted) nodes vanish</text>
+            <text x="30" y="349" class="zk-label">automatically when their creating session ends &mdash; the basis for liveness &amp; lock queues.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Example namespace tree &mdash; a persistent config znode, a service registry whose ephemeral-sequential children are exactly the currently-alive pods, and a lock queue whose lowest sequence number currently holds the lock.</div>
+        </div>
+
+        <h2 id="deep-dive-zab-atomic-broadcast-and-leader-election">Deep Dive &mdash; ZAB: Atomic Broadcast and Leader Election</h2>
+        <p>ZAB (ZooKeeper Atomic Broadcast) is the replication protocol underneath everything above: a single elected Leader orders and broadcasts every write, and Followers replicate that log and vote for a new Leader when the old one is unreachable.</p>
+
+        <h3>Two Phases: Broadcast and Recovery</h3>
+        <p>ZAB conceptually runs in one of two phases at all times. The <strong>broadcast phase</strong> is normal operation: exactly the write flow walked through above &mdash; propose, disk-sync and ACK, commit on majority, apply. The <strong>recovery phase</strong> kicks in whenever the ensemble doesn't have a working Leader &mdash; on startup, or the moment a majority of servers stop hearing from the current Leader. During recovery, no new writes are accepted anywhere in the ensemble; the servers instead run a leader-election vote (below), and once a new Leader is established and has synced its state with a majority of Followers, the ensemble returns to the broadcast phase.</p>
+
+        <h3>zxid Ordering and Majority-Quorum Commit</h3>
+        <p>Every proposal is tagged with a <strong>zxid</strong> &mdash; conceptually a pair <code>(epoch, counter)</code>. The epoch increments every time a new Leader is elected; the counter increments for every proposal within that Leader's term. Comparing two zxids as a single 64-bit-ish ordered value gives a strict, unambiguous total order across every write the ensemble has ever processed, including across Leader changes &mdash; a proposal from a newer epoch always outranks any proposal from an older one, which is exactly what prevents a stale ex-Leader from corrupting the log if it briefly thinks it's still in charge. A write is committed &mdash; safe to apply and safe to report success to the client &mdash; only once the Leader has collected ACKs from a majority of the ensemble (itself included); a minority of slow or unreachable Followers can never block a commit, and a Follower that hasn't yet applied a given zxid is simply behind, not wrong.</p>
+
+        <h3>Leader Election: Voting on Highest (zxid, Server ID)</h3>
+        <p>When the ensemble enters the recovery phase, every server broadcasts a vote for who it believes should be Leader, initially voting for itself. Each server compares incoming votes against its own using the rule: <strong>higher zxid wins; ties broken by higher server id</strong>. A server updates its vote to whichever candidate it has seen with the best <code>(zxid, server_id)</code> pair, and re-broadcasts. Once a server observes that a majority of the ensemble has converged on the same vote, that candidate becomes the new Leader. Voting for the highest zxid specifically (not just "the fastest responder") guarantees the new Leader already has the most up-to-date log of anyone in the majority, so no committed write is ever lost or rolled back across a Leader change.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 780 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: the broadcast phase during normal operation, showing the Leader proposing to two Followers who acknowledge before commit. Right panel: the recovery phase after a Leader crash, showing three servers with different zxid and server id pairs voting; the server with the highest zxid, tie broken by highest server id, is elected the new Leader.">
+            <style>
+              .zk-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .zk-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .zk-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .zk-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .zk-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .zk-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .zk-heading{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .zk-arrow{stroke:var(--color-accent);stroke-width:1.5;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-zk-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="10" y="20" class="zk-heading">Broadcast Phase (normal operation)</text>
+            <rect x="130" y="40" width="140" height="45" rx="6" class="zk-box-strong"></rect>
+            <text x="200" y="60" text-anchor="middle" class="zk-title">Leader</text>
+            <text x="200" y="74" text-anchor="middle" class="zk-sub">proposes zxid (e1, 104)</text>
+
+            <rect x="20" y="130" width="140" height="45" rx="6" class="zk-box"></rect>
+            <text x="90" y="150" text-anchor="middle" class="zk-title">Follower A</text>
+            <text x="90" y="164" text-anchor="middle" class="zk-sub">fsync + ACK</text>
+
+            <rect x="240" y="130" width="140" height="45" rx="6" class="zk-box"></rect>
+            <text x="310" y="150" text-anchor="middle" class="zk-title">Follower B</text>
+            <text x="310" y="164" text-anchor="middle" class="zk-sub">fsync + ACK</text>
+
+            <line x1="160" y1="80" x2="100" y2="129" class="zk-arrow" marker-end="url(#arrow-zk-3)"></line>
+            <line x1="240" y1="80" x2="300" y2="129" class="zk-arrow" marker-end="url(#arrow-zk-3)"></line>
+            <text x="200" y="112" text-anchor="middle" class="zk-label">PROPOSE (e1,104) &rarr; ACK &rarr; COMMIT on majority</text>
+
+            <rect x="60" y="200" width="280" height="40" rx="6" class="zk-box-muted"></rect>
+            <text x="200" y="224" text-anchor="middle" class="zk-sub">... Leader crashes mid-epoch e1 ...</text>
+
+            <line x1="390" y1="20" x2="390" y2="360" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <text x="410" y="20" class="zk-heading">Recovery Phase (leader election)</text>
+
+            <rect x="410" y="45" width="140" height="55" rx="6" class="zk-box"></rect>
+            <text x="480" y="64" text-anchor="middle" class="zk-title">S1</text>
+            <text x="480" y="78" text-anchor="middle" class="zk-sub">vote: (zxid=104, id=2)</text>
+            <text x="480" y="90" text-anchor="middle" class="zk-label">saw fewer commits</text>
+
+            <rect x="580" y="45" width="140" height="55" rx="6" class="zk-box"></rect>
+            <text x="650" y="64" text-anchor="middle" class="zk-title">S2</text>
+            <text x="650" y="78" text-anchor="middle" class="zk-sub">vote: (zxid=106, id=1)</text>
+            <text x="650" y="90" text-anchor="middle" class="zk-label">up to date, lower id</text>
+
+            <rect x="495" y="130" width="140" height="55" rx="6" class="zk-box-strong"></rect>
+            <text x="565" y="149" text-anchor="middle" class="zk-title">S3</text>
+            <text x="565" y="163" text-anchor="middle" class="zk-sub">vote: (zxid=106, id=3)</text>
+            <text x="565" y="175" text-anchor="middle" class="zk-label">highest zxid, highest id</text>
+
+            <line x1="480" y1="100" x2="540" y2="129" class="zk-arrow" marker-end="url(#arrow-zk-3)"></line>
+            <line x1="650" y1="100" x2="590" y2="129" class="zk-arrow" marker-end="url(#arrow-zk-3)"></line>
+            <text x="565" y="118" text-anchor="middle" class="zk-label">majority converges on highest (zxid, id)</text>
+
+            <rect x="465" y="210" width="200" height="50" rx="6" class="zk-box-strong"></rect>
+            <text x="565" y="230" text-anchor="middle" class="zk-title">S3 becomes new Leader</text>
+            <text x="565" y="244" text-anchor="middle" class="zk-sub">syncs its log to a majority, then resumes broadcast phase</text>
+            <line x1="565" y1="185" x2="565" y2="209" class="zk-arrow" marker-end="url(#arrow-zk-3)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 4. Left: the broadcast phase &mdash; propose, ACK, commit. Right: the recovery phase after a Leader crash &mdash; servers vote on the highest (zxid, server id) pair they've seen; S3 wins because it has the most up-to-date log (zxid 106) and the higher server id breaks its tie with S2.</div>
+        </div>
+
+        <h2 id="deep-dive-watches-ephemeral-nodes-and-session-management">Deep Dive &mdash; Watches, Ephemeral Nodes, and Session Management</h2>
+
+        <h3>One-Time Trigger Semantics &mdash; the Classic Gotcha</h3>
+        <p>A watch set via <code>exists</code>, <code>getData</code>, or <code>getChildren</code> fires <strong>exactly once</strong>: the server sends a single notification event and then discards the watch entirely. If the client wants to keep observing that path, it must explicitly re-register a new watch, typically by making the same read call again inside its event-handling callback. Miss this, and a service silently stops noticing further changes after the very first one &mdash; a config update that "worked once and then stopped" is the textbook symptom of a client that forgot to re-register.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Call this out unprompted &mdash; it's the single most common ZooKeeper gotcha and interviewers listen for it: "watches are one-shot, not a persistent subscription, so every handler needs to re-arm the watch as its very first action, and needs to account for the fact that state may have changed again between the notification firing and the re-registration completing &mdash; so always re-read the current state on re-registration rather than assuming the notified event is still the latest truth."
+        </div>
+
+        <h3>Sessions, Heartbeats, and Timeouts</h3>
+        <p>Each client negotiates a session timeout with the server it connects to and sends periodic heartbeats (roughly every third of the timeout) to keep it alive. If the server doesn't hear from the client within the negotiated timeout &mdash; a crashed process, a long GC pause, a network partition &mdash; the session <strong>expires</strong>. Client libraries transparently reconnect to a different ensemble member and keep the same logical session alive across a brief network hiccup or a server failover, as long as the gap stays under the timeout; only a true expiry (no server reachable in time) invalidates the session for good.</p>
+
+        <h3>Automatic Ephemeral Cleanup on Session Expiry</h3>
+        <p>The moment a session ends &mdash; clean disconnect or timeout-triggered expiry &mdash; the ensemble deletes every ephemeral znode that session created, as part of the same replicated log (so the deletion is itself a normal, quorum-committed write, not a side effect outside the consistency model). Every client with a watch registered on one of those paths (or its parent's children list) gets notified. This single mechanism is the entire basis for service discovery ("the instance's node disappeared &rarr; it's gone") and for lock/leader-election liveness ("the lock/leader holder's node disappeared &rarr; it crashed or disconnected, time to promote the next candidate") &mdash; no separate heartbeat or health-check system is needed on top.</p>
+
+        <h2 id="deep-dive-building-blocks-on-top-locks-leader-election-recipes-and-config-management">Deep Dive &mdash; Building Blocks on Top: Locks, Leader Election Recipes, and Config Management</h2>
+        <p>Every recipe below is built purely from <code>create</code> (with the ephemeral/sequential flags), <code>getChildren</code>, and watches &mdash; there is no separate lock or election subsystem in the server.</p>
+
+        <h3>Distributed Lock Recipe</h3>
+        <p>To acquire a lock on <code>/locks/mylock</code>: create an <strong>ephemeral, sequential</strong> child under that path (e.g. it comes back as <code>lock-0000000007</code>). Call <code>getChildren</code> on the parent; if your node has the lowest sequence number among the children, you hold the lock. If not, set a watch on the child with the next-lowest sequence number ahead of you (not on the current lock holder directly &mdash; watching only your immediate predecessor avoids the "herd effect" of every waiter waking up on every release). When that watch fires (the predecessor released the lock or its session died), re-check whether you're now lowest; if so, you hold the lock, otherwise watch your new predecessor. Releasing the lock is simply deleting your znode (or letting your session end, which does it automatically &mdash; the classic safety net against a client that crashes while holding the lock).</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Distributed lock recipe: three ephemeral sequential children under a lock path. The lowest-numbered child, owned by Client A, holds the lock. Client B watches only the next-lowest node ahead of it (Client A's node), and Client C watches only Client B's node, avoiding a herd effect where every waiter wakes on every release.">
+            <style>
+              .zk-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .zk-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .zk-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .zk-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .zk-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .zk-arrow{stroke:var(--color-accent);stroke-width:1.5;fill:none;stroke-dasharray:4 3;}
+            </style>
+            <defs>
+              <marker id="arrow-zk-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="20" y="25" class="zk-title">/locks/mylock/</text>
+
+            <rect x="30" y="45" width="220" height="55" rx="6" class="zk-box-strong"></rect>
+            <text x="140" y="66" text-anchor="middle" class="zk-title">lock-0000000005</text>
+            <text x="140" y="80" text-anchor="middle" class="zk-sub">Client A &mdash; lowest seq</text>
+            <text x="140" y="92" text-anchor="middle" class="zk-sub">HOLDS THE LOCK</text>
+
+            <rect x="290" y="45" width="220" height="55" rx="6" class="zk-box"></rect>
+            <text x="400" y="66" text-anchor="middle" class="zk-title">lock-0000000006</text>
+            <text x="400" y="80" text-anchor="middle" class="zk-sub">Client B</text>
+            <text x="400" y="92" text-anchor="middle" class="zk-sub">watches lock-0000000005</text>
+
+            <rect x="550" y="45" width="200" height="55" rx="6" class="zk-box"></rect>
+            <text x="650" y="66" text-anchor="middle" class="zk-title">lock-0000000007</text>
+            <text x="650" y="80" text-anchor="middle" class="zk-sub">Client C</text>
+            <text x="650" y="92" text-anchor="middle" class="zk-sub">watches lock-0000000006</text>
+
+            <path d="M400,100 C370,130 200,130 155,101" class="zk-arrow" marker-end="url(#arrow-zk-4)"></path>
+            <path d="M650,100 C620,140 430,140 405,101" class="zk-arrow" marker-end="url(#arrow-zk-4)"></path>
+
+            <text x="380" y="150" text-anchor="middle" class="zk-label">each waiter watches only its immediate predecessor &mdash;</text>
+            <text x="380" y="163" text-anchor="middle" class="zk-label">never the lock holder directly &mdash; to avoid a thundering-herd wakeup on release</text>
+
+            <rect x="120" y="200" width="520" height="70" rx="6" class="zk-box"></rect>
+            <text x="380" y="222" text-anchor="middle" class="zk-title">On release (delete, or Client A's session ends)</text>
+            <text x="380" y="238" text-anchor="middle" class="zk-sub">only Client B's watch fires; it re-checks getChildren, sees it is now lowest,</text>
+            <text x="380" y="251" text-anchor="middle" class="zk-sub">and acquires the lock &mdash; Client C's watch is untouched and unaware anything happened</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. The distributed lock recipe &mdash; sequential ephemeral children order the waiters; each watches only its immediate predecessor, so a release wakes exactly one waiter instead of every waiter racing to re-check.</div>
+        </div>
+
+        <h3>Leader Election Recipe</h3>
+        <p>Identical mechanics to the lock recipe: every candidate creates an ephemeral sequential child under an election path (e.g. <code>/election/leader/n_0000000003</code>); the candidate with the lowest sequence number is the leader; every other candidate watches its immediate predecessor and re-checks on that watch firing. The only difference from a mutual-exclusion lock is semantic &mdash; "holding the lowest position" is interpreted as "being the leader" rather than "holding a critical section" &mdash; the underlying primitive is exactly the same.</p>
+
+        <h3>Group Membership / Service Discovery</h3>
+        <p>Every instance of a service creates an ephemeral (not necessarily sequential) child under a well-known path on startup, e.g. <code>/services/orderService/&lt;host:port&gt;</code>. Anyone wanting the current membership calls <code>getChildren</code> with a watch on that parent path; the returned list <em>is</em> the set of currently-alive instances, by construction &mdash; no separate heartbeat/health-check protocol is needed, because "the ephemeral node still exists" already means "that instance's session is alive." When an instance crashes or disconnects, its session eventually expires, its node is deleted automatically, and every watcher on the parent is notified to re-fetch the now-updated membership list.</p>
+
+        <h3>Distributed Configuration and Barriers</h3>
+        <p>Configuration distribution is simply a persistent znode holding the config blob, watched by every consumer via <code>getData(path, watch=true)</code>; a <code>setData</code> triggers a notification to every watcher, each of which re-reads the new value and re-registers its watch. A <strong>distributed barrier</strong> (wait until N parties have all reached a point before any proceeds) is built the same way: each party creates a child under a barrier path on arrival, and everyone watches the parent's child count until it reaches N, at which point every waiting party proceeds simultaneously.</p>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <p>Unlike almost every other system covered in this section, this design explicitly does <strong>not</strong> shard or partition data across the ensemble. Every ensemble member &mdash; Leader and every Follower alike &mdash; holds the <em>entire</em> data tree in memory, and every committed write is replicated to every member, not just to a subset owning that key's shard.</p>
+        <p>This is an intentional trade-off, not an oversight, and it follows directly from the small-data-only design intent discussed above: because the total data volume is capped by convention (small coordination metadata, not a general-purpose data store), a full copy on every node is cheap, and it buys something sharding can't: <strong>every read on every member is a simple in-memory lookup with zero cross-node coordination</strong>, and <strong>every member can become Leader without a data-migration step</strong>, since it already has everything. Contrast this explicitly with the sharded systems elsewhere in this section &mdash; Cassandra's consistent-hash ring, Kafka's topic partitions &mdash; where the entire point is that no single node holds the full data set, because the data volume is assumed to be far larger than any one node's memory or disk. If a use case needs to store more data than comfortably fits in memory on every ensemble member, that's the signal it no longer fits this system's design intent and belongs in a sharded store instead.</p>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <p>Replication here means <strong>full-ensemble replication of the ZAB write log</strong>: every proposal is sent to every Follower, and every Follower fsyncs it to its local transaction log before acknowledging &mdash; there is no asynchronous or best-effort replication path for committed data. A write is only considered committed once a disk-synced majority has acknowledged it.</p>
+        <div class="formula-box">
+          <span class="formula-label">Failure tolerance</span>
+          An N-node ensemble tolerates <code>floor((N-1)/2)</code> simultaneous node failures while remaining fully available for both reads and writes
+          <br>5 nodes &rarr; tolerates 2 failures; 7 nodes &rarr; tolerates 3 failures (see the sizing table above for why even-numbered ensembles waste a node)
+          <br>Losing more than that many nodes at once (a minority can no longer form a majority) makes the ensemble unable to commit new writes until enough nodes recover &mdash; existing data isn't lost, but the system stops accepting writes
+        </div>
+        <p><strong>Behavior during a Leader failure:</strong> the moment a majority of servers stop hearing from the Leader, the ensemble enters the recovery phase described above. Writes are unavailable for the (typically low-single-digit-second) duration of the election and the new Leader's state-sync with a majority. Reads, however, can continue to be served by any Follower that's still reachable throughout &mdash; they may be slightly stale relative to whatever was in flight when the old Leader died, which is exactly why a client that cannot tolerate that staleness should call <code>sync()</code> before a critical read (see "Feature-Specific Logic" below).</p>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+
+        <h3>The sync() Call for Linearizable Reads</h3>
+        <p>Because reads are served locally by whichever server a client is connected to, a Follower that is momentarily behind on replication can serve a read that doesn't yet reflect the very latest committed write &mdash; acceptable for most coordination use cases, but not for a client that just performed a write itself and needs its own next read to observe it (read-after-write / linearizable read). <code>sync()</code> exists exactly for this: it's sent to the server the client is connected to, which flushes its pipeline with the Leader before that server answers the client's next read, guaranteeing the read reflects every write that had committed before the <code>sync()</code> call. It's cheaper than routing every read through the Leader, because it's only paid on the specific reads that actually need the stronger guarantee.</p>
+
+        <h3>Multi-Op Atomic Transactions</h3>
+        <p>The <code>multi()</code> call bundles several operations (create/delete/setData/check-version across different, even unrelated, paths) into one atomic unit &mdash; either all of them apply, or none do, and they're assigned a single zxid together. This is what lets a recipe like "atomically move a node from one path to another" or "update two related config znodes together" avoid a window where only half the change is visible to another client's read or watch.</p>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <table>
+          <tr><th>Mechanism</th><th>Purpose</th></tr>
+          <tr><td>Per-znode ACLs</td><td>Every znode carries its own access-control list, independent of its parent &mdash; read/write/create/delete/admin permissions can differ node by node</td></tr>
+          <tr><td><code>digest</code> scheme</td><td>Username/password-style credential, hashed and compared server-side &mdash; the simplest built-in scheme</td></tr>
+          <tr><td><code>ip</code> / <code>host</code> scheme</td><td>Grants access based on the connecting client's network address &mdash; useful for coarse, infrastructure-level trust boundaries</td></tr>
+          <tr><td>SASL / Kerberos</td><td>Strong, centrally managed authentication for environments that already run a Kerberos realm &mdash; ties znode ACLs to real organizational identities</td></tr>
+          <tr><td>TLS (client-to-server)</td><td>Encrypts the connection between application clients and the ensemble</td></tr>
+          <tr><td>TLS (quorum communication)</td><td>Encrypts Leader&ndash;Follower traffic (proposals, ACKs, commits) so the replication stream itself isn't exposed on the network</td></tr>
+        </table>
+        <p>In a shared, multi-team deployment, scope ACLs per subtree (e.g. each team owns everything under its own <code>/teams/&lt;team&gt;</code> prefix) so one team's misconfigured client can't read or corrupt another team's coordination data; combine that with authenticated connections (digest or SASL/Kerberos) so ACLs are actually enforceable rather than merely advisory on an open network.</p>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <ol>
+          <li><strong>Client connection distribution:</strong> client libraries are configured with the full list of ensemble members and connect to one at random (or per a simple client-side policy), with automatic failover to another member on disconnect &mdash; there's no dedicated load balancer in front of the ensemble in the typical deployment.</li>
+          <li><strong>Read scaling via Followers:</strong> since every member holds the full data set, adding Followers directly adds read capacity and spreads client connections across more machines &mdash; the closest thing this system has to horizontal scaling, given it deliberately doesn't shard.</li>
+          <li><strong>Write load is not balanced at all</strong> &mdash; by design, every write flows through the single Leader; this is the system's one intentional non-scaling bottleneck, discussed further below.</li>
+        </ol>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <p>Ensembles are deliberately <strong>not</strong> stretched across high-latency WAN links between distant regions. Every write needs a disk-synced ACK from a majority before it can commit, so if ensemble members are spread across, say, US-East and EU-West, every single write pays a full cross-ocean round-trip &mdash; multiplied by however many writes the fleet generates, this quickly dominates latency and defeats the entire "coordination should be fast" premise.</p>
+        <p>The common pattern instead is <strong>one independent ensemble per region or data center</strong>, each serving the application instances local to it, with no cross-region consensus at all. Where a very large fleet within a single region wants extra read capacity without expanding the voting quorum (and therefore without adding write-commit latency), some deployments add <strong>Observers</strong> &mdash; non-voting members that receive the committed stream and serve local reads, but never participate in ACKs or leader elections. Observers can be placed further away (even in a different AZ or, cautiously, a nearby region) precisely because they're not on the write-commit critical path.</p>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <p>Operational visibility leans heavily on lightweight, built-in tooling rather than a bolted-on metrics pipeline:</p>
+        <table>
+          <tr><th>Signal</th><th>How it's observed</th></tr>
+          <tr><td><code>ruok</code></td><td>Four-letter-word admin command &mdash; trivial liveness check ("are you ok"), returns <code>imok</code></td></tr>
+          <tr><td><code>stat</code> / <code>srvr</code></td><td>Server mode (leader/follower), outstanding requests, min/avg/max request latency, zxid, connected-client count</td></tr>
+          <tr><td><code>mntr</code></td><td>Machine-parseable metrics feed for a monitoring pipeline &mdash; packets sent/received, outstanding requests, watch count, ephemeral-node count</td></tr>
+          <tr><td><code>cons</code></td><td>Per-connection detail &mdash; useful for spotting a single client hogging sessions or generating excessive traffic</td></tr>
+          <tr><td><code>wchs</code> / <code>wchc</code> / <code>wchp</code></td><td>Watch counts and which sessions/paths hold them &mdash; the first thing to check if watch-related memory or notification volume looks off</td></tr>
+          <tr><td>JMX metrics</td><td>The same signals (latency percentiles, outstanding requests, leader/follower status, session count, watch count) exposed for a standard metrics/alerting stack</td></tr>
+        </table>
+        <p>The dashboards that matter most in practice: current Leader identity and epoch (did we just fail over?), outstanding-request and latency trends (early signal of write-path contention), and watch/session counts (early signal of a client-side bug that isn't re-registering watches or is leaking sessions).</p>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation / Framing</th></tr>
+          <tr><td>Write throughput ceiling</td><td>Every write needs a disk-synced ACK from a majority before committing &mdash; this fundamentally caps write throughput well below what an in-memory-only system could do; the design deliberately trades write throughput for durability and consistency</td></tr>
+          <tr><td>Single Leader is a write bottleneck</td><td>By design &mdash; there is exactly one write path; scale by reducing write volume and payload size, not by adding more Leaders</td></tr>
+          <tr><td>Leader-election window</td><td>Brief (typically low-single-digit-second) full write unavailability; bounded by tuned session/election timeouts, and reads keep flowing from Followers throughout</td></tr>
+          <tr><td>No sharding &mdash; full data set on every node</td><td>Fine and intentional for small coordination metadata; becomes a real ceiling if the data set grows beyond what comfortably fits in memory on every member</td></tr>
+          <tr><td>Misuse as a general-purpose database</td><td><strong>Classic anti-pattern:</strong> storing large payloads or high-write-volume application data here defeats the small-data, low-write design intent and will produce GC pressure, slow elections, and write-latency spikes &mdash; use a purpose-built database or blob store instead</td></tr>
+          <tr><td>Thundering-herd on watches</td><td>Avoided structurally by the lock/election recipes' "watch only your immediate predecessor" pattern; a naive "everyone watches the same node" design would cause a notification storm on every change</td></tr>
+        </table>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Consistency model</td><td>CP &mdash; linearizable writes, brief write unavailability during leader election; deliberate contrast with AP systems (Dynamo, Cassandra)</td></tr>
+          <tr><td>Data model</td><td>Hierarchical znode namespace; persistent / ephemeral / sequential flags cover every recipe</td></tr>
+          <tr><td>Ensemble size</td><td>5 nodes for a 10,000-instance fleet (tolerates 2 failures); 7 only if extra read fan-out or 3-failure tolerance is specifically needed</td></tr>
+          <tr><td>Replication</td><td>Full-ensemble ZAB log replication, disk-synced majority ACK required before commit</td></tr>
+          <tr><td>Read path</td><td>Served locally by whichever member the client is connected to; sync() for linearizable read-after-write</td></tr>
+          <tr><td>Write path</td><td>Forward to Leader &rarr; propose (zxid) &rarr; disk-sync + ACK &rarr; commit on majority &rarr; apply</td></tr>
+          <tr><td>Failure detection / liveness</td><td>Session heartbeats + timeouts; ephemeral znodes auto-delete on session expiry</td></tr>
+          <tr><td>Watch semantics</td><td>One-time triggers &mdash; must be explicitly re-registered after every fire (the classic gotcha)</td></tr>
+          <tr><td>Locks / leader election</td><td>Sequential ephemeral children; lowest sequence number wins; each waiter watches only its immediate predecessor</td></tr>
+          <tr><td>Service discovery</td><td>Ephemeral children under a well-known path = the currently-alive member set, by construction</td></tr>
+          <tr><td>Sharding</td><td>None &mdash; intentional; every member holds the full data set given the small-data-only design intent</td></tr>
+          <tr><td>Multi-region</td><td>One independent ensemble per region/data center; never stretch quorum across high-latency WAN links</td></tr>
+          <tr><td>Not suited for</td><td>Large payloads, high write volume, or general-purpose database workloads</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect a real interview to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Consistency Model and CAP</h3>
+        <div class="qa-item">
+          <div class="qa-q">Is ZooKeeper CP or AP, and why does that matter here specifically?</div>
+          <div class="qa-a">CP. It chooses consistency over availability, most visibly by refusing writes during a leader-election window rather than risking two conflicting views of the truth. This matters because the primitives it exists to provide &mdash; locks and leader election &mdash; are actively dangerous if inconsistent: two clients simultaneously believing they hold the same lock, or two nodes both believing they're the leader, is a correctness bug, not a stale-read inconvenience.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why not just use Cassandra or another AP/Dynamo-style store for this?</div>
+          <div class="qa-a">Those systems are tuned to stay available during a partition by accepting writes anywhere and reconciling divergence later (read repair, hinted handoff, last-write-wins). Coordination data can't tolerate that kind of temporary divergence at all &mdash; you'd end up building a single-leader, quorum-committed write path on top of them anyway, which is exactly what this system already is.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Can a stale ex-Leader that hasn't noticed it lost leadership corrupt the log?</div>
+          <div class="qa-a">No &mdash; the epoch component of zxid strictly increases on every new election, and a majority of the ensemble will simply reject or outrank any proposal carrying an older epoch. A former Leader that hasn't yet realized a new election happened can't get a majority to accept its proposals.</div>
+        </div>
+
+        <h3>ZAB, Replication, and Leader Election</h3>
+        <div class="qa-item">
+          <div class="qa-q">Walk me through what happens when a client calls setData.</div>
+          <div class="qa-a">The connected server forwards it to the Leader if needed; the Leader assigns the next zxid and broadcasts a PROPOSAL; every Follower fsyncs it to its transaction log and ACKs; once a majority (including the Leader) has ACKed, the Leader broadcasts COMMIT; every server applies the change to its in-memory tree, and the originating server returns the response to the client.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How is a new Leader elected, and why does it use (zxid, server id) rather than just "whoever responds first"?</div>
+          <div class="qa-a">Every server votes for the highest (zxid, server_id) pair it has seen, re-broadcasting as it hears better votes, until a majority converges on the same candidate. Picking the highest zxid guarantees the new Leader already has the most up-to-date committed log of anyone in the majority, so no committed write is ever lost across a Leader change; picking "fastest responder" instead would risk electing a Leader that's actually behind.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does a write need a majority ACK instead of just the Leader's own disk-sync?</div>
+          <div class="qa-a">If only the Leader's disk mattered, a single Leader crash right after acknowledging a client could lose that write entirely. Requiring a majority means the write survives on enough independent machines that any minority failure (including the Leader's) can't erase it, and a new Leader elected from that majority will already have it.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens to in-flight writes during a leader election?</div>
+          <div class="qa-a">Any proposal that hadn't yet reached a majority ACK before the old Leader died is not considered committed and may be discarded; the client would see it time out or fail and should retry (ideally idempotently) once a new Leader is in place. Anything that had already reached a majority is guaranteed to survive, since the new Leader is elected from among servers holding the most up-to-date log.</div>
+        </div>
+
+        <h3>Watches, Sessions, and Recipes</h3>
+        <div class="qa-item">
+          <div class="qa-q">What's the most common mistake developers make with watches?</div>
+          <div class="qa-a">Treating them as a persistent subscription instead of a one-time trigger. A watch fires exactly once and is then discarded server-side; the handler must explicitly re-register it (and re-read current state, not just react to the notification event) to keep observing future changes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does service discovery actually detect that an instance has died, without a separate health-check system?</div>
+          <div class="qa-a">Each instance holds an ephemeral znode tied to its own session. If the instance crashes or its network partitions long enough for the session to time out, the ensemble deletes that znode automatically as part of the normal replicated log, and every watcher on the parent's children list is notified &mdash; the ephemeral znode's existence <em>is</em> the health check.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">In the distributed lock recipe, why does each waiter watch only its immediate predecessor instead of the current lock holder?</div>
+          <div class="qa-a">If every waiter watched the lock holder directly, releasing the lock would wake every single waiter at once, all of whom would re-check getChildren simultaneously (a thundering herd) even though only one of them can actually acquire it next. Watching only the immediate predecessor means a release wakes exactly one waiter &mdash; the next one in line.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if the client holding a lock crashes without explicitly releasing it?</div>
+          <div class="qa-a">Its session eventually times out, and its ephemeral lock znode is deleted automatically as part of that session-expiry cleanup, which fires the next waiter's watch exactly as a clean release would. This is what makes the recipe safe against crashed lock-holders without any extra deadlock-detection logic.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you get a linearizable read, given reads are normally served locally by a possibly-lagging Follower?</div>
+          <div class="qa-a">Call sync() on the connection before the read. It flushes that server's pipeline against the Leader so the very next read on that connection is guaranteed to reflect every write that had committed before the sync() call &mdash; at the cost of an extra round trip, so it should be used selectively, not on every read.</div>
+        </div>
+
+        <h3>Data Model, Sharding, and Scale</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why doesn't this system shard data across the ensemble the way Cassandra or Kafka do?</div>
+          <div class="qa-a">Because it's designed for small coordination metadata that comfortably fits in memory on every node, full replication buys simpler reads (no cross-shard coordination), simpler failover (any member already has everything), and stronger consistency guarantees than sharding would allow, at the acceptable cost of not scaling to arbitrarily large data volumes the way a sharded store does.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the maximum recommended znode size, and why does it matter operationally?</div>
+          <div class="qa-a">Well under 1&nbsp;MB, and ideally a few bytes to a few KB. It matters because every ensemble member holds every znode in memory and every write is fsynced and replicated to a majority &mdash; large payloads inflate memory footprint, GC pressure, and write latency across the whole ensemble, not just the node that happens to own that data (since nothing "owns" a shard here).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Someone on your team wants to store large binary blobs or a high-write-volume event stream in this system. What do you tell them?</div>
+          <div class="qa-a">That it's a well-known anti-pattern: this system is optimized for small, infrequently-written, frequently-read coordination data, and its write throughput is fundamentally capped by requiring a disk-synced majority ACK on every write. Store a reference (a URL or object-store key) here if needed, and put the actual bulk data or event stream in a system built for that volume &mdash; a blob store or a log/streaming platform.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is 5 the most common ensemble size rather than 3 or 7?</div>
+          <div class="qa-a">3 tolerates only 1 failure, leaving no slack for an unplanned failure during routine maintenance. 5 tolerates 2, which comfortably covers a full AZ outage plus a concurrent planned restart in a typical 3-AZ layout, while keeping the per-write quorum (3 of 5) small. 7 tolerates 3 but adds write-ack overhead without a proportional benefit for most fleets; even-numbered ensembles (4, 6) are strictly worse than the odd number just below them, since they add write cost without adding fault tolerance.</div>
+        </div>
+
+        <h3>Multi-Region and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why not stretch a single ensemble across two regions for disaster recovery?</div>
+          <div class="qa-a">Every write needs a disk-synced ACK from a majority before it commits; spreading the quorum across a high-latency WAN link means every write pays a full cross-region round trip, which quickly dominates latency for a system whose entire value proposition is fast coordination. The standard pattern is one independent ensemble per region instead, with no cross-region consensus.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you scale read capacity for a very large fleet without slowing down writes?</div>
+          <div class="qa-a">Add Observers &mdash; non-voting members that receive the committed replication stream and serve local reads, but never participate in ACKs or leader-election votes, so they add read throughput without adding write-commit latency or touching the failure-tolerance math of the voting quorum.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What operational signals would tell you the ensemble is in trouble before an outage?</div>
+          <div class="qa-a">A rising outstanding-request count or request-latency trend (write-path contention), an unexpected change in which member reports itself as Leader (an unplanned failover), and a watch or session count that's growing without bound (a client-side bug leaking sessions or failing to re-register watches) &mdash; all exposed via the four-letter-word commands (mntr, stat, cons, wchs) or their JMX equivalents.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This is a CP system by deliberate choice, not by accident &mdash; state that contrast with the AP (Dynamo/Cassandra) systems elsewhere in this section explicitly, and justify it by the correctness requirements of locks and leader election. The entire design follows from one decision: a single elected Leader orders every write, and a write only commits once a disk-synced majority has acknowledged it (ZAB) &mdash; know the zxid ordering and the (zxid, server id) leader-election vote cold. Persistent / ephemeral / sequential znode flags, combined with one-time watches and session-scoped liveness, are sufficient to build every higher-level recipe (locks, leader election, service discovery, barriers) with no separate subsystem needed &mdash; know how to derive each recipe live rather than memorizing it. Watches are one-shot triggers, not subscriptions &mdash; call this gotcha out unprompted. And this system deliberately does not shard: every member holds the full data set, by design, because it exists for small, read/watch-dominated coordination metadata, not as a general-purpose database &mdash; misusing it for large or high-write data is the classic anti-pattern to flag.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Hunt, Konar, Junqueira, Reed &mdash; <em>"ZooKeeper: Wait-free coordination for Internet-scale systems"</em> (USENIX ATC 2010) &mdash; the original ZooKeeper paper</li>
+          <li>Apache ZooKeeper &mdash; official documentation, including the Programmer's Guide and the Administrator's Guide (znode model, watches, sessions, ACLs, four-letter-word commands)</li>
+          <li>Junqueira, Reed, Serafini &mdash; <em>"Zab: High-performance broadcast for primary-backup systems"</em> (the ZAB protocol paper)</li>
+          <li>Apache ZooKeeper Recipes and Solutions guide &mdash; locks, leader election, two-phase commit, barriers</li>
+          <li>Martin Kleppmann, <em>Designing Data-Intensive Applications</em> &mdash; chapters on consensus, linearizability, and total order broadcast</li>
+          <li>Community write-ups comparing ZooKeeper (CP) with Dynamo-style AP systems (Cassandra, DynamoDB) on the CAP spectrum</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="google-analytics.html"><span class="dir">Previous</span>Google Analytics Pipeline</a>
+          <a class="next" href="optimizely.html"><span class="dir">Next</span>A/B Testing Platform (Optimizely)</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+  <!-- ZK-TEST:start (page-scoped script, safe to delete this whole block to revert) -->
+  <script>
+  (function () {
+    var article = document.querySelector('.article');
+    if (!article) return;
+
+    // 1) Reading-progress bar
+    var bar = document.createElement('div');
+    bar.id = 'zk-progress';
+    document.body.appendChild(bar);
+    function updateProgress() {
+      var h = document.documentElement;
+      var scrollTop = h.scrollTop || document.body.scrollTop;
+      var scrollHeight = h.scrollHeight - h.clientHeight;
+      var pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+      bar.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', updateProgress, { passive: true });
+    updateProgress();
+
+    // 2) Tag "Deep Dive" headings + add a reading-time badge
+    var h2s = Array.prototype.slice.call(article.querySelectorAll('h2'));
+    h2s.forEach(function (h) {
+      if (h.textContent.indexOf('Deep Dive') === 0) h.classList.add('zk-deep-dive');
+    });
+    var wordCount = article.textContent.trim().split(/\s+/).length;
+    var readMins = Math.max(1, Math.round(wordCount / 220));
+    var tag = document.querySelector('.article-tag');
+    if (tag) {
+      var badge = document.createElement('span');
+      badge.className = 'zk-readtime';
+      badge.textContent = '~' + readMins + ' min read';
+      tag.insertAdjacentElement('afterend', badge);
+    }
+
+    // 3) Fade-and-rise reveal for headings, diagrams, callouts, formulas, tables
+    var fadeTargets = article.querySelectorAll('h2, .diagram-box, .callout, .formula-box, table');
+    fadeTargets.forEach(function (el) { el.classList.add('zk-fade'); });
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('zk-visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+      fadeTargets.forEach(function (el) { io.observe(el); });
+    } else {
+      fadeTargets.forEach(function (el) { el.classList.add('zk-visible'); });
+    }
+
+    // 4) Scrollspy: highlight the current section in the "On This Page" sidebar
+    var sections = h2s.filter(function (h) { return h.id; });
+    var links = document.querySelectorAll('.sidebar-list a');
+    function onScrollSpy() {
+      var pos = window.scrollY + 140;
+      var current = null;
+      sections.forEach(function (sec) {
+        if (sec.offsetTop <= pos) current = sec;
+      });
+      links.forEach(function (link) {
+        link.classList.remove('active');
+        if (current && link.getAttribute('href') === '#' + current.id) {
+          link.classList.add('active');
+        }
+      });
+    }
+    document.addEventListener('scroll', onScrollSpy, { passive: true });
+    onScrollSpy();
+
+    // 5) Click a diagram to enlarge it in a lightbox
+    var lightbox = document.createElement('div');
+    lightbox.id = 'zk-lightbox';
+    lightbox.innerHTML = '<div></div>';
+    document.body.appendChild(lightbox);
+    var lightboxInner = lightbox.querySelector('div');
+    article.querySelectorAll('.diagram-box').forEach(function (box) {
+      box.addEventListener('click', function () {
+        var visual = box.querySelector('svg, img');
+        if (!visual) return;
+        lightboxInner.innerHTML = '';
+        lightboxInner.appendChild(visual.cloneNode(true));
+        lightbox.classList.add('zk-open');
+      });
+    });
+    lightbox.addEventListener('click', function () {
+      lightbox.classList.remove('zk-open');
+    });
+
+    // 6) Interview Q&A becomes click-to-reveal (a quiz instead of a wall of text)
+    article.querySelectorAll('.qa-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        item.classList.toggle('zk-open');
+      });
+    });
+
+    // 7) Floating back-to-top button
+    var topBtn = document.createElement('button');
+    topBtn.id = 'zk-top';
+    topBtn.type = 'button';
+    topBtn.setAttribute('aria-label', 'Back to top');
+    topBtn.textContent = '↑';
+    document.body.appendChild(topBtn);
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    document.addEventListener('scroll', function () {
+      if (window.scrollY > 600) topBtn.classList.add('zk-show');
+      else topBtn.classList.remove('zk-show');
+    }, { passive: true });
+  })();
+  </script>
+  <!-- ZK-TEST:end -->
+</body>
+</html>

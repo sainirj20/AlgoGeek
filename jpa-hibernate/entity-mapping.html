@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entity Mapping | JPA / Hibernate | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">JPA / Hibernate</a><span class="sep">/</span><span class="current">Entity Mapping</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to JPA / Hibernate overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#primary-key-strategies">Primary Key Strategies</a></li>
+        <li><a href="#column-configuration">Column Configuration</a></li>
+        <li><a href="#mapping-enums">Mapping Enums</a></li>
+        <li><a href="#temporal-types">Temporal Types</a></li>
+        <li><a href="#large-objects-lob">Large Objects with @Lob</a></li>
+        <li><a href="#putting-it-together">Putting it Together: the Full Post Entity</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">JPA / HIBERNATE</span>
+          <h1>Entity Mapping</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Entity mapping is the foundation everything else in JPA/Hibernate builds on. Cascades, fetch strategies, caching, and query performance all sit on top of the decisions you make when you first map a class to a table. Getting primary key generation, column configuration, enum storage, temporal types, and large object handling right up front is far cheaper than discovering months later &mdash; against a production database with millions of rows &mdash; that you chose <code>EnumType.ORDINAL</code>, or that your batch inserts silently stopped batching because of the identity generator. This page uses the <code>Post</code> entity from a simple blog domain to walk through the mapping decisions that come up most often in interviews and in real schema reviews.</p>
+
+        <h2 id="primary-key-strategies">Primary Key Strategies</h2>
+        <p>Every entity needs a primary key, declared with <code>@Id</code>. When the database generates the value rather than the application supplying it, add <code>@GeneratedValue</code> with one of four strategies:</p>
+        <ul>
+          <li><strong>IDENTITY</strong> &mdash; delegates to an auto-increment column (e.g. MySQL <code>AUTO_INCREMENT</code>, Postgres <code>GENERATED ALWAYS AS IDENTITY</code>). The database assigns the value only when the row is actually inserted.</li>
+          <li><strong>SEQUENCE</strong> &mdash; uses a database sequence object to pre-allocate values before the insert happens. Preferred on Postgres, Oracle, and most enterprise databases.</li>
+          <li><strong>TABLE</strong> &mdash; simulates a sequence using an ordinary table with rows that track the next value. Portable across any database, but slower due to the extra row locking involved; rarely used unless the target database has no native sequence support.</li>
+          <li><strong>AUTO</strong> &mdash; lets the persistence provider pick a strategy based on the dialect. Convenient for prototyping, but in production code most teams pin down an explicit strategy so behavior doesn't shift silently across environments.</li>
+        </ul>
+        <p>The trade-off that comes up constantly in interviews: <strong>IDENTITY disables JDBC batch inserts</strong>. Because the database only assigns the primary key at insert time, Hibernate cannot know an entity's identifier until that individual <code>INSERT</code> statement has actually executed. That means it can't safely queue up multiple inserts into one batch &mdash; each insert has to happen (and return its generated key) before Hibernate can build the next statement. <strong>SEQUENCE</strong>, by contrast, lets Hibernate call the sequence up front to obtain the primary key value <em>before</em> the row is written, so multiple inserts can be batched together into a single round trip, which matters a great deal for high-throughput write paths.</p>
+        <pre><code>@Entity
+@Table(name = "post")
+public class Post {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "post_seq_gen")
+    @SequenceGenerator(
+        name = "post_seq_gen",
+        sequenceName = "post_seq",
+        allocationSize = 50
+    )
+    private Long id;
+
+    // ...
+}</code></pre>
+        <p><code>allocationSize</code> tells Hibernate to grab a block of 50 IDs from the sequence at once and hand them out in memory, further reducing round trips &mdash; just make sure the database sequence's own increment matches, or you'll create gaps or collisions.</p>
+
+        <h2 id="column-configuration">Column Configuration</h2>
+        <p><code>@Column</code> controls how a field maps onto its database column. The most commonly used attributes are <code>name</code> (override the default snake/camel case mapping), <code>nullable</code>, <code>length</code> (for <code>VARCHAR</code> sizing), <code>unique</code>, <code>updatable</code> (set to <code>false</code> for write-once columns), and <code>precision</code>/<code>scale</code> for exact-value decimals such as <code>BigDecimal</code>.</p>
+        <pre><code>@Column(name = "title", nullable = false, length = 255)
+private String title;
+
+@Column(name = "created_at", updatable = false)
+private Instant createdAt;
+
+@Column(name = "price", precision = 10, scale = 2)
+private BigDecimal price;</code></pre>
+        <p>A common interview trap: <code>nullable = false</code> on <code>@Column</code> is a DDL hint used only when Hibernate generates the schema (<code>hibernate.hbm2ddl.auto</code>). It does not add a Bean Validation constraint and does not stop the application from trying to persist a null value &mdash; that failure only surfaces as a database constraint violation at flush time, or via <code>@NotNull</code> from Bean Validation if you add it separately.</p>
+
+        <h2 id="mapping-enums">Mapping Enums</h2>
+        <p>The classic pitfall in enum mapping is the default: <code>@Enumerated(EnumType.ORDINAL)</code> stores the enum's ordinal position (0, 1, 2, &hellip;) as an integer. It's compact, but it is a silent time bomb &mdash; if someone reorders, inserts, or removes a constant in the enum declaration, every row's meaning shifts without a single compile error or runtime exception. <code>@Enumerated(EnumType.STRING)</code> stores the constant's name as text instead. It uses a bit more storage and requires a slightly wider column, but it is safe against reordering and is self-documenting when you inspect the table directly. Always prefer <code>STRING</code> in production code.</p>
+        <pre><code>public enum PostStatus {
+    DRAFT,
+    PUBLISHED,
+    ARCHIVED
+}</code></pre>
+        <pre><code>@Enumerated(EnumType.STRING)
+@Column(name = "status", nullable = false, length = 20)
+private PostStatus status;</code></pre>
+        <p>Note that switching an existing column from <code>ORDINAL</code> to <code>STRING</code> (or vice versa) requires a data migration &mdash; the two representations are not compatible on disk, so this decision is much easier to get right the first time than to fix later.</p>
+
+        <h2 id="temporal-types">Temporal Types</h2>
+        <p>Since Hibernate 6 (and JPA 2.2+ for the basics), the modern <code>java.time</code> types &mdash; <code>Instant</code>, <code>LocalDate</code>, <code>LocalDateTime</code>, <code>LocalTime</code>, <code>OffsetDateTime</code>, <code>ZonedDateTime</code> &mdash; map automatically to the appropriate SQL column type with no extra annotation required. Hibernate's built-in type descriptors know exactly how to convert each of these to <code>DATE</code>, <code>TIME</code>, or <code>TIMESTAMP</code> columns, and <code>Instant</code> in particular is the right choice for "this moment in UTC" values such as audit timestamps, because it carries no ambiguous local time zone with it.</p>
+        <pre><code>@Column(name = "published_at")
+private Instant publishedAt;</code></pre>
+        <p>For completeness, the legacy approach using <code>java.util.Date</code> or <code>java.util.Calendar</code> required an explicit <code>@Temporal</code> annotation because those types can represent a date, a time, or both, and JPA had no way to infer which column type to generate without being told:</p>
+        <pre><code>// Legacy style - avoid in new code
+@Temporal(TemporalType.TIMESTAMP)
+@Column(name = "published_at")
+private Date publishedAt;</code></pre>
+        <p><code>java.time</code> types are preferred today because they are immutable, thread-safe, have a far clearer API for date/time arithmetic, and remove the ambiguity that plagued <code>Date</code>/<code>Calendar</code> mappings. New code should never reach for <code>@Temporal</code> unless it's maintaining a legacy entity that still uses the old JDK date types.</p>
+
+        <h2 id="large-objects-lob">Large Objects with @Lob</h2>
+        <p><code>@Lob</code> tells the provider to map a field as a large object &mdash; typically <code>CLOB</code>/<code>TEXT</code> for a <code>String</code> like <code>Post.content</code>, or <code>BLOB</code> for a <code>byte[]</code>. The exact database column type depends on the dialect in use; Postgres, for instance, commonly maps a <code>@Lob String</code> to <code>text</code> or <code>oid</code> depending on configuration, while Oracle maps it to a true <code>CLOB</code>.</p>
+        <pre><code>@Lob
+@Column(name = "content")
+private String content;</code></pre>
+        <p>Because large text or binary content is expensive to pull back on every query, it's tempting to mark it lazy:</p>
+        <pre><code>@Lob
+@Basic(fetch = FetchType.LAZY)
+@Column(name = "content")
+private String content;</code></pre>
+        <p>The important caveat: for a <em>non-collection, non-association</em> basic attribute like this, JPA providers can only honor lazy fetching if the entity class has been bytecode-enhanced at build time (Hibernate's bytecode enhancement plugin instruments the class to intercept field access). Without that enhancement step, <code>FetchType.LAZY</code> on a <code>@Basic</code> field is effectively ignored and Hibernate still loads the value eagerly with the rest of the entity. Many teams instead solve this by moving large content into a separate one-to-one "detail" entity that's only loaded when actually needed, avoiding the bytecode enhancement dependency altogether.</p>
+
+        <h2 id="putting-it-together">Putting it Together: the Full Post Entity</h2>
+        <p>Combining primary key strategy, column configuration, enum mapping, temporal typing, and <code>@Lob</code> into one entity:</p>
+        <pre><code>package com.example.blogdemo.domain;
+
+import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+@Entity
+@Table(name = "post")
+public class Post {
+
+    // Primary key: SEQUENCE strategy allows JDBC batching,
+    // unlike IDENTITY, because Hibernate can pre-allocate IDs.
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "post_seq_gen")
+    @SequenceGenerator(name = "post_seq_gen", sequenceName = "post_seq", allocationSize = 50)
+    private Long id;
+
+    // Explicit column config: bounded length, required, not
+    // silently truncated by the database driver.
+    @Column(name = "title", nullable = false, length = 255)
+    private String title;
+
+    // Large text body. @Lob maps to CLOB/TEXT depending on dialect.
+    // True lazy loading of this field requires bytecode enhancement;
+    // without it, FetchType.LAZY here is ignored by the provider.
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "content")
+    private String content;
+
+    // Enum stored as STRING, never ORDINAL - safe against reordering
+    // of the PostStatus constants.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private PostStatus status;
+
+    // java.time.Instant maps automatically - no @Temporal needed.
+    @Column(name = "published_at")
+    private Instant publishedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", nullable = false)
+    private Author author;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List&lt;Comment&gt; comments = new ArrayList&lt;&gt;();
+
+    @ManyToMany
+    @JoinTable(
+        name = "post_tag",
+        joinColumns = @JoinColumn(name = "post_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set&lt;Tag&gt; tags = new HashSet&lt;&gt;();
+
+    protected Post() {
+        // JPA requires a no-arg constructor
+    }
+
+    public Post(String title, PostStatus status, Author author) {
+        this.title = title;
+        this.status = status;
+        this.author = author;
+    }
+
+    // getters and setters omitted for brevity
+}</code></pre>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">Why does GenerationType.IDENTITY disable JDBC batching?</div>
+          <div class="qa-a">Because the database only assigns the primary key value when the <code>INSERT</code> statement is physically executed. Hibernate needs the generated ID immediately after each insert (to manage the persistence context and cascade relationships), so it must execute inserts one at a time rather than queuing several into a single batched round trip. <code>SEQUENCE</code> avoids this because the ID is obtained from the database sequence <em>before</em> the row is written, so multiple inserts can be grouped together.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why should you almost always use EnumType.STRING over EnumType.ORDINAL?</div>
+          <div class="qa-a"><code>ORDINAL</code> stores the enum constant's numeric position, which silently breaks if constants are ever reordered, inserted in the middle, or removed &mdash; with no compile-time or runtime warning. <code>STRING</code> stores the constant's name, which is stable, self-documenting when inspecting rows directly, and safe against future refactors of the enum. The small storage overhead is almost always worth the safety.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Do you need @Temporal when using java.time types?</div>
+          <div class="qa-a">No. Since Hibernate 6 (and modern JPA), <code>java.time</code> types like <code>Instant</code>, <code>LocalDate</code>, and <code>LocalDateTime</code> map automatically to the correct SQL column type without any annotation. <code>@Temporal</code> is only required for the legacy <code>java.util.Date</code>/<code>Calendar</code> types, because those types are ambiguous about whether they represent a date, a time, or both.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What does @Lob actually map to at the database level?</div>
+          <div class="qa-a">It depends on the dialect: character data (<code>String</code>) typically maps to <code>CLOB</code> or <code>TEXT</code>, and binary data (<code>byte[]</code>) maps to <code>BLOB</code>. The exact SQL type Hibernate generates is dialect-specific, which is why teams often verify the generated DDL against the target database rather than assuming a single universal mapping.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between GenerationType.SEQUENCE and TABLE?</div>
+          <div class="qa-a"><code>SEQUENCE</code> uses a native database sequence object to hand out unique values efficiently and supports batching. <code>TABLE</code> simulates the same behavior using an ordinary database table that tracks the next value, which works on databases without native sequence support but is slower because it requires row-level locking and an extra round trip per allocation. Prefer <code>SEQUENCE</code> whenever the target database supports it.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>Choose <code>SEQUENCE</code> over <code>IDENTITY</code> whenever batch insert performance matters &mdash; <code>IDENTITY</code> forces one round trip per row.</li>
+          <li>Use <code>@Column</code> attributes (<code>nullable</code>, <code>length</code>, <code>precision</code>/<code>scale</code>, <code>updatable</code>) deliberately; they drive schema generation but are not a substitute for application-level validation.</li>
+          <li>Always map enums with <code>EnumType.STRING</code> in production &mdash; <code>ORDINAL</code> is a maintenance hazard waiting to happen.</li>
+          <li><code>java.time</code> types need no <code>@Temporal</code> annotation; reserve that annotation for legacy <code>Date</code>/<code>Calendar</code> fields only.</li>
+          <li><code>@Lob</code> maps large text/binary content to <code>CLOB</code>/<code>TEXT</code>/<code>BLOB</code>, but true lazy loading of a Lob field requires bytecode enhancement &mdash; without it, marking the field <code>FetchType.LAZY</code> has no effect.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="architecture-setup.html"><span class="dir">Previous</span>Architecture &amp; Setup</a>
+          <a class="next" href="relationships-cascading.html"><span class="dir">Next</span>Relationships &amp; Cascading</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

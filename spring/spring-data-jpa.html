@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring Data JPA &amp; Hibernate | Spring | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Spring</a><span class="sep">/</span><span class="current">Spring Data JPA &amp; Hibernate</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Spring overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#entities-and-the-persistence-context">Entities &amp; the Persistence Context</a></li>
+        <li><a href="#repository-interfaces">Repository Interfaces</a></li>
+        <li><a href="#entity-relationships-and-the-n1-problem">Entity Relationships &amp; the N+1 Problem</a></li>
+        <li><a href="#transaction-management">Transaction Management</a></li>
+        <li><a href="#dto-projections">DTO Projections</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SPRING</span>
+          <h1>Spring Data JPA &amp; Hibernate</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Spring Data JPA is a layer that sits on top of a JPA provider &mdash; almost always Hibernate in practice &mdash; and eliminates the boilerplate DAO code that plain JPA still requires: manual <code>EntityManager</code> lookups, hand-written CRUD methods, and repetitive query construction. Instead of writing an implementation class, you declare a repository <em>interface</em>, and Spring generates a working implementation at runtime using a dynamic proxy. The goal is not to replace JPA/Hibernate &mdash; it is to make the 80% of common data-access patterns (find by id, save, delete, paginate, derive a query from a method name) nearly free, while still giving you an escape hatch (<code>@Query</code>, <code>EntityManager</code> injection, Specifications) for the remaining 20%.</p>
+
+        <h2 id="entities-and-the-persistence-context">Entities &amp; the Persistence Context</h2>
+        <p>Spring Data JPA does not change how you model entities &mdash; that's still plain JPA. An entity is a POJO annotated with <code>@Entity</code>, with a primary key marked by <code>@Id</code> (often paired with <code>@GeneratedValue</code> for auto-incrementing or sequence-based ids) and fields mapped to columns via <code>@Column</code> (or left to default naming conventions).</p>
+        <pre><code>@Entity
+@Table(name = "orders")
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "customer_email", nullable = false)
+    private String customerEmail;
+
+    private BigDecimal amount;
+
+    private String status;
+}</code></pre>
+        <p>What a Spring developer needs to internalize (deeper Hibernate internals live in the JPA / Hibernate section of this site) is the <strong>persistence context</strong>: the first-level cache that the <code>EntityManager</code> maintains per transaction. An entity loaded within a transaction is <em>managed</em> &mdash; Hibernate tracks its field changes and flushes them to the database automatically at commit (dirty checking), with no explicit <code>save()</code> call required for updates. Once the transaction (and the underlying persistence context) closes, that same entity becomes <em>detached</em> &mdash; it still holds data, but lazy associations on it can no longer be initialized, which is the root cause of the infamous <code>LazyInitializationException</code> when entities are passed outside the transactional boundary (e.g., serialized directly from a controller).</p>
+
+        <h2 id="repository-interfaces">Repository Interfaces</h2>
+        <p>Spring Data's repository abstraction is a hierarchy of interfaces, each adding capability:</p>
+        <ul>
+          <li><code>CrudRepository&lt;T, ID&gt;</code> &mdash; basic create, read, update, delete, and <code>findAll()</code>.</li>
+          <li><code>PagingAndSortingRepository&lt;T, ID&gt;</code> &mdash; extends <code>CrudRepository</code> and adds <code>findAll(Pageable)</code> and <code>findAll(Sort)</code>.</li>
+          <li><code>JpaRepository&lt;T, ID&gt;</code> &mdash; extends <code>PagingAndSortingRepository</code>, adding JPA-specific batching operations like <code>saveAll()</code>, <code>flush()</code>, and <code>deleteInBatch()</code>. In practice, almost every application repository extends <code>JpaRepository</code> directly since it's a strict superset.</li>
+        </ul>
+        <p>Beyond the inherited CRUD methods, Spring Data lets you declare <strong>derived query methods</strong>: name a method following a keyword convention and Spring parses the method name into a query at startup, with no implementation required.</p>
+        <pre><code>public interface OrderRepository extends JpaRepository&lt;Order, Long&gt; {
+
+    // Derived query &mdash; Spring parses the method name into a JPQL query
+    List&lt;Order&gt; findByCustomerEmailAndStatus(String email, String status);
+
+    // JPQL via @Query for anything the naming convention can't express cleanly
+    @Query("SELECT o FROM Order o WHERE o.amount &gt; :threshold ORDER BY o.amount DESC")
+    List&lt;Order&gt; findHighValueOrders(@Param("threshold") BigDecimal threshold);
+
+    // Native SQL when you need a DB-specific feature
+    @Query(value = "SELECT * FROM orders WHERE status = 'PENDING' LIMIT 100", nativeQuery = true)
+    List&lt;Order&gt; findPendingBatch();
+
+    // @Modifying is required for any @Query that changes data (UPDATE/DELETE)
+    @Modifying
+    @Query("UPDATE Order o SET o.status = :status WHERE o.id = :id")
+    int updateStatus(@Param("id") Long id, @Param("status") String status);
+}</code></pre>
+        <p>A subtlety worth knowing cold: <code>@Modifying</code> queries execute directly against the database and bypass the persistence context, so any managed entities already loaded in the current session will hold stale in-memory state unless you clear the persistence context (<code>clearAutomatically = true</code>) or refresh the entity afterward.</p>
+
+        <h2 id="entity-relationships-and-the-n1-problem">Entity Relationships &amp; the N+1 Problem</h2>
+        <p>Relationships are declared with <code>@OneToMany</code>, <code>@ManyToOne</code>, and <code>@ManyToMany</code>, each configurable with a <code>fetch</code> strategy. <code>@ManyToOne</code> and <code>@OneToOne</code> default to <code>FetchType.EAGER</code>; <code>@OneToMany</code> and <code>@ManyToMany</code> default to <code>FetchType.LAZY</code>. <strong>LAZY</strong> means the association is only loaded when it's first accessed (via a proxy); <strong>EAGER</strong> means it's loaded immediately alongside the owning entity, in the same or an additional query.</p>
+        <pre><code>@Entity
+public class Order {
+    @Id @GeneratedValue
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    private List&lt;OrderLine&gt; lines;
+}</code></pre>
+        <p>The <strong>N+1 select problem</strong> shows up when you fetch a list of parent entities (1 query) and then, for each parent, access a lazy association &mdash; triggering one additional query per parent (N queries). Fetching 100 orders and then reading <code>order.getLines()</code> for each in a loop results in 101 round trips instead of 1 or 2. Three standard fixes:</p>
+        <ul>
+          <li><strong>JOIN FETCH in JPQL</strong> &mdash; explicitly pull the association in the same query: <code>SELECT o FROM Order o JOIN FETCH o.lines WHERE o.status = :status</code>.</li>
+          <li><strong><code>@EntityGraph</code></strong> &mdash; declare, at the repository method level, which associations to eagerly fetch for that call only, without changing the entity's default fetch type: <code>@EntityGraph(attributePaths = "lines")</code> on a derived query method.</li>
+          <li><strong>DTO projections</strong> &mdash; select only the fields you actually need via a JPQL constructor expression or an interface projection, sidestepping the association graph entirely.</li>
+        </ul>
+
+        <h2 id="transaction-management">Transaction Management</h2>
+        <p>Spring's <code>@Transactional</code> annotation wraps a method in a transaction using an AOP proxy: on entry it starts (or joins) a transaction, and on successful return it commits; on an unchecked exception (by default) it rolls back. The <code>propagation</code> attribute controls how a method's transaction relates to an existing one &mdash; <code>REQUIRED</code> (the default) joins the caller's transaction if one exists or starts a new one if not, while <code>REQUIRES_NEW</code> always suspends any existing transaction and starts an independent one (useful for things like audit logging that must persist even if the outer transaction rolls back). <code>isolation</code> controls how much one transaction can see of another's uncommitted changes (<code>READ_COMMITTED</code>, <code>REPEATABLE_READ</code>, <code>SERIALIZABLE</code>, etc.) &mdash; most applications rely on the database's default rather than overriding it.</p>
+        <pre><code>@Service
+public class OrderService {
+
+    private final OrderRepository orderRepository;
+    private final AuditService auditService;
+
+    @Transactional
+    public void placeOrder(Order order) {
+        orderRepository.save(order);
+        auditService.recordPlacement(order); // REQUIRES_NEW: commits even if placeOrder rolls back later
+    }
+}</code></pre>
+        <p><code>@Transactional</code> should live on the <strong>service layer</strong>, not the repository (repository methods are already individually transactional via Spring Data, which is too fine-grained for multi-step business operations) and not the controller (the web layer shouldn't own transaction boundaries or database semantics). The service layer is where a "unit of work" corresponding to a business operation naturally lives.</p>
+        <p>The classic pitfall: <code>@Transactional</code> is implemented via a <strong>proxy</strong> that wraps the bean. If you call a <code>@Transactional</code> method from <em>another</em> method in the <strong>same class</strong>, that call goes through <code>this</code> directly &mdash; it never passes through the proxy &mdash; so the transactional advice (starting a new transaction, applying propagation rules) is silently skipped.</p>
+        <pre><code>@Service
+public class OrderService {
+
+    public void processOrder(Order order) {
+        // Calling this.saveOrder(...) bypasses the proxy entirely &mdash;
+        // no new transaction is started here, despite the annotation below.
+        saveOrder(order);
+    }
+
+    @Transactional
+    public void saveOrder(Order order) {
+        // ...
+    }
+}</code></pre>
+        <p>Common fixes: move the transactional method to a separate bean and inject that bean, or self-inject a proxy reference of the same bean (<code>@Autowired private OrderService self;</code>) and call through it.</p>
+
+        <h2 id="dto-projections">DTO Projections</h2>
+        <p>Returning JPA entities directly from a service or REST controller is a well-known anti-pattern for a few concrete reasons: entities may hold lazy associations that throw <code>LazyInitializationException</code> once serialized outside the original persistence context; entities often carry more fields than a given API response needs (over-fetching, and potential leakage of internal or sensitive columns); and binding your API contract directly to your table schema means every column rename or schema refactor becomes a breaking API change.</p>
+        <p>Spring Data supports two lightweight projection styles that avoid loading full entity graphs:</p>
+        <pre><code>// Interface-based projection &mdash; Spring generates a proxy backed by the query result
+public interface OrderSummary {
+    Long getId();
+    BigDecimal getAmount();
+    String getStatus();
+}
+
+public interface OrderRepository extends JpaRepository&lt;Order, Long&gt; {
+    List&lt;OrderSummary&gt; findByCustomerEmail(String email);
+}
+
+// Record-based (constructor) projection via JPQL
+public record OrderSummaryDto(Long id, BigDecimal amount, String status) {}
+
+@Query("SELECT new com.example.OrderSummaryDto(o.id, o.amount, o.status) " +
+       "FROM Order o WHERE o.customerEmail = :email")
+List&lt;OrderSummaryDto&gt; findSummariesByEmail(@Param("email") String email);</code></pre>
+        <p>Both approaches let the database return only the selected columns rather than materializing entire managed entities, and both produce plain, serialization-safe objects with no lazy proxies attached &mdash; making them the natural boundary type between the persistence layer and the API layer.</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between CrudRepository, PagingAndSortingRepository, and JpaRepository?</div>
+          <div class="qa-a"><code>CrudRepository</code> gives basic save/find/delete operations. <code>PagingAndSortingRepository</code> extends it with <code>findAll(Pageable)</code> and <code>findAll(Sort)</code> for pagination and ordering. <code>JpaRepository</code> extends <code>PagingAndSortingRepository</code> further with JPA-specific batch operations like <code>saveAll()</code>, <code>flush()</code>, and <code>deleteInBatch()</code>. In real projects you almost always extend <code>JpaRepository</code> directly since it's a superset of the other two.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Explain the N+1 select problem and two ways to fix it.</div>
+          <div class="qa-a">It occurs when you load a list of parent entities in one query, then access a lazy association on each one, triggering one additional query per parent &mdash; N extra queries for N parents. Two standard fixes:
+            <ul>
+              <li>Use <code>JOIN FETCH</code> in a JPQL query to load the association in the same round trip.</li>
+              <li>Use <code>@EntityGraph</code> on the repository method to eagerly fetch specific associations for that call only.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why does calling a @Transactional method from within the same class not start a new transaction?</div>
+          <div class="qa-a">Spring implements <code>@Transactional</code> using an AOP proxy that wraps the bean. Transactional behavior only kicks in when a call goes <em>through that proxy</em>. A self-invocation (calling another method on <code>this</code> from within the same class) bypasses the proxy entirely, so the annotation is silently ignored. The fix is to move the method to a separate bean, or inject/call through a proxy reference of the same bean.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between FetchType.LAZY and FetchType.EAGER?</div>
+          <div class="qa-a"><code>LAZY</code> defers loading an association until it's actually accessed, via a proxy &mdash; it requires an open persistence context at access time. <code>EAGER</code> loads the association immediately along with the owning entity. <code>@ManyToOne</code>/<code>@OneToOne</code> default to <code>EAGER</code>; <code>@OneToMany</code>/<code>@ManyToMany</code> default to <code>LAZY</code>. In practice, most teams override the defaults to <code>LAZY</code> everywhere and fetch what they need explicitly (via <code>JOIN FETCH</code>, <code>@EntityGraph</code>, or projections) to avoid unpredictable eager-loading chains.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why prefer DTOs over exposing JPA entities directly from a REST API?</div>
+          <div class="qa-a">Returning entities directly risks <code>LazyInitializationException</code> when a lazy association is serialized outside its original transaction, exposes more data than the API contract should (over-fetching, potential leakage of internal columns), and tightly couples your API shape to your database schema so that internal refactors become breaking changes for API consumers. DTOs (interface projections or Java records) decouple these concerns and are inherently serialization-safe.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>Spring Data JPA removes DAO boilerplate by generating repository implementations from interfaces; <code>JpaRepository</code> is the practical default to extend.</li>
+          <li>Derived query methods cover simple lookups; <code>@Query</code> (JPQL or native) covers everything else, and <code>@Modifying</code> is mandatory for update/delete queries.</li>
+          <li>The N+1 problem comes from lazy associations accessed in a loop &mdash; fix it with <code>JOIN FETCH</code>, <code>@EntityGraph</code>, or DTO projections, not by defaulting everything to EAGER.</li>
+          <li><code>@Transactional</code> belongs on the service layer, and self-invocation within the same class silently bypasses the proxy-based transaction advice.</li>
+          <li>Favor DTO projections over raw entities at the API boundary to avoid lazy-loading exceptions, over-fetching, and schema coupling.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="spring-web.html"><span class="dir">Previous</span>Spring Web (MVC &amp; REST)</a>
+          <a class="next" href="spring-security.html"><span class="dir">Next</span>Spring Security</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

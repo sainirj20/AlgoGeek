@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time-Series Databases | Database Types | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Database Types</a><span class="sep">/</span><span class="current">Time-Series Databases</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Database Types overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#why-time-series-databases-exist">Why Time-Series Databases Exist</a></li>
+        <li><a href="#named-products">Named Products</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">DATABASE TYPES</span>
+          <h1>Time-Series Databases</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>A time-series database (TSDB) is optimized for one very specific but extremely common shape of data: a timestamp, a numeric or structured value, and a set of tags/labels identifying the source — e.g. <code>cpu.usage, host=web-01, region=us-east, value=72.3, time=2026-07-15T10:00:00Z</code>. This data is almost always append-only (you rarely update a historical measurement), arrives at extremely high volume and velocity (thousands to millions of points per second from sensors, servers, or applications), is queried primarily by time range and aggregated over windows (avg per minute, max per hour, rate of change), and becomes less valuable/detailed over time, so older data is often rolled up or downsampled and eventually deleted.</p>
+
+        <h2 id="why-time-series-databases-exist">Why Time-Series Databases Exist</h2>
+        <p>General-purpose relational or document databases struggle at scale with this pattern because they aren't optimized for the specific access patterns: B-tree indexes aren't ideal for constantly-appended timestamp-ordered data, storage isn't naturally columnar/compressible for repeating numeric series, and there's no built-in concept of retention or downsampling. Time-series databases solve this by partitioning data into time-based chunks, compressing aggressively (values in a metric series are often very similar to their neighbors, enabling extreme compression ratios), providing native downsampling/retention policies, and offering query languages with built-in time-windowing and rate-of-change functions. This makes them the backbone of observability/monitoring (metrics, dashboards, alerting), IoT sensor pipelines, financial tick data, and industrial telemetry.</p>
+
+        <div class="formula-box">
+          <span class="formula-label">Downsampling storage savings</span>
+          Raw resolution: 1 point every 10 seconds &rarr; 8,640 points/day per series
+          <br>Downsampled after 7 days to 5-minute rollups &rarr; 288 points/day per series
+          <br>Reduction factor = 8,640 &divide; 288 = 30&times; fewer stored points for data older than a week, while retention policies eventually drop the rollups entirely past a defined age
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Real-world example</div>
+          Industrial and IoT companies ingest sensor telemetry (temperature, vibration, pressure) from thousands of machines on a factory floor, storing years of history cost-effectively while still being able to query "average vibration per machine per hour over the last 6 months" quickly — a pattern general-purpose relational databases handle poorly at this volume and retention depth.
+        </div>
+
+        <h2 id="named-products">Named Products</h2>
+
+        <h3 id="influxdb">InfluxDB</h3>
+        <p><em>Purpose-Built Time-Series Database</em> — created by InfluxData, widely used for metrics, events, and real-time analytics. Version 3.0 (GA since April 2025) is a from-the-ground-up rewrite in Rust using Apache Arrow, Parquet, and DataFusion, storing data as Parquet files on object storage (S3, Azure Blob, GCS) or local disk, enabling both fast recent-data queries and cheap long-term storage. SQL and InfluxQL are the primary query languages in InfluxDB 3 (Flux, the earlier custom functional language, is now in maintenance mode); it supports infinite cardinality by decoupling storage growth from compute. Best for DevOps/infrastructure monitoring, IoT sensor data, financial tick data, and workloads with very high-cardinality tags that older TSDBs choke on. Not a fit for general-purpose transactional/relational data, or teams already standardized on Prometheus for Kubernetes-native pull-based metrics.</p>
+        <div class="callout">
+          <div class="callout-title">Real-world example</div>
+          InfluxDB is used in production by companies including IBM, Cisco, and Tesla for IoT monitoring, DevOps observability, and industrial sensor analytics — ingesting telemetry from thousands of machines while querying years of history cost-effectively from object storage.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Purpose-built compression and storage, with strong cost efficiency at scale</li><li>InfluxDB 3's Parquet/object-storage architecture separates storage growth from compute cost</li><li>Supports very high cardinality without the performance collapse seen in older TSDB designs</li><li>SQL support (InfluxDB 3) lowers the learning curve versus older custom query languages</li></ul></td>
+            <td><ul><li>Migrating from Flux/InfluxQL-based 1.x/2.x to InfluxDB 3 involves query-language and architecture changes</li><li>Not designed for non-time-series relational workloads</li><li>Commercial/cloud tiers needed for the most advanced clustering and enterprise features</li><li>Object-storage-backed architecture can add query latency versus purely in-memory TSDBs</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="timescaledb">TimescaleDB</h3>
+        <p><em>Time-Series Database — PostgreSQL Extension</em> — an open-source extension that turns PostgreSQL into a high-performance time-series database rather than being a standalone engine. It introduces "hypertables" — tables that look like ordinary PostgreSQL tables to the application but are automatically partitioned into time-based chunks — plus continuous aggregates, native compression, and (as of the 2.18 "hypercore" release in 2025) a unified row/column storage engine that keeps hot recent data in row form and converts cold data to compressed columnar form. Full standard SQL, extended with time-series functions like <code>time_bucket</code>. Compression routinely achieves 90-97% storage reduction. Best for teams that want time-series performance without leaving the PostgreSQL/SQL ecosystem, especially when time-series data needs to be joined with regular relational/business data in the same database. Not a fit for extremely high-cardinality, massive-scale metrics workloads better served by a purpose-built distributed TSDB, or teams that don't already use PostgreSQL.</p>
+        <div class="callout">
+          <div class="callout-title">Real-world example</div>
+          A fintech company tracking stock/crypto tick data alongside relational data (accounts, orders, users) can store both in the same PostgreSQL database — using TimescaleDB hypertables for the high-volume tick data and ordinary PostgreSQL tables for accounts — and run a single SQL query joining "average price over the last hour" with "which accounts hold this asset."
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Full PostgreSQL compatibility — standard SQL, joins, existing tooling and drivers all work unchanged</li><li>Hypertables give 10-100x faster time-window queries versus raw PostgreSQL</li><li>Native compression yields dramatic storage savings (often 90%+ reduction)</li><li>Continuous aggregates make dashboards and rollups fast without manual ETL</li></ul></td>
+            <td><ul><li>Bounded by PostgreSQL's single-writer-per-primary architecture for write scaling</li><li>Not as extreme in cardinality/throughput ceiling as purpose-built distributed TSDBs</li><li>Requires PostgreSQL operational expertise (vacuuming, extensions, upgrades)</li><li>Some advanced features (hypercore, tiering, multi-node) are part of the commercial/cloud offering</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="prometheus">Prometheus</h3>
+        <p><em>Time-Series Database — Monitoring &amp; Alerting System</em> — an open-source monitoring and alerting toolkit that includes its own purpose-built time-series database. Unlike most TSDBs, Prometheus uses a "pull" model — it scrapes numeric metrics from HTTP endpoints exposed by applications and infrastructure at regular intervals — rather than having systems push data to it, and has become the de facto standard for monitoring cloud-native and Kubernetes environments. Data is a multi-dimensional time series identified by a metric name and key-value label pairs, queried with PromQL. Single-server design with local on-disk storage by default; scales for long-term storage via remote-write to systems like Thanos, Cortex, or Mimir. Best for Kubernetes/cloud-native infrastructure monitoring, microservices observability, and alerting on operational thresholds. Not a fit for long-term historical storage spanning years on its own, non-numeric/event/log data, or very high-cardinality labels.</p>
+        <div class="callout">
+          <div class="callout-title">Real-world example</div>
+          A company running microservices on Kubernetes typically deploys Prometheus to scrape each pod's <code>/metrics</code> endpoint for CPU, memory, request rate, and error rate, then uses PromQL to power Grafana dashboards and Alertmanager rules such as "page on-call if error rate exceeds 1% over 5 minutes."
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>De facto standard for Kubernetes/cloud-native monitoring with an enormous exporter ecosystem</li><li>PromQL is powerful and purpose-built for operational alerting and dashboards</li><li>Pull model simplifies service discovery in dynamic container environments</li><li>Tight integration with Grafana and Alertmanager for a complete observability stack</li></ul></td>
+            <td><ul><li>Not designed for long-term storage out of the box; needs companion systems (Thanos, Cortex, Mimir)</li><li>High-cardinality labels can cause performance and memory problems</li><li>Pull model doesn't fit short-lived batch jobs or devices behind firewalls without a push-gateway</li><li>Single-node storage model isn't inherently horizontally scalable for very large fleets</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="graphite">Graphite</h3>
+        <p><em>Time-Series Database — Metrics Storage &amp; Graphing</em> — one of the original open-source time-series monitoring tools (created in 2006), consisting of Carbon (a service that receives and relays incoming metrics), Whisper (a fixed-size, round-robin-style database for storing the time series), and a web UI/API for rendering graphs. Data uses hierarchical, dot-separated metric naming (e.g. <code>servers.web01.cpu.usage</code>), plus more modern tag-based support; queries pass metrics through a composable function pipeline (<code>summarize</code>, <code>movingAverage</code>, <code>alias</code>). Scales horizontally via Carbon relay/aggregation tiers and consistent hashing. Best for long-established server/network/application monitoring stacks and teams with existing Graphite/Carbon infrastructure. Not the right choice for greenfield projects, which today typically default to Prometheus or InfluxDB/TimescaleDB for higher cardinality and richer query languages.</p>
+        <div class="callout">
+          <div class="callout-title">Real-world example</div>
+          Graphite has long been used in production by companies like Booking.com, Etsy, and GitHub as the backend for server and application monitoring dashboards — applications emit metrics like <code>app.requests.count</code> via the simple Carbon line protocol, and operators build Grafana dashboards on top to track site health and capacity trends.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Extremely simple ingestion protocol — trivial to instrument any application</li><li>Long track record and stability in production at scale</li><li>Rich function-pipeline query language for flexible graph transformations</li><li>Predictable, fixed-size storage footprint via Whisper</li></ul></td>
+            <td><ul><li>Considered legacy relative to Prometheus/InfluxDB for new cloud-native projects</li><li>Hierarchical dot-separated naming is less flexible than modern label/tag-based models</li><li>Whisper's fixed-size files require upfront retention/rollup planning</li><li>Smaller, slower-moving community/ecosystem than Prometheus today</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="amazon-timestream">Amazon Timestream</h3>
+        <p><em>Time-Series Database — Managed, Cloud</em> — AWS's managed time-series database offering, which as of 2025 split into two distinct products: Timestream for LiveAnalytics (AWS's original serverless engine, now in maintenance mode and closed to new customers since June 2025) and Timestream for InfluxDB (a fully managed InfluxDB service on AWS infrastructure, now AWS's recommended path, supporting InfluxDB 3 Core and Enterprise as of late 2025). LiveAnalytics uses a memory store for recent data and a magnetic store for historical/cheaper storage with its own SQL-based query language; Timestream for InfluxDB uses standard InfluxQL/SQL/Flux. Best for teams already committed to AWS wanting a managed time-series database without operating servers — new projects should default to Timestream for InfluxDB, since LiveAnalytics is closed to new sign-ups. Not a fit for multi-cloud/on-prem deployments or teams wanting the largest open-source ecosystem and community control.</p>
+        <div class="callout">
+          <div class="callout-title">Real-world example</div>
+          An industrial IoT company streaming sensor telemetry from thousands of connected devices via AWS IoT Core or Kinesis into Timestream for InfluxDB gets single-digit-millisecond query response for live dashboards and alerting, while still running complex historical analytics over petabytes of accumulated sensor history without operating the underlying InfluxDB servers themselves.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Fully managed — AWS handles patching, scaling, and availability</li><li>Timestream for InfluxDB brings the mature InfluxDB query surface to a managed AWS service</li><li>Tight integration with AWS IoT Core, Kinesis, MSK, and Telegraf for ingestion</li><li>Multi-AZ read replicas and compute/storage auto-scaling for production reliability</li></ul></td>
+            <td><ul><li>Confusing product transition — LiveAnalytics is closed to new customers, requiring migration planning</li><li>AWS-only, creating cloud lock-in</li><li>Smaller community/ecosystem than running open-source InfluxDB, Prometheus, or TimescaleDB directly</li><li>Cost can be less predictable than self-hosted alternatives at very high, sustained ingestion volumes</li></ul></td>
+          </tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">Why can time-series databases sustain much higher write throughput than a general relational database for this workload?</div>
+          <div class="qa-a">Writes are append-only — new timestamped points, essentially never updates to old rows — so the engine can skip most of the transactional/indexing machinery (row-level locking, MVCC version chains, B-tree rebalancing) a relational database maintains for arbitrary updates, and can use compression schemes suited to sequential, slowly-changing numeric data.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between a retention policy and downsampling?</div>
+          <div class="qa-a">A retention policy deletes data entirely once it passes a defined age, bounding total storage. Downsampling instead reduces resolution of aging data — rolling many fine-grained points into fewer coarse aggregated ones — so some historical trend information is kept at far less storage, before it's eventually dropped by retention.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is Prometheus's pull model a good fit for Kubernetes, and where does it fall short?</div>
+          <div class="qa-a">Pulling from a <code>/metrics</code> endpoint fits dynamic container environments well because Prometheus's service discovery finds new pods automatically. It falls short for short-lived batch jobs or devices behind firewalls that can't be scraped (requiring a push-gateway workaround), and its single-node local storage isn't designed for long-term retention without pairing it with Thanos, Cortex, or Mimir.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why might a team choose TimescaleDB over a purpose-built TSDB like InfluxDB?</div>
+          <div class="qa-a">If the application already runs on PostgreSQL and needs to join time-series data with regular relational data — like sensor readings against a customer or asset table — TimescaleDB keeps everything in one database with full SQL and existing tooling, trading some ceiling on extreme cardinality/throughput for far less operational complexity than running two systems.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does high label/tag cardinality hurt older time-series database designs?</div>
+          <div class="qa-a">Each unique combination of tags (host, region, device, etc.) creates a distinct series that the engine has to index and store separately; when the number of combinations explodes, index size and memory use grow just as fast, which is exactly the failure mode InfluxDB 3's architecture and Prometheus's cardinality limits are designed to guard against.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Time-series databases trade general-purpose update/delete flexibility for extreme append-only write throughput and time-range-optimized storage — compression, downsampling, retention — because their workload looks nothing like typical OLTP traffic. InfluxDB and Amazon Timestream for InfluxDB lead on purpose-built, high-cardinality metrics at scale; TimescaleDB fits teams that want time-series performance without leaving PostgreSQL; Prometheus is the default for Kubernetes-native pull-based monitoring; Graphite remains in use in legacy stacks but is rarely chosen for new projects today.
+        </div>
+
+        <h2 id="sources">Sources</h2>
+        <ul>
+          <li><a href="https://www.influxdata.com/blog/the-plan-for-influxdb-3-0-open-source/" target="_blank" rel="noopener">The Plan for InfluxDB 3 Open Source — InfluxData</a></li>
+          <li><a href="https://calmops.com/database/influxdb/influxdb-trends/" target="_blank" rel="noopener">InfluxDB Trends 2025-2026: Time-Series Database Evolution — Calmops</a></li>
+          <li><a href="https://github.com/influxdata/influxdb" target="_blank" rel="noopener">GitHub — influxdata/influxdb</a></li>
+          <li><a href="https://github.com/timescale/timescaledb" target="_blank" rel="noopener">GitHub — timescale/timescaledb</a></li>
+          <li><a href="https://timescaledb.org/" target="_blank" rel="noopener">TimescaleDB — Real-Time Insights, Scalable Time-Series</a></li>
+          <li><a href="https://www.jusdb.com/blog/timescaledb-hypertables-continuous-aggregates-guide" target="_blank" rel="noopener">TimescaleDB Hypertables, Continuous Aggregates &amp; Compression (2026 Production Guide)</a></li>
+          <li><a href="https://www.percona.com/blog/managing-time-series-data-using-timescaledb-powered-postgresql/" target="_blank" rel="noopener">Managing Time Series Data Using TimeScaleDB-Powered PostgreSQL — Percona</a></li>
+          <li><a href="https://prometheus.io/" target="_blank" rel="noopener">Prometheus — Monitoring system &amp; time series database</a></li>
+          <li><a href="https://www.tigera.io/learn/guides/prometheus-monitoring/" target="_blank" rel="noopener">Prometheus Monitoring: The Complete Guide — Tigera</a></li>
+          <li><a href="https://last9.io/blog/prometheus-query-examples/" target="_blank" rel="noopener">Essential Prometheus Queries: Simple to Advanced — Last9</a></li>
+          <li><a href="https://grafana.com/oss/graphite/" target="_blank" rel="noopener">Graphite OSS — Time-series data platform — Grafana</a></li>
+          <li><a href="https://www.metricfire.com/blog/graphite-graphing-and-monitoring-tool/" target="_blank" rel="noopener">Graphite Graphing and Monitoring tool — MetricFire</a></li>
+          <li><a href="https://aws.amazon.com/timestream/" target="_blank" rel="noopener">Time Series Database — Amazon Timestream — AWS</a></li>
+          <li><a href="https://aws.amazon.com/blogs/database/amazon-timestream-for-influxdb-expanding-managed-open-source-time-series-databases-for-data-driven-insights-and-real-time-decision-making/" target="_blank" rel="noopener">Amazon Timestream for InfluxDB: Expanding managed open source time series databases</a></li>
+          <li><a href="https://www.infoq.com/news/2025/10/amazon-timestream-influxdb3/" target="_blank" rel="noopener">Amazon Timestream for InfluxDB Adds Support for InfluxDB 3 Core and Enterprise — InfoQ</a></li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="graph-databases.html"><span class="dir">Previous</span>Graph Databases</a>
+          <a class="next" href="search-engine-databases.html"><span class="dir">Next</span>Search-Engine / Full-Text Search</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

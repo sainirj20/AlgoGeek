@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Ticket Booking System | Object Oriented Design | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Object Oriented Design</a><span class="sep">/</span><span class="current">Movie Ticket Booking System</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Object Oriented Design overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#actors-and-use-cases">Actors &amp; Use Cases</a></li>
+        <li><a href="#key-classes">Key Classes</a></li>
+        <li><a href="#class-diagram">Class Diagram</a></li>
+        <li><a href="#key-flow-activity-diagram">Key Flow: Holding Seats</a></li>
+        <li><a href="#key-flow-sequence-diagram">Key Flow: Concurrent Selection</a></li>
+        <li><a href="#design-patterns-applied">Design Patterns Applied</a></li>
+        <li><a href="#code-skeleton">Code Skeleton</a></li>
+        <li><a href="#extensibility-and-edge-cases">Extensibility &amp; Edge Cases</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">OBJECT ORIENTED DESIGN</span>
+          <h1>Design a Movie Ticket Booking System</h1>
+        </div>
+
+        <p><em>A movie-ticket-booking system reuses the class-modeling shape of the parking-lot problem (a physical resource, a catalog of types, a session lifecycle) but layers on the one thing parking lots mostly don't have: a strict two-phase <strong>hold-then-pay</strong> reservation with a hard concurrency guarantee &mdash; exactly one of two customers racing for the same seat can ever win it. That single requirement is why interviewers love this problem: it forces a genuine state machine (a booking's lifecycle from HELD to CONFIRMED, EXPIRED, or CANCELLED), a scheduling relationship (one movie playing across many halls at many times), and the sharpest atomic-update question of the whole OOD interview loop &mdash; seat-hold-as-compare-and-set. Treat it as the template for any "reserve now, pay within N minutes, or lose the hold" problem; the same shape reappears in flight/event-seat booking, hotel-room holds, and restaurant table reservations.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the booking system for a cinema chain: customers browse which movies are playing (or coming soon), pick a specific show &mdash; a movie at a specific cinema hall and a specific start time &mdash; and select one or more specific seats for that show. Because a physical seat can only ever be occupied by one paying customer, the system's hardest requirement is preventing <strong>double-booking</strong>: two customers must never both walk away believing they hold the same seat for the same show. A selected seat isn't booked outright; it's <strong>held</strong> for a short window (e.g. 10 minutes) while the customer pays by card or wallet, and the hold is released automatically if payment doesn't complete in time. A successful payment produces a confirmed booking and a printable/QR ticket; a customer can later cancel, subject to a refund policy. An Admin manages the catalog: movies, scheduled shows, hall layouts, and pricing. Interviewers use this problem to see whether you can design a believable hold/expire state machine, whether your seat-locking design is provably race-free (not just "add a lock" hand-waved away), and whether you notice that "a seat" and "this seat, for this one show, right now" are two different concepts that deserve two different classes.</p>
+
+        <h2 id="requirements">Requirements</h2>
+        <ol>
+          <li>The system lists movies that are <strong>currently showing</strong> and movies <strong>coming soon</strong>.</li>
+          <li>Each movie has <strong>multiple shows</strong> scheduled across <strong>multiple cinema halls (screens)</strong> and <strong>multiple showtimes</strong>.</li>
+          <li>Each hall has a fixed <strong>seating layout</strong>: rows of seats, each seat carrying a <strong>seat type</strong> (Regular, Premium, or Recliner).</li>
+          <li>A customer selects a specific <strong>show</strong> and <strong>one or more specific seats</strong> for that show.</li>
+          <li>The system must guarantee that <strong>no two customers can ever hold or book the same seat for the same show</strong> &mdash; the hard, non-negotiable requirement this whole design is built around.</li>
+          <li>A selected seat is <strong>held/reserved for a short window</strong> (e.g. 10 minutes) while the customer completes payment; if payment doesn't complete within that window, the hold is <strong>released automatically</strong> so the seat becomes available to someone else.</li>
+          <li>Payment is accepted by <strong>card or wallet</strong>.</li>
+          <li>A successfully paid booking produces a <strong>booking confirmation</strong> with a printable / QR-code <strong>ticket</strong>.</li>
+          <li>A customer can <strong>cancel</strong> a confirmed booking, subject to a <strong>refund policy</strong> (e.g. full refund up to N hours before showtime, none after).</li>
+          <li>Admin can <strong>add movies</strong>, <strong>schedule shows</strong>, <strong>configure halls/seating layouts</strong>, and <strong>set pricing</strong>.</li>
+        </ol>
+
+        <h2 id="actors-and-use-cases">Actors &amp; Use Cases</h2>
+        <p>Three actors touch the system, and each initiates use cases none of the others can:</p>
+        <ul>
+          <li><strong>Customer</strong> &mdash; browses movies/shows, selects seats, pays, receives a confirmation, and can cancel a booking. The only actor who spends money in this scenario.</li>
+          <li><strong>Admin</strong> &mdash; configures the catalog: movies, shows, halls, and pricing. Never touches a single customer's booking.</li>
+          <li><strong>System</strong> &mdash; not a person; the background component that places and releases seat holds, expires unpaid holds once their window elapses, and sends booking confirmations. Modeling it as its own actor keeps "who initiated this" honest: a hold doesn't expire itself, the System does it on a timer, and a seat doesn't lock itself, the System does it in direct response to a customer's seat selection.</li>
+        </ul>
+        <p>Primary use cases: <strong>Search Movies / Shows</strong>, <strong>Select Seats</strong>, <strong>Hold Seats</strong>, <strong>Make Payment</strong>, <strong>Confirm Booking</strong>, <strong>Cancel Booking</strong>, <strong>Expire Unpaid Hold</strong>, and <strong>Manage Show</strong> (admin: movies, halls, pricing).</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 840 480" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Use case diagram: Customer, Admin, and System actors connected to eight use cases inside the Movie Ticket Booking System boundary">
+            <rect x="150" y="40" width="520" height="400" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-dasharray="6,4"/>
+            <text x="410" y="64" text-anchor="middle" font-size="14" font-weight="700" fill="var(--color-primary-dark)">Movie Ticket Booking System</text>
+
+            <g stroke="var(--color-text-muted)" stroke-width="1.3" fill="none">
+              <line x1="72" y1="150" x2="165" y2="110"/>
+              <line x1="72" y1="150" x2="165" y2="190"/>
+              <line x1="72" y1="150" x2="165" y2="270"/>
+              <line x1="72" y1="150" x2="435" y2="110"/>
+              <line x1="72" y1="150" x2="435" y2="190"/>
+
+              <line x1="72" y1="370" x2="165" y2="350"/>
+
+              <line x1="768" y1="264" x2="655" y2="110"/>
+              <line x1="768" y1="264" x2="655" y2="270"/>
+              <line x1="768" y1="264" x2="655" y2="350"/>
+            </g>
+
+            <g font-size="12" fill="var(--color-text)">
+              <circle cx="55" cy="120" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="130" x2="55" y2="164" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="144" x2="70" y2="144" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="164" x2="42" y2="189" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="164" x2="68" y2="189" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="206" text-anchor="middle">Customer</text>
+
+              <circle cx="55" cy="340" r="10" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="350" x2="55" y2="384" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="40" y1="364" x2="70" y2="364" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="384" x2="42" y2="409" stroke="var(--color-primary)" stroke-width="2"/>
+              <line x1="55" y1="384" x2="68" y2="409" stroke="var(--color-primary)" stroke-width="2"/>
+              <text x="55" y="426" text-anchor="middle">Admin</text>
+
+              <circle cx="785" cy="230" r="10" fill="none" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="785" y1="240" x2="785" y2="274" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="770" y1="254" x2="800" y2="254" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="785" y1="274" x2="772" y2="299" stroke="var(--color-accent)" stroke-width="2"/>
+              <line x1="785" y1="274" x2="798" y2="299" stroke="var(--color-accent)" stroke-width="2"/>
+              <text x="785" y="316" text-anchor="middle" fill="var(--color-accent-dark)">System</text>
+            </g>
+
+            <g font-size="11" fill="var(--color-text)">
+              <ellipse cx="275" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="106" text-anchor="middle">Search Movies</text>
+              <text x="275" y="120" text-anchor="middle">&amp; Shows</text>
+
+              <ellipse cx="275" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="194" text-anchor="middle">Select Seats</text>
+
+              <ellipse cx="275" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="274" text-anchor="middle">Cancel Booking</text>
+
+              <ellipse cx="275" cy="350" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="275" y="346" text-anchor="middle">Manage Show</text>
+              <text x="275" y="360" text-anchor="middle" font-size="9">(Movies / Halls / Pricing)</text>
+
+              <ellipse cx="545" cy="110" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="114" text-anchor="middle">Hold Seats</text>
+
+              <ellipse cx="545" cy="190" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="194" text-anchor="middle">Make Payment</text>
+
+              <ellipse cx="545" cy="270" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="274" text-anchor="middle">Confirm Booking</text>
+
+              <ellipse cx="545" cy="350" rx="110" ry="30" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"/>
+              <text x="545" y="346" text-anchor="middle">Expire Unpaid</text>
+              <text x="545" y="360" text-anchor="middle">Hold</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 1. Use-case diagram: Customer drives search/select/pay/cancel; System owns seat-hold placement, hold expiry, and booking confirmation; Admin owns the catalog. Hold Seats sits on the System's side because the actual lock is a System-executed atomic operation, even though the Customer's seat selection is what triggers it.</div>
+        </div>
+
+        <h2 id="key-classes">Key Classes</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td>Movie</td><td>Catalog entry: title, duration, language, genre, rating, and a NOW_SHOWING / COMING_SOON status.</td></tr>
+            <tr><td>Cinema</td><td>The physical venue/theatre; owns and composes its CinemaHalls.</td></tr>
+            <tr><td>CinemaHall</td><td>One physical screen/auditorium inside a Cinema; composed of a fixed seating layout of Seats.</td></tr>
+            <tr><td>Seat <em>(Regular, Premium, Recliner via a <code>SeatType</code> field)</em></td><td>A single physical seat belonging to one hall's layout; the seat type is a property of the seat, not a subclass &mdash; same reasoning as ParkingSpot's SpotType field elsewhere on this site.</td></tr>
+            <tr><td>Show</td><td>One scheduled screening: a specific Movie, in a specific CinemaHall, at a specific start time; owns the per-seat-type price for that showtime and materializes one ShowSeat per physical Seat when it's scheduled.</td></tr>
+            <tr><td>ShowSeat</td><td>The live, mutable status of one physical Seat for one specific Show &mdash; FREE / HELD / BOOKED, plus a hold-expiry timestamp. This is the record the atomic seat-hold operation updates.</td></tr>
+            <tr><td>Booking</td><td>One customer's reservation against one Show; owns a BookingStatus state machine, a hold-expiry timestamp, and one or more BookedSeats.</td></tr>
+            <tr><td>BookedSeat</td><td>An immutable line-item owned by a Booking: which seat (via its ShowSeat) was locked, and at what price, at booking time.</td></tr>
+            <tr><td>BookingStatus</td><td>The state (HELD, CONFIRMED, EXPIRED, CANCELLED) a Booking moves through, with transitions guarded so illegal jumps (e.g. EXPIRED &rarr; CONFIRMED) are rejected outright.</td></tr>
+            <tr><td>Payment</td><td>A single payment attempt against a Booking &mdash; method (card or wallet), amount, and status.</td></tr>
+            <tr><td>Account (Customer, Admin)</td><td>Abstract authenticated user; Customer browses/books/pays/cancels, Admin manages the movie/show/hall/pricing catalog.</td></tr>
+            <tr><td>Ticket</td><td>The printable / QR-code artifact generated on booking confirmation &mdash; kept as its own concern since "reprint/resend this ticket" shouldn't require touching the Booking's own state.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="class-diagram">Class Diagram</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1060 860" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="UML class diagram for the Movie Ticket Booking system">
+            <defs>
+              <marker id="mtbTriangle" viewBox="0 0 20 14" refX="18" refY="7" markerWidth="18" markerHeight="14" orient="auto">
+                <path d="M1,1 L18,7 L1,13 Z" fill="#ffffff" stroke="var(--color-primary)" stroke-width="1.2"/>
+              </marker>
+              <marker id="mtbDiamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" orient="auto">
+                <path d="M1,6 L10,1 L19,6 L10,11 Z" fill="var(--color-primary-dark)" stroke="var(--color-primary-dark)" stroke-width="1"/>
+              </marker>
+              <marker id="mtbArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)"/>
+              </marker>
+            </defs>
+
+            <!-- relationship lines -->
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none">
+              <line x1="850" y1="75" x2="810" y2="75" marker-start="url(#mtbDiamond)"/>
+              <line x1="700" y1="130" x2="700" y2="170" marker-start="url(#mtbDiamond)"/>
+              <line x1="130" y1="170" x2="130" y2="130" marker-end="url(#mtbArrow)"/>
+              <polyline points="240,190 270,150 650,150 650,130" marker-end="url(#mtbArrow)"/>
+              <line x1="240" y1="245" x2="300" y2="255" marker-start="url(#mtbDiamond)"/>
+              <line x1="530" y1="255" x2="590" y2="230" marker-end="url(#mtbArrow)"/>
+              <line x1="130" y1="380" x2="130" y2="320" marker-end="url(#mtbArrow)"/>
+              <line x1="240" y1="465" x2="300" y2="440" marker-start="url(#mtbDiamond)"/>
+              <line x1="415" y1="380" x2="415" y2="340" marker-end="url(#mtbArrow)"/>
+              <polyline points="240,520 270,520 270,670 300,670" marker-end="url(#mtbArrow)"/>
+              <polyline points="20,465 8,465 8,787 20,787" marker-end="url(#mtbArrow)"/>
+              <line x1="70" y1="760" x2="70" y2="710" marker-end="url(#mtbTriangle)"/>
+              <line x1="190" y1="760" x2="190" y2="710" marker-end="url(#mtbTriangle)"/>
+            </g>
+            <g font-size="9" fill="var(--color-text-muted)">
+              <text x="712" y="150">1</text>
+              <text x="140" y="148">1</text>
+              <text x="655" y="145">1..*</text>
+              <text x="140" y="410">1..*</text>
+              <text x="250" y="435">1</text>
+              <text x="420" y="365">1</text>
+              <text x="12" y="620">0..*</text>
+              <text x="250" y="405">1</text>
+            </g>
+
+            <!-- Movie -->
+            <g>
+              <rect x="20" y="20" width="220" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="20" y1="54" x2="240" y2="54" stroke="var(--color-primary)"/>
+              <line x1="20" y1="96" x2="240" y2="96" stroke="var(--color-primary)"/>
+              <text x="130" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Movie</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="30" y="70">- title: String</text>
+                <text x="30" y="84">- durationMinutes: int</text>
+                <text x="30" y="112">+ getStatus(): MovieStatus</text>
+              </g>
+            </g>
+
+            <!-- CinemaHall -->
+            <g>
+              <rect x="590" y="20" width="220" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="590" y1="54" x2="810" y2="54" stroke="var(--color-primary)"/>
+              <line x1="590" y1="96" x2="810" y2="96" stroke="var(--color-primary)"/>
+              <text x="700" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">CinemaHall</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="600" y="70">- hallId: String</text>
+                <text x="600" y="84">- seats: List&lt;Seat&gt;</text>
+                <text x="600" y="112">+ getSeats(): List&lt;Seat&gt;</text>
+              </g>
+            </g>
+
+            <!-- Cinema -->
+            <g>
+              <rect x="850" y="20" width="170" height="110" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="850" y1="56" x2="1020" y2="56" stroke="var(--color-primary)"/>
+              <line x1="850" y1="102" x2="1020" y2="102" stroke="var(--color-primary)"/>
+              <text x="935" y="38" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text-muted)">&laquo;Singleton-ish&raquo;</text>
+              <text x="935" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Cinema</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="858" y="74">- cinemaId: String</text>
+                <text x="858" y="88">- halls: List&lt;CinemaHall&gt;</text>
+                <text x="858" y="120">+ getHalls(): List&lt;CinemaHall&gt;</text>
+              </g>
+            </g>
+
+            <!-- Show -->
+            <g>
+              <rect x="20" y="170" width="220" height="150" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="20" y1="204" x2="240" y2="204" stroke="var(--color-primary)"/>
+              <line x1="20" y1="260" x2="240" y2="260" stroke="var(--color-primary)"/>
+              <text x="130" y="192" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Show</text>
+              <g font-size="9.3" fill="var(--color-text)">
+                <text x="30" y="220">- showId: String</text>
+                <text x="30" y="234">- startTime: Instant</text>
+                <text x="30" y="248">- priceBySeatType: Map&lt;SeatType,BigDecimal&gt;</text>
+                <text x="30" y="276">+ priceFor(type): BigDecimal</text>
+                <text x="30" y="290">+ getShowSeats(): List&lt;ShowSeat&gt;</text>
+                <text x="30" y="304">+ findShowSeat(seatId): ShowSeat</text>
+              </g>
+            </g>
+
+            <!-- ShowSeat -->
+            <g>
+              <rect x="300" y="170" width="230" height="170" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="300" y1="204" x2="530" y2="204" stroke="var(--color-accent-dark)"/>
+              <line x1="300" y1="260" x2="530" y2="260" stroke="var(--color-accent-dark)"/>
+              <text x="415" y="192" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">ShowSeat</text>
+              <g font-size="9" fill="var(--color-text)">
+                <text x="310" y="220">- status: ShowSeatStatus</text>
+                <text x="310" y="234">- heldByBookingId: String</text>
+                <text x="310" y="248">- heldUntil: Instant</text>
+                <text x="310" y="276">+ holdIfFree(bkgId,ttl): boolean</text>
+                <text x="310" y="290">+ release(bkgId): void</text>
+                <text x="310" y="304">+ confirm(bkgId): boolean</text>
+              </g>
+            </g>
+
+            <!-- Seat -->
+            <g>
+              <rect x="590" y="170" width="220" height="120" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="590" y1="204" x2="810" y2="204" stroke="var(--color-primary)"/>
+              <line x1="590" y1="260" x2="810" y2="260" stroke="var(--color-primary)"/>
+              <text x="700" y="192" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Seat</text>
+              <g font-size="9.3" fill="var(--color-text)">
+                <text x="600" y="220">- seatId: String</text>
+                <text x="600" y="234">- row: String, number: int</text>
+                <text x="600" y="248">- seatType: SeatType</text>
+                <text x="600" y="276">+ getSeatType(): SeatType</text>
+              </g>
+            </g>
+
+            <!-- SeatType enum -->
+            <g>
+              <rect x="850" y="170" width="170" height="100" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="850" y1="204" x2="1020" y2="204" stroke="var(--color-accent-dark)"/>
+              <text x="935" y="186" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text)">&laquo;enum&raquo;</text>
+              <text x="935" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">SeatType</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="860" y="220">REGULAR</text>
+                <text x="860" y="236">PREMIUM</text>
+                <text x="860" y="252">RECLINER</text>
+              </g>
+            </g>
+
+            <!-- Booking -->
+            <g>
+              <rect x="20" y="380" width="220" height="170" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="20" y1="414" x2="240" y2="414" stroke="var(--color-primary)"/>
+              <line x1="20" y1="470" x2="240" y2="470" stroke="var(--color-primary)"/>
+              <text x="130" y="402" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Booking</text>
+              <g font-size="9.3" fill="var(--color-text)">
+                <text x="30" y="430">- bookingId: String</text>
+                <text x="30" y="444">- status: BookingStatus</text>
+                <text x="30" y="458">- holdExpiresAt: Instant</text>
+                <text x="30" y="486">+ transitionTo(next): void</text>
+                <text x="30" y="500">+ totalAmount(): BigDecimal</text>
+                <text x="30" y="514">+ isHoldExpired(now): boolean</text>
+              </g>
+            </g>
+
+            <!-- BookedSeat -->
+            <g>
+              <rect x="300" y="380" width="230" height="120" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="300" y1="414" x2="530" y2="414" stroke="var(--color-accent-dark)"/>
+              <line x1="300" y1="456" x2="530" y2="456" stroke="var(--color-accent-dark)"/>
+              <text x="415" y="402" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">BookedSeat</text>
+              <g font-size="9.3" fill="var(--color-text)">
+                <text x="310" y="430">- bookedSeatId: String</text>
+                <text x="310" y="444">- priceAtBooking: BigDecimal</text>
+                <text x="310" y="472">+ getShowSeat(): ShowSeat</text>
+                <text x="310" y="486">+ getPrice(): BigDecimal</text>
+              </g>
+            </g>
+
+            <!-- BookingStatus enum -->
+            <g>
+              <rect x="590" y="380" width="220" height="110" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="590" y1="414" x2="810" y2="414" stroke="var(--color-accent-dark)"/>
+              <text x="700" y="396" text-anchor="middle" font-size="9" font-style="italic" fill="var(--color-text)">&laquo;enum&raquo;</text>
+              <text x="700" y="408" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">BookingStatus</text>
+              <g font-size="9.5" fill="var(--color-text)">
+                <text x="600" y="430">HELD</text>
+                <text x="600" y="446">CONFIRMED</text>
+                <text x="600" y="462">EXPIRED</text>
+                <text x="600" y="478">CANCELLED</text>
+              </g>
+            </g>
+
+            <!-- Payment -->
+            <g>
+              <rect x="300" y="600" width="230" height="140" fill="var(--color-formula-bg)" stroke="var(--color-primary)" stroke-width="1.5"/>
+              <line x1="300" y1="634" x2="530" y2="634" stroke="var(--color-primary)"/>
+              <line x1="300" y1="704" x2="530" y2="704" stroke="var(--color-primary)"/>
+              <text x="415" y="622" text-anchor="middle" font-size="13" font-weight="700" fill="var(--color-text)">Payment</text>
+              <g font-size="9.3" fill="var(--color-text)">
+                <text x="310" y="650">- paymentId: String</text>
+                <text x="310" y="664">- method: PaymentMethod</text>
+                <text x="310" y="678">- amount: BigDecimal</text>
+                <text x="310" y="692">- status: PaymentStatus</text>
+                <text x="310" y="720">+ process(): void</text>
+              </g>
+            </g>
+
+            <!-- Account -->
+            <g>
+              <rect x="20" y="600" width="220" height="110" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+              <line x1="20" y1="634" x2="240" y2="634" stroke="var(--color-accent-dark)"/>
+              <line x1="20" y1="676" x2="240" y2="676" stroke="var(--color-accent-dark)"/>
+              <text x="130" y="622" text-anchor="middle" font-size="12" font-weight="700" fill="var(--color-text)">Account {abstract}</text>
+              <g font-size="10" fill="var(--color-text)">
+                <text x="30" y="650">- accountId: String</text>
+                <text x="30" y="664">- email: String</text>
+                <text x="30" y="692">+ getEmail(): String</text>
+              </g>
+            </g>
+
+            <!-- Customer / Admin subclasses -->
+            <g font-size="10" fill="var(--color-text)" text-anchor="middle">
+              <rect x="20" y="760" width="100" height="55" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <text x="70" y="792">Customer</text>
+              <rect x="140" y="760" width="100" height="55" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.3"/>
+              <text x="190" y="792">Admin</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 2. Cinema &mdash;filled diamond&rarr; CinemaHall &mdash;filled diamond&rarr; Seat (composition: seats belong to their hall's fixed layout). Show associates Movie and CinemaHall (it references both, owns neither) and is itself &mdash;filled diamond&rarr; ShowSeat, one live status record per physical Seat for that showtime. Booking is &mdash;filled diamond&rarr; BookedSeat, an immutable per-seat line-item, which in turn associates back to the ShowSeat it locked. Account is abstract with Customer and Admin as hollow-triangle subclasses.</div>
+        </div>
+        <p><strong>Why two seat-related classes &mdash; ShowSeat and BookedSeat &mdash; instead of one?</strong> It's tempting to add a single <code>occupied</code>/<code>bookedBy</code> field directly on <code>Seat</code> and call it done, but a physical Seat outlives any one Show &mdash; the same seat is FREE for tonight's 7pm screening and simultaneously already BOOKED for tomorrow's 2pm screening of a different movie. Status has to be scoped <em>per show</em>, not per seat, which is exactly what <code>ShowSeat</code> is: the single mutable source of truth for "is this physical seat, for this specific show, FREE / HELD / BOOKED right now." It has to be mutable and shared because two different customers' requests race to change the very same row &mdash; it's the record the atomic hold operation in the next section updates. <code>BookedSeat</code>, by contrast, is an immutable line-item owned by exactly one <code>Booking</code> &mdash; a private receipt of which seat, at what price, that one customer's booking claimed &mdash; the same role an <code>OrderItem</code> plays inside an <code>Order</code> elsewhere in this style of design. Collapsing the two into one class creates an ownership contradiction: in UML, composition assumes exactly one owning "whole," and a single record can't simultaneously be owned by the <code>Show</code> that created it <em>and</em> owned by the <code>Booking</code> that claimed it. Splitting them resolves it cleanly: <code>Show</code> owns the live, shared status record; <code>Booking</code> owns its own private snapshot that merely <em>references</em> the ShowSeat rather than owning it.</p>
+
+        <h2 id="key-flow-activity-diagram">Key Flow: Holding and Booking Seats (Activity Diagram)</h2>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 660" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Activity diagram for holding and booking seats">
+            <defs>
+              <marker id="mtbActArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#mtbActArrow)" fill="none">
+              <line x1="300" y1="30" x2="300" y2="54"/>
+              <line x1="300" y1="110" x2="300" y2="154"/>
+              <line x1="300" y1="234" x2="300" y2="258"/>
+              <line x1="300" y1="313" x2="300" y2="337"/>
+              <line x1="300" y1="392" x2="300" y2="416"/>
+              <line x1="300" y1="496" x2="300" y2="520"/>
+              <line x1="300" y1="575" x2="300" y2="598"/>
+              <line x1="400" y1="194" x2="460" y2="194"/>
+              <line x1="580" y1="222" x2="580" y2="246"/>
+              <line x1="400" y1="456" x2="470" y2="456"/>
+              <line x1="590" y1="484" x2="590" y2="508"/>
+            </g>
+            <circle cx="300" cy="20" r="10" fill="var(--color-primary)"/>
+
+            <rect x="160" y="55" width="280" height="55" rx="22" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="76" text-anchor="middle" font-size="11" fill="var(--color-text)">Customer selects seats</text>
+            <text x="300" y="90" text-anchor="middle" font-size="11" fill="var(--color-text)">for a show</text>
+
+            <polygon points="300,154 400,194 300,234 200,194" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="188" text-anchor="middle" font-size="10" fill="var(--color-text)">All selected seats</text>
+            <text x="300" y="202" text-anchor="middle" font-size="10" fill="var(--color-text)">currently free?</text>
+            <text x="330" y="174" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="252" y="222" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="460" y="166" width="240" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="580" y="189" text-anchor="middle" font-size="10" fill="var(--color-text)">Show unavailable seats;</text>
+            <text x="580" y="203" text-anchor="middle" font-size="10" fill="var(--color-text)">ask customer to reselect</text>
+
+            <circle cx="580" cy="258" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="580" cy="258" r="6" fill="var(--color-primary)"/>
+
+            <rect x="160" y="258" width="280" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="281" text-anchor="middle" font-size="11" fill="var(--color-text)">Place temporary hold on</text>
+            <text x="300" y="295" text-anchor="middle" font-size="11" fill="var(--color-text)">selected seats; start expiry timer</text>
+
+            <rect x="160" y="337" width="280" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="360" text-anchor="middle" font-size="11" fill="var(--color-text)">Customer completes payment</text>
+            <text x="300" y="374" text-anchor="middle" font-size="11" fill="var(--color-text)">within the hold window</text>
+
+            <polygon points="300,416 400,456 300,496 200,456" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5"/>
+            <text x="300" y="450" text-anchor="middle" font-size="10" fill="var(--color-text)">Payment completed</text>
+            <text x="300" y="464" text-anchor="middle" font-size="10" fill="var(--color-text)">before hold expires?</text>
+            <text x="330" y="436" font-size="11" font-weight="700" fill="var(--color-primary-dark)">No</text>
+            <text x="252" y="484" font-size="11" font-weight="700" fill="var(--color-primary-dark)">Yes</text>
+
+            <rect x="470" y="428" width="240" height="56" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="590" y="451" text-anchor="middle" font-size="10" fill="var(--color-text)">Release seats back to</text>
+            <text x="590" y="465" text-anchor="middle" font-size="10" fill="var(--color-text)">available; hold discarded</text>
+
+            <circle cx="590" cy="520" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="590" cy="520" r="6" fill="var(--color-primary)"/>
+
+            <rect x="160" y="520" width="280" height="55" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"/>
+            <text x="300" y="543" text-anchor="middle" font-size="11" fill="var(--color-text)">Confirm Booking; generate</text>
+            <text x="300" y="557" text-anchor="middle" font-size="11" fill="var(--color-text)">ticket (printable / QR code)</text>
+
+            <circle cx="300" cy="610" r="12" fill="none" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <circle cx="300" cy="610" r="6" fill="var(--color-primary)"/>
+          </svg>
+          <div class="diagram-caption">Figure 3. Activity diagram for holding and booking: seat availability is re-checked before any hold is placed, the hold carries its own expiry timer independent of the payment step, and the booking is only confirmed if payment lands inside that window &mdash; otherwise the seats fall back to available for someone else.</div>
+        </div>
+
+        <h2 id="key-flow-sequence-diagram">Key Flow: Concurrent Seat Selection (Sequence Diagram)</h2>
+        <p>This is the flow interviewers care about most for this problem: two customers, A and B, both try to select and hold the <em>same</em> seat for the <em>same</em> show within milliseconds of each other. The design only works if the seat-hold operation is a single <strong>atomic, conditional</strong> step &mdash; never a "check if it's free, then set it to held" pair of steps in application code, because both requests can read "free" before either one writes "held," and both would believe they won.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" role="img" aria-label="Sequence diagram for two customers concurrently selecting the same seat">
+            <defs>
+              <marker id="mtbSeqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+                <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-primary)"/>
+              </marker>
+            </defs>
+
+            <g stroke="var(--color-border)" stroke-width="1.3" stroke-dasharray="4,4">
+              <line x1="80" y1="60" x2="80" y2="420"/>
+              <line x1="250" y1="60" x2="250" y2="420"/>
+              <line x1="460" y1="60" x2="460" y2="420"/>
+              <line x1="670" y1="60" x2="670" y2="420"/>
+              <line x1="880" y1="60" x2="880" y2="420"/>
+            </g>
+            <g fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.5">
+              <rect x="20" y="20" width="120" height="40"/>
+              <rect x="190" y="20" width="120" height="40"/>
+              <rect x="370" y="20" width="180" height="40"/>
+              <rect x="610" y="20" width="120" height="40"/>
+              <rect x="820" y="20" width="120" height="40"/>
+            </g>
+            <g font-size="10" font-weight="700" fill="var(--color-text)" text-anchor="middle">
+              <text x="80" y="44">Customer A</text>
+              <text x="250" y="44">Customer B</text>
+              <text x="460" y="38">SeatLock</text>
+              <text x="460" y="50">Service</text>
+              <text x="670" y="44">ShowSeat</text>
+              <text x="880" y="44">Booking</text>
+            </g>
+
+            <path d="M610,64 L940,64 L960,84 L960,114 L610,114 Z" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.2"/>
+            <path d="M940,64 L940,84 L960,84 Z" fill="none" stroke="var(--color-formula-border)" stroke-width="1.2"/>
+            <text x="620" y="79" font-size="9" fill="var(--color-formula-text)">Each holdIfFree() call below is ONE atomic</text>
+            <text x="620" y="92" font-size="9" fill="var(--color-formula-text)">conditional UPDATE &mdash; never check-then-set.</text>
+            <text x="620" y="105" font-size="8" font-style="italic" fill="var(--color-formula-text)">WHERE show_id=? AND seat_id=? AND status='FREE'</text>
+
+            <rect x="40" y="75" width="440" height="55" fill="none" stroke="var(--color-text-muted)" stroke-width="1.3"/>
+            <path d="M40,75 L78,75 L78,87 L40,87 Z" fill="var(--color-formula-bg)" stroke="var(--color-text-muted)" stroke-width="1"/>
+            <text x="46" y="84" font-size="9" fill="var(--color-text)">par</text>
+            <text x="86" y="84" font-size="9" fill="var(--color-text)">[near-simultaneous requests for the same seat]</text>
+            <line x1="40" y1="103" x2="480" y2="103" stroke="var(--color-text-muted)" stroke-width="1" stroke-dasharray="4,3"/>
+
+            <g stroke="var(--color-primary)" stroke-width="1.4" fill="none" marker-end="url(#mtbSeqArrow)">
+              <line x1="80" y1="93" x2="460" y2="93"/>
+              <line x1="250" y1="118" x2="460" y2="118"/>
+              <line x1="460" y1="160" x2="670" y2="160"/>
+              <line x1="460" y1="225" x2="670" y2="225"/>
+              <line x1="460" y1="290" x2="880" y2="290"/>
+            </g>
+            <g stroke="var(--color-text-muted)" stroke-width="1.2" fill="none" stroke-dasharray="5,4" marker-end="url(#mtbSeqArrow)">
+              <line x1="670" y1="190" x2="460" y2="190"/>
+              <line x1="670" y1="255" x2="460" y2="255"/>
+              <line x1="880" y1="320" x2="460" y2="320"/>
+              <line x1="460" y1="355" x2="80" y2="355"/>
+              <line x1="460" y1="385" x2="250" y2="385"/>
+            </g>
+
+            <g font-size="9.5" fill="var(--color-text)">
+              <text x="90" y="88">holdSeat(showId, seatA) [t0]</text>
+              <text x="260" y="113">holdSeat(showId, seatA) [t0+&#949;]</text>
+              <text x="470" y="155">holdIfFree(seatA, bookingA, ttl)</text>
+              <text x="500" y="185">true &mdash; 1 row updated (A wins)</text>
+              <text x="470" y="220">holdIfFree(seatA, bookingB, ttl)</text>
+              <text x="490" y="250">false &mdash; 0 rows (already HELD)</text>
+              <text x="470" y="285">create(HELD, custA, seatA, expiry)</text>
+              <text x="640" y="315">bookingId</text>
+              <text x="90" y="350">seat held &mdash; pay within 10 min</text>
+              <text x="90" y="380">409 seat unavailable &mdash; pick another</text>
+            </g>
+          </svg>
+          <div class="diagram-caption">Figure 4. Sequence diagram: Customer A and Customer B both request the same seat at nearly the same instant. SeatLockService issues one atomic <code>holdIfFree()</code> call per request &mdash; each is a single conditional UPDATE, never a separate read-then-write &mdash; so exactly one call reports success (1 row affected) and the other reports failure (0 rows affected) with no window in between where both could believe they'd won.</div>
+        </div>
+        <p>Notice what is <em>not</em> in this diagram: there is no message that reads the seat's status followed by a later message that writes it. <code>holdIfFree(bookingId, ttl)</code> is a single request/response pair from SeatLockService's point of view, and underneath it, a single SQL statement (or a single in-process compare-and-set) from ShowSeat's point of view. Whichever caller's UPDATE the database applies first is the one that sees its WHERE clause still match (<code>status='FREE'</code>) and therefore affects exactly one row; by the time the second UPDATE runs, that row's status has already flipped to <code>'HELD'</code>, so its WHERE clause matches zero rows and it fails cleanly. There is no gap for both requests to observe "free" simultaneously, because the check and the write are the same database operation.</p>
+
+        <h2 id="design-patterns-applied">Design Patterns Applied</h2>
+        <p>Name the pattern and the forcing function together, not just the name:</p>
+        <ul>
+          <li><strong>Singleton</strong> (a single Cinema, or a chain-wide BookingService instance) &mdash; brief mention only: for a single-venue deployment, one in-memory Cinema/BookingService per running instance is a defensible cardinality match, for the same reason ParkingLot was defensible elsewhere on this site. It's a much weaker fit here than in the parking-lot case, though, since a real cinema chain naturally wants many Cinema instances (one per city) behind a shared BookingService layer &mdash; so treat this as "could justify it for one venue," not as the load-bearing pattern of this design.</li>
+          <li><strong>State</strong> (BookingStatus: HELD &rarr; CONFIRMED / EXPIRED / CANCELLED) &mdash; this is the pattern doing real work here. Centralizing legality in a single guarded <code>transitionTo()</code> (backed by an explicit allowed-transitions table) means there's exactly one place that knows a CONFIRMED booking can move to CANCELLED but never back to HELD, and that an EXPIRED booking is a dead end. Scattering <code>if (booking.getStatus() == HELD)</code> checks across the codebase instead would drift out of sync the moment a new status (say, REFUNDED) is added.</li>
+          <li><strong>Strategy</strong> (pricing) &mdash; <code>Show.priceFor(seatType)</code> is backed by a pricing policy that can vary by seat type and by showtime (a weekday matinee vs. a Friday-night peak-hour show), without ExitPanel-equivalent booking code ever branching on <code>if (isWeekend)</code>. A new policy (holiday surcharge, promo code) is a new implementation of the same "price this seat type for this show" contract.</li>
+          <li><strong>Observer</strong> (hold-expiry warnings and waitlists) &mdash; two independent uses: (1) a Booking in the HELD state publishes a "hold expiring soon" event a minute or two before its timer runs out, and a notification observer pushes a warning to the customer's in-progress checkout page; (2) when a sold-out Show's cancellation frees a seat, ShowSeat/Show publishes a "seat became free" event, and any customer subscribed to that show's waitlist is notified &mdash; without ShowSeat needing to know anything about how notifications are delivered.</li>
+        </ul>
+
+        <h2 id="code-skeleton">Code Skeleton</h2>
+        <p>Fields and method signatures only &mdash; not a runnable program. <code>ShowSeat.holdIfFree()</code> is the one method worked out in full, since the atomic hold is exactly what interviewers probe on for this problem.</p>
+
+        <pre><code>public enum SeatType {
+    REGULAR, PREMIUM, RECLINER
+}
+
+public enum ShowSeatStatus {
+    FREE, HELD, BOOKED
+}</code></pre>
+
+        <pre><code>public class Seat {
+    private final String seatId;
+    private final String row;
+    private final int number;
+    private final SeatType seatType;
+
+    public Seat(String seatId, String row, int number, SeatType seatType) { /* ... */ }
+
+    public SeatType getSeatType() { return seatType; }
+}</code></pre>
+
+        <pre><code>public class Show {
+    private final String showId;
+    private final Movie movie;
+    private final CinemaHall hall;
+    private final Instant startTime;
+    private final Map&lt;SeatType, BigDecimal&gt; priceBySeatType;
+    private final List&lt;ShowSeat&gt; showSeats;   // one per physical Seat in the hall
+
+    public Show(String showId, Movie movie, CinemaHall hall, Instant startTime,
+                Map&lt;SeatType, BigDecimal&gt; priceBySeatType) {
+        /* ... also materializes one ShowSeat(FREE) per Seat in hall.getSeats() */
+    }
+
+    public BigDecimal priceFor(SeatType type);
+    public List&lt;ShowSeat&gt; getShowSeats();
+    public Optional&lt;ShowSeat&gt; findShowSeat(String seatId);
+}</code></pre>
+
+        <pre><code>public class ShowSeat {
+    private final Show show;
+    private final Seat seat;
+    private volatile ShowSeatStatus status;
+    private String heldByBookingId;
+    private Instant heldUntil;
+
+    /**
+     * Atomically claims this seat for {@code bookingId} only if it is currently FREE.
+     * In-process this is a guarded compare-and-set; at the DB layer it is ONE
+     * conditional UPDATE -- never a separate "read status" then "write status":
+     *
+     *   UPDATE show_seat
+     *   SET status = 'HELD', held_by = ?, held_until = ?
+     *   WHERE show_id = ? AND seat_id = ? AND status = 'FREE'
+     *
+     * Exactly one concurrent caller sees rowsAffected == 1 and wins the hold;
+     * every other caller sees 0 rows affected and loses immediately.
+     */
+    public synchronized boolean holdIfFree(String bookingId, Instant heldUntil) {
+        if (status != ShowSeatStatus.FREE) {
+            return false;                      // lost the race, or already booked
+        }
+        this.status = ShowSeatStatus.HELD;
+        this.heldByBookingId = bookingId;
+        this.heldUntil = heldUntil;
+        return true;                           // won the race
+    }
+
+    public synchronized boolean confirm(String bookingId) {
+        if (status != ShowSeatStatus.HELD || !bookingId.equals(heldByBookingId)) {
+            return false;
+        }
+        this.status = ShowSeatStatus.BOOKED;
+        return true;
+    }
+
+    public synchronized void release(String bookingId) {
+        if (status == ShowSeatStatus.HELD &amp;&amp; bookingId.equals(heldByBookingId)) {
+            this.status = ShowSeatStatus.FREE;
+            this.heldByBookingId = null;
+            this.heldUntil = null;
+        }
+    }
+
+    public boolean isHoldExpired(Instant now) {
+        return status == ShowSeatStatus.HELD &amp;&amp; heldUntil != null &amp;&amp; now.isAfter(heldUntil);
+    }
+
+    public ShowSeatStatus getStatus() { return status; }
+}</code></pre>
+
+        <pre><code>public enum BookingStatus {
+    HELD, CONFIRMED, EXPIRED, CANCELLED;
+
+    private static final Map&lt;BookingStatus, Set&lt;BookingStatus&gt;&gt; ALLOWED = Map.of(
+        HELD,      EnumSet.of(CONFIRMED, EXPIRED, CANCELLED),
+        CONFIRMED, EnumSet.of(CANCELLED),
+        EXPIRED,   EnumSet.noneOf(BookingStatus.class),
+        CANCELLED, EnumSet.noneOf(BookingStatus.class)
+    );
+
+    boolean canTransitionTo(BookingStatus next) {
+        return ALLOWED.getOrDefault(this, Set.of()).contains(next);
+    }
+}
+
+public class Booking {
+    private final String bookingId;
+    private final Customer customer;
+    private final Show show;
+    private final List&lt;BookedSeat&gt; bookedSeats;
+    private BookingStatus status;
+    private final Instant holdExpiresAt;
+    private Payment payment;
+
+    public void transitionTo(BookingStatus next) {
+        if (!status.canTransitionTo(next)) {
+            throw new IllegalStateException(
+                "Booking " + bookingId + " cannot move from " + status + " to " + next);
+        }
+        this.status = next;
+    }
+
+    public boolean isHoldExpired(Instant now) {
+        return status == BookingStatus.HELD &amp;&amp; now.isAfter(holdExpiresAt);
+    }
+
+    public BigDecimal totalAmount() {
+        return bookedSeats.stream()
+                .map(BookedSeat::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+}</code></pre>
+
+        <pre><code>public class Payment {
+    private final String paymentId;
+    private final Booking booking;
+    private final PaymentMethod method;     // CARD, WALLET
+    private final BigDecimal amount;
+    private PaymentStatus status;           // PENDING, SUCCESS, FAILED, REFUNDED
+    private String gatewayTransactionRef;
+
+    public void process();                  // calls out to the card/wallet gateway
+    public void markSuccess(String transactionRef);
+    public void markFailed(String reason);
+    public void refund(BigDecimal amount);
+}</code></pre>
+
+        <h2 id="extensibility-and-edge-cases">Extensibility &amp; Edge Cases</h2>
+        <ul>
+          <li><strong>Group bookings (all-or-nothing).</strong> A customer selecting 4 seats together must not end up with 3 held and 1 unavailable. The hold operation has to loop over every requested ShowSeat's <code>holdIfFree()</code> inside a single transaction (or hold in a stable, deterministic seat-ID order to avoid deadlock across concurrent group requests), and if <em>any</em> seat in the group fails to hold, every seat it already holds in that same group must be released immediately &mdash; a partial hold is a worse outcome than no hold, since it silently locks out other customers from seats this booking will never actually confirm.</li>
+          <li><strong>Hold expiring while a payment webhook is in flight.</strong> A payment gateway's success callback can arrive after the background sweeper has already expired the hold and released the seats. The fix is to make both paths (the expiry sweep and the webhook handler) go through the same guarded <code>Booking.transitionTo()</code>/<code>ShowSeat.confirm()</code>: whichever one runs first wins the transition, and the loser's attempted transition is simply illegal and rejected (HELD&rarr;EXPIRED already happened, so a late CONFIRMED transition throws) rather than silently double-processing. A late-arriving "payment succeeded" against an already-expired booking should trigger an automatic refund, not a confirmed booking for seats that may have already been re-sold.</li>
+          <li><strong>Dynamic / peak pricing.</strong> Because pricing is already a Strategy behind <code>Show.priceFor(seatType)</code>, adding surge pricing for a blockbuster's opening weekend, or a lower matinee rate, is a new pricing policy plugged in at Show-creation time &mdash; Booking, BookedSeat, and Payment don't change at all.</li>
+          <li><strong>Waitlists for sold-out shows.</strong> A customer can join a per-Show waitlist when no seats of their preferred type remain. When a Booking transitions to CANCELLED (or a hold expires) and its seats become FREE again, the Observer mechanism used for hold-expiry warnings fires a "seat available" event that the waitlist service consumes, notifying waitlisted customers in FIFO order &mdash; the same decoupled pattern as a library's reservation-queue notification, just triggered by cancellation instead of a return.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <div class="qa-item">
+          <div class="qa-q">Walk through, in detail, exactly how the atomic seat-hold prevents two customers from double-booking the same seat.</div>
+          <div class="qa-a">The naive, broken version does two separate steps in application code: read ShowSeat.status, check it equals FREE, then write status = HELD. Between the read and the write there is a window where a second concurrent request can also read FREE, because the first request hasn't written yet. Both requests then believe they've won. The fix collapses "check" and "set" into one indivisible operation: a conditional UPDATE such as <code>UPDATE show_seat SET status='HELD', held_by=?, held_until=? WHERE show_id=? AND seat_id=? AND status='FREE'</code>, executed by the database as a single atomic statement, with the caller inspecting the affected-row count rather than a separately-read status flag. The database serializes concurrent writers to the same row internally, so exactly one UPDATE's WHERE clause still matches 'FREE' at the moment it executes and affects 1 row; the other UPDATE runs against a row that already reads 'HELD' and affects 0 rows. The loser is told immediately and definitively that the seat is gone &mdash; there is no ambiguous state and no window where both requests could have succeeded.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does a group booking of multiple seats need to be all-or-nothing, and how would you implement that?</div>
+          <div class="qa-a">If a customer requests seats A, B, and C together and the system holds A and B but fails on C (already taken), leaving A and B held is worse than failing the whole request: those two seats are now locked away from every other customer for the full hold window even though this booking can never actually be confirmed without seat C. The fix is to treat the whole group as one atomic unit: attempt <code>holdIfFree()</code> on every requested ShowSeat, and if any single call returns false, immediately call <code>release()</code> on every ShowSeat that did succeed in this same request before returning failure to the customer. To avoid deadlock when two different group requests contend for overlapping seats, hold in a fixed, deterministic order (e.g. sorted by seatId) across all requests, or wrap the whole group's holds in a single database transaction so the rollback is automatic on any failure.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How is the hold-expiry timer actually implemented &mdash; a background sweeper or checking expiry lazily on read?</div>
+          <div class="qa-a">Both approaches are used together in practice, because each covers the other's blind spot. A background sweeper (a scheduled job scanning for HELD bookings/ShowSeats whose holdExpiresAt has passed) guarantees that seats get released even if nobody ever looks at that booking again &mdash; important because an abandoned checkout tab never triggers a lazy check on its own. Lazy expiry-check-on-read (calling <code>isHoldExpired(now)</code> whenever a seat or booking is touched, e.g. right before attempting to confirm payment) guarantees correctness at the exact moment it matters even if the sweeper hasn't run yet, since sweepers typically run on an interval (say, every 30 seconds) and can't promise instantaneous expiry. Relying on the sweeper alone risks a payment confirming against a seat that's technically past its window but hasn't been swept yet; relying on lazy checks alone risks seats sitting held indefinitely if nothing ever reads them again. Using both, with the guarded transitionTo()/holdIfFree() logic as the single source of truth either path goes through, means whichever one notices the expiry first wins and the seat is released exactly once.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">This is all in-memory/single-process reasoning. How would this seat-locking idea actually be built in a real, horizontally-scaled production system?</div>
+          <div class="qa-a">The OOD-level idea &mdash; an atomic conditional claim on a shared record &mdash; maps directly onto two well-known HLD building blocks. Most commonly, it becomes a distributed lock in Redis: <code>SET seat:{showId}:{seatId} bookingId NX PX 600000</code> atomically claims the seat only if the key doesn't already exist (NX), with a built-in TTL (PX) that handles hold expiry automatically without a separate sweeper. Alternatively, it stays as a row in a relational database with the same conditional-UPDATE-plus-affected-row-count technique shown above, relying on the database's own row-level locking and transaction isolation to serialize concurrent writers, with a TTL column plus a sweeper (or a database job) handling expiry. Either way, this page deliberately stops at "here's the object model and the concurrency contract it must satisfy" rather than going further into which of those two you'd pick, how you'd shard by showId, or how you'd handle a Redis failover &mdash; that's a different, HLD-level conversation, and recognizing that boundary out loud is itself a good signal in the interview.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why model Seat and ShowSeat as two different classes instead of just putting an "occupied" flag on Seat?</div>
+          <div class="qa-a">A physical Seat's identity (which row, which number, which seat type) is stable across every show ever screened in that hall, but its booking status is not &mdash; the same seat is FREE for tonight's 7pm show and BOOKED for tomorrow's 2pm show of a different movie. Status has to be scoped per (Show, Seat) pair, not per Seat alone, or you'd need one Seat object per showtime, which duplicates the hall's physical layout data unnecessarily. ShowSeat exists precisely to hold that per-show status (and the hold-expiry timestamp, which is meaningless without a specific show's timer) while Seat stays a simple, reusable description of the physical seat itself.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why use the State pattern (a guarded transitionTo()) for BookingStatus instead of a plain enum with scattered if/else checks?</div>
+          <div class="qa-a">Centralizing legality in one place (the ALLOWED transition table plus transitionTo()) means there's exactly one source of truth for "can a HELD booking become CONFIRMED" or "can a CANCELLED booking ever come back to HELD" (no), rather than that logic being reimplemented, and inevitably drifting inconsistent, at every call site that happens to touch a booking's status &mdash; the payment webhook handler, the expiry sweeper, and the cancellation endpoint would each need their own copy of the rules otherwise. It's also far easier to unit test exhaustively (enumerate every from/to pair) and to extend safely when a new status like REFUNDED is added later.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does Strategy fit the pricing logic better than hardcoding the price in the Show class?</div>
+          <div class="qa-a">Ticket pricing realistically varies along more than one axis at once &mdash; seat type, day of week, time of day, and eventually promotions or dynamic demand-based pricing for a blockbuster's opening weekend. If that logic is hardcoded as conditionals inside Show, every new pricing rule means editing and re-testing a class that has nothing to do with pricing policy. Making pricing an interchangeable strategy behind a single "price this seat type for this show" contract lets a new policy be added as a new implementation, with Show, Booking, and Payment completely untouched.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Where does the Observer pattern show up in this design, and why not just call the notification code directly?</div>
+          <div class="qa-a">Two places: warning a customer that their held seat is about to expire, and notifying a waitlisted customer when a cancellation frees up a seat on a sold-out show. In both cases, the class that detects the event (ShowSeat/Booking for expiry, ShowSeat for a freed seat) has no business knowing how a customer gets notified &mdash; email, push notification, and SMS can each subscribe independently, and a new channel is a new observer, not a new branch inside ShowSeat. Calling notification code directly from ShowSeat would also make ShowSeat's atomic hold logic much harder to reason about and test, since a class responsible for a concurrency-critical operation would suddenly also own I/O to third-party notification services.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does cancellation and the refund policy fit into the BookingStatus state machine?</div>
+          <div class="qa-a">Cancellation is a CONFIRMED &rarr; CANCELLED transition (the ALLOWED table above permits it), triggered by the customer. The refund amount is a policy question separate from the state transition itself &mdash; e.g. a RefundPolicy strategy that looks at how far before showtime the cancellation happens (full refund beyond N hours, partial or none inside that window) and returns an amount for Payment.refund() to apply. Keeping refund-policy logic out of Booking.transitionTo() itself matters: the state machine should only ever answer "is this transition legal," not "how much money moves" &mdash; mixing the two would make the transition table's unit tests entangled with pricing/refund business rules that change independently.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if a customer's payment fails after their seats were successfully held?</div>
+          <div class="qa-a">A failed payment must not leave the seats held indefinitely: Payment.markFailed() should trigger an immediate ShowSeat.release() and a Booking.transitionTo(CANCELLED) (or, more precisely, a rejection back to an unheld state) rather than waiting for the hold-expiry timer, so the seats become available to other customers right away instead of sitting locked for the remainder of the original window. This is a different, "fail fast" trigger for the same release() path the expiry sweeper uses &mdash; both should go through the same guarded, idempotent release operation so a retried or duplicate "payment failed" webhook can't double-release (or, worse, release a seat that a subsequent request already re-held for someone else).</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Key Takeaways</div>
+          <ul>
+            <li>The whole problem hinges on one atomic operation: <code>holdIfFree()</code> as a single conditional UPDATE (compare-and-set), never a separate check-then-write &mdash; that's what actually prevents double-booking, not "add a lock" hand-waved away.</li>
+            <li>Split seat status into two classes: ShowSeat (the live, per-show, mutable status the atomic hold touches) and BookedSeat (an immutable, Booking-owned line-item snapshot) &mdash; collapsing them creates a composition-ownership contradiction.</li>
+            <li>BookingStatus is a real State-pattern candidate, not a decorative enum: HELD &rarr; CONFIRMED / EXPIRED / CANCELLED with a guarded transitionTo() is what keeps the expiry sweeper, the payment webhook, and the cancellation endpoint from disagreeing about what's legal.</li>
+            <li>Group bookings must hold seats all-or-nothing &mdash; a partial hold silently locks out other customers from seats that booking will never confirm.</li>
+            <li>Pricing as a Strategy is what lets peak-hour pricing, a promo, or a seat-type surcharge land without touching Booking, BookedSeat, or Payment.</li>
+          </ul>
+        </div>
+
+        <h2 id="references">References</h2>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Compare-and-swap" target="_blank" rel="noopener">"Compare-and-swap"</a> &mdash; general reference for the atomic conditional-update technique behind <code>ShowSeat.holdIfFree()</code> and the seat-hold race discussion above.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Optimistic_concurrency_control" target="_blank" rel="noopener">"Optimistic concurrency control"</a> &mdash; general reference for the broader hold-then-confirm reservation pattern (optimistic claim, verify on commit) used for seat locking in this design.</p>
+        <p>Wikipedia, <a href="https://en.wikipedia.org/wiki/State_pattern" target="_blank" rel="noopener">"State pattern"</a> &mdash; general reference for the BookingStatus guarded-transition design discussed in Design Patterns Applied above.</p>
+
+        <div class="page-nav">
+          <a class="prev" href="stack-overflow.html"><span class="dir">Previous</span>Stack Overflow</a>
+          <a class="next" href="atm.html"><span class="dir">Next</span>ATM</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

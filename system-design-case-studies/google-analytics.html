@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing Google Analytics — User Analytics Dashboard and Pipeline | System Design — Case Studies | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Case Studies</a><span class="sep">/</span><span class="current">Google Analytics Pipeline</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Case Studies overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-schema">Data Model and Database Schema</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design">Low-Level Design</a></li>
+        <li><a href="#deep-dive-client-sdk-event-collection-and-beacon-delivery">Deep Dive — Client SDK, Event Collection, and Beacon Delivery</a></li>
+        <li><a href="#deep-dive-sessionization-and-identity-stitching">Deep Dive — Sessionization and Identity Stitching</a></li>
+        <li><a href="#deep-dive-real-time-stream-processing-path">Deep Dive — Real-Time Stream Processing Path</a></li>
+        <li><a href="#deep-dive-batch-processing-and-pre-aggregation-pipeline">Deep Dive — Batch Processing and Pre-Aggregation Pipeline</a></li>
+        <li><a href="#data-partitioning-and-sharding">Data Partitioning and Sharding</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing Google Analytics — User Analytics Dashboard and Pipeline</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough: requirements, capacity estimation, beacon/collection API, the GA4-style event data model, a Lambda-architecture pipeline with a real-time speed layer and an exact batch layer, sessionization &amp; identity stitching, HyperLogLog/Count-Min Sketch approximation at huge cardinality, sharding &amp; replication, privacy/consent trade-offs, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a web/app analytics platform, in the style of Google Analytics, that lets any site or app embed a lightweight client SDK and get, in return, a full analytics product: a near-real-time "active users right now" and "top pages right now" dashboard, plus rich historical reporting — funnels, cohort/retention analysis, and multi-touch attribution — computed over the same underlying stream of user-interaction events. The platform must ingest events from billions of page views, screen views, clicks, and custom application events per day across millions of independently-owned properties (sites/apps), at extreme and highly bursty scale (a single viral post or ad campaign can spike a property's traffic 100&times; in minutes), while respecting strict, jurisdiction-varying user-privacy constraints (IP anonymization, consent-based tracking, configurable data retention).</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It is one of the canonical "design a pipeline with two very different consumers of the same data" problems: one consumer (the live dashboard) wants an answer *now*, approximately; the other (the historical report) wants an answer *eventually*, exactly. A strong candidate recognizes this as a Lambda-architecture-shaped problem from the first minute, and treats "how do we reconcile a fast-but-approximate number with a slow-but-exact number, and is it okay if they briefly disagree?" as the load-bearing design question — not an afterthought.</p>
+
+        <h3>Why is this different from a generic "event pipeline" problem?</h3>
+        <ul>
+          <li>Cardinality is the central technical challenge, not raw volume: "how many <em>unique</em> users visited today" is a much harder counting problem at billions-of-events scale than "how many events happened," and forces a conversation about approximate algorithms (HyperLogLog, Count-Min Sketch) that most other pipeline designs never need.</li>
+          <li>The product itself has two fundamentally different SLAs baked in — a real-time tile that must update within seconds, and a historical report that is allowed (indeed expected) to be computed the next day, exactly.</li>
+          <li>Privacy is not a bolt-on compliance checkbox here — consent state directly changes what data is collected at all, and the pipeline has to degrade gracefully (modeled/estimated conversions) rather than simply erroring out when consent is withheld.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope before drawing boxes.</p>
+        <ol>
+          <li>Are we designing for a single property (one site) or a true multi-tenant platform serving millions of independently-owned sites/apps, each with its own property id?</li>
+          <li>What's the acceptable staleness for the "active users right now" dashboard — a couple of seconds, or is "within the last minute" good enough?</li>
+          <li>Do historical reports need to be exact (unsampled) for core metrics, or is statistical sampling acceptable for ad-hoc, high-cardinality exploratory queries?</li>
+          <li>Do we need to support custom, developer-defined events and parameters, or just a fixed set of built-in events (page_view, click, purchase)?</li>
+          <li>What level of cross-device identity stitching is in scope — signed-in User-ID only, or also probabilistic/device-graph matching for anonymous users?</li>
+          <li>What data retention window do we need to support, and does it need to be configurable per property (e.g. for GDPR compliance)?</li>
+          <li>Do we need to support multi-touch attribution modeling across marketing channels, or is that explicitly out of scope for this pass?</li>
+          <li>What consent signals must the pipeline honor (e.g. Consent Mode-style "analytics_storage denied"), and what should happen to data when consent is denied — drop it entirely, or fall back to a modeled/estimated aggregate?</li>
+          <li>Is raw, event-level data export required (e.g. a BigQuery-style export), or is aggregated reporting the only externally-visible surface?</li>
+          <li>Single region to start, or does the design need to anticipate multi-region ingestion and reporting from day one?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't stall waiting for every answer — state a reasonable assumption out loud ("I'll assume core aggregate metrics stay unsampled and only long-tail exploratory queries get sampled, since silently sampling a customer's top-line traffic number would undermine trust in the whole product") and keep moving. This is exactly the kind of judgment call interviewers want to see.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Accept interaction events (page_view, screen_view, click, scroll, custom application events) from client SDKs embedded in millions of independently-owned properties.</li>
+          <li>Serve a near-real-time dashboard showing "active users right now," "top pages/screens right now," and similar live counters, updated within a few seconds of the underlying events.</li>
+          <li>Serve rich historical reports: exact daily/hourly rollups, multi-step funnels, cohort/retention tables, and dimensional breakdowns (e.g. by country, device, traffic source, date).</li>
+          <li>Support an event-based data model with event-scoped, session-scoped, and user-scoped dimensions (the modern GA4 event model), rather than a rigid page-view/session-hit model.</li>
+          <li>Group raw events into sessions using an inactivity-timeout boundary, and stitch events from the same logical user across devices/sessions into a single user identity.</li>
+          <li>De-duplicate events delivered more than once (client retries, network re-sends) so counts are never inflated by delivery mechanics.</li>
+          <li>Support multi-touch attribution modeling across marketing touchpoints leading to a conversion.</li>
+          <li>Honor per-user consent state (e.g. tracking declined) — adjusting or withholding data collection and falling back to modeled/estimated metrics where required.</li>
+          <li>Support configurable data retention windows per property, and IP anonymization for privacy compliance.</li>
+          <li>Support raw event-level export for downstream, ad-hoc analysis (a BigQuery-style export surface).</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Massive, bursty ingestion throughput:</strong> the collection tier must absorb an ordinary day's traffic and also a 100&times; spike on a single property without dropping events or falling over.</li>
+          <li><strong>Low-latency real-time path:</strong> the "active users now" number must reflect events from the last few seconds, continuously, at all times.</li>
+          <li><strong>Exactness for core historical metrics:</strong> the batch-computed daily/hourly rollups must be exact — no sampling — even though the real-time numbers are approximate.</li>
+          <li><strong>Durability:</strong> once a client SDK successfully sends an event, it must never be silently lost by the pipeline, even if a downstream consumer lags or crashes.</li>
+          <li><strong>Extreme unique-count scale:</strong> computing distinct active users at the scale of hundreds of millions of users per day must not require storing every distinct user id in memory.</li>
+          <li><strong>Eventual consistency between real-time and batch is acceptable</strong> — a small, temporary disagreement between the "live" number and next-day's exact number is an expected, communicated trade-off, not a bug.</li>
+          <li><strong>Horizontal scalability</strong> of the collection tier, the streaming layer, and the batch layer independently, since their load and latency profiles differ enormously.</li>
+          <li><strong>Strict privacy compliance:</strong> IP anonymization, consent-aware collection, and configurable retention must be enforced at the collection tier, not bolted on downstream.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on the client SDK/beacon delivery, sessionization/identity stitching, the real-time streaming path with approximate algorithms, and the batch pre-aggregation pipeline. We call out but don't build the internals of a full self-serve report-builder UI, a machine-learning-based anomaly/insight surface (e.g. automated "traffic spike" insights), or a full server-side tagging/consent-management-platform integration — real products, but layered on top of this core pipeline.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly and let them drive every downstream decision.</p>
+
+        <h3>Traffic Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          500 million monthly active tracked users (MAU) across all properties; assume a blended DAU/MAU ratio of ~40% for a platform aggregating traffic across millions of independent sites/apps &rarr; ~200 million daily active tracked users
+          <br>~50 events/user/day average (page views, clicks, scrolls, custom events combined)
+          <br>Daily event volume &asymp; 200,000,000 &times; 50 &asymp; 10 billion events/day
+          <br>Average ingestion QPS = 10,000,000,000 &divide; 86,400 &asymp; 115,700/sec
+          <br>Peak QPS (&asymp;4&times; average, accounting for diurnal patterns and campaign spikes even after global timezone smoothing) &asymp; 460,000&ndash;500,000/sec
+          <br>Design the collection tier for &ge;500,000 events/sec sustained peak, with short single-property bursts far higher, absorbed by client-side batching and backpressure (see Deep Dive below)
+        </div>
+
+        <h3>Durable Pub/Sub Log Throughput</h3>
+        <div class="formula-box">
+          <span class="formula-label">Sizing</span>
+          Average raw event size on the wire (event name, params, user/session/device dimensions) &asymp; 600 bytes
+          <br>At 500,000/sec peak: ingest &asymp; 300 MB/sec into the durable log
+          <br>With replication factor 3 for durability: &asymp; 900 MB/sec aggregate broker write I/O
+          <br>Log retention window sized for reprocessing safety (24h buffer, not permanent storage): 300 MB/sec &times; 86,400 sec &asymp; 25.9 TB raw &times; RF 3 &asymp; &asymp;78 TB transient buffer &mdash; sized for a mid-size Pub/Sub or Kafka cluster, not the long-term data lake
+        </div>
+
+        <h3>Raw Event Storage in the Data Lake / Warehouse</h3>
+        <div class="formula-box">
+          <span class="formula-label">Sizing</span>
+          10 billion events/day &times; &asymp;600 bytes &asymp; 6 TB/day raw (pre-columnar-compression)
+          <br>Columnar storage (Parquet-like encoding, typical 4&ndash;6&times; compression for repetitive event/param data) &asymp; 1.2 TB/day compressed
+          <br>Retention: 14 months default for event-level data (matching typical GA4-style default retention), configurable per property up to several years
+          <br>Total compressed raw-event storage at 14-month (&asymp;426-day) retention &asymp; 1.2 TB/day &times; 426 &asymp; &asymp;511 TB
+        </div>
+
+        <h3>Real-Time Serving Store — Approximate vs. Exact Counting</h3>
+        <div class="formula-box">
+          <span class="formula-label">Cardinality trade-off</span>
+          One HyperLogLog sketch per actively-reporting property per 1-minute window (for "unique active users now") &asymp; 12 KB at standard precision (&lt;2% error)
+          <br>Across &asymp;5 million concurrently-active properties: 5,000,000 &times; 12 KB &asymp; &asymp;60 GB total in-memory footprint for the real-time unique-user layer
+          <br>Contrast: storing the actual distinct user-id set for a single large property's traffic could alone require gigabytes &mdash; HyperLogLog trades a small, bounded error for a &gt;99% memory reduction at this scale
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Monthly / daily active tracked users</td><td>500M / ~200M</td></tr>
+          <tr><td>Average events / sec</td><td>~115,700</td></tr>
+          <tr><td>Peak (steady-state) events / sec</td><td>~460,000&ndash;500,000</td></tr>
+          <tr><td>Durable log ingest at peak (RF=3)</td><td>~900 MB/sec aggregate</td></tr>
+          <tr><td>Durable log transient buffer (24h, RF=3)</td><td>~78 TB</td></tr>
+          <tr><td>Raw event storage, compressed, 14-month retention</td><td>~511 TB</td></tr>
+          <tr><td>Real-time HLL sketch footprint (~5M active properties)</td><td>~60 GB in-memory</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Client SDKs talk to the collection tier through a single, versioned beacon/collect contract. Every field needed for sessionization, identity stitching, and rendering travels with the request so the collection tier never needs a side lookup just to accept and durably log it.</p>
+
+        <h3>Client SDK Event-Send API (Collect / Beacon Endpoint)</h3>
+        <pre><code>POST https://collect.analytics.example.com/g/collect?v=2&amp;tid=G-PROPERTY123
+
+Request body (batched hits, sent via navigator.sendBeacon or pixel fallback):
+{
+  "client_id": "1234567890.1699999999",   // first-party cookie / app-instance id, persists across sessions
+  "user_id": "u_98213" | null,             // present only if the user is signed in (for identity stitching)
+  "session_id": "1699999999",              // client-generated, stable for the duration of one session
+  "consent": { "analytics_storage": "granted" | "denied" },
+  "events": [
+    {
+      "name": "page_view",                 // or "screen_view", "click", "purchase", custom event name
+      "timestamp_micros": 1699999999123456,
+      "params": {                          // event-scoped dimensions
+        "page_location": "https://example.com/pricing",
+        "page_title": "Pricing",
+        "engagement_time_msec": 4200
+      }
+    }
+  ],
+  "user_properties": { "plan_tier": "free" },   // user-scoped dimensions
+  "session_properties": { "traffic_source": "google / cpc" }, // session-scoped dimensions
+  "device": { "category": "desktop", "os": "macOS", "browser": "Chrome" },
+  "geo_hint": { "country": "US" }          // derived server-side from (anonymized) IP, not client-supplied
+}
+
+Response 204 No Content   // beacon fire-and-forget; SDK does not block on a body</code></pre>
+
+        <h3>Server-Side Ingestion Endpoint Contract</h3>
+        <pre><code>Collector responsibilities on receipt of a batch:
+  1. Validate tid (property id) and basic payload shape; reject malformed batches fast (4xx)
+  2. Anonymize/truncate the source IP before it is used for anything but a coarse geo lookup
+  3. Check consent.analytics_storage; if denied, drop identifying fields and route to the
+     consent-denied / modeling path instead of the standard event path (see Security &amp; Privacy)
+  4. Stamp a server-side receipt timestamp and a dedupe key (client_id + session_id + event
+     timestamp + event name) for downstream idempotent processing
+  5. Append the enriched event to the durable pub/sub log, partitioned by property_id
+  6. Return 204 immediately &mdash; the SDK never waits on downstream processing
+
+Errors: 400 malformed batch &middot; 401/403 unknown or disabled property id
+        413 batch too large (client should reduce batch size) &middot; 429 property-level quota exceeded</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Call out explicitly that the collect endpoint returns as fast as possible with no downstream dependency — the entire real-time-vs-batch split only works because the collector's job ends the moment the event is durably logged. Any synchronous call from the collector into the streaming or batch layer would reintroduce exactly the kind of coupling this architecture exists to avoid.
+        </div>
+
+        <h2 id="data-model-and-database-schema">Data Model and Database Schema</h2>
+
+        <h3>The Event Model — GA4-Style Event-Scoped, Session-Scoped, and User-Scoped Dimensions</h3>
+        <p>Every interaction is modeled as an <strong>event</strong> — a name plus a flexible set of parameters — rather than the older, rigid page-view/session-hit model. Dimensions attach at three different scopes, and knowing which scope a dimension belongs to is what makes funnels, cohorts, and user-level reporting all fall out of the same underlying table.</p>
+        <table>
+          <tr><th>Scope</th><th>Examples</th><th>Lifetime</th></tr>
+          <tr><td>Event-scoped</td><td>page_location, page_title, engagement_time_msec, click target</td><td>Attached to one single event only</td></tr>
+          <tr><td>Session-scoped</td><td>traffic_source, session_id, session_number, landing_page</td><td>Constant for the duration of one session</td></tr>
+          <tr><td>User-scoped</td><td>user_id (if signed in), plan_tier, first_seen_date, lifetime_value</td><td>Persists across sessions and devices for that logical user</td></tr>
+        </table>
+
+        <h3>Raw Event Table (Data Lake / Warehouse, Columnar)</h3>
+        <table>
+          <tr><th colspan="2">Table: raw_events (partitioned by event_date + property_id, columnar/Parquet-like)</th></tr>
+          <tr><td>event_id (surrogate key)</td><td>uuid</td></tr>
+          <tr><td>property_id</td><td>text</td></tr>
+          <tr><td>event_name</td><td>text (e.g. page_view, purchase, custom_event_name)</td></tr>
+          <tr><td>event_timestamp</td><td>timestamp (micros)</td></tr>
+          <tr><td>event_params</td><td>map&lt;text, variant&gt; &mdash; event-scoped key/value pairs</td></tr>
+          <tr><td>user_pseudo_id (client_id)</td><td>text &mdash; first-party device/browser identifier</td></tr>
+          <tr><td>user_id</td><td>text, nullable &mdash; present only when signed in</td></tr>
+          <tr><td>session_id / session_number</td><td>text / int</td></tr>
+          <tr><td>user_properties</td><td>map&lt;text, variant&gt; &mdash; user-scoped dimensions</td></tr>
+          <tr><td>device / geo</td><td>struct(category, os, browser) / struct(country, region &mdash; derived from anonymized IP)</td></tr>
+          <tr><td>ingest_receipt_ts</td><td>timestamp &mdash; server receipt time, used for pipeline-lag monitoring</td></tr>
+        </table>
+
+        <h3>Pre-Aggregated Rollup Table (Serving Layer)</h3>
+        <table>
+          <tr><th colspan="2">Table: daily_metrics_rollup (PK: property_id + date + country + device_category)</th></tr>
+          <tr><td>property_id + date + country + device_category (composite PK)</td><td>text + date + text + text</td></tr>
+          <tr><td>active_users</td><td>bigint &mdash; exact distinct user_pseudo_id count for this dimension slice</td></tr>
+          <tr><td>sessions</td><td>bigint</td></tr>
+          <tr><td>event_count</td><td>bigint</td></tr>
+          <tr><td>engaged_sessions / engagement_rate</td><td>bigint / float</td></tr>
+          <tr><td>conversions</td><td>bigint &mdash; count of designated conversion events</td></tr>
+          <tr><td>computed_at</td><td>timestamp &mdash; when the batch job produced this row</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: funnel_steps (PK: property_id + funnel_id + date + step_index)</th></tr>
+          <tr><td>property_id + funnel_id + date + step_index (composite PK)</td><td>text + text + date + int</td></tr>
+          <tr><td>step_name</td><td>text (e.g. "viewed_product", "added_to_cart", "purchased")</td></tr>
+          <tr><td>users_reached</td><td>bigint &mdash; exact distinct users who completed this step in order</td></tr>
+          <tr><td>drop_off_rate</td><td>float</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: cohort_retention (PK: property_id + cohort_date + period_index)</th></tr>
+          <tr><td>property_id + cohort_date + period_index (composite PK)</td><td>text + date + int</td></tr>
+          <tr><td>cohort_size</td><td>bigint &mdash; users first seen on cohort_date</td></tr>
+          <tr><td>retained_users</td><td>bigint &mdash; of that cohort, users active in period_index (e.g. week N)</td></tr>
+          <tr><td>retention_rate</td><td>float</td></tr>
+        </table>
+
+        <h3>Why a Columnar Warehouse, Not a Row-Oriented OLTP Database</h3>
+        <p>Reporting queries are overwhelmingly wide scans over a handful of columns (event_name, timestamp, a couple of dimensions) across billions of rows, with almost no single-row point lookups or transactional updates — the textbook case for columnar storage, where only the referenced columns are read off disk and dimension columns compress extremely well due to low cardinality repetition (country, device_category). The pre-aggregated rollup tables sit on top specifically so the interactive dashboard almost never touches the raw columnar event table directly.</p>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Client SDKs (web and app) fire events via beacon to a stateless, horizontally-scaled Collection Tier. The Collection Tier validates, anonymizes, and durably logs every event into a partitioned Pub/Sub log — this is the single durable seam the rest of the system is built around. Two independent consumers read that same log: a Stream Processor (speed layer) that maintains near-real-time approximate aggregates for the live dashboard, and a Batch pipeline that lands raw events in a data lake/warehouse and computes exact rollups, funnels, and cohort tables on a schedule. Both paths feed a shared Serving/Reporting API that the Dashboard queries — routing "right now" queries to the real-time store and historical queries to the rollup tables.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Client SDKs on web and app send beacon events to a load-balanced Collection Tier, which writes durably to a partitioned Pub/Sub log. The log fans out to a Stream Processor speed layer producing near-real-time approximate aggregates, and a Batch pipeline that lands raw events in a data lake and computes exact rollups. Both feed a shared Dashboard and Reporting API.">
+            <style>
+              .ga-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .ga-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .ga-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .ga-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .ga-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .ga-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .ga-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .ga-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .ga-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:#dbe6ff;}
+              .ga-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .ga-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;}
+              .ga-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-ga-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-ga-1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="60" y="10" width="280" height="45" rx="6" class="ga-box"></rect>
+            <text x="200" y="28" text-anchor="middle" class="ga-title">Web SDK (gtag.js)</text>
+            <text x="200" y="42" text-anchor="middle" class="ga-sub">page_view / click / custom events</text>
+
+            <rect x="420" y="10" width="280" height="45" rx="6" class="ga-box"></rect>
+            <text x="560" y="28" text-anchor="middle" class="ga-title">App SDK (Firebase)</text>
+            <text x="560" y="42" text-anchor="middle" class="ga-sub">screen_view / custom app events</text>
+
+            <line x1="200" y1="55" x2="345" y2="94" class="ga-arrow" marker-end="url(#arrow-ga-1)"></line>
+            <line x1="560" y1="55" x2="415" y2="94" class="ga-arrow" marker-end="url(#arrow-ga-1)"></line>
+
+            <rect x="190" y="95" width="380" height="55" rx="6" class="ga-box-strong"></rect>
+            <text x="380" y="116" text-anchor="middle" class="ga-title">Collection Tier (load balanced)</text>
+            <text x="380" y="130" text-anchor="middle" class="ga-sub">validate, anonymize IP, check consent, stamp receipt</text>
+            <text x="380" y="143" text-anchor="middle" class="ga-sub">stateless, horizontally scaled, returns 204 immediately</text>
+
+            <line x1="380" y1="150" x2="380" y2="184" class="ga-arrow" marker-end="url(#arrow-ga-1)"></line>
+
+            <rect x="130" y="185" width="500" height="50" rx="6" class="ga-box-bus"></rect>
+            <text x="380" y="206" text-anchor="middle" class="ga-title-inv">Durable Pub/Sub Log</text>
+            <text x="380" y="220" text-anchor="middle" class="ga-sub-inv">events topic, partitioned by property_id, RF=3</text>
+
+            <line x1="270" y1="235" x2="220" y2="274" class="ga-arrow" marker-end="url(#arrow-ga-1)"></line>
+            <line x1="490" y1="235" x2="540" y2="274" class="ga-arrow" marker-end="url(#arrow-ga-1)"></line>
+            <text x="380" y="255" text-anchor="middle" class="ga-label">fan-out via independent consumer groups</text>
+
+            <rect x="60" y="275" width="320" height="55" rx="6" class="ga-box-strong"></rect>
+            <text x="220" y="296" text-anchor="middle" class="ga-title">Stream Processor (speed layer)</text>
+            <text x="220" y="310" text-anchor="middle" class="ga-sub">windowed aggregation, HLL + Count-Min Sketch</text>
+            <text x="220" y="323" text-anchor="middle" class="ga-sub">approximate, seconds-fresh</text>
+
+            <rect x="400" y="275" width="320" height="55" rx="6" class="ga-box">
+            </rect>
+            <text x="560" y="296" text-anchor="middle" class="ga-title">Batch Pipeline</text>
+            <text x="560" y="310" text-anchor="middle" class="ga-sub">lands raw events in the data lake / warehouse</text>
+            <text x="560" y="323" text-anchor="middle" class="ga-sub">scheduled jobs compute exact rollups</text>
+
+            <line x1="220" y1="330" x2="220" y2="364" class="ga-arrow" marker-end="url(#arrow-ga-1)"></line>
+            <line x1="560" y1="330" x2="560" y2="364" class="ga-arrow" marker-end="url(#arrow-ga-1)"></line>
+
+            <rect x="60" y="365" width="320" height="55" rx="6" class="ga-box-store"></rect>
+            <text x="220" y="386" text-anchor="middle" class="ga-title">Real-Time Serving Store</text>
+            <text x="220" y="400" text-anchor="middle" class="ga-sub">in-memory active-users-now, top-pages-now</text>
+            <text x="220" y="413" text-anchor="middle" class="ga-sub">(HLL sketches, Count-Min Sketch counters)</text>
+
+            <rect x="400" y="365" width="320" height="55" rx="6" class="ga-box-store"></rect>
+            <text x="560" y="386" text-anchor="middle" class="ga-title">Rollup / OLAP Tables</text>
+            <text x="560" y="400" text-anchor="middle" class="ga-sub">daily_metrics_rollup, funnel_steps,</text>
+            <text x="560" y="413" text-anchor="middle" class="ga-sub">cohort_retention (exact, pre-aggregated)</text>
+
+            <line x1="220" y1="420" x2="330" y2="459" class="ga-arrow" marker-end="url(#arrow-ga-1)"></line>
+            <line x1="560" y1="420" x2="450" y2="459" class="ga-arrow" marker-end="url(#arrow-ga-1)"></line>
+
+            <rect x="190" y="460" width="380" height="55" rx="6" class="ga-box-strong"></rect>
+            <text x="380" y="481" text-anchor="middle" class="ga-title">Dashboard / Reporting API</text>
+            <text x="380" y="495" text-anchor="middle" class="ga-sub">routes &quot;right now&quot; to the real-time store,</text>
+            <text x="380" y="508" text-anchor="middle" class="ga-sub">historical queries to the rollup tables</text>
+
+            <line x1="380" y1="515" x2="380" y2="529" class="ga-arrow" marker-end="url(#arrow-ga-1)"></line>
+            <rect x="240" y="530" width="280" height="20" rx="4" class="ga-box-muted"></rect>
+            <text x="380" y="544" text-anchor="middle" class="ga-sub">Dashboards (Realtime + Historical reports)</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level pipeline &mdash; client SDKs feed a stateless Collection Tier that durably logs to a partitioned Pub/Sub topic; a Stream Processor and a Batch Pipeline consume the same log independently (a Lambda-architecture split) and both feed a shared Dashboard/Reporting API.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>The durable Pub/Sub log is the one seam everything is built around:</strong> the Collection Tier's job ends the moment an event is durably appended — it has zero downstream dependency, which is what lets it scale and fail independently of both consumers.</li>
+          <li><strong>Speed layer and batch layer are genuinely independent consumers</strong> of the same log (a classic Lambda architecture) &mdash; a slow or crashed batch job never affects the real-time dashboard's freshness, and vice versa.</li>
+          <li><strong>Approximate vs. exact is a deliberate, scoped trade-off:</strong> only the real-time path uses HyperLogLog/Count-Min Sketch; the batch path recomputes the same metrics exactly, and the two are expected to agree closely but not perfectly.</li>
+          <li><strong>Pre-aggregation is what makes the dashboard fast:</strong> the Reporting API almost never scans raw_events directly &mdash; it reads from rollup tables sized for interactive queries.</li>
+        </ul>
+
+        <h2 id="low-level-design">Low-Level Design</h2>
+        <p>Walk a single <code>page_view</code> event from the moment a browser fires it to the moment it is reflected both in the live "active users now" tile and in tomorrow's exact historical report.</p>
+
+        <h3>Core Event Flow Walkthrough</h3>
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nine numbered steps: a browser fires a page_view event, the SDK batches it client-side, sends it via sendBeacon to the collector, the collector enriches and durably logs it, the stream processor updates real-time approximate aggregates visible within seconds, while independently the batch pipeline later reads the same event from the data lake and computes exact rollups reflected in the next day's historical report.">
+            <style>
+              .ga-circle{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+              .ga-num{font-family:var(--font-sans);font-weight:700;font-size:13px;fill:#ffffff;}
+              .ga-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .ga-sub{font-family:var(--font-sans);font-weight:400;font-size:10px;fill:var(--color-text-muted);}
+              .ga-line{stroke:var(--color-border);stroke-width:2;}
+            </style>
+            <line x1="40" y1="40" x2="40" y2="435" class="ga-line"></line>
+
+            <circle cx="40" cy="40" r="16" class="ga-circle"></circle>
+            <text x="40" y="45" text-anchor="middle" class="ga-num">1</text>
+            <text x="75" y="34" class="ga-title">Browser fires page_view</text>
+            <text x="75" y="49" class="ga-sub">gtag.js captures page_location, title, engagement time</text>
+
+            <circle cx="40" cy="95" r="16" class="ga-circle"></circle>
+            <text x="40" y="100" text-anchor="middle" class="ga-num">2</text>
+            <text x="75" y="89" class="ga-title">SDK batches client-side</text>
+            <text x="75" y="104" class="ga-sub">event added to an in-memory send queue, not sent alone</text>
+
+            <circle cx="40" cy="150" r="16" class="ga-circle"></circle>
+            <text x="40" y="155" text-anchor="middle" class="ga-num">3</text>
+            <text x="75" y="144" class="ga-title">navigator.sendBeacon fires</text>
+            <text x="75" y="159" class="ga-sub">async POST to the collect endpoint (pixel fallback if unsupported)</text>
+
+            <circle cx="40" cy="205" r="16" class="ga-circle"></circle>
+            <text x="40" y="210" text-anchor="middle" class="ga-num">4</text>
+            <text x="75" y="199" class="ga-title">Collector validates and enriches</text>
+            <text x="75" y="214" class="ga-sub">anonymizes IP, checks consent, stamps dedupe key + receipt time</text>
+
+            <circle cx="40" cy="260" r="16" class="ga-circle"></circle>
+            <text x="40" y="265" text-anchor="middle" class="ga-num">5</text>
+            <text x="75" y="254" class="ga-title">Appended to the durable Pub/Sub log</text>
+            <text x="75" y="269" class="ga-sub">partitioned by property_id, RF=3 &mdash; collector returns 204</text>
+
+            <circle cx="40" cy="315" r="16" class="ga-circle"></circle>
+            <text x="40" y="320" text-anchor="middle" class="ga-num">6</text>
+            <text x="75" y="309" class="ga-title">Stream Processor consumes immediately</text>
+            <text x="75" y="324" class="ga-sub">folds the event into the current tumbling-window HLL sketch</text>
+
+            <circle cx="40" cy="370" r="16" class="ga-circle"></circle>
+            <text x="40" y="375" text-anchor="middle" class="ga-num">7</text>
+            <text x="75" y="364" class="ga-title">&quot;Active users now&quot; reflects it within seconds</text>
+            <text x="75" y="379" class="ga-sub">dashboard polls the real-time serving store, not raw events</text>
+
+            <circle cx="40" cy="425" r="16" class="ga-circle"></circle>
+            <text x="40" y="430" text-anchor="middle" class="ga-num">8</text>
+            <text x="75" y="419" class="ga-title">Batch job (next scheduled run) reads the same event</text>
+            <text x="75" y="434" class="ga-sub">from the data lake; computes exact daily rollups, funnels, cohorts</text>
+
+            <circle cx="40" cy="460" r="14" class="ga-circle"></circle>
+            <text x="40" y="465" text-anchor="middle" class="ga-num">9</text>
+            <text x="75" y="460" class="ga-title">Next day's historical report reflects the exact count</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. End-to-end flow for one event &mdash; steps 1&ndash;5 are shared and strictly ordered; steps 6&ndash;7 (speed layer, seconds-fresh) and step 8&ndash;9 (batch layer, next-day exact) proceed independently off the same durably-logged event.</div>
+        </div>
+
+        <p>Note the branch point at step 5: from there on, the real-time path and the batch path are two independent readers of the same immutable, durably-logged event — neither blocks the other, and neither re-derives its input from the other's output. This is exactly what allows the "seconds-fresh but approximate" and "next-day but exact" SLAs to coexist without one compromising the other.</p>
+
+        <h2 id="deep-dive-client-sdk-event-collection-and-beacon-delivery">Deep Dive — Client SDK, Event Collection, and Beacon Delivery</h2>
+        <p>The client SDK's job is to make firing an event essentially free for the host page/app, and to never lose an event to a page unload, a flaky network, or a temporary offline state.</p>
+
+        <h3>navigator.sendBeacon and the Pixel Fallback</h3>
+        <p><code>navigator.sendBeacon()</code> is purpose-built for exactly this use case: it queues an asynchronous, fire-and-forget POST that the browser guarantees to attempt even if the page is being unloaded (a user closing a tab mid-page-view) — something a normal <code>fetch()</code> or XHR call cannot promise, since the browser is free to cancel in-flight requests during unload. For older browsers or environments where <code>sendBeacon</code> is unavailable, the SDK falls back to a 1x1 tracking-pixel <code>&lt;img&gt;</code> request, encoding the event payload in the query string — lower payload-size ceiling and less reliable delivery guarantees, but universally supported.</p>
+
+        <h3>Client-Side Batching</h3>
+        <p>Rather than firing one HTTP request per event, the SDK accumulates events into an in-memory queue and flushes them as a single batched beacon on a short timer (e.g. every 1&ndash;2 seconds) or when the queue reaches a size threshold, whichever comes first. This single change cuts request volume by roughly the average batch size, directly reducing collector-tier load and connection overhead for high-event-rate pages (e.g. a page emitting many scroll/engagement events).</p>
+
+        <h3>Offline and Retry Buffering</h3>
+        <p>If the network is unavailable or the beacon send fails, events are held in a local buffer (in-memory, or <code>localStorage</code>/IndexedDB for app SDKs that need to survive a process restart) and retried with backoff once connectivity returns. Each buffered event carries the client-generated dedupe key described below, so a retried send that actually succeeded once already (but whose acknowledgment was lost) never produces a double count once it reaches the collector.</p>
+
+        <table>
+          <tr><th>Delivery mechanism</th><th>Survives page unload?</th><th>Payload size</th><th>Browser support</th></tr>
+          <tr><td>navigator.sendBeacon (primary)</td><td>Yes &mdash; browser-guaranteed</td><td>Moderate (~64 KB typical limit)</td><td>All modern browsers</td></tr>
+          <tr><td>Image pixel fallback</td><td>Best-effort only</td><td>Small (query-string length limits)</td><td>Universal, including very old browsers</td></tr>
+          <tr><td>fetch() with keepalive</td><td>Best-effort, browser-dependent</td><td>Moderate</td><td>Modern browsers, less consistent unload guarantee than sendBeacon</td></tr>
+        </table>
+
+        <h2 id="deep-dive-sessionization-and-identity-stitching">Deep Dive — Sessionization and Identity Stitching</h2>
+        <p>Raw events arrive as a flat stream; sessionization and identity stitching are what turn that stream into "this user did A, then B, then C in one visit," and "this signed-in user is the same person who browsed anonymously on their phone yesterday."</p>
+
+        <h3>Session Boundary — Inactivity Timeout</h3>
+        <p>A session is a bounded sequence of events from one client_id, closed by an inactivity timeout — the classic default is <strong>30 minutes</strong> of inactivity ends the current session; the next event after that gap starts a new session_id. This is a pragmatic, universally-recognized default rather than a technical necessity: shorter timeouts split legitimate continuous browsing into artificially many sessions, while much longer timeouts blur genuinely separate visits together. Some properties override the default (e.g. a media property with long, passive engagement might use a longer timeout); this is exposed as a per-property configuration.</p>
+
+        <h3>Cross-Device Identity Stitching</h3>
+        <p>Two mechanisms combine to answer "which events belong to the same logical person," in order of preference:</p>
+        <ul>
+          <li><strong>Signed-in User-ID (deterministic):</strong> when the host app authenticates the user and passes a stable <code>user_id</code> with events, every device/session carrying that same user_id is stitched into one identity with full confidence — this is the gold-standard signal.</li>
+          <li><strong>Probabilistic signals (fallback, anonymous traffic):</strong> for users who never sign in, the pipeline falls back to device/browser fingprint-adjacent signals (first-party client_id continuity, IP range plus user-agent plus timing correlation across devices) to probabilistically link likely-same-person sessions — lower confidence, and explicitly presented in reporting as "probabilistic" rather than certain.</li>
+        </ul>
+        <p>Reporting always prefers the deterministic user_id graph where available and only falls back to probabilistic stitching for the portion of traffic that never authenticates — mixing the two without labeling the confidence level is a common design mistake to call out.</p>
+
+        <h3>Event De-Duplication</h3>
+        <p>Because both client retries and the durable log's at-least-once delivery semantics mean the same logical event can arrive more than once, every event carries a deterministic dedupe key — typically <code>hash(client_id, session_id, event_name, event_timestamp)</code> — computed once at the collector and checked against a short-lived (e.g. 24-hour) dedupe cache/table before being counted twice in either the real-time or batch path. Without this, a flaky mobile network's retried beacon would silently inflate every downstream count.</p>
+
+        <table class="sortable">
+          <tr><th>Signal</th><th>Confidence</th><th>Coverage</th></tr>
+          <tr><td>Signed-in user_id</td><td>Deterministic (high)</td><td>Only authenticated sessions</td></tr>
+          <tr><td>First-party client_id (cookie / app instance)</td><td>Deterministic within one device/browser</td><td>Most traffic on a single device</td></tr>
+          <tr><td>Cross-device probabilistic linking</td><td>Probabilistic (lower)</td><td>Anonymous, multi-device traffic only</td></tr>
+        </table>
+
+        <h2 id="deep-dive-real-time-stream-processing-path">Deep Dive — Real-Time Stream Processing Path</h2>
+        <p>The speed layer's entire job is to answer "how many unique users are active right now, and what are the top pages right now" continuously, at a scale where storing exact per-user sets is not memory-feasible.</p>
+
+        <h3>Windowed Aggregation</h3>
+        <p>The Stream Processor maintains <strong>tumbling windows</strong> (e.g. 1-minute buckets, non-overlapping) per property for coarse metrics like "active users in the last minute," and a <strong>sliding window</strong> (e.g. a rolling 5-minute view recomputed every few seconds) for the smoother "active users right now" tile the dashboard actually displays, since a strict tumbling window would visibly reset every minute.</p>
+
+        <h3>HyperLogLog for Approximate Unique Counts</h3>
+        <p>Counting exact distinct users per window at this cardinality would require storing every distinct user id seen in the window — infeasible in memory across millions of concurrently-active properties. <strong>HyperLogLog (HLL)</strong> instead maintains a small, fixed-size sketch (a few KB, regardless of how many billions of distinct values are fed into it) that estimates cardinality within a small, bounded standard error (typically &lt;2% with common parameterizations) by tracking the statistical distribution of leading-zero patterns in hashed input values. HLL sketches are also mergeable — the sketches for many individual stream-processor shards for the same property/window can be combined into one property-level estimate without re-scanning any raw data.</p>
+
+        <h3>Count-Min Sketch for Approximate Top-K</h3>
+        <p>"Top pages right now" is a frequency-estimation problem at the same cardinality challenge: tracking an exact counter per distinct page URL across a huge, unbounded key space would again blow up memory. A <strong>Count-Min Sketch</strong> maintains a small, fixed-size array of counters via multiple hash functions, giving an approximate frequency count for any key with one-sided error (counts are never underestimated, only occasionally overestimated) — enough to reliably surface the true top-K pages by frequency without tracking every URL ever seen.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An incoming event stream is folded into a current tumbling window. A HyperLogLog sketch estimates unique active users for that window with bounded memory, and a Count-Min Sketch estimates top pages by approximate frequency. Both feed the real-time serving store that answers active-users-now and top-pages-now dashboard queries.">
+            <style>
+              .ga-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .ga-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .ga-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .ga-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .ga-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .ga-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .ga-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .ga-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:#dbe6ff;}
+              .ga-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .ga-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-ga-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="270" y="10" width="220" height="45" rx="6" class="ga-box-bus"></rect>
+            <text x="380" y="29" text-anchor="middle" class="ga-title-inv">Event stream (Pub/Sub)</text>
+            <text x="380" y="43" text-anchor="middle" class="ga-sub-inv">consumed by the Stream Processor</text>
+
+            <line x1="380" y1="55" x2="380" y2="84" class="ga-arrow" marker-end="url(#arrow-ga-2)"></line>
+
+            <rect x="220" y="85" width="320" height="45" rx="6" class="ga-box-strong"></rect>
+            <text x="380" y="104" text-anchor="middle" class="ga-title">Current tumbling window (1 min)</text>
+            <text x="380" y="118" text-anchor="middle" class="ga-sub">per property_id, folds each event as it arrives</text>
+
+            <line x1="300" y1="130" x2="200" y2="164" class="ga-arrow" marker-end="url(#arrow-ga-2)"></line>
+            <line x1="460" y1="130" x2="560" y2="164" class="ga-arrow" marker-end="url(#arrow-ga-2)"></line>
+
+            <rect x="40" y="165" width="320" height="60" rx="6" class="ga-box"></rect>
+            <text x="200" y="187" text-anchor="middle" class="ga-title">HyperLogLog sketch</text>
+            <text x="200" y="201" text-anchor="middle" class="ga-sub">estimates unique active users, ~12 KB/sketch</text>
+            <text x="200" y="214" text-anchor="middle" class="ga-sub">bounded error (&lt;2%), mergeable across shards</text>
+
+            <rect x="400" y="165" width="320" height="60" rx="6" class="ga-box"></rect>
+            <text x="560" y="187" text-anchor="middle" class="ga-title">Count-Min Sketch</text>
+            <text x="560" y="201" text-anchor="middle" class="ga-sub">estimates top pages by approximate frequency</text>
+            <text x="560" y="214" text-anchor="middle" class="ga-sub">one-sided error, fixed-size counter array</text>
+
+            <line x1="200" y1="225" x2="330" y2="264" class="ga-arrow" marker-end="url(#arrow-ga-2)"></line>
+            <line x1="560" y1="225" x2="430" y2="264" class="ga-arrow" marker-end="url(#arrow-ga-2)"></line>
+
+            <rect x="220" y="265" width="320" height="45" rx="6" class="ga-box-store"></rect>
+            <text x="380" y="284" text-anchor="middle" class="ga-title">Real-Time Serving Store</text>
+            <text x="380" y="298" text-anchor="middle" class="ga-sub">answers &quot;active users now&quot; / &quot;top pages now&quot;</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Real-time stream processing &mdash; each event updates a per-property tumbling-window HyperLogLog sketch (unique users) and Count-Min Sketch (top pages), both bounded in memory regardless of true cardinality, feeding the real-time serving store.</div>
+        </div>
+
+        <table class="sortable">
+          <tr><th>Structure</th><th>Answers</th><th>Memory profile</th><th>Error type</th></tr>
+          <tr><td>HyperLogLog</td><td>Approximate distinct count (cardinality)</td><td>Fixed, ~KBs regardless of true cardinality</td><td>Small bounded relative error, both directions</td></tr>
+          <tr><td>Count-Min Sketch</td><td>Approximate frequency / top-K</td><td>Fixed-size counter array</td><td>One-sided (never underestimates)</td></tr>
+          <tr><td>Exact set / exact counter (batch layer)</td><td>Exact count</td><td>Grows with true cardinality</td><td>None &mdash; used where exactness is required</td></tr>
+        </table>
+
+        <h2 id="deep-dive-batch-processing-and-pre-aggregation-pipeline">Deep Dive — Batch Processing and Pre-Aggregation Pipeline</h2>
+        <p>The batch layer's job is the opposite trade-off from the speed layer: take as long as needed (typically hours, on a daily or hourly schedule) but produce exact answers, and pre-compute them into a shape the dashboard can query interactively.</p>
+
+        <h3>Landing Raw Events in the Data Lake / Warehouse</h3>
+        <p>A separate consumer group reads the same Pub/Sub log and writes every event, unmodified beyond the collector's enrichment, into columnar storage (Parquet-like files or a native warehouse table) partitioned by <code>event_date</code> and <code>property_id</code>. This landing step is intentionally dumb — no aggregation happens here — so it can never be the reason a downstream job produces a wrong exact answer.</p>
+
+        <h3>Scheduled Batch Jobs</h3>
+        <ul>
+          <li><strong>Daily/hourly rollup job:</strong> scans the prior period's raw_events partition and computes exact active_users, sessions, event_count, and conversions, pre-aggregated by common report dimensions &mdash; country &times; device &times; date &mdash; so the dashboard's default views never scan raw events.</li>
+          <li><strong>Funnel job:</strong> for each configured funnel definition, computes exact per-step user counts in temporal order (a user must complete step N before step N+1 counts), producing the funnel_steps table.</li>
+          <li><strong>Cohort/retention job:</strong> groups users by their first-seen date (the cohort) and computes, for each subsequent period, how many of that cohort were active again &mdash; producing the cohort_retention table used for retention curves.</li>
+        </ul>
+
+        <h3>Pre-Aggregation by Common Dimensions</h3>
+        <p>Every batch job pre-aggregates along the small set of dimension combinations that dashboards actually filter by (country, device category, traffic source, date) rather than leaving the dashboard to filter billions of raw rows per query. This is the single biggest lever for interactive dashboard latency: a rollup table with millions of rows (one per property &times; date &times; dimension-combo) answers in milliseconds what a scan of billions of raw events would take minutes to compute.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Raw events land in a partitioned data lake. Scheduled batch jobs for daily rollups, funnels, and cohort retention read that data lake and produce three separate pre-aggregated output tables, which the reporting layer queries instead of scanning raw events.">
+            <style>
+              .ga-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .ga-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .ga-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .ga-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .ga-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .ga-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .ga-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-ga-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="280" y="10" width="200" height="45" rx="6" class="ga-box-strong"></rect>
+            <text x="380" y="29" text-anchor="middle" class="ga-title">Data Lake</text>
+            <text x="380" y="43" text-anchor="middle" class="ga-sub">raw_events, partitioned by date + property_id</text>
+
+            <line x1="330" y1="55" x2="180" y2="94" class="ga-arrow" marker-end="url(#arrow-ga-3)"></line>
+            <line x1="380" y1="55" x2="380" y2="94" class="ga-arrow" marker-end="url(#arrow-ga-3)"></line>
+            <line x1="430" y1="55" x2="580" y2="94" class="ga-arrow" marker-end="url(#arrow-ga-3)"></line>
+
+            <rect x="60" y="95" width="240" height="50" rx="6" class="ga-box"></rect>
+            <text x="180" y="115" text-anchor="middle" class="ga-title">Daily/hourly rollup job</text>
+            <text x="180" y="129" text-anchor="middle" class="ga-sub">exact active_users, sessions, conversions</text>
+
+            <rect x="260" y="95" width="240" height="50" rx="6" class="ga-box"></rect>
+            <text x="380" y="115" text-anchor="middle" class="ga-title">Funnel job</text>
+            <text x="380" y="129" text-anchor="middle" class="ga-sub">exact per-step users, in temporal order</text>
+
+            <rect x="460" y="95" width="240" height="50" rx="6" class="ga-box"></rect>
+            <text x="580" y="115" text-anchor="middle" class="ga-title">Cohort / retention job</text>
+            <text x="580" y="129" text-anchor="middle" class="ga-sub">exact retention by first-seen cohort</text>
+
+            <line x1="180" y1="145" x2="180" y2="184" class="ga-arrow" marker-end="url(#arrow-ga-3)"></line>
+            <line x1="380" y1="145" x2="380" y2="184" class="ga-arrow" marker-end="url(#arrow-ga-3)"></line>
+            <line x1="580" y1="145" x2="580" y2="184" class="ga-arrow" marker-end="url(#arrow-ga-3)"></line>
+
+            <rect x="60" y="185" width="240" height="45" rx="6" class="ga-box-store"></rect>
+            <text x="180" y="204" text-anchor="middle" class="ga-title">daily_metrics_rollup</text>
+            <text x="180" y="218" text-anchor="middle" class="ga-sub">pre-agg by country &times; device &times; date</text>
+
+            <rect x="260" y="185" width="240" height="45" rx="6" class="ga-box-store"></rect>
+            <text x="380" y="204" text-anchor="middle" class="ga-title">funnel_steps</text>
+            <text x="380" y="218" text-anchor="middle" class="ga-sub">step_index, users_reached, drop_off_rate</text>
+
+            <rect x="460" y="185" width="240" height="45" rx="6" class="ga-box-store"></rect>
+            <text x="580" y="204" text-anchor="middle" class="ga-title">cohort_retention</text>
+            <text x="580" y="218" text-anchor="middle" class="ga-sub">cohort_size, retained_users, retention_rate</text>
+
+            <line x1="380" y1="230" x2="380" y2="259" class="ga-arrow" marker-end="url(#arrow-ga-3)"></line>
+            <rect x="230" y="260" width="300" height="45" rx="6" class="ga-box-strong"></rect>
+            <text x="380" y="279" text-anchor="middle" class="ga-title">Dashboard / Reporting API</text>
+            <text x="380" y="293" text-anchor="middle" class="ga-sub">queries pre-aggregated tables, not raw events</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Batch pre-aggregation &mdash; scheduled jobs read the landed raw-event data lake once and produce exact, pre-aggregated rollup/funnel/cohort tables sized for fast, interactive dashboard queries.</div>
+        </div>
+
+        <h2 id="data-partitioning-and-sharding">Data Partitioning and Sharding</h2>
+        <p>Sharding decisions follow the same principle throughout: keep everything for one property together for query locality, and shard the streaming layer so per-user/session state never needs cross-shard coordination.</p>
+        <ul>
+          <li><strong>Raw event storage</strong> is partitioned by <code>event_date + property_id</code> in the data lake &mdash; this matches the two dimensions almost every batch job and ad-hoc query filters by first, so a job scanning "yesterday's data for property X" reads only the relevant partitions instead of the entire table.</li>
+          <li><strong>The Pub/Sub ingestion topic</strong> is partitioned by <code>property_id</code> (or a hash of it for very large properties), so a single stream-processor shard can maintain complete per-property window state without needing input from any other shard.</li>
+          <li><strong>The streaming aggregation layer</strong> is sharded by a hash of <code>user_id</code> / <code>session_id</code> within a property for any per-user state (e.g. session-boundary tracking), ensuring all events for one user's current session are processed by the same shard for correctness.</li>
+        </ul>
+        <table>
+          <tr><th>Data</th><th>Sharded / partitioned by</th><th>Replication</th></tr>
+          <tr><td>Ingestion Pub/Sub topic</td><td>hash(property_id)</td><td>RF=3</td></tr>
+          <tr><td>Raw event data lake</td><td>event_date + property_id (directory/partition scheme)</td><td>Warehouse-native (e.g. 3&times; object storage replication)</td></tr>
+          <tr><td>Stream-processor window state</td><td>hash(property_id), sub-sharded by hash(user_id/session_id)</td><td>Checkpointed to durable storage for recovery</td></tr>
+          <tr><td>Rollup / funnel / cohort tables</td><td>property_id + date (+ dimension keys)</td><td>Warehouse-native replication</td></tr>
+        </table>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <p>The durable Pub/Sub log is the fault-tolerance backbone of the entire design: because the Collection Tier's only responsibility is appending to this replicated (RF=3) log, an outage or a bug in either the stream processor or the batch pipeline can never cause ingestion to silently lose events &mdash; the events simply sit durably in the log, un-consumed, until the affected consumer recovers.</p>
+        <ul>
+          <li><strong>Consumer offset tracking:</strong> each consumer group (stream processor, batch-landing job) tracks its own committed offset into the log; a crashed consumer resumes from its last committed offset rather than from the log's head, so a restart reprocesses at most a small window of recently-uncommitted events (made safe by the dedupe key).</li>
+          <li><strong>Log retention as a recovery buffer:</strong> the log retains a rolling 24-hour buffer specifically so a consumer that falls behind or is down for a while can catch up by replaying from its last offset, rather than losing data permanently.</li>
+          <li><strong>Stream-processor state checkpointing:</strong> in-flight window aggregates (HLL sketches, Count-Min Sketch counters) are periodically checkpointed to durable storage, so a crashed stream-processor instance recovers its recent window state instead of restarting cold and under-counting the current window.</li>
+          <li><strong>Batch job idempotent re-runs:</strong> because the landing step and each rollup job are deterministic functions over an immutable partition of raw events, any batch job can simply be re-run over the same partition after a failure and produce the identical exact result &mdash; no special recovery logic needed beyond "run it again."</li>
+        </ul>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+
+        <h3>Multi-Touch Attribution Modeling</h3>
+        <p>Attribution &mdash; deciding how much "credit" each marketing touchpoint (an ad click, an email open, an organic search) gets for an eventual conversion &mdash; is deliberately implemented as a heavier, separate batch job layered on top of the core pipeline, not a real-time computation. It requires joining a user's entire touchpoint history (potentially spanning weeks) against their conversion events and applying an attribution model (last-click, linear, time-decay, or a data-driven model), which is both computationally heavier and far less time-sensitive than the core "how many users today" rollups &mdash; a marketer reviewing attribution reports does not need last-minute freshness the way a live dashboard does.</p>
+
+        <h3>Statistical Sampling for Ad-Hoc Exploratory Queries</h3>
+        <p>Core aggregate metrics (the pre-aggregated rollup tables) stay unsampled and exact, computed once by the scheduled batch jobs. But a free-form, ad-hoc exploratory query &mdash; e.g. "show me a breakdown of a rarely-used custom event by an arbitrary combination of five dimensions, over 13 months" &mdash; can require scanning a prohibitively large slice of raw events on demand. For that class of query only, the system applies statistical sampling (querying a representative subset of the raw event data and extrapolating), trading a small amount of precision for a query that returns in seconds rather than minutes or timing out entirely. This scoping &mdash; sampling only touches long-tail ad-hoc queries, never the core dashboard numbers &mdash; is an important distinction to state explicitly, since it is exactly the kind of nuance a real analytics platform has had to earn through experience (raw event-level export, e.g. into a data warehouse, is the escape hatch for anyone who needs unsampled, arbitrary-dimension access).</p>
+
+        <table class="sortable">
+          <tr><th>Query type</th><th>Sampling?</th><th>Latency target</th></tr>
+          <tr><td>Standard dashboard report (pre-aggregated dimensions)</td><td>Never &mdash; exact rollup table</td><td>Milliseconds&ndash;low seconds</td></tr>
+          <tr><td>Funnel / cohort report</td><td>Never &mdash; exact batch-computed table</td><td>Low seconds</td></tr>
+          <tr><td>Ad-hoc exploratory query, high cardinality/dimension count</td><td>Yes, at very high data volume</td><td>Seconds, vs. minutes/timeout unsampled</td></tr>
+          <tr><td>Raw event-level export (warehouse export)</td><td>Never &mdash; full fidelity</td><td>Batch/offline, no interactive SLA</td></tr>
+        </table>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>IP anonymization:</strong> the source IP is used only transiently at the collection tier to derive a coarse geo (country/region) and is then truncated/discarded &mdash; the full IP address is never written into the durable log or any downstream table.</li>
+          <li><strong>Configurable data retention:</strong> each property can configure its event-level data retention window (e.g. 2, 14, or 26 months); a scheduled purge job enforces the configured window per property, supporting jurisdictions with stricter data-minimization requirements.</li>
+          <li><strong>Consent Mode &mdash; adjusting or withholding tracking:</strong> the collector checks the <code>consent.analytics_storage</code> signal on every batch; if consent is denied, identifying fields (client_id, user_id) are stripped before the event is logged, and the event is routed to an aggregate-only, non-identifying path rather than the standard per-user pipeline.</li>
+          <li><strong>Modeled/estimated conversions when consent is denied:</strong> rather than simply losing all visibility into consent-denied traffic, the batch pipeline uses the (unblocked) consented traffic as a statistical basis to model/estimate the missing conversions attributable to denied-consent users &mdash; a real, current, and interview-relevant trade-off between full accuracy and full user privacy.</li>
+          <li><strong>Multi-tenant isolation:</strong> every table is keyed by <code>property_id</code> as a leading key element, so one property's data can never leak into another's query results or exports by construction.</li>
+          <li><strong>Template/no injection surface:</strong> event parameter values are always treated as opaque data (never executed, never used to construct queries via string concatenation), closing off injection risk in both the collection tier and the reporting layer.</li>
+          <li><strong>Transport security:</strong> TLS everywhere for beacon delivery; access to raw event export and reporting APIs is scoped per property via authenticated, tenant-scoped credentials.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Load balancing shows up at a few distinct layers:</p>
+        <ol>
+          <li>Globally, in front of the stateless Collection Tier fleet &mdash; distributing client beacon traffic across many collector instances and, more importantly, across many geographic ingestion points.</li>
+          <li>Across Pub/Sub partitions/consumer-group members for the stream processor and the batch-landing consumer &mdash; the messaging system's own consumer-group rebalancing handles this natively as instances scale up/down.</li>
+          <li>Across batch-processing workers for a scheduled job (e.g. a distributed compute framework splitting a day's raw_events partition into many parallel tasks).</li>
+        </ol>
+        <p>For the collection tier specifically, use <strong>anycast routing / GeoDNS</strong> so a beacon from a browser in Tokyo resolves to the nearest regional ingestion point rather than a distant, fixed endpoint &mdash; this is the single biggest lever on beacon round-trip latency, and it's a purely network-layer decision that requires no application-level awareness of "which region is closest."</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li><strong>Regional ingestion points</strong> (routed to via anycast/GeoDNS) accept beacons close to the user, minimizing round-trip latency &mdash; but the two viable designs diverge on what happens after that.</li>
+          <li><strong>Option A &mdash; regional ingestion writing to a globally-replicated log:</strong> every region's collector writes into the same logical Pub/Sub topic, replicated globally. Simpler mental model (one global stream to consume), but cross-region replication adds latency and cost to every single event, even ones a region-local speed layer could have processed entirely locally.</li>
+          <li><strong>Option B &mdash; region-local processing with a global rollup merge step (recommended):</strong> each region runs its own full pipeline (collection, streaming, and batch) against its own regional slice of traffic; a separate, lightweight merge job periodically combines each region's rollup tables (and, for the real-time path, mergeable HLL sketches) into a global view. This keeps the latency-critical local path entirely intra-region, and only the already-small, already-aggregated rollup/sketch data crosses regions &mdash; far cheaper than replicating every raw event globally.</li>
+          <li><strong>HLL mergeability is what makes Option B work for the real-time path too:</strong> a global "active users now" figure can be produced by merging each region's local HLL sketch for the current window, without ever centralizing raw events or exact user sets.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Pipeline-lag monitoring:</strong> continuously measure how far the real-time path is behind wall-clock time &mdash; the gap between an event's client timestamp (or collector receipt timestamp) and the moment it's reflected in the real-time serving store. A healthy speed layer should show this lag flat and small (seconds); a growing lag is the earliest signal of stream-processor backpressure or an upstream Pub/Sub bottleneck.</li>
+          <li><strong>Batch job SLA monitoring:</strong> track each scheduled job's start/end time and row counts processed against its expected schedule window (e.g. "daily rollup must complete within 4 hours of the day's end") and alert on SLA misses before a customer notices a stale historical report.</li>
+          <li><strong>Data-quality checks / anomaly detection on incoming volume:</strong> compare each property's current event volume against its own recent historical baseline; a sudden drop can indicate a broken SDK integration or an outage upstream of collection, while a sudden unexplained spike can indicate bot traffic, a tracking bug (e.g. an event firing in a loop), or a genuine viral event worth flagging to the customer.</li>
+          <li><strong>Real-time vs. batch reconciliation dashboards (internal):</strong> continuously compare the speed layer's approximate daily total against the batch layer's exact total for the same period once both are available, tracking the error rate over time to confirm HLL/Count-Min Sketch accuracy stays within expected bounds.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Exact unique-user counting at extreme cardinality is memory-prohibitive in real time</td><td>HyperLogLog trades a small, bounded error for orders-of-magnitude less memory; batch layer still computes the exact number later</td></tr>
+          <tr><td>A single viral property spikes traffic 100&times; in minutes</td><td>Stateless, horizontally-scaled Collection Tier behind anycast/GeoDNS; client-side batching reduces request volume before it even reaches the tier</td></tr>
+          <tr><td>Stream processor falls behind (consumer lag)</td><td>Log retention buffer (24h) allows catch-up replay; lag is monitored explicitly and alerts before it becomes user-visible staleness</td></tr>
+          <tr><td>Batch job failure mid-run</td><td>Deterministic, idempotent re-run over the same immutable raw-event partition &mdash; no special recovery logic required</td></tr>
+          <tr><td>Real-time and batch numbers occasionally disagree</td><td>Expected, bounded, and monitored &mdash; an acceptable trade-off explicitly communicated in-product (e.g. labeling real-time figures as estimates)</td></tr>
+          <tr><td>Ad-hoc high-cardinality exploratory query would time out unsampled</td><td>Statistical sampling scoped only to that query class; core aggregate metrics remain unsampled</td></tr>
+          <tr><td>Consent-denied traffic creates a measurement gap</td><td>Modeled/estimated conversions extrapolated from consented traffic, rather than simply losing visibility</td></tr>
+          <tr><td>Cross-region replication cost for a global rollup</td><td>Merge only already-aggregated rollups/sketches across regions, never raw events</td></tr>
+        </table>
+
+        <h3>The Central Trade-Off, Stated Plainly</h3>
+        <p>The entire design rests on accepting that "right now" and "exactly correct" are, at this scale, mutually expensive to have simultaneously &mdash; and choosing to serve two different numbers to two different use cases rather than forcing one number to serve both badly. A candidate who can articulate why a live dashboard tile being off by a percent or two for a few minutes is an acceptable, deliberate cost (while a customer's monthly billing/reporting number being off would not be) has understood the crux of this problem.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Client collection</td><td>navigator.sendBeacon (pixel fallback), client-side batching, offline/retry buffering with a dedupe key</td></tr>
+          <tr><td>Ingestion</td><td>Stateless Collection Tier behind anycast/GeoDNS, writes durably to a Pub/Sub log partitioned by property_id</td></tr>
+          <tr><td>Architecture pattern</td><td>Lambda architecture &mdash; one durable log, two independent consumers (speed layer + batch layer)</td></tr>
+          <tr><td>Sessionization</td><td>30-minute inactivity timeout boundary (default, per-property configurable)</td></tr>
+          <tr><td>Identity stitching</td><td>Deterministic signed-in user_id preferred; probabilistic signals as a lower-confidence fallback</td></tr>
+          <tr><td>Real-time path</td><td>Windowed streaming aggregation; HyperLogLog for unique counts, Count-Min Sketch for top-K</td></tr>
+          <tr><td>Batch path</td><td>Columnar data lake landing + scheduled exact rollup/funnel/cohort jobs, pre-aggregated by country &times; device &times; date</td></tr>
+          <tr><td>Data model</td><td>GA4-style event model &mdash; event-scoped, session-scoped, and user-scoped dimensions</td></tr>
+          <tr><td>Sharding</td><td>Raw events by date + property_id; streaming state by hash(property_id) sub-sharded by user/session id</td></tr>
+          <tr><td>Fault tolerance</td><td>Durable, replicated (RF=3) Pub/Sub log with a 24h replay buffer; idempotent, re-runnable batch jobs</td></tr>
+          <tr><td>Privacy</td><td>IP anonymization, configurable retention, Consent Mode with modeled/estimated fallback for denied consent</td></tr>
+          <tr><td>Multi-region</td><td>Region-local full pipelines with a global merge step over already-aggregated rollups/sketches</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect a real interview to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Architecture and the Real-Time/Batch Split</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why not just compute everything in real time, since streaming engines can handle high throughput today?</div>
+          <div class="qa-a">Some metrics (exact funnels, cohort/retention curves, multi-touch attribution) require joining a user's activity over long time windows &mdash; sometimes weeks &mdash; against later events, which doesn't fit a bounded streaming window cheaply, and doing it exactly in real time at this cardinality would cost far more than accepting a next-day batch SLA for those specific metrics. The live dashboard only needs approximate, coarse-grained numbers, which is exactly what the streaming layer is optimized for instead.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens when the real-time number and the batch number disagree?</div>
+          <div class="qa-a">It's expected and monitored, not a bug: the real-time number is an HLL/Count-Min-Sketch-based estimate with a known bounded error, while the batch number is the exact recomputation of the same period. The product should label the real-time figure as an estimate, and internal reconciliation dashboards track that the gap stays within the expected error bound over time.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Is this a Lambda architecture or a Kappa architecture?</div>
+          <div class="qa-a">As designed here it's Lambda &mdash; two separate code paths (stream processor for approximate/fast, batch pipeline for exact/slow) reading the same log. A Kappa-architecture variant would instead reprocess one unified stream for both purposes (e.g. replaying the log through the same streaming engine to backfill history), trading the operational cost of maintaining two codebases for the engineering complexity of making one streaming engine also produce exact, replayable historical results.</div>
+        </div>
+
+        <h3>Cardinality and Approximate Algorithms</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why HyperLogLog specifically, instead of just a distributed hash set of user ids?</div>
+          <div class="qa-a">A hash set's memory grows linearly with true cardinality &mdash; at hundreds of millions of unique users per window across millions of properties, that's an infeasible memory footprint. HyperLogLog's sketch size is fixed (a few KB) regardless of how many distinct values are fed into it, trading a small, well-understood bounded error for that memory bound, and sketches merge cleanly across shards without re-scanning raw data.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How accurate is HyperLogLog, and is that accuracy acceptable for a product?</div>
+          <div class="qa-a">Standard implementations achieve roughly &lt;2% relative error with a modest number of registers (a few KB of state); this is acceptable for a live "active users now" tile explicitly framed as a real-time estimate, but not acceptable for a customer's exact monthly reporting number &mdash; which is exactly why the batch layer recomputes that number exactly instead of relying on the sketch.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why Count-Min Sketch for top pages instead of just a hash map of counters?</div>
+          <div class="qa-a">A hash map's memory also grows with the number of distinct keys (URLs), which is effectively unbounded for a large property with dynamic URLs (query strings, IDs in paths). Count-Min Sketch uses a fixed-size counter array with multiple hash functions, giving approximate frequency counts in bounded memory &mdash; with the caveat that its error is one-sided (it can overestimate a count due to hash collisions, but never underestimate), which is a fine trade-off for surfacing an approximate top-K list.</div>
+        </div>
+
+        <h3>Sessionization and Identity</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why a 30-minute inactivity timeout for sessions, and not something else?</div>
+          <div class="qa-a">It's an industry-standard, empirically reasonable default that balances not artificially splitting continuous browsing into many sessions against not blurring genuinely separate visits together; it's not a technical constraint, so it's exposed as a per-property configuration for properties with very different engagement patterns (e.g. long-form video).</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you stitch together a user's activity across their phone and laptop?</div>
+          <div class="qa-a">Deterministically, via a signed-in user_id present on events from both devices &mdash; the gold-standard signal. For users who never sign in, the system falls back to lower-confidence probabilistic signals (client_id continuity, IP/user-agent/timing correlation), and reporting should distinguish deterministic from probabilistic identity resolution rather than presenting both with equal confidence.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent a flaky network from inflating event counts through retries?</div>
+          <div class="qa-a">Every event carries a deterministic dedupe key (a hash of client_id, session_id, event name, and timestamp) computed once and checked against a short-lived dedupe cache at the collector, so a redelivered or retried beacon is recognized and counted exactly once regardless of how many times it physically arrives.</div>
+        </div>
+
+        <h3>Privacy, Consent, and Compliance</h3>
+        <div class="qa-item">
+          <div class="qa-q">What happens to an event when a user has declined analytics consent?</div>
+          <div class="qa-a">The collector strips identifying fields (client_id, user_id) before logging, and routes the event to an aggregate-only, non-identifying path rather than the standard per-user pipeline; downstream, the batch pipeline uses statistically modeled/estimated conversions &mdash; extrapolated from consented traffic &mdash; to approximate the measurement gap left by denied-consent users, rather than simply losing that signal entirely.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you support a property that needs a much shorter data-retention window for compliance?</div>
+          <div class="qa-a">Retention is a per-property configuration enforced by a scheduled purge job against the data lake's date-partitioned raw_events; a property needing a 2-month window simply gets a tighter purge schedule than the 14-month default, with no change to the ingestion or processing pipeline itself.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why anonymize IP addresses at the collector instead of the reporting layer?</div>
+          <div class="qa-a">Because the goal is to never let the sensitive raw value propagate downstream at all &mdash; anonymizing at the earliest possible point (the collector, immediately after deriving the coarse geo signal it's actually needed for) means no downstream table, log, export, or backup ever contains the full IP, which is a much stronger guarantee than trying to redact it later in every possible downstream consumer.</div>
+        </div>
+
+        <h3>Scaling and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you scale this to a second region without doubling cross-region traffic?</div>
+          <div class="qa-a">Run a full region-local pipeline (collection, streaming, batch) against that region's own traffic, and merge only the already-small, already-aggregated outputs &mdash; rollup table rows and mergeable HLL sketches &mdash; across regions on a schedule, instead of replicating every raw event globally.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you detect that the real-time pipeline is falling behind before customers notice stale numbers?</div>
+          <div class="qa-a">Continuously measure pipeline lag &mdash; the gap between an event's receipt timestamp and when it's reflected in the real-time serving store &mdash; and alert on any sustained growth; a healthy speed layer should show this lag flat and small (seconds) regardless of traffic volume, so drift is a strong, early signal of stream-processor backpressure.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A property suddenly shows zero events &mdash; how do you know if it's a real outage or a broken integration?</div>
+          <div class="qa-a">Data-quality anomaly detection compares each property's current volume against its own recent historical baseline; a sudden drop to near-zero for one property (while others are normal) points to a broken SDK integration or a site-side deployment issue rather than a platform-wide outage, which would show the same pattern across many properties simultaneously.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you add multi-touch attribution without slowing down the core pipeline?</div>
+          <div class="qa-a">Implement it as its own separate, heavier scheduled batch job that reads the same landed raw events and joins a user's touchpoint history against conversion events &mdash; it has its own schedule and resource footprint, and a failure or slowdown in the attribution job never touches the core rollup, funnel, or real-time paths.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This is a Lambda-architecture problem at heart: one durable, replicated log, read independently by a fast-but-approximate speed layer and a slow-but-exact batch layer, feeding a shared serving/reporting surface &mdash; state that split explicitly and early. Cardinality, not raw event volume, is the hardest technical problem: HyperLogLog and Count-Min Sketch exist specifically to bound memory at extreme unique-count and top-K scale, at the cost of a small, well-understood error the batch layer later corrects for exactly. Sessionization (inactivity timeout) and identity stitching (deterministic user_id preferred over probabilistic signals) are what turn a flat event stream into a coherent per-user narrative, and event de-duplication via a dedupe key is what keeps at-least-once delivery from inflating counts. Sampling should be scoped narrowly to long-tail ad-hoc queries, never to core aggregate metrics. And privacy &mdash; IP anonymization, configurable retention, and Consent Mode with modeled fallback &mdash; is a first-class architectural concern here, not a compliance afterthought, because consent state directly determines what the pipeline is even allowed to collect.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Google Analytics 4 documentation &mdash; event-based data model, Measurement Protocol, and BigQuery export schema (support.google.com/analytics)</li>
+          <li>Google &mdash; "Consent Mode" documentation, on adjusting/withholding tracking and modeled conversions based on user consent</li>
+          <li>Nathan Marz and James Warren, <em>Big Data: Principles and Best Practices of Scalable Real-Time Data Systems</em> &mdash; the Lambda Architecture</li>
+          <li>Jay Kreps, "Questioning the Lambda Architecture" &mdash; the Kappa Architecture alternative</li>
+          <li>Philippe Flajolet et al., "HyperLogLog: the analysis of a near-optimal cardinality estimation algorithm" (2007)</li>
+          <li>Graham Cormode and S. Muthukrishnan, "An Improved Data Stream Summary: The Count-Min Sketch and its Applications" (2005)</li>
+          <li>Martin Kleppmann, <em>Designing Data-Intensive Applications</em> &mdash; chapters on batch and stream processing, and approximate algorithms</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="bittorrent.html"><span class="dir">Previous</span>Distributed File Transfer (BitTorrent)</a>
+          <a class="next" href="zookeeper.html"><span class="dir">Next</span>ZooKeeper</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

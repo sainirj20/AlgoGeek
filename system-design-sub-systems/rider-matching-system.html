@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rider-Driver Matching System | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">Rider-Driver Matching</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-geospatial-indexing-h3-geohash-quadtree">Deep Dive — Geospatial Indexing (H3 / Geohash / Quadtree)</a></li>
+        <li><a href="#deep-dive-batch-window-matching-as-bipartite-assignment">Deep Dive — Batch-Window Matching as Bipartite Assignment</a></li>
+        <li><a href="#deep-dive-multi-objective-scoring-and-fairness">Deep Dive — Multi-Objective Scoring and Fairness</a></li>
+        <li><a href="#deep-dive-offer-cascade-with-timeout-and-decline-handling">Deep Dive — Offer Cascade with Timeout and Decline Handling</a></li>
+        <li><a href="#deep-dive-uber-eats-variant-restaurant-readiness-and-multi-order-batching">Deep Dive — Uber Eats Variant: Restaurant Readiness and Multi-Order Batching</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#feature-specific-logic-driver-disconnects-and-location-staleness">Feature-Specific Logic: Driver Disconnects and Location Staleness</a></li>
+        <li><a href="#rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy and Permissions</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging and Analytics</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Rider-Driver Matching System (Uber / Uber Eats)</h1>
+        </div>
+
+        <p><em>A focused, interview-ready design walkthrough for the single hardest sub-problem inside a ride-hailing or food-delivery platform: given a stream of ride/delivery requests and a live pool of nearby available drivers/couriers, find the best pairing, fast. Covers geospatial indexing, batch-window bipartite assignment, multi-objective scoring and fairness, the offer/dispatch cascade, and the Uber Eats extension (restaurant readiness time and multi-order batching).</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design the real-time <strong>matching and dispatch</strong> system that sits at the center of a ride-hailing or food-delivery platform: given a rider's request for a trip (or a diner's placed order), find the best available driver (or courier) to fulfill it, and get an accepted offer in front of that driver within a few seconds. This page is deliberately <strong>narrow in scope</strong> — it is not a redesign of the entire Uber/Uber Eats platform. We assume, and do not re-derive, the surrounding systems: user/driver onboarding and identity, the payments and pricing/fare-calculation pipeline, maps and turn-by-turn routing, trip-state management once a trip is underway, ratings, and the mobile client apps themselves. (A separate, much broader "Uber platform" deep-dive elsewhere on this site covers those systems end to end.) The one problem this page answers in full depth is: <em>how do you take a burst of ride/delivery requests and a live, moving set of driver locations, and decide — correctly, fast, and fairly, at the scale of a whole city — who gets matched to whom?</em></p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It looks like a nearest-neighbor lookup, and a weak answer stops there ("index driver locations, query the closest one, done"). A strong answer recognizes that matching is a genuine <strong>combinatorial optimization problem under real-time constraints</strong>: committing each request greedily to whichever driver is nearest at that instant is provably suboptimal in aggregate — it can leave a closer driver "used up" on a slightly-worse-fit request two seconds earlier, forcing a much longer pickup for the next rider. The interesting engineering is in (1) a live geospatial index that makes "who's nearby?" a cheap query at any scale, (2) batching requests over a short window and solving a bipartite assignment problem instead of matching one-at-a-time, (3) a scoring function that balances rider wait time against driver fairness and utilization, and (4) a dispatch/offer protocol that degrades gracefully when the top choice doesn't respond. Interviewers use this problem to see whether a candidate can reach for an assignment-problem framing instead of stopping at "just find the nearest one."</p>
+
+        <h3>Ride vs. Delivery — One Engine, Two Presentations</h3>
+        <p>Uber (rides) and Uber Eats (delivery) are, underneath, the same matching engine with a different cost function and a different notion of "job readiness." A ride is ready to be picked up the instant the rider taps request. A delivery order is <em>not</em> ready until the restaurant has actually cooked the food — dispatching a courier too early wastes their time waiting at the counter, and dispatching too late leaves food cooling and the customer waiting. We build the core (index, batch matching, scoring, offer cascade) once, then layer the Eats-specific readiness-time constraint and multi-order batching on top in a dedicated deep dive.</p>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>A few minutes spent narrowing scope up front pays for itself many times over in this problem — "matching" means different things depending on the answers below.</p>
+        <ol>
+          <li>Are we designing for rides, Eats deliveries, or both — and if both, do they share one matching engine or run as two systems?</li>
+          <li>What's an acceptable batching-window size? Is a 2&ndash;5 second delay before a request is even considered for matching acceptable, in exchange for a materially better global assignment?</li>
+          <li>How strict are the fairness requirements — is there an explicit product requirement that driver income/utilization be spread reasonably evenly, or is "minimize rider wait time" the only objective that matters?</li>
+          <li>What happens on cold start — a new city, or a random rural pocket, with very few available drivers? Do we relax matching radius, degrade to a simple nearest-match, or surge-price to attract supply?</li>
+          <li>What's the target end-to-end SLA — request submitted to driver assigned — and how much of that budget is matching computation vs. the offer/accept round trip?</li>
+          <li>Do we need to support ride-pooling (multiple riders sharing one vehicle) in this design, or is that explicitly out of scope?</li>
+          <li>For Eats specifically: do we need multi-restaurant batching (one courier, multiple nearby orders, possibly from different restaurants) at launch, or is single-order-per-courier an acceptable v1?</li>
+          <li>How should the system behave if the optimization/assignment solver is slow or unavailable — is a greedy nearest-match fallback acceptable degraded behavior?</li>
+          <li>Do we need to support driver-side preferences (e.g. a courier who only wants short trips, or a driver heading home who only wants requests along their route)?</li>
+          <li>Is this single-region (one metro) to start, or does the design need to anticipate many simultaneous metros from day one?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't wait for every answer before drawing anything. State a reasonable default out loud — "I'll assume a 3-second batching window, both ride and Eats variants share one core engine with a pluggable cost function, and fairness is a real but secondary objective behind minimizing wait time" — and move to the whiteboard. Interviewers are grading judgment under ambiguity, not clairvoyance.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Accept a ride request (pickup location, destination, vehicle-type preference) or an Eats order (restaurant, delivery address, order contents) from a rider/customer.</li>
+          <li>Maintain a live, queryable index of every available driver/courier's current location, status, and vehicle attributes.</li>
+          <li>Match each request to a suitable driver/courier within a short SLA (a few seconds to low tens of seconds end to end), accounting for pickup ETA, vehicle-type compatibility, and route efficiency.</li>
+          <li>Send the matched driver a dispatch offer with a short accept/decline window; on decline or timeout, cascade the offer to the next-best candidate without restarting the whole match from scratch.</li>
+          <li>Support the Eats variant: incorporate restaurant food-readiness time as a scheduling constraint, and batch-match one courier to multiple nearby orders (multi-stop routes) where it improves efficiency without unacceptably delaying any single order.</li>
+          <li>Handle a request that cannot be matched (no drivers within a reasonable radius) by widening the search radius, queueing briefly, or returning "no drivers available" rather than hanging indefinitely.</li>
+          <li>Support cancellation of a pending request or an outstanding offer at any point before acceptance.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Low matching latency:</strong> sub-second to a few seconds from "request enters the batch" to "an offer is in front of a driver" — this budget has to include the geospatial candidate lookup, the assignment computation, and scoring, not just the lookup.</li>
+          <li><strong>High match quality:</strong> jointly minimize rider wait time and pickup ETA, and maximize driver utilization — a good design should be measurably better on both dimensions than naive greedy-nearest, not just faster.</li>
+          <li><strong>Fairness:</strong> avoid a small set of "always-nearest" drivers absorbing most offers while others sit idle; offer-acceptance-probability weighting must not become a rich-get-richer loop for the same few high-acceptance drivers.</li>
+          <li><strong>Resilience to disconnects:</strong> a driver's app going to background, losing signal, or crashing mid-offer must never leave a rider's request silently stuck — stale drivers are detected and excluded quickly.</li>
+          <li><strong>Horizontal scale:</strong> millions of concurrent open requests and tens of millions of location pings per minute during peak events (concerts, holidays, severe weather) across many metros simultaneously.</li>
+          <li><strong>Graceful degradation:</strong> if the batch optimizer is unavailable or overloaded, the system falls back to a simpler greedy-nearest strategy rather than refusing to match anyone.</li>
+          <li><strong>Consistency where it matters, availability everywhere else:</strong> a driver must never receive two simultaneous binding offers for the same seat/capacity slot, but a slightly stale ETA estimate feeding into scoring is an acceptable trade-off for speed.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We go deep on the geospatial index, the batch-window assignment algorithm, multi-objective scoring/fairness, the offer/dispatch cascade, partitioning into regional dispatch cells, and the Eats-specific readiness/batching extension. We explicitly do not re-derive: fare/pricing calculation, payment processing, turn-by-turn routing/map rendering, trip-state management once a trip has started, driver background-check/onboarding, or the rider/driver rating systems — all real, all elsewhere.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>Ground every design decision in a concrete metro-scale workload, since "millions of drivers" globally is the wrong number to design any single dispatch cell against — matching is inherently local.</p>
+
+        <h3>Traffic Estimates — One Large Metro</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          One large metro (e.g. a NYC- or SF-Bay-Area-sized service region), &asymp;800 km&sup2; of active service area
+          <br>&asymp;40,000 drivers/couriers online and available during peak (evening rush / dinner)
+          <br>Peak combined request rate &asymp; 1,200 ride requests/sec + 800 Eats orders/sec &asymp; 2,000 requests/sec
+          <br>Average request rate (off-peak) &asymp; 300&ndash;400 requests/sec
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Batch-window sizing</span>
+          At a 3-second batching window and 2,000 requests/sec peak: &asymp;6,000 requests accumulate per batch cycle
+          <br>Each request is scored against a candidate set of &asymp;20&ndash;50 nearby available drivers pulled from the geospatial index (not all 40,000 &mdash; only those within a expanding search radius)
+          <br>Bipartite graph size per batch &asymp; 6,000 riders &times; &asymp;30 candidate edges each &asymp; 180,000 weighted edges &mdash; sparse, not the dense 6,000&times;40,000 graph a naive read of "bipartite matching" might suggest
+          <br>Design the assignment solver's time budget at &asymp;300&ndash;800ms per batch, leaving the remainder of the end-to-end SLA for the offer/accept round trip
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Batching-window trade-off</span>
+          Smaller window (e.g. 1s): lower added latency per rider, but fewer requests batched together &rarr; assignment degrades toward greedy, worse global quality
+          <br>Larger window (e.g. 8&ndash;10s): meaningfully better global assignment quality and fairness, but every rider now waits up to the full window before even seeing "driver found" &mdash; unacceptable for a product where perceived responsiveness matters
+          <br>2&ndash;5 seconds is the pragmatic production sweet spot: large enough to batch hundreds to low thousands of requests in a busy metro, small enough that the added wait is imperceptible against the rest of the pickup ETA
+        </div>
+
+        <h3>Geospatial Index and Location-Ping Load</h3>
+        <div class="formula-box">
+          <span class="formula-label">Index size</span>
+          40,000 online drivers &times; &asymp;150 bytes/record (driver_id, lat/lng, H3 cell id, status, vehicle_type, last_seen, acceptance-rate score) &asymp; 6 MB &mdash; trivially small, easily held fully in memory per dispatch cell
+          <br>Even scaled to 500,000 drivers across a dozen large metros simultaneously &asymp; 75 MB aggregate &mdash; the index is never the memory bottleneck; write throughput from location pings is
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Location ping ingestion</span>
+          Each driver's app pings location every &asymp;4 seconds while online &rarr; 40,000 &divide; 4 &asymp; 10,000 pings/sec for one metro
+          <br>Across &asymp;30 comparably active metros globally at peak &asymp; 300,000 pings/sec platform-wide &mdash; must be partitioned and absorbed regionally, never funneled through one global writer
+          <br>Each ping is a small, idempotent upsert into the in-memory index (overwrite previous position for that driver_id) &mdash; no durability requirement beyond "eventually consistent within a couple of seconds," since a stale-by-4-seconds location is an acceptable trade-off for this workload
+        </div>
+
+        <h3>Matches/sec and Durable-Store Sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Matches and trip records</span>
+          2,000 matches/sec sustained at peak &times; &asymp;500 bytes/trip record (trip_id, rider_id, driver_id, pickup/drop geo, status, timestamps, fare reference) &asymp; 1 MB/sec write volume into the durable trip store
+          <br>Over a full day at a blended average of &asymp;600 matches/sec across peak and off-peak &asymp; 52M trips/day &times; 500 bytes &asymp; 26 GB/day raw, &times;3 replication &asymp; &asymp;78 GB/day &mdash; entirely manageable for a horizontally-shardable durable store
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value (one large metro, peak)</th></tr>
+          <tr><td>Online drivers/couriers</td><td>&asymp;40,000</td></tr>
+          <tr><td>Peak request rate (rides + Eats)</td><td>&asymp;2,000/sec</td></tr>
+          <tr><td>Requests per batch window (3s)</td><td>&asymp;6,000</td></tr>
+          <tr><td>Candidate edges per batch (sparse graph)</td><td>&asymp;180,000</td></tr>
+          <tr><td>Assignment-solver time budget per batch</td><td>&asymp;300&ndash;800ms</td></tr>
+          <tr><td>Location pings/sec (one metro)</td><td>&asymp;10,000/sec</td></tr>
+          <tr><td>Geospatial index memory (one metro)</td><td>&asymp;6 MB</td></tr>
+          <tr><td>Durable trip-store growth</td><td>&asymp;78 GB/day (RF=3, blended)</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Three request shapes dominate this system's API surface: a rider/customer creating a request, a driver/courier streaming location updates, and a driver responding to a dispatch offer. Every field the Matching Service needs to score and rank a candidate travels with these calls so the hot path never needs a synchronous side lookup.</p>
+
+        <h3>Request a Ride / Place an Eats Order</h3>
+        <pre><code>POST /v1/rides/request
+{
+  "rider_id": string,
+  "pickup": { "lat": number, "lng": number },
+  "destination": { "lat": number, "lng": number },
+  "vehicle_type": "standard" | "xl" | "premium" | "wheelchair_accessible",
+  "requested_at": string  // ISO-8601
+}
+
+Response 202 Accepted:
+{ "request_id": "req_7ac1...", "status": "BATCHING", "estimated_wait_sec": 45 }
+
+POST /v1/eats/orders
+{
+  "customer_id": string,
+  "restaurant_id": string,
+  "delivery_address": { "lat": number, "lng": number },
+  "order_items": [ ... ],
+  "requested_at": string
+}
+
+Response 202 Accepted:
+{ "order_id": "ord_44e0...", "status": "AWAITING_PREP", "food_ready_eta": "2026-07-18T18:42:00Z" }</code></pre>
+
+        <h3>Driver / Courier Location Ping</h3>
+        <pre><code>PUT /v1/drivers/{driver_id}/location
+{
+  "lat": number,
+  "lng": number,
+  "heading": number,           // degrees, optional
+  "status": "available" | "en_route_pickup" | "on_trip" | "offline",
+  "timestamp": string          // ISO-8601, client-stamped
+}
+
+Response 200: { "accepted": true, "server_time": "2026-07-18T18:40:12Z" }</code></pre>
+        <p>Pings are fire-and-forget, idempotent upserts keyed by <code>driver_id</code> &mdash; a delayed or duplicated ping simply overwrites the index entry with (at worst) a slightly stale or redundant position; there is no ordering or exactly-once requirement here, only "last write wins by client timestamp."</p>
+
+        <h3>Dispatch Offer: Accept / Decline</h3>
+        <pre><code>POST /v1/dispatch/offers/{offer_id}/respond
+{
+  "driver_id": string,
+  "response": "accept" | "decline",
+  "responded_at": string
+}
+
+Response 200 (accept, still valid):
+{ "offer_id": "off_91bd...", "status": "ACCEPTED", "trip_id": "trip_2f10..." }
+
+Response 409 (already expired / already claimed by cascade):
+{ "offer_id": "off_91bd...", "status": "EXPIRED", "reason": "offer_timeout_elapsed" }</code></pre>
+
+        <h3>Request / Trip Status</h3>
+        <pre><code>GET /v1/rides/requests/{request_id}
+{
+  "request_id": "req_7ac1...",
+  "status": "BATCHING | MATCHED | OFFER_PENDING | DRIVER_ASSIGNED | NO_DRIVERS_AVAILABLE | CANCELLED",
+  "driver_id": "drv_88a2..." ,
+  "eta_to_pickup_sec": 240
+}</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Call out explicitly that the <code>offer_id</code> respond endpoint must be safe against a race: a driver's decline arriving one moment after their offer already timed out and cascaded away should be a harmless 409, not a state-corrupting write. This is the same "conditional claim" idempotency pattern that shows up in most dispatch/queue systems &mdash; worth naming even before the interviewer asks.
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data — Two Very Different Access Patterns</h3>
+        <ul>
+          <li><strong>Driver/courier live state</strong> (location, status, last-seen, current offer) is extremely write-heavy, read-heavy, tiny per-record, and only needs to be correct "as of a couple seconds ago" &mdash; a textbook in-memory data-structure workload, not a durable-database workload.</li>
+          <li><strong>Trip/order records</strong> (once a match happens) are the opposite: comparatively low write volume, need durability, need to support later queries (receipts, support, analytics, fraud review), and benefit from a normal durable, replicated store.</li>
+          <li><strong>Dispatch offers</strong> are short-lived (seconds), need atomic claim semantics, and benefit from the same in-memory store as driver state, with a TTL.</li>
+        </ul>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">In-memory: driver_state (per dispatch cell, sharded by geo &mdash; Redis / custom in-memory index)</th></tr>
+          <tr><td>driver_id (PK)</td><td>string</td></tr>
+          <tr><td>lat / lng</td><td>float / float</td></tr>
+          <tr><td>geo_cell_id</td><td>H3 cell id (or geohash string) &mdash; the actual index key</td></tr>
+          <tr><td>status</td><td>enum(available, en_route_pickup, on_trip, offline)</td></tr>
+          <tr><td>vehicle_type</td><td>enum(standard, xl, premium, wheelchair_accessible)</td></tr>
+          <tr><td>last_seen</td><td>timestamp</td></tr>
+          <tr><td>acceptance_rate_score</td><td>float, 0&ndash;1, rolling window ML feature</td></tr>
+          <tr><td>current_offer_id</td><td>string, nullable</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">In-memory: dispatch_offer (Redis, TTL = offer timeout)</th></tr>
+          <tr><td>offer_id (PK)</td><td>string</td></tr>
+          <tr><td>request_id / driver_id</td><td>string / string</td></tr>
+          <tr><td>rank</td><td>int &mdash; position in the cascade order</td></tr>
+          <tr><td>status</td><td>enum(PENDING, ACCEPTED, DECLINED, EXPIRED)</td></tr>
+          <tr><td>expires_at</td><td>timestamp, TTL-backed</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Durable: trip (Cassandra / DynamoDB-style store, PK: trip_id)</th></tr>
+          <tr><td>trip_id (PK)</td><td>uuid</td></tr>
+          <tr><td>rider_id / driver_id</td><td>string / string</td></tr>
+          <tr><td>pickup_geo / dropoff_geo</td><td>lat/lng pairs</td></tr>
+          <tr><td>status</td><td>enum(MATCHED, DRIVER_EN_ROUTE, IN_PROGRESS, COMPLETED, CANCELLED)</td></tr>
+          <tr><td>matched_at / picked_up_at / completed_at</td><td>timestamp</td></tr>
+          <tr><td>vehicle_type / fare_reference</td><td>enum / string (pointer into pricing system)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Durable: eats_order (extends trip with Eats-only fields, PK: order_id)</th></tr>
+          <tr><td>order_id (PK)</td><td>uuid</td></tr>
+          <tr><td>restaurant_id / customer_id</td><td>string / string</td></tr>
+          <tr><td>food_ready_eta</td><td>timestamp, updated by the restaurant-side prep system</td></tr>
+          <tr><td>courier_id</td><td>string, nullable until matched</td></tr>
+          <tr><td>batch_id</td><td>string, nullable &mdash; groups orders sharing one courier's multi-stop route</td></tr>
+          <tr><td>route_sequence</td><td>ordered list of stop references, populated when batched</td></tr>
+        </table>
+
+        <h3>In-Memory Index vs. Durable Trip Store — Why Both, Not Just One</h3>
+        <p>The geospatial index and offer state live entirely in memory (Redis or a custom process) because the workload is dominated by extremely frequent, tiny, short-lived writes (a location ping every few seconds per driver) where losing a few seconds of staleness on a crash/restart is a complete non-issue &mdash; the driver's app simply re-pings. Putting this workload on a durable, replicated database would add latency and I/O cost for no correctness benefit. The trip/order record, by contrast, is a legal and financial record of what actually happened &mdash; it must survive a node failure, support later lookups, and feed analytics and support tooling, which is exactly the durable-store use case. The dividing line is simple: <strong>anything that's true "as of right now" and cheaply reconstructible lives in memory; anything that's a permanent fact about what happened lives in a durable, replicated store.</strong></p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If pushed on "what if the in-memory index node dies mid-peak" &mdash; the answer isn't "replicate it like a database," it's "drivers re-ping within a few seconds and the index self-heals," combined with running the index as a small, fast-failover-capable cluster (primary + replica) so a single node loss doesn't blank the whole cell's view of its drivers even for those few seconds.
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Driver/courier apps continuously stream location pings into a regional <strong>Location Service</strong>, which upserts them into a live <strong>Geospatial Index</strong> (H3-cell-organized). Rider/customer requests arrive at a <strong>Request Ingestion</strong> tier and accumulate for a short <strong>batching window</strong>. At the end of each window, the <strong>Matching Service</strong> pulls a candidate set of nearby available drivers per request from the geospatial index, builds a bipartite graph, and computes a globally good assignment. A <strong>Scoring / Ranking</strong> stage orders candidates for each request by a multi-objective cost function. The <strong>Dispatch / Offer Engine</strong> sends the top-ranked candidate an offer with a short timeout, cascading to the next candidate on decline, and on acceptance notifies both the driver and the rider and hands off to the durable trip store.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Driver apps stream location pings into a Location Service which updates a live Geospatial Index. Rider and Eats requests accumulate in a batching window feeding the Matching Service, which queries the Geospatial Index for nearby candidates, builds a bipartite assignment, scores and ranks candidates, and hands off to a Dispatch and Offer Engine. The Dispatch Engine notifies the top-ranked driver, cascading to the next candidate on decline or timeout, and on acceptance writes the trip to a durable Trip Store and notifies the rider.">
+            <style>
+              .rm-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .rm-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .rm-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .rm-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .rm-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .rm-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .rm-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .rm-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .rm-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:#dbe6ff;}
+              .rm-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .rm-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;}
+              .rm-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-rm-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-rm-1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="20" y="10" width="220" height="45" rx="6" class="rm-box"></rect>
+            <text x="130" y="28" text-anchor="middle" class="rm-title">Driver / Courier App</text>
+            <text x="130" y="42" text-anchor="middle" class="rm-sub">location ping every ~4s</text>
+
+            <rect x="260" y="10" width="240" height="45" rx="6" class="rm-box"></rect>
+            <text x="380" y="28" text-anchor="middle" class="rm-title">Rider App / Eats App</text>
+            <text x="380" y="42" text-anchor="middle" class="rm-sub">ride request / order placed</text>
+
+            <rect x="520" y="10" width="220" height="45" rx="6" class="rm-box"></rect>
+            <text x="630" y="28" text-anchor="middle" class="rm-title">Restaurant Prep System</text>
+            <text x="630" y="42" text-anchor="middle" class="rm-sub">food_ready_eta updates (Eats)</text>
+
+            <line x1="130" y1="55" x2="130" y2="84" class="rm-arrow" marker-end="url(#arrow-rm-1)"></line>
+            <rect x="20" y="85" width="220" height="45" rx="6" class="rm-box-strong"></rect>
+            <text x="130" y="103" text-anchor="middle" class="rm-title">Location Service</text>
+            <text x="130" y="117" text-anchor="middle" class="rm-sub">ingests + upserts driver positions</text>
+
+            <line x1="380" y1="55" x2="380" y2="84" class="rm-arrow" marker-end="url(#arrow-rm-1)"></line>
+            <rect x="270" y="85" width="230" height="45" rx="6" class="rm-box-strong"></rect>
+            <text x="385" y="103" text-anchor="middle" class="rm-title">Request Ingestion</text>
+            <text x="385" y="117" text-anchor="middle" class="rm-sub">accepts ride / Eats requests</text>
+
+            <line x1="630" y1="55" x2="630" y2="84" class="rm-arrow" marker-end="url(#arrow-rm-1)"></line>
+            <rect x="530" y="85" width="200" height="45" rx="6" class="rm-box-muted"></rect>
+            <text x="630" y="103" text-anchor="middle" class="rm-title">Readiness Tracker</text>
+            <text x="630" y="117" text-anchor="middle" class="rm-sub">Eats readiness-time state</text>
+
+            <line x1="130" y1="130" x2="130" y2="159" class="rm-arrow" marker-end="url(#arrow-rm-1)"></line>
+            <rect x="20" y="160" width="220" height="50" rx="6" class="rm-box-strong"></rect>
+            <text x="130" y="180" text-anchor="middle" class="rm-title">Geospatial Index</text>
+            <text x="130" y="194" text-anchor="middle" class="rm-sub">H3 cells &rarr; live available drivers</text>
+
+            <line x1="385" y1="130" x2="385" y2="234" class="rm-arrow" marker-end="url(#arrow-rm-1)"></line>
+            <text x="398" y="185" class="rm-label">accumulates for</text>
+            <text x="398" y="197" class="rm-label">batching window (~3s)</text>
+
+            <line x1="240" y1="185" x2="278" y2="248" class="rm-arrow" marker-end="url(#arrow-rm-1)"></line>
+            <text x="260" y="225" class="rm-label">candidate lookup</text>
+
+            <line x1="630" y1="130" x2="500" y2="248" class="rm-arrow" marker-end="url(#arrow-rm-1)"></line>
+            <text x="560" y="200" class="rm-label">readiness constraint (Eats)</text>
+
+            <rect x="150" y="235" width="440" height="55" rx="6" class="rm-box-strong"></rect>
+            <text x="370" y="256" text-anchor="middle" class="rm-title">Matching Service &mdash; batch window</text>
+            <text x="370" y="271" text-anchor="middle" class="rm-sub">builds bipartite graph, solves min-cost assignment per batch</text>
+
+            <line x1="370" y1="290" x2="370" y2="319" class="rm-arrow" marker-end="url(#arrow-rm-1)"></line>
+            <rect x="220" y="320" width="300" height="50" rx="6" class="rm-box"></rect>
+            <text x="370" y="340" text-anchor="middle" class="rm-title">Scoring &amp; Ranking</text>
+            <text x="370" y="354" text-anchor="middle" class="rm-sub">ETA, acceptance probability, fairness weight</text>
+
+            <line x1="370" y1="370" x2="370" y2="399" class="rm-arrow" marker-end="url(#arrow-rm-1)"></line>
+            <rect x="190" y="400" width="360" height="55" rx="6" class="rm-box-strong"></rect>
+            <text x="370" y="421" text-anchor="middle" class="rm-title">Dispatch / Offer Engine</text>
+            <text x="370" y="436" text-anchor="middle" class="rm-sub">offers top candidate; cascades on decline/timeout</text>
+
+            <line x1="300" y1="455" x2="160" y2="494" class="rm-arrow" marker-end="url(#arrow-rm-1)"></line>
+            <rect x="30" y="495" width="220" height="50" rx="6" class="rm-box"></rect>
+            <text x="140" y="514" text-anchor="middle" class="rm-title">Notify Driver</text>
+            <text x="140" y="528" text-anchor="middle" class="rm-sub">push offer to driver app</text>
+
+            <line x1="440" y1="455" x2="600" y2="494" class="rm-arrow-store" marker-end="url(#arrow-rm-1s)"></line>
+            <rect x="480" y="495" width="250" height="50" rx="6" class="rm-box-store"></rect>
+            <text x="605" y="514" text-anchor="middle" class="rm-title">Trip Store (durable)</text>
+            <text x="605" y="528" text-anchor="middle" class="rm-sub">written on acceptance; notifies rider</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; driver location pings feed a live Geospatial Index; rider/Eats requests batch briefly before the Matching Service builds and solves a bipartite assignment, hands off to Scoring &amp; Ranking, and the Dispatch/Offer Engine notifies the driver, cascading on decline, and persists an accepted match to the durable Trip Store.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>The geospatial index and the request-batching path are decoupled:</strong> location pings flow continuously and cheaply into an in-memory structure; requests only touch that structure as a read (candidate lookup) at the moment a batch is matched.</li>
+          <li><strong>Batching is a deliberate, bounded delay, not an accident of queueing</strong> &mdash; it exists specifically to let the Matching Service see many requests and many drivers at once and solve for a better global assignment than any one-at-a-time greedy approach could.</li>
+          <li><strong>Scoring is a separate stage from assignment</strong> so the cost function (ETA, acceptance probability, fairness) can evolve independently of the graph-solving algorithm underneath it.</li>
+          <li><strong>The offer cascade is what makes "matched" different from "assigned"</strong> &mdash; the Matching Service's output is a ranked list per request, not a single binding decision, which is exactly what makes decline/timeout handling cheap.</li>
+        </ul>
+
+        <h2 id="deep-dive-geospatial-indexing-h3-geohash-quadtree">Deep Dive — Geospatial Indexing (H3 / Geohash / Quadtree)</h2>
+        <p>Every matching decision starts with the same question: "which available drivers are near this pickup point?" Scanning all 40,000 online drivers per request is wasteful and doesn't scale; the geospatial index exists purely to make that query cheap &mdash; O(handful of cells) instead of O(all drivers).</p>
+
+        <h3>Three Common Approaches</h3>
+        <table>
+          <tr><th>Approach</th><th>How it partitions space</th><th>Strengths</th><th>Weaknesses</th></tr>
+          <tr><td>Geohash</td><td>Base-32-encoded lat/lng string; shared string prefix = nearby area</td><td>Simple, human-readable, trivial to shard by prefix, widely supported by existing key-value stores</td><td>Rectangular cells distort near poles; a cell's neighbors aren't always adjacent in the encoded string, so "nearby" queries need edge-case handling</td></tr>
+          <tr><td>Quadtree</td><td>Recursively subdivides a bounding box into 4 quadrants wherever density is high</td><td>Naturally adapts to density &mdash; dense downtown cores get fine-grained cells, sparse suburbs stay coarse</td><td>Variable cell size complicates fixed-radius "k-nearest" queries; tree rebalancing adds engineering complexity</td></tr>
+          <tr><td>H3 (hexagonal hierarchical index)</td><td>Fixed-resolution hexagonal grid, uniform cell shape and neighbor distance at each resolution level</td><td>Every cell has exactly 6 equidistant neighbors (no corner-distance distortion like a square grid); cheap k-ring expansion for "search wider"; multiple resolutions nest cleanly for zoom in/out</td><td>Slightly higher conceptual overhead than a plain string prefix; still needs a real library, not just string comparison</td></tr>
+        </table>
+        <p>Uber's own H3 grid is the natural default for this problem specifically because hexagons have <strong>uniform distance to all six neighbors</strong> &mdash; a square (geohash) grid's diagonal neighbors are &radic;2&times; farther away than its edge neighbors, which subtly biases any distance-based candidate search unless you correct for it. A quadtree's strength (density-adaptive cell size) is more valuable for storage efficiency than for a live index that's already small enough to fit fully in memory; for this workload H3's uniform-neighbor property matters more than quadtree's adaptive density.</p>
+
+        <h3>Candidate Lookup via k-Ring Expansion</h3>
+        <p>Every driver's current H3 cell id is stored alongside their state in the index (updated on each location ping). To find candidates for a pickup point: compute its H3 cell, look up drivers in that cell plus its immediate ring of 6 neighbors ("k=1 ring"); if too few candidates are found (a common case at the edge of a service area or during a supply shortage), expand to k=2, k=3, etc. until a minimum candidate count or a maximum acceptable pickup distance is reached. This is a cheap, bounded operation &mdash; a handful of hash-map lookups, not a scan.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A hexagonal H3 grid: a center cell containing three available drivers, surrounded by a ring of six neighbor cells. A dashed circle shows the k-ring search expanding outward from the pickup point when the center cell alone doesn't have enough candidates. A smaller inset shows a quadtree subdividing a dense downtown area into finer cells while leaving a sparse suburban area coarse.">
+            <style>
+              .rm-hex-center{fill:var(--color-accent-dark);stroke:var(--color-primary-dark);stroke-width:1.5;opacity:0.9;}
+              .rm-hex-ring{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .rm-driver{fill:var(--color-primary);stroke:#ffffff;stroke-width:1;}
+              .rm-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .rm-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .rm-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .rm-qt-dense{fill:none;stroke:var(--color-accent);stroke-width:1;}
+              .rm-qt-sparse{fill:none;stroke:var(--color-border);stroke-width:1.5;}
+            </style>
+            <defs>
+              <polygon id="rm-hex" points="38,0 19,32.9 -19,32.9 -38,0 -19,-32.9 19,-32.9"></polygon>
+            </defs>
+
+            <text x="20" y="20" class="rm-title">H3 hex grid: pickup point's cell + ring-1 neighbors</text>
+
+            <circle cx="230" cy="175" r="118" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.5" stroke-dasharray="5 4"></circle>
+            <text x="230" y="300" text-anchor="middle" class="rm-label">k-ring search radius expands (k=1 &rarr; k=2 &hellip;) if too few candidates found</text>
+
+            <use href="#rm-hex" transform="translate(287,207.9)" class="rm-hex-ring"></use>
+            <use href="#rm-hex" transform="translate(287,142.1)" class="rm-hex-ring"></use>
+            <use href="#rm-hex" transform="translate(230,240.8)" class="rm-hex-ring"></use>
+            <use href="#rm-hex" transform="translate(230,109.2)" class="rm-hex-ring"></use>
+            <use href="#rm-hex" transform="translate(173,207.9)" class="rm-hex-ring"></use>
+            <use href="#rm-hex" transform="translate(173,142.1)" class="rm-hex-ring"></use>
+            <use href="#rm-hex" transform="translate(230,175)" class="rm-hex-center"></use>
+
+            <circle cx="215" cy="165" r="5" class="rm-driver"></circle>
+            <circle cx="245" cy="185" r="5" class="rm-driver"></circle>
+            <circle cx="225" cy="190" r="5" class="rm-driver"></circle>
+            <circle cx="200" cy="220" r="5" class="rm-driver"></circle>
+            <circle cx="270" cy="150" r="5" class="rm-driver"></circle>
+
+            <text x="230" y="179" text-anchor="middle" fill="#ffffff" font-family="var(--font-sans)" font-weight="700" font-size="9px">pickup cell</text>
+
+            <line x1="360" y1="175" x2="392" y2="175" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <text x="410" y="20" class="rm-title">Quadtree: density-adaptive comparison</text>
+            <rect x="410" y="35" width="330" height="230" class="rm-qt-sparse"></rect>
+            <rect x="410" y="35" width="165" height="115" class="rm-qt-dense"></rect>
+            <rect x="410" y="35" width="82.5" height="57.5" class="rm-qt-dense"></rect>
+            <rect x="492.5" y="35" width="82.5" height="57.5" class="rm-qt-dense"></rect>
+            <rect x="410" y="92.5" width="82.5" height="57.5" class="rm-qt-dense"></rect>
+            <rect x="492.5" y="92.5" width="82.5" height="57.5" class="rm-qt-dense"></rect>
+            <rect x="410" y="35" width="41.25" height="28.75" class="rm-qt-dense"></rect>
+            <text x="425" y="115" text-anchor="middle" class="rm-sub">downtown</text>
+            <text x="425" y="128" text-anchor="middle" class="rm-sub">(dense, fine cells)</text>
+            <text x="655" y="150" text-anchor="middle" class="rm-sub">suburbs</text>
+            <text x="655" y="163" text-anchor="middle" class="rm-sub">(sparse, coarse cell)</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Left: an H3 hex grid &mdash; the pickup point's cell and its 6 equidistant ring-1 neighbors, with 5 available driver candidates found; the dashed circle shows k-ring expansion if that isn't enough. Right: a quadtree, for comparison, subdivides only where driver/request density is high.</div>
+        </div>
+
+        <h2 id="deep-dive-batch-window-matching-as-bipartite-assignment">Deep Dive — Batch-Window Matching as Bipartite Assignment</h2>
+        <p>This is the core algorithmic idea in the whole system, and the single biggest departure from a naive design. Instead of matching each request the instant it arrives to whichever driver looks nearest <em>right now</em>, requests accumulate over a short batching window (2&ndash;5 seconds). At the end of the window, the system has two sets: the riders/orders waiting in this batch, and the available nearby drivers/couriers pulled from the geospatial index. It builds a <strong>bipartite graph</strong> &mdash; requests on one side, drivers on the other &mdash; with an edge between a request and a driver wherever that driver is a plausible candidate (within the search radius, right vehicle type), weighted by an assignment cost (pickup ETA, route efficiency, vehicle compatibility, and the multi-objective score described in the next section).</p>
+
+        <h3>Why Not Just Greedily Assign Each Request to Its Nearest Driver?</h3>
+        <p>Greedy nearest-match processes requests one at a time in arrival order and commits immediately. The problem: request A's nearest driver might also be request B's second-nearest driver and nobody else's good option at all. If A is processed first and takes that driver, B gets stuck with a far worse match than a globally-aware assignment would have given it &mdash; even though a different pairing (A &rarr; driver 2, B &rarr; driver 1) would have left both riders with a short pickup. This is exactly the structure of the classic <strong>assignment problem</strong> in combinatorial optimization, and it has well-known polynomial-time solutions that guarantee a minimum-cost (or maximum-quality) matching across the whole batch, not just a locally good choice one request at a time.</p>
+
+        <h3>Solving It — Conceptually Hungarian-Algorithm-Like</h3>
+        <p>The classical <strong>Hungarian algorithm</strong> solves min-cost bipartite perfect matching in polynomial time for a dense square cost matrix; production systems at this scale use conceptually similar but sparse-graph-optimized solvers (e.g. an <strong>auction algorithm</strong> or a min-cost max-flow formulation), since the real graph is sparse (each request only has edges to its &asymp;20&ndash;50 nearby candidates, not all 40,000 drivers) and not every driver needs to be assigned. The solver's job: choose a set of request&ndash;driver edges such that (a) each request gets at most one driver, (b) each driver gets at most one request, and (c) the sum of chosen edge weights (cost) is minimized across the whole batch &mdash; leaving some drivers deliberately unmatched (they stay idle/available for the next batch) when there simply aren't enough nearby requests for them.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A bipartite graph with four riders on the left and five drivers on the right. Weighted candidate edges connect each rider to nearby drivers, labeled with an assignment cost. The chosen minimum-cost matching is highlighted: rider 1 to driver 2, rider 2 to driver 1, rider 3 to driver 4, and rider 4 to driver 5, leaving driver 3 unmatched and idle for the next batch. Other candidate edges that were not selected are shown thin and gray.">
+            <style>
+              .rm-node-r{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+              .rm-node-d{fill:var(--color-bg);stroke:var(--color-accent-dark);stroke-width:2;}
+              .rm-node-d-idle{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1.5;stroke-dasharray:3 2;}
+              .rm-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .rm-sub{font-family:var(--font-sans);font-weight:400;font-size:8.5px;fill:var(--color-text-muted);}
+              .rm-edge-chosen{stroke:var(--color-accent-dark);stroke-width:2.75;fill:none;}
+              .rm-edge-other{stroke:var(--color-border);stroke-width:1;fill:none;}
+              .rm-weight{font-family:var(--font-sans);font-weight:700;font-size:9px;fill:var(--color-primary);}
+              .rm-weight-muted{font-family:var(--font-sans);font-weight:400;font-size:8.5px;fill:var(--color-text-muted);}
+            </style>
+            <text x="60" y="20" class="rm-title">Riders (batch)</text>
+            <text x="620" y="20" class="rm-title">Drivers (candidates)</text>
+
+            <circle cx="70" cy="60" r="22" class="rm-node-r"></circle>
+            <text x="70" y="64" text-anchor="middle" class="rm-title">R1</text>
+            <circle cx="70" cy="150" r="22" class="rm-node-r"></circle>
+            <text x="70" y="154" text-anchor="middle" class="rm-title">R2</text>
+            <circle cx="70" cy="240" r="22" class="rm-node-r"></circle>
+            <text x="70" y="244" text-anchor="middle" class="rm-title">R3</text>
+            <circle cx="70" cy="330" r="22" class="rm-node-r"></circle>
+            <text x="70" y="334" text-anchor="middle" class="rm-title">R4</text>
+
+            <circle cx="690" cy="35" r="22" class="rm-node-d"></circle>
+            <text x="690" y="39" text-anchor="middle" class="rm-title">D1</text>
+            <circle cx="690" cy="120" r="22" class="rm-node-d"></circle>
+            <text x="690" y="124" text-anchor="middle" class="rm-title">D2</text>
+            <circle cx="690" cy="205" r="22" class="rm-node-d-idle"></circle>
+            <text x="690" y="209" text-anchor="middle" class="rm-title">D3</text>
+            <circle cx="690" cy="290" r="22" class="rm-node-d"></circle>
+            <text x="690" y="294" text-anchor="middle" class="rm-title">D4</text>
+            <circle cx="690" cy="365" r="22" class="rm-node-d"></circle>
+            <text x="690" y="369" text-anchor="middle" class="rm-title">D5</text>
+
+            <line x1="92" y1="55" x2="668" y2="38" class="rm-edge-other"></line>
+            <text x="380" y="38" text-anchor="middle" class="rm-weight-muted">6</text>
+            <line x1="92" y1="65" x2="668" y2="118" class="rm-edge-chosen"></line>
+            <text x="380" y="105" text-anchor="middle" class="rm-weight">3</text>
+
+            <line x1="92" y1="145" x2="668" y2="40" class="rm-edge-chosen"></line>
+            <text x="380" y="80" text-anchor="middle" class="rm-weight">4</text>
+            <line x1="92" y1="155" x2="668" y2="122" class="rm-edge-other"></line>
+            <text x="380" y="150" text-anchor="middle" class="rm-weight-muted">7</text>
+            <line x1="92" y1="160" x2="668" y2="200" class="rm-edge-other"></line>
+            <text x="380" y="192" text-anchor="middle" class="rm-weight-muted">8</text>
+
+            <line x1="92" y1="235" x2="668" y2="210" class="rm-edge-other"></line>
+            <text x="380" y="235" text-anchor="middle" class="rm-weight-muted">9</text>
+            <line x1="92" y1="245" x2="668" y2="288" class="rm-edge-chosen"></line>
+            <text x="380" y="278" text-anchor="middle" class="rm-weight">2</text>
+
+            <line x1="92" y1="325" x2="668" y2="292" class="rm-edge-other"></line>
+            <text x="380" y="322" text-anchor="middle" class="rm-weight-muted">7</text>
+            <line x1="92" y1="335" x2="668" y2="367" class="rm-edge-chosen"></line>
+            <text x="380" y="360" text-anchor="middle" class="rm-weight">5</text>
+
+            <text x="380" y="392" text-anchor="middle" class="rm-sub">Highlighted edges = chosen min-cost assignment (total cost 3+4+2+5=14). D3 stays idle this round.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Bipartite assignment for one batch window: sparse candidate edges (only plausible pairs, not every rider&ndash;driver combination) are weighted by assignment cost; the solver picks the highlighted minimum-cost matching across the whole batch, deliberately leaving driver D3 unmatched this round.</div>
+        </div>
+
+        <h3>Batch Assignment vs. Greedy Nearest-Match</h3>
+        <table class="sortable">
+          <tr><th>Approach</th><th>Global match quality</th><th>Latency added</th><th>Complexity</th><th>Behavior under solver failure</th></tr>
+          <tr><td>Greedy nearest-match (commit per request, arrival order)</td><td>Locally good, globally suboptimal &mdash; provably worse aggregate wait time</td><td>Near-zero</td><td>Low</td><td>N/A &mdash; this <em>is</em> the fallback</td></tr>
+          <tr><td>Batch-window bipartite assignment (recommended)</td><td>Globally optimal (or near-optimal) for the batch</td><td>One batching-window's worth (2&ndash;5s)</td><td>Medium-High</td><td>Falls back to greedy if the solver is slow/unavailable &mdash; see "Bottlenecks" below</td></tr>
+        </table>
+
+        <h2 id="deep-dive-multi-objective-scoring-and-fairness">Deep Dive — Multi-Objective Scoring and Fairness</h2>
+        <p>An edge weight in the bipartite graph isn't just straight-line or road distance &mdash; it's a composite score built from several signals the candidate driver's index record carries: last-seen timestamp/location, current status, estimated repositioning cost (how far out of their way this pulls them), an ML-predicted <strong>acceptance-probability</strong> score, vehicle-attribute compatibility, and current ETA to the pickup point.</p>
+
+        <div class="formula-box">
+          <span class="formula-label">Illustrative scoring function</span>
+          cost(request, driver) = w&#8321;&middot;pickup_ETA &minus; w&#8322;&middot;accept_probability + w&#8323;&middot;repositioning_cost &minus; w&#8324;&middot;fairness_boost(driver) + penalty(vehicle_mismatch)
+          <br>Lower cost = better candidate; the solver minimizes total cost summed across the whole batch's chosen matching
+          <br>fairness_boost(driver) increases for drivers with below-median recent utilization/idle time, making them relatively more attractive candidates without ever overriding a genuinely terrible ETA match
+        </div>
+
+        <h3>Why Jointly Optimize Instead of Just "Nearest First"</h3>
+        <ul>
+          <li><strong>Minimize rider wait time:</strong> the most visible, most complained-about metric &mdash; pickup ETA is always a term in the cost function, typically the dominant one.</li>
+          <li><strong>Minimize driver repositioning/idle cost:</strong> a match that drags a driver 15 minutes out of their current area for a short trip is a bad outcome for driver earnings-per-hour even if the rider's wait was short; this term discourages that unless nothing better is available.</li>
+          <li><strong>Maximize offer-acceptance probability:</strong> a candidate who is very likely to decline (based on trip length, direction, or historical pattern) is a worse "expected" choice than the cost-model naively suggests, because a decline just re-triggers the cascade and burns time &mdash; folding predicted acceptance probability into the cost avoids wasting cycles on offers unlikely to land.</li>
+          <li><strong>Fairness / utilization spread:</strong> without a countervailing term, a scoring function built purely on "highest predicted acceptance probability" collapses into always offering to the same small set of highly-responsive drivers, starving everyone else of income &mdash; the exact rich-get-richer failure mode this term exists to prevent.</li>
+        </ul>
+
+        <h3>Fairness in Detail — Avoiding the Rich-Get-Richer Loop</h3>
+        <p>If acceptance-probability weighting is applied naively, the top-scoring driver for almost every nearby request tends to be the same handful of drivers who reliably accept quickly &mdash; and because they accept quickly, they generate more completed trips, which further reinforces their "reliable" score. Left unchecked this starves lower-acceptance-rate (often newer, or simply less lucky) drivers of offers entirely, which is both a fairness problem and, eventually, a supply problem (those drivers churn off the platform). The <code>fairness_boost</code> term directly counteracts this by weighting a driver's recent idle time / low recent utilization as a positive factor in their score &mdash; conceptually the same "aging" idea used to prevent starvation in a priority queue, applied here to driver opportunity instead of message wait time. The goal is not equal outcomes for every driver regardless of quality of match; it's a bounded, monotonic pressure that ensures no driver is <em>structurally excluded</em> from ever getting offered a reasonable nearby trip.</p>
+
+        <table>
+          <tr><th>Scoring signal</th><th>What it protects</th><th>Risk if omitted or unweighted</th></tr>
+          <tr><td>Pickup ETA</td><td>Rider wait time</td><td>Riders wait longer than necessary even with drivers available</td></tr>
+          <tr><td>Repositioning cost</td><td>Driver earnings-per-hour, route sanity</td><td>Drivers dragged far from their area for short/low-value trips</td></tr>
+          <tr><td>Acceptance-probability prediction</td><td>Offer-cascade efficiency (fewer wasted round trips)</td><td>System repeatedly offers to drivers likely to decline, adding latency</td></tr>
+          <tr><td>Fairness / idle-time boost</td><td>Even opportunity distribution across the driver pool</td><td>Small set of "favorite" drivers absorb most offers; others churn off the platform</td></tr>
+          <tr><td>Vehicle-type compatibility</td><td>Functional correctness of the match</td><td>A wheelchair-accessible request matched to a standard sedan &mdash; a hard failure, not just suboptimal</td></tr>
+        </table>
+
+        <h2 id="deep-dive-offer-cascade-with-timeout-and-decline-handling">Deep Dive — Offer Cascade with Timeout and Decline Handling</h2>
+        <p>The batch solver's output for each request is a <strong>ranked list</strong> of candidates, not a single binding decision &mdash; this is deliberate, and it's what makes the dispatch step cheap. The Dispatch/Offer Engine sends the top-ranked candidate a push notification with the trip details and a short response window (typically 10&ndash;15 seconds). If the driver accepts within that window, the trip is created and every other candidate on that request's ranked list is released back to the available pool immediately. If the driver declines, or the timeout elapses with no response, the engine immediately offers the next-ranked candidate &mdash; without re-running the full batch solver, since the ranked list already reflects a globally-aware ordering.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence diagram in six numbered steps: the Dispatch Engine sends an offer to the rank-1 driver with a timeout; the driver declines or the offer times out; the Dispatch Engine immediately offers the rank-2 driver from the same ranked list; that driver accepts; the Dispatch Engine creates the trip and notifies the rider, and releases the remaining candidates on the ranked list back to the available pool.">
+            <style>
+              .rm-circle{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+              .rm-circle-warn{fill:var(--color-formula-border);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .rm-num{font-family:var(--font-sans);font-weight:700;font-size:13px;fill:#ffffff;}
+              .rm-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .rm-sub{font-family:var(--font-sans);font-weight:400;font-size:10px;fill:var(--color-text-muted);}
+              .rm-line{stroke:var(--color-border);stroke-width:2;}
+            </style>
+            <line x1="40" y1="40" x2="40" y2="370" class="rm-line"></line>
+
+            <circle cx="40" cy="40" r="16" class="rm-circle"></circle>
+            <text x="40" y="45" text-anchor="middle" class="rm-num">1</text>
+            <text x="75" y="34" class="rm-title">Offer sent to rank-1 driver (Driver A)</text>
+            <text x="75" y="49" class="rm-sub">push notification + trip summary, 12s response window</text>
+
+            <circle cx="40" cy="105" r="16" class="rm-circle-warn"></circle>
+            <text x="40" y="110" text-anchor="middle" class="rm-num">2</text>
+            <text x="75" y="99" class="rm-title">Driver A declines, or the 12s timeout elapses</text>
+            <text x="75" y="114" class="rm-sub">offer_id marked EXPIRED/DECLINED; Driver A returned to available pool</text>
+
+            <circle cx="40" cy="170" r="16" class="rm-circle"></circle>
+            <text x="40" y="175" text-anchor="middle" class="rm-num">3</text>
+            <text x="75" y="164" class="rm-title">Cascade: offer sent to rank-2 driver (Driver B)</text>
+            <text x="75" y="179" class="rm-sub">no re-solve needed &mdash; reuses the batch's precomputed ranked list</text>
+
+            <circle cx="40" cy="235" r="16" class="rm-circle"></circle>
+            <text x="40" y="240" text-anchor="middle" class="rm-num">4</text>
+            <text x="75" y="229" class="rm-title">Driver B accepts within the response window</text>
+            <text x="75" y="244" class="rm-sub">conditional claim write succeeds &mdash; first accept wins, race-safe</text>
+
+            <circle cx="40" cy="300" r="16" class="rm-circle"></circle>
+            <text x="40" y="305" text-anchor="middle" class="rm-num">5</text>
+            <text x="75" y="294" class="rm-title">Trip created; rider notified "driver found"</text>
+            <text x="75" y="309" class="rm-sub">durable trip record written; request status &rarr; DRIVER_ASSIGNED</text>
+
+            <circle cx="40" cy="360" r="16" class="rm-circle"></circle>
+            <text x="40" y="365" text-anchor="middle" class="rm-num">6</text>
+            <text x="75" y="354" class="rm-title">Remaining ranked candidates released</text>
+            <text x="75" y="369" class="rm-sub">any not-yet-offered drivers on the list return to the available pool untouched</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Offer cascade: a decline or timeout advances to the next candidate on the already-computed ranked list, with no need to re-run the batch solver; the first valid accept wins via a race-safe conditional claim.</div>
+        </div>
+
+        <h3>Why Reuse the Ranked List Instead of Re-Matching from Scratch?</h3>
+        <p>Re-running the full bipartite solver after every single decline would be both wasteful and slow &mdash; the whole point of batching was to compute a good assignment once per window across many requests simultaneously. Since the solver already produced a full preference ordering (not just a single winner) for each request, a decline is cheap to handle: pop the next name off an already-computed list. The list does eventually go stale if the cascade runs long enough that other drivers in it have since gone offline or accepted a different request from a later batch &mdash; the Dispatch Engine skips any candidate no longer marked "available" in the live index rather than blindly offering to someone already gone.</p>
+
+        <h2 id="deep-dive-uber-eats-variant-restaurant-readiness-and-multi-order-batching">Deep Dive — Uber Eats Variant: Restaurant Readiness and Multi-Order Batching</h2>
+        <p>Everything above applies to Eats unchanged, with one structural addition: a delivery order isn't "ready to dispatch" the instant it's placed &mdash; it's ready when the restaurant has actually finished preparing the food, and that estimate itself changes as the kitchen works through its queue.</p>
+
+        <h3>Restaurant Readiness Time as a Scheduling Constraint</h3>
+        <p>Dispatching the courier too early wastes their time standing at the counter (and creates a bad in-person experience with the restaurant); dispatching too late leaves food cooling on the counter and the customer waiting longer than necessary once it's actually ready. The matching cost function for Eats therefore adds a <strong>readiness-alignment term</strong>: the assignment cost increases the more a courier's predicted arrival-at-restaurant time deviates from the restaurant's current <code>food_ready_eta</code>, in either direction. Concretely, the Matching Service doesn't dispatch a courier for a given order until <code>food_ready_eta minus courier's travel time to the restaurant</code> falls inside the current batch window &mdash; effectively delaying the match itself (not just the pickup) until the timing lines up, and re-evaluating on every batch cycle as the kitchen's estimate updates.</p>
+
+        <h3>Multi-Order Batching (Multi-Stop Routes)</h3>
+        <p>When multiple nearby, timing-compatible orders exist &mdash; e.g. two orders from restaurants a block apart, or one restaurant with two orders ready close together &mdash; the same batch-window assignment can pair a single courier to multiple orders as one multi-stop route (pickup A, pickup B, drop C, drop D, optimally sequenced) instead of dispatching two separate couriers. This improves courier earnings-per-hour and platform efficiency, but only when it doesn't push any single order's delivery time unacceptably late; the cost function penalizes a batched route in proportion to the additional wait it adds to the <em>most delayed</em> order in the bundle, not just the average.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: a timeline showing an order's food ready ETA with a shaded dispatch window around it; dispatching the courier too early or too late both fall outside the acceptable window. Right panel: a multi-stop route where one courier is batch-matched to two nearby orders, visiting Restaurant 1, then Restaurant 2, then Customer 1, then Customer 2 in sequence.">
+            <style>
+              .rm-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .rm-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .rm-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .rm-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .rm-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .rm-window{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:1.5;}
+              .rm-timeline{stroke:var(--color-border);stroke-width:2;}
+              .rm-route{stroke:var(--color-accent-dark);stroke-width:2;fill:none;stroke-dasharray:5 3;}
+              .rm-stop{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+            </style>
+            <defs>
+              <marker id="arrow-rm-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path></marker>
+            </defs>
+
+            <text x="20" y="20" class="rm-title">Readiness alignment: don't dispatch too early or too late</text>
+            <line x1="20" y1="80" x2="360" y2="80" class="rm-timeline"></line>
+            <rect x="150" y="60" width="80" height="40" class="rm-window"></rect>
+            <text x="190" y="55" text-anchor="middle" class="rm-label">acceptable dispatch window</text>
+
+            <circle cx="70" cy="80" r="6" fill="var(--color-border)"></circle>
+            <text x="70" y="105" text-anchor="middle" class="rm-sub">dispatch too early</text>
+            <text x="70" y="117" text-anchor="middle" class="rm-label">courier idles at counter</text>
+
+            <circle cx="190" cy="80" r="6" fill="var(--color-formula-border)"></circle>
+            <text x="190" y="140" text-anchor="middle" class="rm-sub">food_ready_eta</text>
+
+            <circle cx="320" cy="80" r="6" fill="var(--color-border)"></circle>
+            <text x="320" y="105" text-anchor="middle" class="rm-sub">dispatch too late</text>
+            <text x="320" y="117" text-anchor="middle" class="rm-label">food cools, customer waits</text>
+
+            <text x="20" y="180" class="rm-sub">Every batch cycle re-checks the readiness estimate as the kitchen's queue updates.</text>
+
+            <line x1="380" y1="30" x2="380" y2="360" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <text x="410" y="20" class="rm-title">Multi-order batching: one courier, one route</text>
+
+            <rect x="410" y="45" width="130" height="40" rx="5" class="rm-stop"></rect>
+            <text x="475" y="69" text-anchor="middle" class="rm-title">Restaurant 1</text>
+
+            <path d="M540,65 C570,65 570,115 560,120" class="rm-route" marker-end="url(#arrow-rm-2)"></path>
+            <rect x="560" y="100" width="130" height="40" rx="5" class="rm-stop"></rect>
+            <text x="625" y="124" text-anchor="middle" class="rm-title">Restaurant 2</text>
+
+            <path d="M600,140 C600,190 490,190 480,195" class="rm-route" marker-end="url(#arrow-rm-2)"></path>
+            <rect x="410" y="175" width="130" height="40" rx="5" class="rm-stop"></rect>
+            <text x="475" y="199" text-anchor="middle" class="rm-title">Customer 1</text>
+
+            <path d="M475,215 C475,260 610,255 620,260" class="rm-route" marker-end="url(#arrow-rm-2)"></path>
+            <rect x="560" y="250" width="130" height="40" rx="5" class="rm-stop"></rect>
+            <text x="625" y="274" text-anchor="middle" class="rm-title">Customer 2</text>
+
+            <text x="410" y="325" class="rm-sub">Route sequence chosen to minimize the delay to the most-delayed order,</text>
+            <text x="410" y="338" class="rm-sub">not just average delivery time across the batch.</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Left: the readiness-alignment constraint keeps courier dispatch inside an acceptable window around the restaurant's food_ready_eta. Right: multi-order batching sequences one courier across two nearby restaurants and two nearby customers as a single route.</div>
+        </div>
+
+        <table>
+          <tr><th>Dimension</th><th>Rides</th><th>Eats</th></tr>
+          <tr><td>Job "ready" condition</td><td>Immediate &mdash; rider is ready the moment they request</td><td>Gated on food_ready_eta from the restaurant's prep system</td></tr>
+          <tr><td>Assignment granularity</td><td>One driver &harr; one rider (pooling variants aside, out of scope here)</td><td>One courier can batch to multiple orders as a multi-stop route</td></tr>
+          <tr><td>Dominant cost-function term</td><td>Pickup ETA</td><td>Readiness-time alignment, then multi-stop route efficiency</td></tr>
+          <tr><td>Cold-start / no-supply handling</td><td>Widen search radius, then surge pricing to attract drivers</td><td>Same, plus can delay dispatch slightly if a nearby courier is imminently freeing up</td></tr>
+        </table>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+        <p>Matching is an inherently local problem &mdash; a driver in Brooklyn is never a candidate for a rider in San Francisco &mdash; so the system partitions by geography into independent <strong>regional dispatch cells</strong>, each running its own geospatial index, batching window, and Matching Service instance, entirely decoupled from every other cell's load and health.</p>
+        <ul>
+          <li><strong>Dispatch cells are sized per metro</strong> (or a cluster of H3 cells covering one metro), so a request in one city never even queries driver state from another city &mdash; keeping both data locality and matching latency tight.</li>
+          <li><strong>Cell-boundary overlap radius:</strong> a rider requesting a pickup near the edge of one cell needs visibility into drivers that are technically indexed under the neighboring cell but geographically closer than any driver in their own cell. Each cell's candidate lookup includes an overlap buffer (e.g. a couple of km, or one extra H3 k-ring) into the neighboring cell(s) so a driver just across a boundary line is still a visible candidate, rather than being invisible purely due to an arbitrary partitioning line.</li>
+          <li><strong>Durable trip/order storage is sharded by geography too</strong> (or by trip_id hash, replicated regionally) so writes stay local and don't cross a wide-area network on the hot acceptance path.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A map divided into three regional dispatch cells, A, B, and C, each running its own independent Matching Service instance. A shaded overlap band straddles the boundary between cell A and cell B, showing a driver near that boundary who is visible to both cells' candidate lookups despite being indexed primarily under cell B.">
+            <style>
+              .rm-cell{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .rm-cell-b{fill:var(--color-bg);stroke:var(--color-accent);stroke-width:1.5;}
+              .rm-overlap{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:1.5;stroke-dasharray:5 3;opacity:0.85;}
+              .rm-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .rm-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .rm-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .rm-driver{fill:var(--color-primary);stroke:#ffffff;stroke-width:1.5;}
+            </style>
+            <rect x="20" y="30" width="230" height="260" rx="6" class="rm-cell"></rect>
+            <text x="135" y="55" text-anchor="middle" class="rm-title">Dispatch Cell A</text>
+            <text x="135" y="70" text-anchor="middle" class="rm-sub">independent Matching Service</text>
+
+            <rect x="265" y="30" width="230" height="260" rx="6" class="rm-cell-b"></rect>
+            <text x="380" y="55" text-anchor="middle" class="rm-title">Dispatch Cell B</text>
+            <text x="380" y="70" text-anchor="middle" class="rm-sub">independent Matching Service</text>
+
+            <rect x="510" y="30" width="230" height="260" rx="6" class="rm-cell"></rect>
+            <text x="625" y="55" text-anchor="middle" class="rm-title">Dispatch Cell C</text>
+            <text x="625" y="70" text-anchor="middle" class="rm-sub">independent Matching Service</text>
+
+            <rect x="205" y="30" width="90" height="260" class="rm-overlap"></rect>
+            <text x="250" y="150" text-anchor="middle" class="rm-title">overlap</text>
+            <text x="250" y="164" text-anchor="middle" class="rm-title">radius</text>
+
+            <circle cx="230" cy="200" r="6" class="rm-driver"></circle>
+            <text x="230" y="225" text-anchor="middle" class="rm-sub">driver indexed</text>
+            <text x="230" y="237" text-anchor="middle" class="rm-sub">under Cell A,</text>
+            <text x="230" y="249" text-anchor="middle" class="rm-sub">visible to Cell B too</text>
+
+            <text x="135" y="315" text-anchor="middle" class="rm-label">Each cell's own load/failure is isolated from its neighbors.</text>
+            <text x="625" y="315" text-anchor="middle" class="rm-label">Cell C has no overlap dependency shown here for clarity.</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. Regional dispatch cells operate independently for data locality and low matching latency; an overlap radius at cell boundaries keeps a driver near the edge visible to the neighboring cell's candidate lookup.</div>
+        </div>
+
+        <table>
+          <tr><th>Data / component</th><th>Partitioned by</th><th>Replication / resilience</th></tr>
+          <tr><td>Geospatial index (driver state)</td><td>Regional dispatch cell (geography)</td><td>In-memory primary + fast-failover replica per cell</td></tr>
+          <tr><td>Batching window / Matching Service</td><td>Regional dispatch cell</td><td>Independent instance per cell; one cell's overload never blocks another</td></tr>
+          <tr><td>Dispatch offers</td><td>Regional dispatch cell (co-located with the index)</td><td>In-memory, TTL-backed</td></tr>
+          <tr><td>Durable trip / order store</td><td>hash(trip_id), or geography-aligned shards</td><td>RF=3, regional replication with async cross-region backup</td></tr>
+        </table>
+
+        <h2 id="feature-specific-logic-driver-disconnects-and-location-staleness">Feature-Specific Logic: Driver Disconnects and Location Staleness</h2>
+        <p>A driver's app can go to background, lose signal, crash, or the device can simply die &mdash; none of this can be allowed to leave a rider's request silently stuck waiting on a driver who's actually gone.</p>
+        <ul>
+          <li><strong>Staleness threshold:</strong> if no location ping arrives from a driver within a bounded window (e.g. 20&ndash;30 seconds), their status flips to <code>stale</code> and they're excluded from new candidate lookups &mdash; they simply stop appearing as a match option, no special-case handling needed elsewhere.</li>
+          <li><strong>Mid-offer disconnect:</strong> if a driver goes stale while an offer is outstanding to them, the offer is treated exactly like a timeout &mdash; the cascade advances to the next candidate rather than waiting out the full response window for a driver who's already gone dark.</li>
+          <li><strong>Mid-trip disconnect:</strong> once a trip has started, a disconnected driver is a trip-management concern (outside this page's scope), but the matching system's obligation ends cleanly at "trip successfully created" &mdash; it doesn't need to reason about post-acceptance connectivity.</li>
+          <li><strong>Reconnection:</strong> a driver's app reconnecting and sending a fresh ping simply re-marks them <code>available</code> and re-inserts them into the live index &mdash; there's no separate "recovery" flow because the index was designed to be cheaply, idempotently reconstructible from pings in the first place.</li>
+        </ul>
+
+        <h2 id="rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</h2>
+        <p>A dispatch/matching system is an attractive target for several distinct abuse patterns, each needing its own defense.</p>
+        <ul>
+          <li><strong>Fake ride/order requests:</strong> a burst of requests from a single account (bot testing surge pricing, scraping driver availability, or griefing a specific area) is throttled with a per-account token bucket at the API gateway, independent of the matching pipeline's own capacity.</li>
+          <li><strong>GPS spoofing:</strong> a driver reporting a fabricated location (to appear in a high-demand/high-surge area without actually being there) is detected via plausibility checks &mdash; implied speed between consecutive pings that exceeds physically possible travel, location jumps inconsistent with the reported heading, or mismatch against independent signals (cell-tower/Wi-Fi-assisted positioning) where available; flagged accounts are excluded from matching pending review rather than silently trusted.</li>
+          <li><strong>Offer-cascade gaming:</strong> a driver client that auto-declines low-value offers to "fish" for a better one is a fairness and efficiency problem; repeated rapid declines lower that driver's acceptance-probability score, which naturally deprioritizes them in future scoring rather than requiring a hand-written rule.</li>
+          <li><strong>Cancellation abuse:</strong> a rider or driver repeatedly cancelling right after a match (to re-roll for a different pairing, or to waste a competitor's driver's time) is tracked per-account and rate-limited/reviewed separately from the matching hot path.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy and Permissions</h2>
+        <ul>
+          <li><strong>Location data minimization:</strong> a driver's precise live location is only ever visible to the matching system internals and, once matched, to their currently assigned rider &mdash; never broadcast to unrelated riders or exposed in any general-purpose log.</li>
+          <li><strong>Encryption in transit:</strong> TLS for all driver-ping and rider-request traffic; location pings in particular are frequent, small, and sensitive, and must never traverse an unencrypted channel.</li>
+          <li><strong>Anonymization until match:</strong> a rider's exact identity is not needed by, or exposed to, drivers who are merely candidates in a batch &mdash; only the accepted driver receives contact/trip details, at the moment of acceptance.</li>
+          <li><strong>Access control on trip/location history:</strong> the durable trip store (pickup/dropoff history) is access-controlled and audited &mdash; it's a sensitive behavioral record (where someone was, when) even after the trip itself is long complete.</li>
+          <li><strong>Geofencing sensitive areas:</strong> certain locations (e.g. government/security-sensitive facilities) may need matching-level handling (no precise pin drop, coarse-grained pickup zones instead) &mdash; a policy layer on top of the same matching core, not a separate system.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <ol>
+          <li>Between driver/rider client apps and the regional ingestion tier: standard L7 load balancing, health-checked, routing each request to the nearest healthy regional deployment.</li>
+          <li>Across Matching Service instances within one dispatch cell: partition by sub-region (a cluster of H3 cells) so each instance owns a bounded, independent slice of the batching workload rather than contending for one shared queue.</li>
+          <li>Across geospatial-index shard replicas: read-heavy candidate lookups are spread across replicas, while writes (location pings) are routed consistently to the shard owning that driver's current cell.</li>
+        </ol>
+        <p>The provider-style "rate-aware balancing" concern from other systems (e.g. spreading load across a pool of SMS numbers) doesn't really apply here &mdash; the analogous constraint is dispatch-cell capacity during a sudden localized demand spike (a stadium letting out, severe weather), which is better addressed by dynamic cell/sub-region rebalancing and surge-aware supply incentives than by load-balancer configuration alone.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Run every metro as an independent, active-active regional dispatch cell &mdash; there is no cross-region matching requirement (a driver in one city is never relevant to a rider in another), which makes this one of the cleaner "scale out by adding regions" stories in system design.</li>
+          <li>The durable trip/order store replicates regionally for resilience and centrally (asynchronously) for cross-region analytics, fraud review, and customer support tooling that needs a global view.</li>
+          <li>New-city cold start is handled as a product/ops problem layered on the same architecture: relax matching radius and time-of-day expectations while supply is thin, and lean on surge pricing / driver incentives to bootstrap enough online supply that the batching window starts producing meaningfully sized batches.</li>
+          <li>A regional outage degrades gracefully to "no drivers available" for requests in that region only &mdash; it never cascades into other regions, since dispatch cells share no synchronous dependency on each other.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Batch-window latency vs. match quality trade-off</td><td>2&ndash;5 second window is the pragmatic default; make it configurable and monitor rider-perceived wait against match-quality metrics to tune it per metro/time-of-day</td></tr>
+          <tr><td>Bipartite solver is slow or unavailable under extreme batch size</td><td>Graceful degradation: fall back to greedy nearest-match for that cycle rather than blocking all matching &mdash; a worse-quality match beats no match</td></tr>
+          <tr><td>Hot cell overload (concert letting out, severe weather)</td><td>Dynamic sub-region rebalancing, surge pricing to pull in more supply, burst absorption via a slightly widened batching window during the spike only</td></tr>
+          <tr><td>Geospatial index node failure</td><td>In-memory primary + fast-failover replica per cell; drivers self-heal the index within one ping interval regardless</td></tr>
+          <tr><td>Duplicate/racing offer acceptance</td><td>Conditional claim write on the offer/trip record &mdash; first valid accept wins, everything else is a harmless no-op</td></tr>
+          <tr><td>Cell-boundary "invisible driver" edge case</td><td>Overlap radius / extra k-ring lookup into neighboring cells at request time</td></tr>
+          <tr><td>Fairness collapse (favorite-driver loop)</td><td>Explicit fairness/idle-time weighting in the scoring function, monitored via an idle-driver-ratio metric per cell</td></tr>
+          <tr><td>Regional outage</td><td>Active-active independent regional cells; a regional failure degrades only that region's matching, never others</td></tr>
+        </table>
+
+        <h3>The Central Trade-Off, Restated</h3>
+        <p>Every design choice in this system traces back to one tension: <strong>waiting longer to decide produces a better decision.</strong> The batching window is the most visible instance of this (wait a few seconds, get a globally better assignment), but the same shape reappears in the offer cascade (wait out a timeout before reassigning, rather than aggressively pre-empting), in fairness weighting (accept a marginally worse ETA match sometimes, in exchange for a healthier long-run driver pool), and in the readiness-time constraint for Eats (delay dispatch until timing actually lines up, rather than optimizing purely for "soonest courier"). A strong interview answer names this pattern explicitly rather than treating each instance as an unrelated, one-off decision.</p>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging and Analytics</h2>
+        <ul>
+          <li><strong>Match latency, p50/p99:</strong> time from request entering a batch to an accepted offer &mdash; the single most important end-to-end health metric, tracked per dispatch cell so one metro's degradation doesn't hide in a global average.</li>
+          <li><strong>Offer-acceptance rate:</strong> fraction of first-choice (and second-, third-choice) offers accepted; a sustained drop signals either a scoring-model regression or a genuine supply shortage.</li>
+          <li><strong>ETA-prediction accuracy vs. actuals:</strong> compare predicted pickup ETA at match time against actual observed pickup time; systematic bias here quietly degrades match quality even when the solver itself is working correctly.</li>
+          <li><strong>Idle-driver ratio:</strong> share of available drivers who received zero offers in a rolling window &mdash; the direct operational signal for whether the fairness weighting is actually working, per cell.</li>
+          <li><strong>Unmatched-request rate:</strong> fraction of requests that exhausted a reasonable search radius/cascade without landing a driver, tracked per region/cell &mdash; the leading indicator of a supply shortage or cold-start condition needing an operational response (surge pricing, incentives).</li>
+          <li><strong>Cascade depth distribution:</strong> how many offers, on average, does it take before one is accepted? A rising trend suggests the acceptance-probability scoring is drifting out of calibration.</li>
+          <li><strong>Batch size and solver latency:</strong> requests-per-batch and solver wall-clock time, watched against the fallback-to-greedy threshold so degradation is caught before riders notice.</li>
+        </ul>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Geospatial index</td><td>H3 hexagonal grid &mdash; uniform neighbor distance, cheap k-ring candidate expansion</td></tr>
+          <tr><td>Matching strategy</td><td>Batch window (2&ndash;5s) + bipartite min-cost assignment, not per-request greedy nearest</td></tr>
+          <tr><td>Assignment solver</td><td>Sparse-graph solver (auction / min-cost flow), conceptually Hungarian-algorithm-like</td></tr>
+          <tr><td>Scoring</td><td>Multi-objective: pickup ETA, repositioning cost, acceptance probability, fairness/idle-time boost, vehicle compatibility</td></tr>
+          <tr><td>Dispatch</td><td>Ranked-list offer cascade, 10&ndash;15s timeout per offer, no re-solve on decline</td></tr>
+          <tr><td>Eats extension</td><td>Readiness-time alignment gates dispatch timing; multi-order batching for nearby, timing-compatible orders</td></tr>
+          <tr><td>Partitioning</td><td>Regional dispatch cells by geography, with a boundary overlap radius</td></tr>
+          <tr><td>Live driver state store</td><td>In-memory (Redis / custom), cheaply reconstructible from pings &mdash; not durability-critical</td></tr>
+          <tr><td>Trip / order record store</td><td>Durable, replicated (RF=3), sharded by geography or trip_id</td></tr>
+          <tr><td>Graceful degradation</td><td>Fall back to greedy nearest-match if the batch solver is slow/unavailable</td></tr>
+          <tr><td>Fairness mechanism</td><td>Idle-time-weighted scoring term, monitored via an idle-driver-ratio metric</td></tr>
+          <tr><td>Multi-region</td><td>Active-active independent dispatch cells per metro; no cross-region matching dependency</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect a real interview to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Matching Strategy</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why does batch-window matching beat greedy nearest-match?</div>
+          <div class="qa-a">Greedy nearest-match commits each request immediately to whatever looks nearest at that instant, which can "use up" a driver on a locally-good-but-globally-suboptimal pairing. Batching a few seconds' worth of requests and solving a bipartite assignment across the whole batch finds a pairing that minimizes total cost (or maximizes quality) system-wide, which is provably at least as good, and typically better, than any greedy sequence of individual decisions.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you choose the batching-window size?</div>
+          <div class="qa-a">It's a direct latency-vs-quality trade-off: too small and the batch barely has more than one or two requests, degrading to greedy; too large and every rider waits the full window before seeing a match, which hurts perceived responsiveness. 2&ndash;5 seconds is a defensible production default; make it configurable per metro and time-of-day, and validate the choice against measured match-quality and rider-wait metrics rather than picking it purely by intuition.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What algorithm actually solves the bipartite assignment?</div>
+          <div class="qa-a">Conceptually a min-cost bipartite matching problem, the same shape the Hungarian algorithm solves optimally for a dense cost matrix; in production, since the real graph is sparse (each request only connects to its nearby candidates, not every driver in the city), a sparse-graph-optimized solver such as an auction algorithm or a min-cost max-flow formulation is used instead, trading a small amount of optimality guarantee for solving speed at scale.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does H3/geohash-style indexing actually work, and why pick one over the other?</div>
+          <div class="qa-a">Both organize drivers by geographic cell so "nearby drivers" is a cheap lookup instead of a scan. Geohash encodes lat/lng into a string where a shared prefix means nearby, and shards trivially on that prefix, but its rectangular cells distort at different latitudes and don't have uniform neighbor distance. H3 uses a fixed hexagonal grid where every cell has exactly 6 equidistant neighbors, which makes k-ring "search wider" expansion clean and avoids the diagonal-neighbor distance bias a square grid has &mdash; the reason Uber built and open-sourced H3 in the first place.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Is this really the same combinatorial-optimization pattern as other "assignment problem" interview questions?</div>
+          <div class="qa-a">Yes &mdash; structurally this is the same min-cost bipartite matching pattern that shows up in task-assignment and job-scheduling interview questions, just with a domain-specific cost function (ETA, repositioning cost, acceptance probability, fairness) instead of a generic weight. Recognizing "this is an assignment problem, not a nearest-neighbor problem" early is exactly the framing shift interviewers are listening for, since it justifies batching and a real solver instead of a simpler heuristic.</div>
+        </div>
+
+        <h3>Scoring and Fairness</h3>
+        <div class="qa-item">
+          <div class="qa-q">Walk me through the fairness vs. efficiency trade-off in driver scoring.</div>
+          <div class="qa-a">Pure efficiency scoring (always offer to whoever has the best ETA and highest predicted acceptance probability) tends to repeatedly select the same small set of highly-responsive drivers, since accepting more offers reinforces their "reliable" score &mdash; a rich-get-richer loop that starves other drivers of opportunity and eventually drives them off the platform. Adding an idle-time/fairness weighting term counteracts this without discarding efficiency: it's a bounded pressure that ensures no driver is structurally excluded, while ETA and acceptance probability still dominate for any individual match.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why include a predicted acceptance-probability score in the cost function at all?</div>
+          <div class="qa-a">Offering to a candidate who's very likely to decline wastes an entire cascade round-trip (the offer timeout plus the time to notice the decline), which directly hurts end-to-end matching latency. Folding a learned acceptance-probability estimate into the assignment cost lets the solver prefer candidates who are both a good fit and likely to actually say yes, reducing wasted cascade cycles &mdash; as long as it's balanced against the fairness term so it doesn't collapse into always picking the same reliable few.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you keep the scoring function from degenerating into "always pick the nearest driver" in practice?</div>
+          <div class="qa-a">By making ETA one term among several in an explicit weighted cost function, not the sole criterion, and by validating the weights against measured outcomes (rider wait time, driver idle-ratio, acceptance rate) rather than tuning purely on distance. If fairness or acceptance-probability weights are too small relative to ETA, the scoring function will behave exactly like greedy nearest-match even though the mechanism looks more sophisticated on paper &mdash; the weights need real monitoring, not a one-time guess.</div>
+        </div>
+
+        <h3>Dispatch and Reliability</h3>
+        <div class="qa-item">
+          <div class="qa-q">Design the offer-cascade protocol &mdash; what happens on decline or timeout?</div>
+          <div class="qa-a">Each request leaves the batch solver with a ranked list of candidates, not just a winner. The Dispatch Engine offers the top candidate with a short timeout (10&ndash;15s); a decline or timeout immediately advances to the next name on the same precomputed list &mdash; no re-solve needed. The first valid accept wins via a race-safe conditional claim write, and any remaining un-offered candidates are simply released back to the available pool.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Two drivers somehow both try to accept the same offer at nearly the same instant &mdash; how do you prevent a double-booking?</div>
+          <div class="qa-a">Only one driver should ever be actively offered a given request at a time under normal cascade logic, but as a defense-in-depth measure the accept path performs a conditional "claim" write on the offer/trip record (insert-if-absent / compare-and-set on status) &mdash; whichever accept arrives first wins and flips status to ACCEPTED; any other attempt fails the conditional check and returns a harmless already-claimed response.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do cross-cell-boundary trips get handled?</div>
+          <div class="qa-a">Each regional dispatch cell's candidate lookup includes an overlap radius (an extra ring of geographic buffer) into its immediate neighboring cells, so a driver physically near a boundary line is still visible to a request just on the other side of that line, even though the driver is primarily indexed under the neighboring cell. Without this, an arbitrary partitioning boundary would create invisible-driver dead zones purely as an artifact of sharding.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens on a driver app disconnect mid-offer or mid-trip?</div>
+          <div class="qa-a">Mid-offer: if the driver's location goes stale while an offer is outstanding, it's treated exactly like a timeout and the cascade advances to the next candidate rather than waiting out the full window. Mid-trip: that's a trip-management concern outside the matching system's scope &mdash; matching's responsibility ends cleanly once the trip is successfully created; reconnection later simply re-inserts the driver into the live index via their next ping.</div>
+        </div>
+
+        <h3>Cold Start, Scale and Degradation</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you handle matching in a brand-new city with very few drivers?</div>
+          <div class="qa-a">Widen the search radius and relax time-based expectations rather than pretending the standard SLA still holds; if supply is genuinely too thin, surge pricing and driver incentives are the actual fix (an operational/product lever, not an algorithmic one) &mdash; the matching engine itself doesn't need special-case code for this, since a wider k-ring search and a slightly larger batching window already accommodate a sparser candidate pool.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the graceful-degradation strategy if the assignment solver is slow or down?</div>
+          <div class="qa-a">Fall back to a greedy nearest-match strategy for the affected batch cycle(s) &mdash; worse global match quality is a far better outcome than blocking all matching in that cell. This requires the greedy path to be a first-class, always-available code path, not an afterthought, and to be triggered automatically once solver latency crosses a monitored threshold.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does the Uber Eats variant change the core design, and what's the multi-order batching optimization actually optimizing for?</div>
+          <div class="qa-a">Eats adds a readiness-time gate (don't dispatch until the courier's arrival lines up with food_ready_eta) and allows one courier to be matched to multiple nearby, timing-compatible orders as a single multi-stop route. The batching optimization specifically minimizes the delay to the most-delayed order in a bundled route, not the average, so efficiency gains never come at the cost of one customer's order being unacceptably late.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you scale this design 10x in a single metro (e.g. a major holiday surge)?</div>
+          <div class="qa-a">Scale Matching Service instances per sub-region within the cell (each owns a bounded slice of H3 cells), let the batching window widen slightly and automatically under sustained overload to keep per-batch solver time bounded, and lean on the fairness/idle-driver metrics plus surge pricing to pull in more supply &mdash; the architecture doesn't need structural changes, since dispatch cells were already designed to scale horizontally by adding capacity within a cell before ever needing more cells.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is a regional dispatch-cell design a clean way to scale to many cities, compared to one global matching service?</div>
+          <div class="qa-a">Matching is fundamentally local &mdash; there is no legitimate case where a driver in one city is a candidate for a rider in another, so partitioning by geography loses nothing in match quality while gaining complete failure and load isolation between regions. A global service would need to reason about (and pay latency cost for) irrelevant cross-region state on every single request; independent regional cells never do.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you test and tune the scoring function's weights before rolling out a change?</div>
+          <div class="qa-a">Shadow-run the candidate weighting against live traffic without letting it affect real dispatch decisions, comparing its hypothetical assignments against the production scorer on rider-wait, driver-idle-ratio, and acceptance-rate metrics; then roll out via a small regional/percentage-based experiment with the same metrics as guardrails before a full rollout. Because the weights trade off against each other (ETA vs. fairness vs. acceptance probability), a single offline accuracy number isn't enough &mdash; you need the online, multi-metric comparison to catch a regression in one dimension hiding behind an improvement in another.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          The single biggest idea in this design is that matching is a batched, global optimization problem, not a per-request nearest-neighbor lookup &mdash; a short batching window plus a bipartite min-cost assignment solver measurably beats greedy nearest-match, and you should be able to explain why in terms of a concrete counter-example, not just assert it. The geospatial index (H3 preferred for its uniform-neighbor property) exists purely to make "who's nearby?" cheap; it's an in-memory, cheaply-reconstructible structure, not a durability-critical database. Scoring is deliberately multi-objective &mdash; ETA, repositioning cost, acceptance probability, and an explicit fairness/idle-time term &mdash; because optimizing for ETA alone (or acceptance probability alone) produces a system that's fast but structurally unfair. The offer cascade reuses a precomputed ranked list so a decline or timeout is cheap to handle without re-solving anything. And the Eats variant is not a different system: it's the same core with one added scheduling constraint (restaurant readiness time) and one added optimization (multi-order route batching) layered on top.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Uber Engineering Blog &mdash; "H3: Uber's Hexagonal Hierarchical Spatial Index" and related posts on the marketplace/dispatch algorithm</li>
+          <li>Uber Engineering Blog &mdash; posts on real-time matching, dynamic pricing, and driver-partner incentive design</li>
+          <li>Harold W. Kuhn, "The Hungarian Method for the Assignment Problem" &mdash; the classical min-cost bipartite matching algorithm</li>
+          <li>Dimitri Bertsekas, work on the auction algorithm for the assignment problem &mdash; the sparse-graph-friendly solver family used in large-scale production matching systems</li>
+          <li>Educative &mdash; "Grokking the System Design Interview": Designing Uber / a ride-sharing service (course material)</li>
+          <li>Martin Kleppmann, <em>Designing Data-Intensive Applications</em> &mdash; chapters on partitioning and consistency trade-offs, applicable to the in-memory-index-vs-durable-store split in this design</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="photo-sharing-platform.html"><span class="dir">Previous</span>Photo Sharing Platform</a>
+          <a class="next" href="price-alert-system.html"><span class="dir">Next</span>Price Alert System</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

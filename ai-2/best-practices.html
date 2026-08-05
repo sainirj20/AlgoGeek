@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Best Practices | AI 2 | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">AI 2</a><span class="sep">/</span><span class="current">Best Practices</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to AI 2 overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#cost-management">Cost Management</a></li>
+        <li><a href="#token-limits-context-window-management">Token Limits &amp; Context Window Management</a></li>
+        <li><a href="#security-considerations">Security Considerations</a></li>
+        <li><a href="#choosing-the-right-tool-quick-reference">Choosing the Right Tool &mdash; Quick Reference</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">AI 2</span>
+          <h1>Summary &amp; Best Practices</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>
+          Module 1 gave you the mental models &mdash; tokens, context windows, embeddings, and how an LLM actually
+          "thinks" in terms of next-token prediction over a fixed-size buffer. Modules 2 and 3 grounded those models
+          in real Java tooling: Spring AI versus LangChain4j as the two dominant JVM frameworks, and the broader
+          landscape of vector stores, model providers, and local-inference options like Ollama. Module 4 put it all
+          together into a working Retrieval-Augmented Generation application &mdash; ingestion, chunking, embedding,
+          retrieval, and generation, end to end. This page is the capstone: what changes when that demo needs to
+          become something you would actually put in front of paying customers and defend in a production incident
+          review. Three concerns dominate that transition, and they are the three concerns every interviewer will
+          push on if you claim "production experience" with LLM applications: <strong>cost</strong>, <strong>token
+          and context limits</strong>, and <strong>security</strong>.
+        </p>
+
+        <h2 id="cost-management">Cost Management</h2>
+        <p>
+          Most hosted LLM APIs bill per token, with input tokens and output tokens metered &mdash; and priced &mdash;
+          separately. Output tokens are typically several times more expensive than input tokens because they are
+          generated one at a time, autoregressively, rather than processed in a single forward pass like the prompt
+          is. A demo that makes a handful of calls a day can rack up a surprising bill once it is serving real
+          traffic, so cost has to be designed for, not bolted on afterward. The main levers:
+        </p>
+        <ul>
+          <li>
+            <strong>Model tiering</strong> &mdash; not every request needs the frontier model. Route simple,
+            well-defined requests (classification, short lookups, formatting) to a smaller, cheaper model, and
+            reserve the expensive, high-capability model for requests that genuinely need deep reasoning or long
+            context. A tiered router in front of your LLM calls often cuts spend dramatically with little quality
+            loss.
+          </li>
+          <li>
+            <strong>Caching</strong> &mdash; cache repeated identical prompts and their responses. FAQ-style
+            questions, common support queries, and repeated tool-lookup patterns are prime candidates: serve the
+            cached answer instead of re-calling the API for a question you have already answered verbatim (or
+            near-verbatim, with semantic-cache lookups).
+          </li>
+          <li>
+            <strong>Prompt trimming</strong> &mdash; don't stuff more retrieved context into the prompt than the
+            model actually needs. This ties directly back to the top-K tuning from the Module 4 RAG project: a
+            higher top-K means more input tokens, more cost, and often more noise for the model to sift through, not
+            necessarily a better answer.
+          </li>
+          <li>
+            <strong>Streaming + early termination</strong> &mdash; stream the response token by token rather than
+            waiting for the full completion. If the user's need is met (or they navigate away, or a downstream check
+            fails) before generation finishes, you can cut the stream off early and avoid paying for output tokens
+            you never needed.
+          </li>
+          <li>
+            <strong>Usage monitoring and budgets</strong> &mdash; track token spend per endpoint, per customer, or
+            per feature, and put alerting in front of it. A single misbehaving loop (an agent that keeps calling
+            itself, a retry storm) should trip a budget alarm long before it becomes a monthly-bill surprise.
+          </li>
+        </ul>
+        <p>A rough, illustrative cost estimate in Java might look like this:</p>
+        <pre><code>// Illustrative only &mdash; check your provider's current pricing page before hardcoding numbers.
+// Per-token prices change frequently and vary by model tier.
+double inputPricePerToken  = 0.000003;  // example: $3.00 per 1M input tokens
+double outputPricePerToken = 0.000015;  // example: $15.00 per 1M output tokens
+
+int inputTokens  = 1200;   // prompt + retrieved RAG context
+int outputTokens = 350;    // generated completion
+
+double estimatedCost = (inputTokens * inputPricePerToken)
+                     + (outputTokens * outputPricePerToken);
+
+// estimatedCost above is illustrative; always source live pricing from the
+// provider's official pricing page rather than hardcoding it in production code.</code></pre>
+
+        <h2 id="token-limits-context-window-management">Token Limits &amp; Context Window Management</h2>
+        <p>
+          Recall the Module 1 mental model: the context window is a fixed-size buffer. Everything the model can "see"
+          for a given call &mdash; system prompt, conversation history, retrieved RAG chunks, and the current user
+          message &mdash; has to fit inside that one buffer, measured in tokens, not characters or words. There is no
+          separate long-term memory the model quietly falls back on; if it isn't in the context window for this call,
+          the model doesn't know it.
+        </p>
+        <p>Concrete strategies for staying inside that buffer without losing important information:</p>
+        <ul>
+          <li>
+            <strong>Chunking long documents</strong> &mdash; the same chunking strategy from the Module 4 RAG
+            pipeline applies here: break large source documents into retrieval-sized pieces up front rather than
+            trying to feed an entire document into a single prompt.
+          </li>
+          <li>
+            <strong>Summarizing or compressing conversation history</strong> &mdash; instead of resending the full
+            transcript of a long conversation on every turn, periodically summarize older turns into a compact
+            running summary and keep only the most recent turns verbatim. This keeps token usage roughly flat as a
+            conversation grows instead of climbing linearly.
+          </li>
+          <li>
+            <strong>Capping max output tokens</strong> &mdash; setting an explicit <code>max_tokens</code>-style
+            ceiling on the response bounds both the length of the answer and its cost in the same setting, and
+            protects you from a runaway generation.
+          </li>
+        </ul>
+        <p>
+          The most important operational detail: exceeding the context window is a hard failure. The API call
+          returns an error &mdash; it does not silently truncate your input and continue. Production code should
+          proactively estimate token counts for a request before sending it (using a tokenizer appropriate to the
+          model) and truncate or summarize on the client side ahead of time, rather than discovering the limit only
+          when a call fails in front of a user.
+        </p>
+
+        <h2 id="security-considerations">Security Considerations</h2>
+        <p>
+          This is the section that separates a working demo from something safe to ship. LLM applications introduce
+          attack surface that doesn't exist in traditional CRUD services, and most of it is easy to overlook because
+          it doesn't look like a "normal" vulnerability.
+        </p>
+
+        <h3>Prompt Injection</h3>
+        <p>
+          This is especially relevant for RAG. If you are ingesting untrusted external documents &mdash; web pages,
+          user uploads, emails &mdash; into your vector store, an attacker can embed instructions inside that content
+          ("ignore previous instructions and...") that the model may follow once that chunk is retrieved into
+          context. The model has no inherent way to distinguish "content I should read" from "instructions I should
+          obey" unless your prompt structure makes that distinction explicit. Mitigation: treat retrieved content as
+          data, not instructions &mdash; clearly delimit it in the prompt (for example, wrapping it in tags and
+          instructing the model that anything inside those tags is reference material, not commands), and validate
+          or sanitize model output before acting on it, especially before feeding that output into any tool or
+          function call.
+        </p>
+
+        <h3>Least-Privilege Tool Calling</h3>
+        <p>
+          When using function/tool calling or agents (as covered in Module 2), scope each tool's permissions
+          tightly. A "look up order status" tool should not also carry <code>DELETE</code> access to the orders
+          table just because it's convenient to reuse one database credential. Never give an LLM-driven agent broad
+          shell, database, or filesystem access without a human-approval gate in front of any destructive action.
+        </p>
+
+        <h3>Data Privacy</h3>
+        <p>
+          Sending user data to a third-party hosted API means that data leaves your infrastructure. Check the
+          provider's data-retention and training-use policy before sending anything sensitive, and consider
+          self-hosted options (Ollama, or a provider's enterprise/zero-retention tier) for PII, regulated data, or
+          anything your compliance posture requires you to keep in-house.
+        </p>
+
+        <h3>Output Validation</h3>
+        <p>
+          Never directly render raw model output as HTML, SQL, or shell commands without escaping and validating it
+          first. Treat LLM output with the same suspicion you'd apply to any other untrusted user input &mdash;
+          because functionally, that's exactly what it is: text produced outside your control that happens to look
+          authoritative.
+        </p>
+
+        <div class="callout">
+          <div class="callout-title">Security risk</div>
+          If there is one idea to carry out of this whole section, it's this: the single biggest LLM security risk
+          is treating retrieved or generated content as trusted instructions instead of untrusted data. Every
+          mitigation above &mdash; delimiting retrieved text, scoping tool permissions, validating output before it
+          touches a database or shell &mdash; is really just that one principle applied at a different layer of the
+          system.
+        </div>
+
+        <h2 id="choosing-the-right-tool-quick-reference">Choosing the Right Tool &mdash; Quick Reference</h2>
+        <p>A quick recap of the framework and infrastructure decisions from Modules 2&ndash;4:</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Decision</th>
+              <th>Recommendation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Spring Boot shop needing DI-native integration</td>
+              <td>Spring AI</td>
+            </tr>
+            <tr>
+              <td>Framework-agnostic / most mature RAG ecosystem</td>
+              <td>LangChain4j</td>
+            </tr>
+            <tr>
+              <td>Local development / zero cost / full data privacy</td>
+              <td>Ollama</td>
+            </tr>
+            <tr>
+              <td>Already running Postgres</td>
+              <td>pgvector</td>
+            </tr>
+            <tr>
+              <td>Need a dedicated, horizontally scalable vector store</td>
+              <td>Milvus or Qdrant</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <ul>
+          <li>Cost is a design constraint, not an afterthought &mdash; tier your models, cache aggressively, trim
+            prompt context, stream with early termination, and monitor spend with budgets and alerts.</li>
+          <li>The context window is a fixed buffer, and running past it is a hard API error, not silent truncation
+            &mdash; estimate tokens client-side and chunk or summarize proactively.</li>
+          <li>Long conversations should be summarized/compressed over time rather than resent in full on every turn.</li>
+          <li>RAG pipelines that ingest untrusted content are exposed to prompt injection &mdash; always delimit
+            retrieved content as data, never as instructions.</li>
+          <li>Scope tool/function-calling permissions to least privilege, and gate any destructive action behind
+            human approval.</li>
+          <li>Check data-retention and training-use policies before sending sensitive data to a hosted API, and
+            consider self-hosted options like Ollama for regulated data.</li>
+          <li>Never trust raw LLM output &mdash; validate and escape it before rendering it as HTML, SQL, or shell
+            commands, or acting on it via a tool call.</li>
+          <li>The best way to make all of this concrete is to build the Module 4 RAG project yourself, then come
+            back and apply this checklist to it &mdash; add a cost estimate, a context-window guard, and an
+            injection-safe prompt template, and you'll have internalized the whole AI 2 series.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="rag-hands-on-project.html"><span class="dir">Previous</span>Hands-on RAG Project</a>
+          <a class="next" href="index.html"><span class="dir">Next</span>AI 2 Overview</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

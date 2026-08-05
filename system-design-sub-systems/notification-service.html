@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing a Notification Service at Scale | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">Notification Service</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-priority-queue-ingestion-and-scheduling">Deep Dive — Priority Queue Ingestion and Scheduling</a></li>
+        <li><a href="#deep-dive-rate-limiting-and-user-preference-gate">Deep Dive — Rate Limiting and User Preference Gate</a></li>
+        <li><a href="#deep-dive-kafka-fan-out-and-pluggable-channel-handlers">Deep Dive — Kafka Fan-Out and Pluggable Channel Handlers</a></li>
+        <li><a href="#deep-dive-retry-backoff-and-dead-letter-queue">Deep Dive — Retry, Backoff, and Dead-Letter Queue</a></li>
+        <li><a href="#deep-dive-delivery-tracking-idempotency-and-the-send-sequence">Deep Dive — Delivery Tracking, Idempotency, and the Send Sequence</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</a></li>
+        <li><a href="#security-privacy-and-multi-tenant-isolation">Security, Privacy and Multi-Tenant Isolation</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing a Notification Service at Scale</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough: requirements, capacity estimation, API &amp; event schema, data model, priority-queue architecture, rate limiting &amp; preference gating, Kafka fan-out to pluggable channel handlers, retry/DLQ, sharding &amp; replication, security, and follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a notification service that lets many upstream producer services — an <code>order-service</code>, an <code>OTP-service</code>, a <code>marketing-service</code>, and others — say "please notify user X about event Y" without knowing or caring how the message actually reaches the user. The service must classify each request by urgency, gate it against per-user rate limits and channel/timing preferences, and fan the approved request out to one or more delivery channels — in-app, email, and SMS today, with new channels (e.g. push) pluggable in later without touching existing code. It must be multi-tenant (SaaS): many independent client companies can plug their own producer services into the same deployment. Above all, a time-critical transactional message (a login OTP) must never be delayed behind a bulk promotional blast.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>It combines several classic sub-problems that are individually easy but jointly demanding: priority scheduling under contention, rate limiting with race-safe counters, at-least-once delivery made idempotent, a pluggable/extensible handler architecture, and multi-tenant isolation. A strong candidate treats prioritization as the load-bearing requirement — everything else (rate limiting, preferences, retries) is designed so it can never block the notify-user-of-OTP path.</p>
+
+        <h3>Why build one shared service instead of letting each team roll its own?</h3>
+        <ul>
+          <li>One place to enforce the 5-notifications-per-user-per-day cap and channel/quiet-hours preferences consistently, instead of every producer team reinventing (or forgetting) it.</li>
+          <li>One place to add a new channel (push, WhatsApp) — every existing producer benefits without any of them redeploying.</li>
+          <li>One place to build retry/backoff, dead-lettering, delivery tracking, and observability, instead of duplicating that plumbing per team.</li>
+          <li>SaaS-ready: a single deployment can serve many client companies (tenants), each with isolated preferences, quotas, and templates.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope before drawing boxes.</p>
+        <ol>
+          <li>What channels must we support at launch, and do we need to add new ones (e.g. push) without redeploying existing channel handlers?</li>
+          <li>Is this single-tenant or a true multi-tenant SaaS serving many independent client companies?</li>
+          <li>Is the 5-notifications-per-user-per-day cap a blanket limit across all priority classes, or does it exempt transactional messages like OTP and order updates?</li>
+          <li>Do we need templated messages with variable substitution, and scheduling a notification for future delivery?</li>
+          <li>What's the acceptable latency for an OTP notification, end to end (sub-second? a couple of seconds)?</li>
+          <li>Do the downstream SMS/email providers impose their own rate limits we must respect?</li>
+          <li>Do we need delivery receipts and read receipts, particularly for in-app notifications?</li>
+          <li>Do users need per-channel unsubscribe/opt-out, and does that override transactional sends too?</li>
+          <li>What consistency do we need on the rate-limit counter under concurrent requests for the same user?</li>
+          <li>Single region to start, or does the design need to anticipate multi-region from day one?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Don't stall waiting for every answer — state a reasonable assumption out loud ("I'll assume the 5/day cap applies to promotional and bulk traffic only, since silently dropping an OTP or order-shipped notice would be a functional bug, not just an inconvenience") and keep moving. This is exactly the kind of judgment call interviewers want to see.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li>Accept a notification request from a producer service and deliver it to the target user via in-app, email, and/or SMS.</li>
+          <li>Classify every request into one of four priority classes — OTP (highest), Order Update, Promotion, and Bulk/Other (lowest) — and schedule delivery accordingly.</li>
+          <li>Enforce a rate limit of no more than 5 notifications per user per day.</li>
+          <li>Respect per-user preferences: channel preference (SMS, email, or all channels) and a time-of-day ("quiet hours") preference specifically for promotional messages.</li>
+          <li>Support templated notifications with variable substitution (e.g. "Your order #{order_id} has shipped").</li>
+          <li>Support scheduling a notification for future delivery (e.g. a reminder 24 hours from now).</li>
+          <li>Retry failed deliveries with backoff, and guarantee idempotent delivery — a retry must never cause a duplicate send.</li>
+          <li>Support per-channel unsubscribe / opt-out.</li>
+          <li>Support delivery receipts and read receipts for in-app notifications.</li>
+          <li>Be pluggable: new channel handlers can be added (or swapped) without touching existing handler code, and be multi-tenant: isolate configuration, quotas, and templates per client company.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Low latency specifically for high-priority traffic:</strong> an OTP must reach the user in near real time even while the system is absorbing a huge promotional campaign — this is the entire reason for the priority-queue design.</li>
+          <li><strong>High throughput:</strong> a single marketing campaign can fan out to tens of millions of users in a short window.</li>
+          <li><strong>Durability for transactional messages:</strong> an OTP or order-update notification must never be silently dropped, even under load or partial outage.</li>
+          <li><strong>At-least-once delivery with idempotency:</strong> Kafka and retries mean a message can be processed more than once; the system must guarantee it's never delivered to the user more than once.</li>
+          <li><strong>Eventual consistency is acceptable for low-priority/bulk traffic</strong> — a promotional message arriving a few seconds (or minutes, under extreme load) late is a non-issue.</li>
+          <li><strong>Horizontal scalability</strong> of ingestion, the priority handler, and each channel handler independently, since their load profiles differ enormously.</li>
+          <li><strong>Pluggability</strong> as a first-class architectural property, not an afterthought — adding a channel must be a purely additive change.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We'll go deep on ingestion, prioritization, rate limiting/preferences, Kafka fan-out, channel handlers, retry/DLQ, and delivery tracking. We call out but don't build the internals of a full template-authoring UI, a campaign-management console, or an ML-based send-time optimizer — real products, but layered on top of this core.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>State assumptions explicitly and let them drive every downstream decision.</p>
+
+        <h3>Traffic Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          100 million total registered users across all tenants; ~60 million receive at least one notification on a typical day
+          <br>Blended average per touched user/day &asymp; 0.4 OTP + 0.8 Order Update + 1.5 Promotion + 1.0 Bulk/Other &asymp; 3.7 notifications
+          <br>Total notification requests/day &asymp; 60,000,000 &times; 3.7 &asymp; 220 million/day
+          <br>Average QPS = 220,000,000 &divide; 86,400 &asymp; 2,550/sec
+          <br>Steady-state peak (3&times; average, e.g. evenings) &asymp; 7,500&ndash;8,000/sec
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Campaign burst</span>
+          A single flash-sale campaign blasting 50 million users over a 2-hour window adds:
+          <br>50,000,000 &divide; 7,200 sec &asymp; 6,950/sec, layered on top of steady traffic
+          <br>Design ingestion for &ge;15,000/sec sustained peak, with short bursts higher &mdash; and design so this entire burst lands in the Promotion/Bulk queues, never touching the OTP queue's capacity.
+        </div>
+
+        <h3>Kafka Throughput</h3>
+        <div class="formula-box">
+          <span class="formula-label">Sizing</span>
+          Average message size (event envelope + template id + variables, not full rendered content) &asymp; 1 KB
+          <br>At 15,000/sec peak: ingest &asymp; 15 MB/sec into Kafka
+          <br>With replication factor 3 for durability: &asymp; 45 MB/sec aggregate broker write I/O &mdash; trivial for a modestly sized cluster (a handful of brokers, dozens of partitions per topic)
+        </div>
+
+        <h3>Per-Channel Handler Throughput — the Real Constraint</h3>
+        <p>Kafka can always ingest and fan out faster than any single external provider can absorb. The binding constraint on SMS/email throughput is the provider, not our infrastructure.</p>
+        <table>
+          <tr><th>Channel</th><th>Share of peak (15K/sec)</th><th>Typical single-account provider limit</th><th>Mitigation</th></tr>
+          <tr><td>in-app</td><td>~50% &asymp; 7,500/sec</td><td>N/A (our own infra)</td><td>Scale horizontally like any internal write path</td></tr>
+          <tr><td>email</td><td>~35% &asymp; 5,250/sec</td><td>~1,000&ndash;14,000/sec per sending domain/IP pool (reputation-gated, ramps up over time)</td><td>Multiple sending domains/IP pools, warm-up new pools gradually</td></tr>
+          <tr><td>SMS</td><td>~15% &asymp; 2,250/sec</td><td>~100&ndash;200/sec per long-code/number (typical provider throttle)</td><td>Pool of 15&ndash;20+ numbers/short-codes, each independently rate-limited and load-balanced</td></tr>
+        </table>
+
+        <h3>Cassandra / Redis Sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Rate-limit counters</span>
+          100M users &times; 1 counter row/day &times; &asymp;80 bytes (tenant_id + user_id + date + count) &asymp; 8 GB/day raw
+          <br>TTL'd ~48h after the window closes &rarr; steady-state footprint &asymp; 16 GB &mdash; small enough to live entirely in Redis for the hot path, with Cassandra as a durable backstop/audit trail
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Preferences</span>
+          100M users &times; &asymp;400 bytes (tenant_id, per-channel opt-ins, quiet-hours start/end, timezone, updated_at) &asymp; 40 GB raw
+          <br>&times;3 replication (RF=3) &asymp; 120 GB &mdash; cached in Redis (write-through) for the hot preference-lookup path, Cassandra as source of truth
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Notification log / delivery status</span>
+          220M notifications/day &times; &asymp;400 bytes (notification_id, tenant_id, user_id, priority, channel, status, attempts, timestamps) &asymp; 88 GB/day
+          <br>Retained 90 days for user-facing "your notifications" history + analytics &asymp; 7.9 TB raw
+          <br>&times;3 replication (RF=3) &asymp; &asymp;24 TB &mdash; the dominant storage cost, and the reason this table needs a wide-column, TTL-friendly, horizontally-shardable store rather than a relational one
+        </div>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table class="sortable">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Total users / touched users per day</td><td>100M / ~60M</td></tr>
+          <tr><td>Average notifications / sec</td><td>~2,550</td></tr>
+          <tr><td>Peak (steady-state) notifications / sec</td><td>~7,500&ndash;8,000</td></tr>
+          <tr><td>Peak during a large campaign</td><td>&ge;15,000/sec sustained</td></tr>
+          <tr><td>Kafka ingest at peak (RF=3)</td><td>~45 MB/sec aggregate</td></tr>
+          <tr><td>SMS provider ceiling per number</td><td>~100&ndash;200/sec &rarr; needs a pool of numbers</td></tr>
+          <tr><td>Rate-limit counter footprint</td><td>~16 GB (Redis, TTL'd)</td></tr>
+          <tr><td>Preferences footprint (RF=3)</td><td>~120 GB (Cassandra)</td></tr>
+          <tr><td>Delivery log footprint, 90-day retention (RF=3)</td><td>~24 TB (Cassandra)</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>Producer services talk to the notification service through a single, versioned event/API contract. Every field needed for prioritization, idempotency, and rendering travels with the request so the ingestion tier never needs a side lookup just to classify it.</p>
+
+        <h3>SendNotification API / Event Schema</h3>
+        <pre><code>POST /v1/notifications
+
+Request body:
+{
+  "tenant_id": string,             // required — SaaS client company
+  "idempotency_key": string,       // required — caller-supplied, unique per logical send
+  "target_user_id": string,        // required
+  "event_type": string,            // e.g. "OTP_LOGIN", "ORDER_SHIPPED", "PROMO_FLASH_SALE"
+                                    // drives the default priority mapping (P1..P4)
+  "priority_override": "P1"|"P2"|"P3"|"P4",  // optional, else derived from event_type
+  "channel_hint": ["sms","email","in_app"],  // optional, else derived from user preference
+  "template_id": string,           // required
+  "template_variables": { ... },   // key/value pairs for variable substitution
+  "schedule_at": string,           // optional ISO-8601, for future delivery
+  "metadata": { ... }              // optional, non-PII tags (e.g. campaign_id)
+}
+
+Response 202 Accepted:
+{ "notification_id": "ntf_9f2a...", "status": "queued", "priority_assigned": "P1" }
+
+Errors: 400 invalid template/variables &middot; 401 unauthenticated tenant
+        409 duplicate idempotency_key (already processed) &middot; 422 user opted out of all requested channels
+        429 tenant-level quota exceeded</code></pre>
+
+        <h3>Get Notification Status</h3>
+        <pre><code>GET /v1/notifications/{notification_id}
+
+Response 200:
+{
+  "notification_id": "ntf_9f2a...",
+  "status": "QUEUED | RATE_LIMITED | SENT | DELIVERED | READ | FAILED | DEAD_LETTERED",
+  "channel": "sms",
+  "attempts": 2,
+  "last_error": null
+}</code></pre>
+
+        <h3>Preferences API</h3>
+        <pre><code>GET /v1/users/{user_id}/preferences
+PUT /v1/users/{user_id}/preferences
+{
+  "channels": { "sms": true, "email": true, "in_app": true },
+  "quiet_hours": { "start": "21:00", "end": "08:00", "timezone": "America/Los_Angeles" }
+}
+
+POST /v1/users/{user_id}/unsubscribe
+{ "channel": "sms" | "email" | "promotional_all" }</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          <code>idempotency_key</code> is not optional metadata — it's the field that makes the entire pipeline safe under Kafka's at-least-once delivery. Call this out explicitly: "the producer generates it once per logical send; every retry, reprocessing, or duplicate Kafka delivery reuses the same key, so the notification_log's unique constraint on it is our real de-dup mechanism."
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>Hundreds of millions of small records per day (notification_log), each a simple row with no complex joins on the hot path.</li>
+          <li>Preferences and rate-limit counters are pure key-value lookups keyed by (tenant_id, user_id[, date]).</li>
+          <li>Extremely read/write heavy on a narrow key, at huge scale — the textbook case for a wide-column NoSQL store over a relational database for the bulk data plane.</li>
+        </ul>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">Table: user_notification_preferences (Cassandra, PK: tenant_id + user_id)</th></tr>
+          <tr><td>tenant_id + user_id (composite PK)</td><td>text + bigint</td></tr>
+          <tr><td>channel_opt_in</td><td>map&lt;text, boolean&gt; &mdash; e.g. {"sms": true, "email": true, "in_app": true}</td></tr>
+          <tr><td>quiet_hours_start / quiet_hours_end</td><td>time</td></tr>
+          <tr><td>timezone</td><td>text (IANA tz, e.g. "America/Los_Angeles")</td></tr>
+          <tr><td>updated_at</td><td>timestamp</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: rate_limit_counters (Redis primary, Cassandra backstop; PK: tenant_id + user_id + date)</th></tr>
+          <tr><td>tenant_id + user_id + date (composite key)</td><td>text + bigint + date</td></tr>
+          <tr><td>count</td><td>counter / int</td></tr>
+          <tr><td>ttl</td><td>~48h (auto-expiring)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: notification_log / delivery_status (Cassandra, PK: notification_id, secondary index on idempotency_key)</th></tr>
+          <tr><td>notification_id (PK)</td><td>uuid</td></tr>
+          <tr><td>tenant_id / user_id</td><td>text / bigint</td></tr>
+          <tr><td>idempotency_key (unique)</td><td>text</td></tr>
+          <tr><td>priority</td><td>enum(P1, P2, P3, P4)</td></tr>
+          <tr><td>channel</td><td>enum(in_app, email, sms, ...)</td></tr>
+          <tr><td>status</td><td>enum(QUEUED, RATE_LIMITED, SENT, DELIVERED, READ, FAILED, DEAD_LETTERED)</td></tr>
+          <tr><td>attempts</td><td>int</td></tr>
+          <tr><td>created_at / sent_at / delivered_at / read_at</td><td>timestamp</td></tr>
+          <tr><td>last_error</td><td>text (nullable)</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: templates (Cassandra or a small relational store; PK: tenant_id + template_id + version)</th></tr>
+          <tr><td>tenant_id + template_id + version (composite PK)</td><td>text + text + int</td></tr>
+          <tr><td>channel</td><td>enum(in_app, email, sms)</td></tr>
+          <tr><td>body</td><td>text (with <code>{{variable}}</code> placeholders)</td></tr>
+          <tr><td>variables_schema</td><td>json (allowed variable names/types, for validation)</td></tr>
+          <tr><td>locale</td><td>text</td></tr>
+        </table>
+
+        <h3>Cassandra + Redis — Why Both, Not Just One</h3>
+        <p>Redis gives sub-millisecond atomic counters (<code>INCR</code>) and a fast preference cache — exactly what the Priority Handler needs on every single request's hot path. But Redis alone is not durable enough to be the system of record: an eviction, a restart, or a cache flush must never silently reset a user's rate-limit count or lose their preferences. Cassandra is the durable, horizontally-shardable source of truth for preferences and the full delivery log (analytics, "your notifications" history, audit); it's also write-heavy-friendly and TTL-native, which the rate-limit counters and delivery log both benefit from. The pattern is: Redis for the read/write-hot, latency-critical path; Cassandra for everything that must survive a cache failure and everything analytical.</p>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          If pushed on "why not just Cassandra everywhere": Cassandra can serve the counter workload, but a single atomic <code>INCR</code>-and-check under heavy concurrent contention is a better fit for Redis's in-memory, single-threaded-per-key execution model — it avoids the read-modify-write race a naive Cassandra counter update could hit under high QPS from the same user (e.g. a burst of retries).
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Producer services (order-service, OTP-service, marketing-service, and any future tenant integration) publish "notify user X of event Y" requests. A Notification Consumer classifies every incoming request into one of four priority queues. A Priority Handler drains those queues — highest priority first, with starvation-safe scheduling — and for each notification consults a rate-limiting and user-preference check backed by Cassandra + Redis. If the notification passes, the Priority Handler publishes it to Kafka, which fans out to three pluggable channel handlers (in-app, email, SMS) and to a Tracker that records delivery outcomes back into the same Cassandra + Redis store.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 530" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Producer services feed a Notification Consumer, which classifies requests into four priority queues (OTP, Order Update, Promotion, Bulk). A Priority Handler drains the queues and gates each notification on a rate-limiting and user-preference check against Cassandra plus Redis, then publishes approved notifications to Kafka. Kafka fans out to in-app, email, and SMS channel handlers, and to a Tracker that writes delivery status back into Cassandra plus Redis.">
+            <style>
+              .ns-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .ns-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .ns-box-muted{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .ns-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .ns-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .ns-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .ns-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .ns-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .ns-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:#dbe6ff;}
+              .ns-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .ns-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;}
+              .ns-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+            </style>
+            <defs>
+              <marker id="arrow-ns-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-ns-1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="20" y="10" width="220" height="45" rx="6" class="ns-box"></rect>
+            <text x="130" y="28" text-anchor="middle" class="ns-title">order-service</text>
+            <text x="130" y="42" text-anchor="middle" class="ns-sub">checkout / shipping events</text>
+
+            <rect x="260" y="10" width="220" height="45" rx="6" class="ns-box"></rect>
+            <text x="370" y="28" text-anchor="middle" class="ns-title">OTP-service</text>
+            <text x="370" y="42" text-anchor="middle" class="ns-sub">login / txn one-time codes</text>
+
+            <rect x="500" y="10" width="220" height="45" rx="6" class="ns-box"></rect>
+            <text x="610" y="28" text-anchor="middle" class="ns-title">marketing-service</text>
+            <text x="610" y="42" text-anchor="middle" class="ns-sub">promo / bulk campaigns</text>
+
+            <line x1="130" y1="55" x2="352" y2="94" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="370" y1="55" x2="376" y2="94" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="610" y1="55" x2="408" y2="94" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+
+            <rect x="190" y="95" width="380" height="50" rx="6" class="ns-box-strong"></rect>
+            <text x="380" y="116" text-anchor="middle" class="ns-title">Notification Consumer</text>
+            <text x="380" y="132" text-anchor="middle" class="ns-sub">classifies each event into one of 4 priority classes</text>
+
+            <line x1="380" y1="145" x2="77" y2="184" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="380" y1="145" x2="207" y2="184" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="380" y1="145" x2="337" y2="184" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="380" y1="145" x2="467" y2="184" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+
+            <rect x="20" y="185" width="115" height="55" rx="6" class="ns-box-strong"></rect>
+            <text x="77" y="202" text-anchor="middle" class="ns-title">PRIORITY 1</text>
+            <text x="77" y="216" text-anchor="middle" class="ns-sub">OTP</text>
+            <text x="77" y="228" text-anchor="middle" class="ns-label">highest</text>
+
+            <rect x="150" y="185" width="115" height="55" rx="6" class="ns-box"></rect>
+            <text x="207" y="202" text-anchor="middle" class="ns-title">PRIORITY 2</text>
+            <text x="207" y="216" text-anchor="middle" class="ns-sub">Order Update</text>
+            <text x="207" y="228" text-anchor="middle" class="ns-label">high</text>
+
+            <rect x="280" y="185" width="115" height="55" rx="6" class="ns-box"></rect>
+            <text x="337" y="202" text-anchor="middle" class="ns-title">PRIORITY 3</text>
+            <text x="337" y="216" text-anchor="middle" class="ns-sub">Promotion</text>
+            <text x="337" y="228" text-anchor="middle" class="ns-label">normal</text>
+
+            <rect x="410" y="185" width="115" height="55" rx="6" class="ns-box-muted"></rect>
+            <text x="467" y="202" text-anchor="middle" class="ns-title">PRIORITY 4</text>
+            <text x="467" y="216" text-anchor="middle" class="ns-sub">Bulk / Other</text>
+            <text x="467" y="228" text-anchor="middle" class="ns-label">lowest</text>
+
+            <line x1="77" y1="240" x2="77" y2="280" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="207" y1="240" x2="207" y2="280" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="337" y1="240" x2="337" y2="280" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="467" y1="240" x2="467" y2="280" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <text x="272" y="270" text-anchor="middle" class="ns-label">priority-weighted drain, P1 first</text>
+
+            <rect x="20" y="280" width="505" height="55" rx="6" class="ns-box-strong"></rect>
+            <text x="272" y="300" text-anchor="middle" class="ns-title">Priority Handler</text>
+            <text x="272" y="315" text-anchor="middle" class="ns-sub">drains queues (weighted, starvation-safe scheduling)</text>
+            <text x="272" y="328" text-anchor="middle" class="ns-sub">gates each notification on rate limit + preference before publishing</text>
+
+            <rect x="545" y="280" width="175" height="55" rx="6" class="ns-box"></rect>
+            <text x="632" y="300" text-anchor="middle" class="ns-title">Rate Limiting +</text>
+            <text x="632" y="313" text-anchor="middle" class="ns-title">User Preference</text>
+            <text x="632" y="327" text-anchor="middle" class="ns-label">checked per notification</text>
+
+            <line x1="525" y1="307" x2="545" y2="307" class="ns-arrow" marker-start="url(#arrow-ns-1)" marker-end="url(#arrow-ns-1)"></line>
+
+            <line x1="632" y1="335" x2="632" y2="374" class="ns-arrow-store" marker-start="url(#arrow-ns-1s)" marker-end="url(#arrow-ns-1s)"></line>
+            <text x="645" y="358" class="ns-label">read / write</text>
+
+            <rect x="545" y="375" width="175" height="70" rx="6" class="ns-box-store"></rect>
+            <text x="632" y="396" text-anchor="middle" class="ns-title">Cassandra + Redis</text>
+            <text x="632" y="410" text-anchor="middle" class="ns-sub">durable prefs / rate-limit state</text>
+            <text x="632" y="422" text-anchor="middle" class="ns-sub">(Cassandra) + fast counters (Redis)</text>
+            <text x="632" y="434" text-anchor="middle" class="ns-sub">+ delivery status from Tracker</text>
+
+            <line x1="272" y1="335" x2="272" y2="374" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <text x="272" y="368" text-anchor="middle" class="ns-label">publish if allowed</text>
+
+            <rect x="20" y="375" width="505" height="50" rx="6" class="ns-box-bus"></rect>
+            <text x="272" y="396" text-anchor="middle" class="ns-title-inv">Kafka</text>
+            <text x="272" y="410" text-anchor="middle" class="ns-sub-inv">notifications topic, partitioned by user_id</text>
+
+            <line x1="97" y1="425" x2="97" y2="459" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="272" y1="425" x2="272" y2="459" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="447" y1="425" x2="447" y2="459" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="500" y1="410" x2="558" y2="459" class="ns-arrow" marker-end="url(#arrow-ns-1)"></line>
+            <text x="272" y="452" text-anchor="middle" class="ns-label">fan-out via independent consumer groups</text>
+
+            <rect x="20" y="460" width="155" height="55" rx="6" class="ns-box"></rect>
+            <text x="97" y="482" text-anchor="middle" class="ns-title">in-app Handler</text>
+            <text x="97" y="496" text-anchor="middle" class="ns-sub">writes to inbox / push feed</text>
+
+            <rect x="195" y="460" width="155" height="55" rx="6" class="ns-box"></rect>
+            <text x="272" y="482" text-anchor="middle" class="ns-title">email Handler</text>
+            <text x="272" y="496" text-anchor="middle" class="ns-sub">SMTP / SES / SendGrid</text>
+
+            <rect x="370" y="460" width="155" height="55" rx="6" class="ns-box"></rect>
+            <text x="447" y="482" text-anchor="middle" class="ns-title">SMS Handler</text>
+            <text x="447" y="496" text-anchor="middle" class="ns-sub">Twilio / carrier gateway</text>
+
+            <rect x="545" y="460" width="175" height="55" rx="6" class="ns-box"></rect>
+            <text x="632" y="482" text-anchor="middle" class="ns-title">Tracker</text>
+            <text x="632" y="496" text-anchor="middle" class="ns-sub">delivery status + retries</text>
+
+            <line x1="632" y1="459" x2="632" y2="446" class="ns-arrow-store" marker-end="url(#arrow-ns-1s)"></line>
+            <text x="500" y="453" text-anchor="end" class="ns-label">writes delivery status</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level architecture &mdash; four priority queues feed a Priority Handler gated on rate limiting + user preference (Cassandra + Redis), which publishes to Kafka; Kafka fans out to in-app/email/SMS handlers and a Tracker that writes delivery outcomes back into the same store.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Prioritization happens before any expensive work:</strong> classification into 4 queues is the very first thing that happens, so an OTP is already on the fast lane before rate-limiting or preference logic even runs.</li>
+          <li><strong>The rate-limit/preference gate is a single choke point</strong> — every notification, regardless of priority, passes through it exactly once, which is what keeps the 5/day guarantee and preference model consistent system-wide.</li>
+          <li><strong>Kafka decouples "decided to send" from "actually delivered"</strong> — channel handlers and the Tracker scale and fail independently of the ingestion/priority tier.</li>
+          <li><strong>Pluggability is structural, not incidental:</strong> each channel handler is an independent consumer group off the same topic; adding push notifications means adding a new consumer group, not modifying in-app/email/SMS.</li>
+        </ul>
+
+        <h2 id="deep-dive-priority-queue-ingestion-and-scheduling">Deep Dive — Priority Queue Ingestion and Scheduling</h2>
+        <p>The Notification Consumer maps every incoming <code>event_type</code> to a priority class via a simple, tenant-configurable lookup table (e.g. <code>OTP_*</code> &rarr; P1, <code>ORDER_*</code> &rarr; P2, <code>PROMO_*</code> &rarr; P3, everything else &rarr; P4), then writes the request onto that priority's queue (implemented as a dedicated Kafka topic — see "Data Partitioning and Replication" below for why topics-per-priority beats one topic with a priority field).</p>
+
+        <h3>Why 4 Separate Queues Instead of One Queue with a Priority Field?</h3>
+        <p>A single queue with an in-band priority field still forces every consumer to read messages roughly in arrival order (or requires an expensive re-sort/priority-heap on the consumer side), and a burst of low-priority traffic still occupies queue capacity, partitions, and consumer-group throughput that high-priority traffic needs. Separate queues give physical isolation: a promotional flood fills up the P3/P4 queues and their dedicated consumers, while P1 (OTP) has its own queue, its own partitions, and effectively its own throughput budget that nothing else can consume. This is the single most important architectural decision in the whole system.</p>
+
+        <h3>Scheduling Algorithm — Weighted, Starvation-Safe Draining</h3>
+        <p>A naive strict-priority scheduler (always fully drain P1, then P2, then P3, then P4) guarantees OTP never waits, but can starve P4 indefinitely during a sustained P1/P2 load. The Priority Handler instead uses <strong>weighted round-robin with aging</strong>: each scheduling round it pulls up to a weighted quota from each queue (e.g. 8:4:2:1 for P1:P2:P3:P4), so every priority class makes guaranteed forward progress every round, while P1 still gets by far the largest share. On top of that, any message that has waited longer than a bounded threshold (e.g. 30 seconds) is promoted one priority level, so a pathological, sustained P1/P2 flood can't starve P4 forever — it just guarantees an upper bound on P4 latency instead of true starvation.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Weighted round-robin scheduling: the Priority Handler pulls a weighted share of messages from each of the four priority lanes every round (8 from P1, 4 from P2, 2 from P3, 1 from P4), forwarding them to Kafka, with an aging path that escalates a stale P4 message up to P3.">
+            <style>
+              .ns-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .ns-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .ns-box-bus{fill:var(--color-primary);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .ns-title{font-family:var(--font-sans);font-weight:700;font-size:11px;fill:var(--color-primary);}
+              .ns-title-inv{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:#ffffff;}
+              .ns-sub-inv{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:#dbe6ff;}
+              .ns-label{font-family:var(--font-sans);font-weight:400;font-size:9px;font-style:italic;fill:var(--color-text-muted);}
+              .ns-pulled{fill:var(--color-accent-dark);}
+              .ns-queued{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1;}
+              .ns-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+            </style>
+            <defs>
+              <marker id="arrow-ns-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <text x="12" y="15" class="ns-label">queued messages (highlighted = pulled this round)</text>
+
+            <text x="12" y="49" class="ns-title">P1 &ndash; OTP (&times;8)</text>
+            <rect x="160" y="33" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="188" y="33" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="216" y="33" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="244" y="33" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="272" y="33" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="300" y="33" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="328" y="33" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="356" y="33" width="24" height="24" rx="3" class="ns-pulled"></rect>
+
+            <text x="12" y="109" class="ns-title">P2 &ndash; Order Update (&times;4)</text>
+            <rect x="160" y="93" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="188" y="93" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="216" y="93" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="244" y="93" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="272" y="93" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="300" y="93" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="328" y="93" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="356" y="93" width="24" height="24" rx="3" class="ns-queued"></rect>
+
+            <text x="12" y="169" class="ns-title">P3 &ndash; Promotion (&times;2)</text>
+            <rect x="160" y="153" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="188" y="153" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="216" y="153" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="244" y="153" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="272" y="153" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="300" y="153" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="328" y="153" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="356" y="153" width="24" height="24" rx="3" class="ns-queued"></rect>
+
+            <text x="12" y="229" class="ns-title">P4 &ndash; Bulk / Other (&times;1)</text>
+            <rect x="160" y="213" width="24" height="24" rx="3" class="ns-pulled"></rect>
+            <rect x="188" y="213" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="216" y="213" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="244" y="213" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="272" y="213" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="300" y="213" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="328" y="213" width="24" height="24" rx="3" class="ns-queued"></rect>
+            <rect x="356" y="213" width="24" height="24" rx="3" class="ns-queued"></rect>
+
+            <path d="M368,213 C440,180 440,140 380,159" class="ns-arrow" stroke-dasharray="4 3" marker-end="url(#arrow-ns-2)" fill="none"></path>
+            <text x="440" y="175" class="ns-label">aged &gt; 30s &rarr; escalate</text>
+
+            <line x1="384" y1="115" x2="420" y2="122" class="ns-arrow" marker-end="url(#arrow-ns-2)"></line>
+            <rect x="420" y="100" width="140" height="60" rx="6" class="ns-box-strong"></rect>
+            <text x="490" y="126" text-anchor="middle" class="ns-title">Priority Handler</text>
+            <text x="490" y="140" text-anchor="middle" class="ns-label">1 scheduling round</text>
+
+            <line x1="560" y1="130" x2="598" y2="130" class="ns-arrow" marker-end="url(#arrow-ns-2)"></line>
+            <rect x="600" y="100" width="140" height="60" rx="6" class="ns-box-bus"></rect>
+            <text x="670" y="126" text-anchor="middle" class="ns-title-inv">Kafka</text>
+            <text x="670" y="140" text-anchor="middle" class="ns-sub-inv">approved topic</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Weighted round-robin priority scheduling: each round pulls a weighted share (8:4:2:1) from each queue so P1 dominates without starving P2&ndash;P4; aging escalates a message that has waited too long.</div>
+        </div>
+
+        <table class="sortable">
+          <tr><th>Scheduling policy</th><th>OTP latency</th><th>Starvation risk</th><th>Complexity</th></tr>
+          <tr><td>Strict priority (always fully drain P1 first)</td><td>Best possible</td><td>High under sustained P1/P2 load</td><td>Low</td></tr>
+          <tr><td>Simple round-robin (equal share per queue)</td><td>Poor under a P3/P4 flood</td><td>None</td><td>Low</td></tr>
+          <tr><td>Weighted round-robin (recommended)</td><td>Excellent, bounded by weight ratio</td><td>Low, bounded</td><td>Medium</td></tr>
+          <tr><td>Weighted round-robin + aging (recommended default)</td><td>Excellent</td><td>None (bounded wait guaranteed)</td><td>Medium-High</td></tr>
+        </table>
+
+        <h2 id="deep-dive-rate-limiting-and-user-preference-gate">Deep Dive — Rate Limiting and User Preference Gate</h2>
+        <p>Every notification that survives the priority queues passes through exactly one gate before it's allowed to reach Kafka: rate limiting, then preference checks.</p>
+
+        <h3>Rate Limiting — Fixed Window Counter in Redis</h3>
+        <p>We use a <strong>fixed window counter</strong> keyed by <code>rl:{tenant_id}:{user_id}:{yyyy-mm-dd}</code> (the user's local calendar day, not UTC — see the "quiet hours" discussion below for why timezone matters here too). Redis's <code>INCR</code> is atomic, so two concurrent requests for the same user can never both read-then-write a stale count — the increment itself is the check-and-increment, eliminating the classic read-modify-write race. The key carries a 24&ndash;48 hour TTL so it self-expires without any cleanup job. A sliding-window log or sliding-window counter would be smoother at the boundary (no "reset cliff" at midnight) but costs more memory and complexity per user; for a simple daily cap like 5/day, a fixed window is the pragmatic, defensible choice — call this trade-off out explicitly if asked.</p>
+        <table>
+          <tr><th></th><th>Fixed window (chosen)</th><th>Sliding window (log or counter)</th></tr>
+          <tr><td>Implementation cost</td><td>One atomic INCR + TTL</td><td>Sorted set of timestamps, or two-window weighted count</td></tr>
+          <tr><td>Boundary behavior</td><td>Up to ~2&times; burst right at window reset</td><td>Smooth, no reset cliff</td></tr>
+          <tr><td>Memory per user</td><td>One integer</td><td>Higher (log of timestamps, or two counters)</td></tr>
+          <tr><td>Good fit here?</td><td>Yes &mdash; a daily cap tolerates a small boundary burst</td><td>Overkill for this requirement</td></tr>
+        </table>
+        <p><strong>Scope of the cap:</strong> we exempt P1 (OTP) entirely from the 5/day cap — an OTP is a security-critical, user-initiated action, not spam, and must never be silently dropped by a counter. P2 (order updates) is tracked in a separate, generous counter mostly as an abuse backstop. The 5/day figure is really aimed at P3/P4 (promotional and bulk) traffic; state this scoping decision explicitly, since a literal reading of "5 notifications per user per day" would otherwise block a legitimate 2FA code on a busy shopping day.</p>
+
+        <h3>User Preference Check</h3>
+        <p>After the rate-limit check passes, the Priority Handler reads the cached preference record (Redis, backed by Cassandra) for the user: channel opt-in flags (SMS/email/in-app/all) and, for P3 (promotional) traffic specifically, a quiet-hours window in the user's own timezone. If the current local time falls inside quiet hours, a promotional notification is deferred (re-enqueued with a computed <code>schedule_at</code> at the end of quiet hours) rather than dropped. Quiet hours are intentionally scoped to promotional traffic only — an OTP or order update is never held back for "quiet hours," since deferring a security code defeats its purpose.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rate limiting mechanism: an incoming notification triggers an atomic Redis INCR on a per-user, per-day key with a 24 hour TTL. The count is compared against the limit of 5; if over, the notification is rejected, otherwise it proceeds to the preference check. The Redis counter is also asynchronously written to Cassandra as a durable audit trail.">
+            <style>
+              .ns-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .ns-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .ns-box-store{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .ns-diamond{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+              .ns-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .ns-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .ns-label{font-family:var(--font-sans);font-weight:400;font-size:9.5px;font-style:italic;fill:var(--color-text-muted);}
+              .ns-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .ns-arrow-store{stroke:var(--color-formula-border);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+            </style>
+            <defs>
+              <marker id="arrow-ns-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+              <marker id="arrow-ns-3s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-formula-border)"></path></marker>
+            </defs>
+
+            <rect x="290" y="15" width="200" height="45" rx="6" class="ns-box"></rect>
+            <text x="390" y="34" text-anchor="middle" class="ns-title">Incoming send</text>
+            <text x="390" y="48" text-anchor="middle" class="ns-sub">user U, tenant T, day D</text>
+
+            <line x1="390" y1="60" x2="390" y2="89" class="ns-arrow" marker-end="url(#arrow-ns-3)"></line>
+
+            <rect x="250" y="90" width="280" height="55" rx="6" class="ns-box-strong"></rect>
+            <text x="390" y="110" text-anchor="middle" class="ns-title">Redis: atomic INCR</text>
+            <text x="390" y="123" text-anchor="middle" class="ns-sub">key rl:{tenant}:{user}:{date}, TTL 24h</text>
+            <text x="390" y="136" text-anchor="middle" class="ns-sub">no race condition &mdash; INCR is atomic</text>
+
+            <line x1="530" y1="117" x2="559" y2="117" class="ns-arrow-store" marker-end="url(#arrow-ns-3s)"></line>
+            <text x="545" y="107" text-anchor="middle" class="ns-label">async audit</text>
+
+            <rect x="560" y="90" width="170" height="55" rx="6" class="ns-box-store"></rect>
+            <text x="645" y="112" text-anchor="middle" class="ns-title">Cassandra</text>
+            <text x="645" y="126" text-anchor="middle" class="ns-sub">durable audit trail of</text>
+            <text x="645" y="138" text-anchor="middle" class="ns-sub">rate-limit decisions</text>
+
+            <line x1="390" y1="145" x2="390" y2="174" class="ns-arrow" marker-end="url(#arrow-ns-3)"></line>
+
+            <polygon points="280,215 390,175 500,215 390,255" class="ns-diamond"></polygon>
+            <text x="390" y="211" text-anchor="middle" class="ns-title">count &le; 5?</text>
+            <text x="390" y="224" text-anchor="middle" class="ns-label">(P1 exempt)</text>
+
+            <line x1="310" y1="235" x2="180" y2="269" class="ns-arrow" marker-end="url(#arrow-ns-3)"></line>
+            <text x="220" y="248" text-anchor="middle" class="ns-label">no</text>
+
+            <rect x="40" y="270" width="230" height="55" rx="6" class="ns-box"></rect>
+            <text x="155" y="292" text-anchor="middle" class="ns-title">Reject notification</text>
+            <text x="155" y="306" text-anchor="middle" class="ns-sub">metric: rate_limit_rejected</text>
+
+            <line x1="470" y1="235" x2="600" y2="269" class="ns-arrow" marker-end="url(#arrow-ns-3)"></line>
+            <text x="560" y="248" text-anchor="middle" class="ns-label">yes</text>
+
+            <rect x="490" y="270" width="230" height="55" rx="6" class="ns-box"></rect>
+            <text x="605" y="292" text-anchor="middle" class="ns-title">Allow &rarr; continue to</text>
+            <text x="605" y="306" text-anchor="middle" class="ns-sub">preference check</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Rate-limiting mechanism: an atomic Redis INCR against a per-user, per-day key (TTL 24h) decides pass/fail in one round trip, with an async write-behind to Cassandra for durable audit; P1/OTP bypasses this cap entirely.</div>
+        </div>
+
+        <h2 id="deep-dive-kafka-fan-out-and-pluggable-channel-handlers">Deep Dive — Kafka Fan-Out and Pluggable Channel Handlers</h2>
+        <p>Once a notification clears the gate, the Priority Handler publishes it to a single <code>notifications.approved</code> Kafka topic, partitioned by <code>user_id</code> so all of one user's messages stay in relative order. Each channel handler runs as its own Kafka <strong>consumer group</strong> reading the same topic independently — this is what makes the "pluggable" requirement real rather than aspirational.</p>
+        <h3>Adding a New Channel Without Redeploying Existing Handlers</h3>
+        <p>To add push notifications: stand up a new push-Handler service, register it as a new consumer group on the existing <code>notifications.approved</code> topic, and add a routing rule so <code>channel_hint</code>/preferences can select it. The in-app, email, and SMS handlers never see a code change, a redeploy, or even a config reload — they're reading the same topic through their own, unrelated consumer-group offsets. This is the direct payoff of "channel handler = independent consumer group," not a special extension mechanism bolted on afterward.</p>
+        <h3>Template Rendering</h3>
+        <p>Each handler fetches the template by <code>(tenant_id, template_id, locale)</code>, validates that every variable used in the request matches the template's declared <code>variables_schema</code>, and performs simple <code>{{variable}}</code> substitution — deliberately not a general-purpose templating/scripting language, to close off injection risk (see "Security" below). Rendered output is channel-specific: SMS truncates/segments for length, email renders an HTML + plain-text pair, in-app produces a structured payload (title, body, deep link, icon) for the inbox/feed UI.</p>
+
+        <h2 id="deep-dive-retry-backoff-and-dead-letter-queue">Deep Dive — Retry, Backoff, and Dead-Letter Queue</h2>
+        <p>Every channel handler call to an external provider (or internal in-app write) can fail transiently. Failures are retried with exponential backoff (e.g. 1s &rarr; 2s &rarr; 4s &rarr; 8s &rarr; 16s, capped at 5 attempts). If retries are exhausted, a circuit breaker opens for that provider and traffic fails over to a configured backup vendor (e.g. a secondary SMS aggregator); only if the backup also fails does the notification land in a Dead-Letter Queue (DLQ) for alerting and possible manual/scheduled reprocessing.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Retry and dead-letter-queue flow: the SMS Handler calls the SMS provider; on failure it retries with exponential backoff up to 5 attempts, then opens a circuit breaker and fails over to a backup SMS provider; if that also fails the message lands in a Dead Letter Queue and an alert or scheduled reprocessing job is triggered. On success the Tracker marks the notification delivered.">
+            <style>
+              .ns-box{fill:var(--color-accent-light);stroke:var(--color-accent);stroke-width:1.5;}
+              .ns-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2.5;}
+              .ns-box-warn{fill:var(--color-formula-bg);stroke:var(--color-formula-border);stroke-width:2;}
+              .ns-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .ns-sub{font-family:var(--font-sans);font-weight:400;font-size:9.5px;fill:var(--color-text-muted);}
+              .ns-label{font-family:var(--font-sans);font-weight:400;font-size:9.5px;font-style:italic;fill:var(--color-text-muted);}
+              .ns-arrow{stroke:var(--color-accent);stroke-width:1.6;fill:none;}
+              .ns-arrow-dash{stroke:var(--color-accent);stroke-width:1.6;fill:none;stroke-dasharray:4 3;}
+            </style>
+            <defs>
+              <marker id="arrow-ns-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent)"></path></marker>
+            </defs>
+
+            <rect x="20" y="20" width="180" height="50" rx="6" class="ns-box"></rect>
+            <text x="110" y="40" text-anchor="middle" class="ns-title">SMS Handler</text>
+            <text x="110" y="54" text-anchor="middle" class="ns-sub">renders template, calls provider</text>
+
+            <line x1="200" y1="45" x2="248" y2="45" class="ns-arrow" marker-end="url(#arrow-ns-4)"></line>
+            <text x="224" y="38" text-anchor="middle" class="ns-label">idempotency_key</text>
+
+            <rect x="250" y="20" width="200" height="50" rx="6" class="ns-box-strong"></rect>
+            <text x="350" y="40" text-anchor="middle" class="ns-title">SMS Provider (Twilio)</text>
+            <text x="350" y="54" text-anchor="middle" class="ns-sub">external, rate-limited</text>
+
+            <line x1="300" y1="70" x2="165" y2="139" class="ns-arrow" marker-end="url(#arrow-ns-4)"></line>
+            <text x="220" y="105" text-anchor="middle" class="ns-label">success</text>
+
+            <rect x="40" y="140" width="240" height="55" rx="6" class="ns-box"></rect>
+            <text x="160" y="160" text-anchor="middle" class="ns-title">Mark DELIVERED</text>
+            <text x="160" y="174" text-anchor="middle" class="ns-sub">Tracker updates Cassandra + Redis</text>
+
+            <line x1="400" y1="70" x2="530" y2="139" class="ns-arrow" marker-end="url(#arrow-ns-4)"></line>
+            <text x="475" y="105" text-anchor="middle" class="ns-label">failure</text>
+
+            <rect x="420" y="140" width="240" height="60" rx="6" class="ns-box-warn"></rect>
+            <text x="540" y="162" text-anchor="middle" class="ns-title">Retry with backoff</text>
+            <text x="540" y="176" text-anchor="middle" class="ns-sub">1s &rarr; 2s &rarr; 4s &rarr; 8s (max 5 tries)</text>
+            <text x="540" y="189" text-anchor="middle" class="ns-label">idempotency_key travels with retry</text>
+
+            <path d="M540,139 C540,90 430,90 402,68" class="ns-arrow-dash" marker-end="url(#arrow-ns-4)" fill="none"></path>
+
+            <line x1="540" y1="200" x2="540" y2="229" class="ns-arrow" marker-end="url(#arrow-ns-4)"></line>
+
+            <rect x="420" y="230" width="240" height="60" rx="6" class="ns-box-warn"></rect>
+            <text x="540" y="252" text-anchor="middle" class="ns-title">Circuit breaker OPENS</text>
+            <text x="540" y="266" text-anchor="middle" class="ns-sub">failover to backup SMS provider</text>
+            <text x="540" y="279" text-anchor="middle" class="ns-label">max attempts exceeded</text>
+
+            <line x1="420" y1="260" x2="372" y2="260" class="ns-arrow" marker-end="url(#arrow-ns-4)"></line>
+            <text x="396" y="252" text-anchor="middle" class="ns-label">failover</text>
+
+            <rect x="170" y="230" width="200" height="60" rx="6" class="ns-box"></rect>
+            <text x="270" y="252" text-anchor="middle" class="ns-title">Backup SMS Provider</text>
+            <text x="270" y="266" text-anchor="middle" class="ns-sub">secondary vendor</text>
+
+            <line x1="200" y1="230" x2="163" y2="197" class="ns-arrow" marker-end="url(#arrow-ns-4)"></line>
+            <text x="222" y="215" text-anchor="middle" class="ns-label">success</text>
+
+            <line x1="290" y1="290" x2="440" y2="319" class="ns-arrow" marker-end="url(#arrow-ns-4)"></line>
+            <text x="380" y="308" text-anchor="middle" class="ns-label">still fails</text>
+
+            <rect x="420" y="320" width="240" height="55" rx="6" class="ns-box-warn"></rect>
+            <text x="540" y="342" text-anchor="middle" class="ns-title">Dead Letter Queue</text>
+            <text x="540" y="356" text-anchor="middle" class="ns-sub">after max retries + failover exhausted</text>
+
+            <line x1="540" y1="375" x2="540" y2="389" class="ns-arrow" marker-end="url(#arrow-ns-4)"></line>
+
+            <rect x="400" y="390" width="280" height="55" rx="6" class="ns-box"></rect>
+            <text x="540" y="412" text-anchor="middle" class="ns-title">Alert on-call / scheduled job</text>
+            <text x="540" y="426" text-anchor="middle" class="ns-sub">idempotent replay from the DLQ</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. Retry / DLQ flow for a failing channel provider: exponential backoff, then circuit-breaker failover to a backup vendor, then a Dead Letter Queue with alerting and idempotent replay.</div>
+        </div>
+
+        <h2 id="deep-dive-delivery-tracking-idempotency-and-the-send-sequence">Deep Dive — Delivery Tracking, Idempotency, and the Send Sequence</h2>
+        <p>Kafka's at-least-once semantics mean the same message can be delivered to a channel handler more than once (consumer restart, rebalance, retry). The system is made idempotent at the storage layer, not by trying to make Kafka exactly-once: <code>notification_log</code> has a unique constraint on <code>idempotency_key</code>, and a channel handler performs a conditional "claim" write (insert-if-absent) before calling the provider. If the claim fails because the row already exists and is already <code>SENT</code>/<code>DELIVERED</code>, the handler treats the message as a no-op duplicate and acknowledges it without calling the provider again. This — not Kafka configuration — is what actually prevents a double SMS from a redelivered message.</p>
+        <p>The Tracker consumes the same <code>notifications.approved</code> topic (its own consumer group) purely to observe outcomes: it correlates provider webhooks/callbacks (delivery receipts) and in-app read events back to the <code>notification_id</code>, and writes the final status into Cassandra + Redis. In-app read receipts arrive as a small event from the client ("user opened notification N") that the Tracker folds into the same status field.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="End-to-end send sequence in eight numbered steps, from the producer service calling the SendNotification API through classification, priority scheduling, rate-limit and preference checks, Kafka publish, channel handler delivery, and Tracker recording the outcome.">
+            <style>
+              .ns-circle{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1.5;}
+              .ns-num{font-family:var(--font-sans);font-weight:700;font-size:13px;fill:#ffffff;}
+              .ns-title{font-family:var(--font-sans);font-weight:700;font-size:12px;fill:var(--color-primary);}
+              .ns-sub{font-family:var(--font-sans);font-weight:400;font-size:10px;fill:var(--color-text-muted);}
+              .ns-line{stroke:var(--color-border);stroke-width:2;}
+            </style>
+            <line x1="40" y1="40" x2="40" y2="425" class="ns-line"></line>
+
+            <circle cx="40" cy="40" r="16" class="ns-circle"></circle>
+            <text x="40" y="45" text-anchor="middle" class="ns-num">1</text>
+            <text x="75" y="34" class="ns-title">Producer calls SendNotification</text>
+            <text x="75" y="49" class="ns-sub">event_type, template_id, variables, idempotency_key</text>
+
+            <circle cx="40" cy="95" r="16" class="ns-circle"></circle>
+            <text x="40" y="100" text-anchor="middle" class="ns-num">2</text>
+            <text x="75" y="89" class="ns-title">Notification Consumer classifies</text>
+            <text x="75" y="104" class="ns-sub">maps event_type to a priority 1&ndash;4 queue</text>
+
+            <circle cx="40" cy="150" r="16" class="ns-circle"></circle>
+            <text x="40" y="155" text-anchor="middle" class="ns-num">3</text>
+            <text x="75" y="144" class="ns-title">Priority Handler drains queues</text>
+            <text x="75" y="159" class="ns-sub">weighted, starvation-safe scheduling picks up the request</text>
+
+            <circle cx="40" cy="205" r="16" class="ns-circle"></circle>
+            <text x="40" y="210" text-anchor="middle" class="ns-num">4</text>
+            <text x="75" y="199" class="ns-title">Rate-limit check (Redis)</text>
+            <text x="75" y="214" class="ns-sub">atomic INCR; reject if already at 5/day (P1 exempt)</text>
+
+            <circle cx="40" cy="260" r="16" class="ns-circle"></circle>
+            <text x="40" y="265" text-anchor="middle" class="ns-num">5</text>
+            <text x="75" y="254" class="ns-title">Preference check (Cassandra + Redis)</text>
+            <text x="75" y="269" class="ns-sub">channel opt-in and quiet-hours window (promo only)</text>
+
+            <circle cx="40" cy="315" r="16" class="ns-circle"></circle>
+            <text x="40" y="320" text-anchor="middle" class="ns-num">6</text>
+            <text x="75" y="309" class="ns-title">Publish to Kafka</text>
+            <text x="75" y="324" class="ns-sub">notifications.approved, partitioned by user_id, RF=3</text>
+
+            <circle cx="40" cy="370" r="16" class="ns-circle"></circle>
+            <text x="40" y="375" text-anchor="middle" class="ns-num">7</text>
+            <text x="75" y="364" class="ns-title">Channel handler renders + sends</text>
+            <text x="75" y="379" class="ns-sub">in-app / email / SMS consumer group claims + calls provider</text>
+
+            <circle cx="40" cy="425" r="16" class="ns-circle"></circle>
+            <text x="40" y="430" text-anchor="middle" class="ns-num">8</text>
+            <text x="75" y="419" class="ns-title">Tracker records the outcome</text>
+            <text x="75" y="434" class="ns-sub">delivery status written to Cassandra + Redis; retry/DLQ on failure</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. The end-to-end send sequence &mdash; classification and the rate-limit/preference gate (steps 2&ndash;5) are the only strictly-ordered, synchronous-feeling steps; everything from step 6 onward is async and independently scalable.</div>
+        </div>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+        <p>Sharding decisions follow the same principle throughout: keep everything for one user together for correctness (ordering, rate-limit atomicity), and keep priority classes physically separated for isolation.</p>
+        <ul>
+          <li><strong>Rate-limit counters and preferences</strong> are sharded by <code>user_id</code> (consistent hashing in both Redis Cluster and Cassandra) so every check for a given user always lands on the same shard/replica set — no cross-shard coordination needed for a single user's counter.</li>
+          <li><strong>Ingestion topics are one Kafka topic per priority class</strong> (<code>notifications.otp</code>, <code>notifications.order_update</code>, <code>notifications.promotion</code>, <code>notifications.bulk</code>), each with its own partitions and consumer lag. This is why a promotional flood can never delay an OTP: the OTP consumer only ever reads <code>notifications.otp</code>, whose partitions and throughput are completely untouched by whatever is happening in <code>notifications.bulk</code>.</li>
+          <li><strong>The post-gate fan-out topic</strong> (<code>notifications.approved</code>) is partitioned by <code>user_id</code> instead, so all of one user's approved notifications preserve relative order across channels, while each channel handler's consumer group independently reads every partition.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel: four separate Kafka topics, one per priority class, each with its own partitions, so a flood on the bulk topic cannot delay the OTP topic. Right panel: a Cassandra ring sharded by hash of user_id with replication factor 3, showing one user's data replicated across three consecutive nodes.">
+            <style>
+              .ns-box-strong{fill:var(--color-accent-light);stroke:var(--color-accent-dark);stroke-width:2;}
+              .ns-part{fill:var(--color-accent);stroke:var(--color-accent-dark);stroke-width:1;}
+              .ns-title{font-family:var(--font-sans);font-weight:700;font-size:11.5px;fill:var(--color-primary);}
+              .ns-sub{font-family:var(--font-sans);font-weight:400;font-size:9px;fill:var(--color-text-muted);}
+              .ns-node{fill:var(--color-bg);stroke:var(--color-border);stroke-width:1.5;}
+              .ns-node-active{fill:var(--color-accent-dark);stroke:var(--color-primary-dark);stroke-width:1.5;}
+              .ns-nodelabel{font-family:var(--font-sans);font-weight:700;font-size:8px;fill:var(--color-primary);}
+              .ns-nodelabel-inv{font-family:var(--font-sans);font-weight:700;font-size:8px;fill:#ffffff;}
+            </style>
+            <text x="20" y="20" class="ns-title">Ingestion: one Kafka topic per priority class</text>
+
+            <rect x="20" y="45" width="340" height="38" rx="5" class="ns-box-strong"></rect>
+            <text x="30" y="68" class="ns-title">topic.otp.v1</text>
+            <rect x="245" y="53" width="16" height="22" rx="2" class="ns-part"></rect>
+            <rect x="265" y="53" width="16" height="22" rx="2" class="ns-part"></rect>
+            <rect x="285" y="53" width="16" height="22" rx="2" class="ns-part"></rect>
+
+            <rect x="20" y="95" width="340" height="38" rx="5" class="ns-box-strong"></rect>
+            <text x="30" y="118" class="ns-title">topic.order_update.v1</text>
+            <rect x="245" y="103" width="16" height="22" rx="2" class="ns-part"></rect>
+            <rect x="265" y="103" width="16" height="22" rx="2" class="ns-part"></rect>
+            <rect x="285" y="103" width="16" height="22" rx="2" class="ns-part"></rect>
+
+            <rect x="20" y="145" width="340" height="38" rx="5" class="ns-box-strong"></rect>
+            <text x="30" y="168" class="ns-title">topic.promotion.v1</text>
+            <rect x="245" y="153" width="16" height="22" rx="2" class="ns-part"></rect>
+            <rect x="265" y="153" width="16" height="22" rx="2" class="ns-part"></rect>
+            <rect x="285" y="153" width="16" height="22" rx="2" class="ns-part"></rect>
+
+            <rect x="20" y="195" width="340" height="38" rx="5" class="ns-box-strong"></rect>
+            <text x="30" y="218" class="ns-title">topic.bulk.v1</text>
+            <rect x="245" y="203" width="16" height="22" rx="2" class="ns-part"></rect>
+            <rect x="265" y="203" width="16" height="22" rx="2" class="ns-part"></rect>
+            <rect x="285" y="203" width="16" height="22" rx="2" class="ns-part"></rect>
+
+            <text x="20" y="255" class="ns-sub">A flood on topic.bulk only backs up its own consumers &mdash;</text>
+            <text x="20" y="268" class="ns-sub">topic.otp consumers are never delayed.</text>
+
+            <line x1="400" y1="20" x2="400" y2="290" stroke="var(--color-border)" stroke-width="1"></line>
+
+            <text x="420" y="20" class="ns-title">Cassandra: ring sharded by hash(user_id), RF=3</text>
+
+            <circle cx="590" cy="150" r="100" fill="none" stroke="var(--color-border)" stroke-dasharray="3 3"></circle>
+
+            <circle cx="690" cy="150" r="13" class="ns-node"></circle>
+            <text x="690" y="153" text-anchor="middle" class="ns-nodelabel">N0</text>
+            <circle cx="661" cy="221" r="13" class="ns-node"></circle>
+            <text x="661" y="224" text-anchor="middle" class="ns-nodelabel">N1</text>
+            <circle cx="590" cy="250" r="13" class="ns-node-active"></circle>
+            <text x="590" y="253" text-anchor="middle" class="ns-nodelabel-inv">N2</text>
+            <circle cx="519" cy="221" r="13" class="ns-node-active"></circle>
+            <text x="519" y="224" text-anchor="middle" class="ns-nodelabel-inv">N3</text>
+            <circle cx="490" cy="150" r="13" class="ns-node-active"></circle>
+            <text x="490" y="153" text-anchor="middle" class="ns-nodelabel-inv">N4</text>
+            <circle cx="519" cy="79" r="13" class="ns-node"></circle>
+            <text x="519" y="82" text-anchor="middle" class="ns-nodelabel">N5</text>
+            <circle cx="590" cy="50" r="13" class="ns-node"></circle>
+            <text x="590" y="53" text-anchor="middle" class="ns-nodelabel">N6</text>
+            <circle cx="661" cy="79" r="13" class="ns-node"></circle>
+            <text x="661" y="82" text-anchor="middle" class="ns-nodelabel">N7</text>
+
+            <text x="590" y="278" text-anchor="middle" class="ns-sub">hash(user_id) &rarr; primary N3, replicated to N2 and N4 (RF=3)</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. Left: topics-per-priority isolate ingestion so bulk traffic can never delay OTP. Right: Cassandra shards by hash(user_id) with RF=3, so preferences and rate-limit state for one user always land on the same replica set.</div>
+        </div>
+
+        <table>
+          <tr><th>Data</th><th>Sharded by</th><th>Replication</th></tr>
+          <tr><td>rate_limit_counters</td><td>hash(tenant_id + user_id)</td><td>Redis: 1 primary + 1&ndash;2 replicas; Cassandra backstop RF=3</td></tr>
+          <tr><td>user_notification_preferences</td><td>hash(tenant_id + user_id)</td><td>Cassandra RF=3, Redis write-through cache</td></tr>
+          <tr><td>notification_log / delivery_status</td><td>hash(notification_id), secondary index on user_id</td><td>Cassandra RF=3</td></tr>
+          <tr><td>Ingestion queues (P1&ndash;P4)</td><td>one Kafka topic per priority</td><td>Kafka RF=3 per topic</td></tr>
+          <tr><td>Approved / fan-out topic</td><td>hash(user_id) &rarr; partition</td><td>Kafka RF=3</td></tr>
+        </table>
+
+        <h2 id="rate-limiting-and-abuse-prevention">Rate Limiting and Abuse Prevention</h2>
+        <p>Beyond the per-user 5/day cap, the system needs tenant-level and producer-level abuse controls, since this is a shared, multi-tenant service.</p>
+        <ul>
+          <li><strong>Per-tenant ingestion quota</strong> enforced at the API gateway (token-bucket per <code>tenant_id</code>), so one client company's misbehaving or compromised producer service can't starve every other tenant's ingestion capacity.</li>
+          <li><strong>Per-producer-service authentication</strong> (API key or mTLS) so requests are always attributable, and a specific misbehaving integration can be throttled or disabled without affecting the rest of its tenant.</li>
+          <li><strong>Burst shedding under extreme load:</strong> if ingestion capacity is genuinely exceeded, shed P4 first, then P3, protecting P1/P2 — the priority queues make this a natural, already-built-in policy rather than a special case.</li>
+          <li><strong>429-equivalent responses with backpressure:</strong> a tenant exceeding quota gets a fast, clear rejection at the edge rather than an accepted-then-silently-dropped request.</li>
+        </ul>
+
+        <h2 id="security-privacy-and-multi-tenant-isolation">Security, Privacy and Multi-Tenant Isolation</h2>
+        <ul>
+          <li><strong>No PII in logs:</strong> application/operational logs reference <code>user_id</code> and <code>notification_id</code> only; phone numbers, email addresses, and rendered message bodies are never written to general-purpose logs — only to the access-controlled <code>notification_log</code> store, and even there, contact details are masked/tokenized where the log's purpose doesn't require them in the clear.</li>
+          <li><strong>Template injection prevention:</strong> templates support only declared, schema-validated <code>{{variable}}</code> substitution — never string concatenation into a script/expression engine. Rendered output is HTML/attribute-escaped for email and in-app to prevent stored XSS, and template IDs are scoped per tenant so one tenant can never reference (or overwrite) another tenant's template.</li>
+          <li><strong>Multi-tenant isolation:</strong> every table is keyed by <code>tenant_id</code> as the leading partition key element, so a query or a bug can't cross tenant boundaries by construction; rate limits, quiet hours, and quotas are configured per tenant.</li>
+          <li><strong>Transport security:</strong> TLS everywhere; mTLS between producer services and the ingestion API; provider (SMS/email vendor) credentials stored in a secrets manager, rotated regularly, and never logged.</li>
+          <li><strong>Abuse of the notification channel itself:</strong> the rate limiter is also the primary defense against using the service to spam a user (e.g. a compromised producer trying to harass a target user with repeated messages) — this is a security property of the rate-limit gate, not just a UX one.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Load balancing shows up at several independent layers:</p>
+        <ol>
+          <li>Between producer services and the ingestion API (standard L7 load balancer, health-checked).</li>
+          <li>Across Kafka partitions/consumer-group members for the Priority Handler and each channel handler — Kafka's own consumer-group rebalancing handles this natively as instances scale up/down.</li>
+          <li>Across a pool of SMS numbers / email sending domains, so no single provider account absorbs more than its rate limit while others sit idle.</li>
+        </ol>
+        <p>Start with round-robin at the API tier; for the provider pools specifically, use a rate-aware balancer that actively tracks each account's remaining quota rather than blind round-robin, since provider throttling is the real bottleneck (see capacity estimation above).</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Run each region active-active, and co-locate the Notification Consumer + Priority Handler with the region the requesting producer/user is closest to — OTP latency is the metric this design cares most about, and network round-trips to a distant region are exactly the kind of tax that requirement can't absorb.</li>
+          <li>Cassandra multi-DC replication keeps preferences and rate-limit backstops available locally in each region; use <code>LOCAL_QUORUM</code> for low-latency reads/writes within a region, with cross-region replication happening asynchronously.</li>
+          <li>Rate-limit counters need a explicit choice: either pin each user to a "home" region for their counter (simplest, avoids cross-region coordination, at the cost of a slower failover path if that region is down), or accept eventually-consistent global counters (simpler failover, but a user could theoretically exceed 5/day by a small margin if requests land in two regions in the same window). For most products, home-region pinning is the pragmatic default.</li>
+          <li>Kafka runs as regional clusters with MirrorMaker (or an equivalent) replicating the approved-notifications stream cross-region only where a channel handler must run centrally (e.g. a single SMS provider relationship) — not on the OTP-latency-critical path.</li>
+        </ul>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>A massive promotional campaign floods ingestion</td><td>Topics-per-priority physically isolate P1/P2 from P3/P4; weighted scheduling + burst shedding at P4/P3 first</td></tr>
+          <tr><td>Rate-limit counter contention for one hot user</td><td>Redis atomic INCR (single-threaded per key) avoids the read-modify-write race entirely</td></tr>
+          <tr><td>SMS/email provider outage</td><td>Retry with backoff &rarr; circuit breaker &rarr; failover to backup vendor &rarr; DLQ as last resort</td></tr>
+          <tr><td>Kafka consumer lag on a channel handler</td><td>Scale that channel's consumer group independently &mdash; unrelated to other channels' health</td></tr>
+          <tr><td>Duplicate delivery from Kafka's at-least-once semantics</td><td>Idempotency key + unique constraint + conditional claim write in notification_log</td></tr>
+          <tr><td>Cassandra node/AZ failure</td><td>RF=3 with quorum reads/writes; a single node loss never blocks availability</td></tr>
+          <tr><td>Noisy tenant degrades others (multi-tenant)</td><td>Per-tenant quota at the gateway, isolated from the global priority-queue budget</td></tr>
+          <tr><td>Region-wide outage</td><td>Active-active regions, home-region pinning for counters, async cross-region replication</td></tr>
+        </table>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor availability (AP) for preference reads and the delivery log &mdash; a slightly stale preference or a delayed analytics write is far better than blocking a send. Favor consistency for the rate-limit counter specifically &mdash; a single atomic INCR per key gives us strong, race-free consistency exactly where it matters (never letting a user silently exceed the cap due to a race), without paying a distributed-consensus cost across the whole system.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Ingestion</td><td>Notification Consumer classifies into 4 priority-class Kafka topics (OTP, Order Update, Promotion, Bulk)</td></tr>
+          <tr><td>Scheduling</td><td>Weighted round-robin (8:4:2:1) with aging-based starvation prevention</td></tr>
+          <tr><td>Rate limiting</td><td>Redis atomic INCR, fixed daily window, 5/day cap on P3/P4 (P1 exempt, P2 generous backstop)</td></tr>
+          <tr><td>Preferences</td><td>Channel opt-in + quiet hours (promo only), Cassandra source of truth, Redis cache</td></tr>
+          <tr><td>Fan-out</td><td>Kafka notifications.approved topic, partitioned by user_id, RF=3</td></tr>
+          <tr><td>Channel handlers</td><td>Independent consumer groups per channel (in-app, email, SMS) &mdash; pluggable by design</td></tr>
+          <tr><td>Idempotency</td><td>notification_log unique constraint on idempotency_key + conditional claim write</td></tr>
+          <tr><td>Retry / failure handling</td><td>Exponential backoff &rarr; circuit breaker + backup provider failover &rarr; DLQ + alerting</td></tr>
+          <tr><td>Delivery tracking</td><td>Tracker consumer group writes status to Cassandra + Redis; supports read receipts</td></tr>
+          <tr><td>Primary datastore</td><td>Cassandra (durable, RF=3, TTL-native) + Redis (hot counters/preference cache)</td></tr>
+          <tr><td>Multi-tenancy</td><td>tenant_id leading partition key everywhere; per-tenant quotas, templates, quiet hours</td></tr>
+          <tr><td>Multi-region</td><td>Active-active, Notification Consumer co-located with the user's region, home-region-pinned counters</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>Grouped by theme &mdash; expect a real interview to pick several of these as "and then what?" follow-ups on whatever you draw first.</p>
+
+        <h3>Prioritization and Scheduling</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why 4 separate priority queues instead of one queue with a priority field?</div>
+          <div class="qa-a">A shared queue still lets low-priority volume consume shared partitions/consumer throughput and forces either in-order processing or an expensive re-sort. Separate topics give physical isolation: a promotional flood can only ever back up its own topic and consumers, never touch OTP's dedicated capacity.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent low-priority notifications from starving forever?</div>
+          <div class="qa-a">Weighted round-robin guarantees every priority a bounded share every scheduling round (not zero), and an aging rule promotes any message that's waited past a threshold (e.g. 30s) up one priority level, giving a hard upper bound on worst-case wait instead of indefinite starvation.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you test that OTP still arrives fast during a huge promotional campaign?</div>
+          <div class="qa-a">Load-test by injecting a synthetic P4 flood at several multiples of peak while continuously measuring P1 end-to-end latency (p50/p99) from a separate control-plane probe; alert if P1 p99 degrades at all, since a well-isolated design should show flat OTP latency regardless of P3/P4 volume.</div>
+        </div>
+
+        <h3>Rate Limiting and Preferences</h3>
+        <div class="qa-item">
+          <div class="qa-q">How does the rate limiter avoid a race condition across concurrent requests for the same user?</div>
+          <div class="qa-a">Redis's INCR is atomic and single-threaded per key &mdash; there's no separate read-then-write step for a caller to race against. Two concurrent requests both get a correct, distinct post-increment value; whichever pushes the count past 5 is the one rejected.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why Cassandra + Redis together instead of just one?</div>
+          <div class="qa-a">Redis gives the sub-millisecond atomic counters and cache hits the hot path needs; Cassandra is the durable, horizontally-shardable system of record so a Redis eviction/restart never silently loses preferences or resets a rate-limit count, and so analytics/history queries have somewhere durable to run against.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Does the 5/day rate limit apply to OTP too?</div>
+          <div class="qa-a">No &mdash; OTP is a security-critical, user-initiated action, not spam, and is exempt from the cap by design (a separate, generous safety backstop can still exist to catch genuine abuse). The cap is really aimed at promotional/bulk traffic; state this scoping decision explicitly rather than applying it uniformly.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you handle a user's timezone for quiet hours?</div>
+          <div class="qa-a">Store an IANA timezone (e.g. America/Los_Angeles) alongside the quiet-hours start/end on the preference record, and evaluate "is it currently quiet hours" in that timezone at send time, not in UTC or the server's local time &mdash; and re-enqueue with a computed schedule_at for the end of quiet hours rather than dropping the message.</div>
+        </div>
+
+        <h3>Delivery, Idempotency and Reliability</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you make delivery idempotent given Kafka's at-least-once semantics?</div>
+          <div class="qa-a">A unique constraint on idempotency_key in notification_log plus a conditional "claim" insert before calling the provider. A redelivered message fails the claim (row already SENT/DELIVERED) and is acknowledged as a no-op rather than resent &mdash; the guarantee lives in the datastore, not in Kafka configuration.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if the SMS provider is down?</div>
+          <div class="qa-a">Exponential backoff retries, then a circuit breaker opens and traffic fails over to a backup SMS vendor; if the backup also fails, the message lands in a Dead Letter Queue with alerting and idempotent scheduled replay &mdash; it's never silently dropped.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you add a new channel (push notifications) without redeploying existing handlers?</div>
+          <div class="qa-a">Stand up a push-Handler as a new, independent Kafka consumer group on the same notifications.approved topic, and add a routing/preference rule for it. Existing in-app/email/SMS handlers read the same topic through unrelated consumer-group offsets and need zero code change or redeploy.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do delivery receipts and read receipts work for in-app notifications?</div>
+          <div class="qa-a">Delivery receipt = the in-app Handler's successful write to the user's inbox/feed store, which the Tracker records as DELIVERED. Read receipt = a small client-emitted event ("user opened notification N") that the Tracker folds into the same notification_log row as a READ status/timestamp.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the replay strategy for messages sitting in the Dead Letter Queue?</div>
+          <div class="qa-a">A scheduled reprocessing job re-publishes DLQ entries (reusing the same idempotency_key, so it's safe even if the original attempt partially succeeded) once the provider/circuit breaker has recovered, with a cap on total replay attempts before requiring manual review.</div>
+        </div>
+
+        <h3>Multi-Tenancy and Product</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you isolate different client companies (tenants) using the same service?</div>
+          <div class="qa-a">tenant_id is the leading partition-key element on every table (preferences, rate limits, delivery log, templates), so a query or bug can't cross tenant boundaries by construction. Quotas, rate-limit configs, and templates are all scoped per tenant, and per-tenant API credentials attribute every request.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you support a tenant-specific rate limit or priority mapping instead of one global policy?</div>
+          <div class="qa-a">Store the priority-classification rules and the per-day cap as tenant-scoped configuration (loaded/cached by the Notification Consumer and Priority Handler), rather than hardcoding "OTP = P1" globally &mdash; the event_type-to-priority table and the numeric cap both become per-tenant lookups.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A noisy tenant is sending an enormous campaign &mdash; how do you stop it from degrading service for every other tenant?</div>
+          <div class="qa-a">Per-tenant quota enforced at the API gateway, independent of the global priority-queue budget; combined with the fact that a legitimate huge campaign should already be classified P3/P4 and thus isolated from every other tenant's P1/P2 traffic by the topic-per-priority design.</div>
+        </div>
+
+        <h3>Scaling and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you scale Kafka partitions as the user base grows 10&times;?</div>
+          <div class="qa-a">Increase partition count on the approved-fan-out topic (partitioned by user_id, so this redistributes cleanly with a standard partition-reassignment tool) and scale each channel handler's consumer group up to match; the priority-topic side scales similarly, independently per priority class based on its own volume growth.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you detect and alert on an OTP p99 latency regression before customers complain?</div>
+          <div class="qa-a">Emit end-to-end latency (classification &rarr; gate &rarr; Kafka publish &rarr; handler ack) tagged by priority class, dashboard P1 p99 specifically, and alert on any sustained increase &mdash; since a healthy design should show P1 latency essentially flat regardless of P3/P4 load, any drift is a strong signal of a scheduling or gate regression.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent template injection attacks?</div>
+          <div class="qa-a">Templates only support declared, schema-validated {{variable}} substitution &mdash; never string concatenation into a script/expression engine &mdash; and rendered output is escaped per channel (HTML-escaped for email/in-app) to block stored XSS; template IDs are tenant-scoped so one tenant can't reference or overwrite another's template.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Prioritization is the design's spine, not a feature bolted on afterward: four physically-separated priority queues, weighted scheduling with aging, and a single rate-limit/preference gate are what guarantee an OTP is never delayed behind a bulk campaign &mdash; state that causal chain explicitly. Rate limiting must be atomic (Redis INCR) to be race-free, and durable (Cassandra) to survive a cache failure; know why you need both, not just one. Kafka's at-least-once delivery means idempotency has to live in your data model (a unique idempotency_key and a conditional claim write), not in broker configuration. Pluggability is proven by consumer-group independence, not by promises &mdash; a new channel handler should require zero changes to existing ones. And because this is a shared, multi-tenant service, tenant_id needs to be the leading key on every table from day one, not retrofitted later.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Educative &mdash; "Grokking the System Design Interview": Designing a Notification System (course material)</li>
+          <li>Martin Kleppmann, <em>Designing Data-Intensive Applications</em> &mdash; chapters on partitioning, replication, and stream processing</li>
+          <li>Apache Kafka documentation &mdash; topic partitioning, consumer groups, and exactly-once/idempotent producer semantics</li>
+          <li>Apache Cassandra documentation &mdash; replication factor, consistency levels, and TTL columns</li>
+          <li>Twilio and AWS SES documentation &mdash; provider-side sending-rate limits and reputation-based throttling</li>
+          <li>Community write-ups on weighted fair queuing and starvation-free priority scheduling in message systems</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="user-authentication-system.html"><span class="dir">Previous</span>User Login &amp; Authentication System</a>
+          <a class="next" href="weather-application.html"><span class="dir">Next</span>Weather Application</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon Dynamo | System Design — Case Studies | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Case Studies</a><span class="sep">/</span><span class="current">Amazon Dynamo</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Case Studies overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#internal-architecture-piece-by-piece">Internal Architecture, Piece by Piece</a></li>
+        <li><a href="#system-design-view-a-put-and-a-get-end-to-end">System Design View: a PUT and a GET, End to End</a></li>
+        <li><a href="#the-math-collected-in-one-place">The Math, Collected in One Place</a></li>
+        <li><a href="#where-dynamo-sits-on-cap">Where Dynamo Sits on CAP</a></li>
+        <li><a href="#real-world-usage-and-evolution-into-dynamodb">Real-World Usage and Evolution into DynamoDB</a></li>
+        <li><a href="#trade-offs-and-known-criticisms">Trade-offs and Known Criticisms</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Amazon Dynamo</h1>
+        </div>
+
+        <p><em>A system-design deep dive and interview study guide: internal architecture first, then math, diagrams, real-world usage, trade-offs, and follow-up interview questions.</em></p>
+
+        <h2 id="overview">Overview</h2>
+        <p>Dynamo is a key-value store — a database where you save and fetch data using a simple unique ID (a "key") instead of writing SQL queries against tables — that a team at Amazon built and described in a 2007 research paper, "Dynamo: Amazon's Highly Available Key-value Store" (DeCandia et al., SOSP 2007). It was built to solve one very specific business problem: Amazon's shopping cart, and dozens of other services like it, must <strong>never refuse a write</strong>. If a customer taps "Add to Cart" during a holiday traffic spike, or while a disk is failing, or while a data center is cut off by a network problem, that write has to succeed — Amazon decided it would rather show a customer two slightly different versions of their cart a second later than tell them "sorry, try again." That "always writable" requirement, prioritized over traditional strong consistency, is the single design decision that explains almost everything else about Dynamo's internals.</p>
+
+        <table>
+          <tr><th>Problem</th><th>Technique used</th></tr>
+          <tr><td>Spread data over many machines, add/remove machines without a big reshuffle</td><td>Consistent hashing</td></tr>
+          <tr><td>Keep working during temporary node/network failures</td><td>Sloppy quorum + hinted handoff</td></tr>
+          <tr><td>Detect and repair permanently divergent replicas</td><td>Anti-entropy using Merkle trees</td></tr>
+          <tr><td>Handle multiple, possibly conflicting, copies of the same value</td><td>Vector clocks with reconciliation at read time</td></tr>
+          <tr><td>Let every node learn about every other node without a central coordinator</td><td>Gossip-based membership and failure detection</td></tr>
+        </table>
+        <p>We'll walk through each one in the order you'd actually need them to understand a request flowing through the system, with a running worked example: a 6-node cluster with nodes <strong>A, B, C, D, E, F</strong>, storing a value under key <strong>K</strong>.</p>
+
+        <h2 id="internal-architecture-piece-by-piece">Internal Architecture, Piece by Piece</h2>
+
+        <h3>1.1 Consistent Hashing Ring, Partitioning &amp; Virtual Nodes</h3>
+        <p><strong>The problem it solves.</strong> A naive scheme like <code>server = hash(key) % N</code> works fine until you add or remove a server — then N changes, and almost every key remaps to a different machine, forcing a massive, all-at-once data shuffle. Dynamo needed a scheme where adding or removing one node only disturbs that node's immediate neighbors.</p>
+        <p><strong>How it works.</strong> Dynamo applies MD5 to a key, producing a 128-bit number. Treat the space of all possible 128-bit numbers as a circle — the "ring." Every physical node is also hashed onto one or more points ("tokens") on that same ring. To find which node owns a given key, hash the key and walk clockwise around the ring until hitting the first node token — that node is the key's "coordinator" for partitioning purposes.</p>
+        <p><strong>Worked example.</strong> Say our ring is a simplified circle from 0 to 359, with nodes at A=10, B=70, C=140, D=200, E=260, F=320. Key K hashes to position 155. Walking clockwise from 155, the first node token hit is <strong>D</strong> (at 200) — D is K's first node in partitioning terms.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/dynamo-consistent-hashing-ring.png" alt="Consistent hashing ring diagram showing nodes A through F and the preference list for key K">
+          <div class="diagram-caption">Figure 1. Consistent hashing ring (A–F) with virtual-node ownership and the preference list (B, C, D) for key K, N=3.</div>
+        </div>
+
+        <p><strong>Why virtual nodes exist.</strong> With one point per physical node, random placement doesn't divide the ring into equal arcs — some nodes end up owning disproportionately more key space and traffic, and if a node fails, all of its data has to move somewhere, likely dumped onto one unlucky neighbor. Dynamo's fix: each physical node is assigned <strong>many</strong> points on the ring (100&ndash;200 virtual nodes, not one), which gives three benefits: even failure-recovery load (spread across many survivors, not one), even rebalancing on join/recovery, and heterogeneity-aware capacity (a more powerful machine simply gets more virtual nodes).</p>
+        <p>The paper describes three partitioning strategies it evolved through, ending on <strong>Strategy 3 (production)</strong>: the hash space is divided into <strong>Q</strong> equal partitions up front, and each of the <strong>S</strong> nodes gets <strong>Q/S</strong> tokens — this made membership metadata roughly 1000x more compact than the original random-token approach and made adding/removing nodes and recomputing Merkle trees much cheaper. Worked example: Q=300 fixed partitions, S=6 physical nodes (A&ndash;F) &rarr; each node gets 300/6 = 50 virtual nodes. If node C fails, its 50 small partitions hand off to up to 50 different peers rather than dumping onto one neighbor.</p>
+
+        <h3>1.2 Replication: Preference Lists &amp; Replication Factor N</h3>
+        <p>Consistent hashing alone only tells you where the <em>first</em> copy of a key lives. For durability you need multiple copies — Dynamo calls the count of copies <strong>N</strong> (the replication factor; Amazon's own internal default was N=3).</p>
+        <p><strong>Preference list.</strong> For key K, take the node found by walking the ring (D) and keep walking clockwise, collecting the next N&minus;1 distinct physical nodes. This ordered list of N nodes is the <strong>preference list</strong>, kept deliberately longer than N so that if some of the top-N are down, ready fallback nodes already exist further down the list — the raw material sloppy quorum uses.</p>
+        <p><strong>Worked example.</strong> Continuing from 1.1: for key K (first node D), with N=3, walking clockwise from D collects the next two distinct nodes E and F. Preference list for K = [D, E, F]. Any of D, E, F can act as coordinator for reads or writes on K, with Dynamo typically picking whichever is best positioned to keep the request fast.</p>
+
+        <h3>1.3 Sloppy Quorum &amp; Hinted Handoff</h3>
+        <p><strong>The problem.</strong> A strict quorum system requires the same literal N nodes always be used. If one is briefly unreachable, a strict quorum would refuse the write or read — directly violating Dynamo's "always writable" goal.</p>
+        <p><strong>Sloppy quorum.</strong> Instead of insisting on the literal top-N nodes, Dynamo reads and writes against whichever N nodes are currently healthy and reachable, walking further down the preference list if needed. <strong>Hinted handoff</strong> is what makes this safe: if a healthy stand-in node ends up holding a replica that "belongs" to a currently-down node, it stores that replica with a hint — "this belongs to node X; forward it back when X returns." Once X recovers, the stand-in transfers the data back and deletes its temporary copy.</p>
+        <p><strong>Worked failure scenario.</strong> Preference list for K is [D, E, F], N=3. A client issues <code>PUT(K, "new cart contents")</code>. Coordinator E tries D, E, F — D is down, but E and F succeed (only 2 of 3). Rather than fail or block, the coordinator sends the third copy to the next healthy node down the list, say A, tagged with a hint pointing back to D. The write is acknowledged as successful (E, F, and hinted A = 3 replicas). Later, D restarts, rejoins via gossip, and A pushes the hinted replica back to D before deleting its own temporary copy. This is exactly why Dynamo trades strict consistency for availability: during the outage window, a <code>get()</code> might return the version on A/E/F while D is still stale — a deliberate, temporary inconsistency in exchange for never rejecting the write.</p>
+
+        <h3>1.4 Data Versioning with Vector Clocks</h3>
+        <p><strong>Why plain timestamps aren't enough.</strong> Because sloppy quorum lets writes succeed even when parts of the system are unreachable, and concurrent writes to the same key can come from different coordinators, you can end up with multiple versions of the same object that no wall-clock timestamp can safely order. Dynamo needs to know: is version 2 strictly an update to version 1, or are they <strong>concurrent</strong> — meaning both must be kept until reconciled?</p>
+        <p><strong>Vector clocks explained.</strong> A vector clock is a list of (node, counter) pairs attached to every version. Each time a node handles a write, it increments its own counter. If every counter in clock 1 is &le; the corresponding counter in clock 2 (with at least one strictly less), clock 1 is an <strong>ancestor</strong> — safely discardable. If neither dominates, the versions are <strong>concurrent siblings</strong> — a real conflict that must be reconciled.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/dynamo-vector-clock-branching.png" alt="Vector clock branching diagram showing concurrent writes producing sibling versions that get reconciled">
+          <div class="diagram-caption">Figure 3. Vector-clock branching: concurrent writes on B and C produce sibling versions D3 and D4, reconciled into D5 on the next read.</div>
+        </div>
+
+        <p><strong>Worked example.</strong> A client creates key K; coordinator A stamps it <code>[A:1]</code> (D1). A later update by A produces <code>[A:2]</code> (D2) — D1 is an ancestor, discarded. A network partition happens; A becomes unreachable. One update routes to coordinator B, building on D2: <code>[A:2, B:1]</code> (D3). At the same time, another update routes to coordinator C, also building on D2: <code>[A:2, C:1]</code> (D4). Comparing D3 and D4: neither dominates (D3 has B:1 which D4 lacks; D4 has C:1 which D3 lacks) — <strong>D3 and D4 are concurrent siblings</strong>. Dynamo stores both and returns both to the next reader, along with a context encoding both clocks. The application (or Dynamo's built-in cart-merge logic) reconciles them — e.g. union of items — into D5, with merged clock <code>[A:2, B:1, C:1]</code>, which dominates both siblings.</p>
+        <p><strong>A known growth problem.</strong> If many different nodes coordinate writes to the same key (more likely during extended partitions), the vector clock can grow large. Dynamo's mitigation: each pair also carries a timestamp, and once the clock exceeds a threshold (the paper uses 10 pairs), the oldest pair is dropped — a pragmatic trade-off that can rarely cause an incorrect causal ordering, but in practice clocks rarely grow large since writes are normally handled by top-N nodes.</p>
+
+        <h3>1.5 Quorum Reads/Writes: the R + W &gt; N Rule</h3>
+        <p>Once you have N replicas, each service tunes two more numbers: <strong>W</strong> — the minimum replicas that must acknowledge a write — and <strong>R</strong> — the minimum replicas that must respond to a read (with multiple returned versions reconciled per section 1.4). Dynamo's classic tunable-consistency guideline: <strong>R + W &gt; N</strong>.</p>
+
+        <div class="diagram-box">
+          <img src="../images/system-design-case-studies/dynamo-quorum-write-flow.png" alt="Quorum write flow diagram showing the coordinator writing to N replicas and returning success after W acknowledgements">
+          <div class="diagram-caption">Figure 2. Quorum write flow: the coordinator writes to all N=3 replicas but returns success once W=2 acknowledgements arrive.</div>
+        </div>
+
+        <p><strong>Why this guarantees overlap.</strong> Think of N replicas as N boxes. A write touches some W of them; a read later checks some R of them. If W + R &gt; N, by the pigeonhole principle the write-set and read-set cannot possibly be disjoint — at least one box must be in both sets, guaranteeing the read sees the latest write among the versions returned. If R + W &le; N, a read-set and write-set could be chosen that never intersect, silently returning stale results.</p>
+        <table>
+          <tr><th>Config</th><th>R + W vs N</th><th>Guarantee?</th><th>What it means in practice</th></tr>
+          <tr><td>N=3, R=2, W=2</td><td>4 &gt; 3 &#9989;</td><td>Overlap guaranteed</td><td>Dynamo's actual production default, "(3,2,2)". Tolerates 1 node down for either a read or write; latency bound by the second-fastest replica; consistency guaranteed as long as no more than 1 replica is unreachable at a time.</td></tr>
+          <tr><td>N=3, R=1, W=1</td><td>2 &le; 3 &#10060;</td><td>No guarantee</td><td>Lowest possible latency and highest availability, but reads can return stale data (66.7% chance, see math section). Good for "add to cart," bad for anything needing read-your-writes.</td></tr>
+          <tr><td>N=5, R=3, W=3</td><td>6 &gt; 5 &#9989;</td><td>Overlap guaranteed</td><td>Stronger durability, still consistent, tolerates 2 replicas down simultaneously for a read or write. Higher latency than N=3 configs in exchange for surviving bigger simultaneous outages.</td></tr>
+        </table>
+        <p>A subtlety from the paper: R and W are almost always kept <strong>smaller</strong> than N, because the latency of an operation is dictated by the slowest of the R (or W) replicas it waits on — requiring all N to respond would make every request as slow as the flakiest single replica.</p>
+
+        <h3>1.6 Merkle Trees for Anti-Entropy (Replica Synchronization)</h3>
+        <p><strong>The problem.</strong> Replicas can drift out of sync. Comparing two replicas key-by-key to find differences means transferring and hashing the entire key range just to find a handful of differing keys — wasteful at scale.</p>
+        <p><strong>Merkle trees, explained.</strong> A hash tree where each leaf is the hash of one key's value, each parent is the hash of its children's hashes concatenated, and the root is a single hash summarizing the entire dataset. Two nodes exchange just the root hash first — if roots match, the ranges are identical, done. If they differ, they exchange the next level down, recursing only into subtrees whose hashes differ, until reaching the leaves that actually differ.</p>
+        <p><strong>Worked example.</strong> A key range of 1,024 keys, arranged as leaves of a balanced Merkle tree of depth log&#8322;(1024) = 10. If only a handful of keys diverged, the two nodes typically need on the order of 10 hash comparisons to pinpoint exactly which keys are out of sync, instead of transferring and hashing all 1,024 — O(log n) instead of O(n).</p>
+        <p><strong>A practical cost:</strong> whenever key-range boundaries change (nodes joining/leaving), the Merkle tree for the new range must be recomputed from scratch — one of the reasons production moved to the fixed-partition Strategy 3 (fewer, more stable range boundaries to recompute).</p>
+
+        <h3>1.7 Gossip-Based Membership &amp; Failure Detection</h3>
+        <p><strong>The problem.</strong> Dynamo has no central coordinator telling every node the current list of nodes and ownership — a central registry would be a single point of failure, directly against the "always available, fully decentralized" design goal.</p>
+        <p><strong>How gossip works.</strong> Every node stores its own view of ring membership and a history of changes. Periodically (once a second in the paper), each node picks one random peer and the two exchange membership histories, merging to the union of what they knew — an "epidemic" protocol where information spreads the way a rumor spreads through a population. Over a small number of rounds, a change reaches every node without a full broadcast or central directory. This is why Dynamo describes itself as a "zero-hop" DHT: since every node eventually learns the full ring layout via gossip, any node can compute a key's entire preference list locally and route directly to the right replica in one hop — unlike classic DHTs (Chord, Pastry) that route through several intermediate peers, adding variable latency at each hop that specifically hurts tail latency.</p>
+        <p>Failure detection piggybacks on the same idea, purely locally and asymmetrically: node X decides node Y seems "down" only in the context of X trying to talk to Y, and X can locally route around Y without needing a globally-agreed "Y is dead" announcement — avoiding a whole class of distributed-consensus problems.</p>
+
+        <h3>1.8 Handling Permanent Failures: Replica Synchronization</h3>
+        <p>Hinted handoff (1.3) is designed for <strong>temporary</strong> unavailability — it assumes the original owner comes back. But disks die, machines get decommissioned, and hinted replicas can themselves get lost if the holding node fails before handing back. This is exactly the job of the anti-entropy protocol built on Merkle trees (1.6): independent of any specific outage, nodes that share replicas of a key range periodically compare Merkle tree roots and repair whatever has diverged — correctly healing the system even from permanent node loss, since a brand-new replacement node simply runs anti-entropy against its peers and pulls over the data it's missing. Dynamo also replicates across multiple data centers for its most critical services, so a facility-level disaster still leaves live, in-sync replicas available elsewhere.</p>
+
+        <h2 id="system-design-view-a-put-and-a-get-end-to-end">System Design View: a PUT and a GET, End to End</h2>
+
+        <h3>PUT (Write) Walkthrough</h3>
+        <ol>
+          <li><strong>Client request arrives.</strong> Via a load balancer to a random node, or (client-library mode) the client itself picks the right node directly using its cached ring view.</li>
+          <li><strong>Routing to a coordinator.</strong> If the receiving node isn't in K's preference list, it forwards to the first node in the list that is — that node becomes the coordinator.</li>
+          <li><strong>Vector clock generation.</strong> The coordinator generates a new vector clock (incrementing its own counter, building on the client's last-read context) and writes locally.</li>
+          <li><strong>Fan-out to replicas.</strong> The coordinator sends the value to the N highest-ranked reachable nodes, using sloppy quorum if a top-N node is down (hinted-handoff tagged).</li>
+          <li><strong>Waiting for quorum.</strong> The coordinator waits for at least W total acknowledgements (including its own local write).</li>
+          <li><strong>Response to client.</strong> The coordinator returns success with an opaque context (the vector clock) the client must present on its next write to this key.</li>
+          <li><strong>Background propagation.</strong> Replicas that missed the synchronous write catch up asynchronously via hinted-handoff forwarding or Merkle-tree anti-entropy.</li>
+        </ol>
+
+        <h3>GET (Read) Walkthrough</h3>
+        <ol>
+          <li><strong>Client request arrives</strong> for key K, routed the same way as a write.</li>
+          <li><strong>Coordinator selection.</strong> Any healthy node in K's sloppy preference list can act as coordinator — no special "only the designated writer" restriction.</li>
+          <li><strong>Fan-out to replicas.</strong> The coordinator requests the current value(s) from the N highest-ranked reachable nodes.</li>
+          <li><strong>Waiting for quorum.</strong> The coordinator waits for at least R responses.</li>
+          <li><strong>Version comparison.</strong> Using vector clocks, the coordinator discards any version that's a strict ancestor of another.</li>
+          <li><strong>Reconciliation (if needed).</strong> If concurrent siblings remain, the coordinator returns all of them plus a merged context; the client/application reconciles and writes back (looping into the PUT flow).</li>
+          <li><strong>Response to client.</strong> Either a single unambiguous value, or conflicting versions plus the context needed to write back a merged version.</li>
+          <li><strong>Read repair (optional).</strong> If the coordinator notices stale replicas among the R it heard from, it can proactively push the correct version to them, reducing load on the separate anti-entropy process.</li>
+        </ol>
+
+        <h2 id="the-math-collected-in-one-place">The Math, Collected in One Place</h2>
+
+        <h3>3.1 Hash Space Size</h3>
+        <div class="formula-box">
+          <span class="formula-label">Hash space</span>
+          Hash space size = 2<sup>128</sup> &asymp; 3.4 &times; 10<sup>38</sup> distinct positions on the ring
+          <br>MD5 produces a 128-bit identifier; the space is treated as circular (position 2<sup>128</sup>&minus;1 wraps back to 0), large enough that hash collisions between distinct keys are astronomically unlikely.
+        </div>
+
+        <h3>3.2 Virtual Nodes per Physical Node</h3>
+        <div class="formula-box">
+          <span class="formula-label">Virtual nodes per node</span>
+          virtual nodes per physical node = Q / S
+          <br>Example: Q=300 fixed partitions, S=6 physical nodes &rarr; 300/6 = 50 virtual nodes per node. If S grows to 10 (Q unchanged): 300/10 = 30 &mdash; existing partitions get reassigned rather than the whole ring being rehashed.
+          <br>Load-balancing variability around the average share shrinks roughly proportionally to 1/&radic;v as virtual-node count v increases — why real deployments use 100+ virtual nodes per physical node.
+        </div>
+
+        <h3>3.3 Quorum Rule: R + W &gt; N</h3>
+        <div class="formula-box">
+          <span class="formula-label">Quorum overlap guarantee</span>
+          R + W &gt; N &rarr; read set and write set are guaranteed to overlap by at least 1 node
+          <br>Pigeonhole argument: a write claims W of N slots, a read claims R of N slots. If W+R &gt; N, the two sets cannot be disjoint.
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">Probability of a stale (non-overlapping) read</span>
+          P(no overlap) = C(N&minus;W, R) / C(N, R)
+          <br>Worked example — N=3, R=1, W=1: P(no overlap) = C(2,1)/C(3,1) = 2/3 &asymp; 66.7% chance the read misses the replica with the newest value entirely.
+          <br>Compare: N=3,R=2,W=2 &rarr; N&minus;W=1, C(1,2)=0 &rarr; P=0 (guaranteed overlap). N=5,R=3,W=3 &rarr; N&minus;W=2, C(2,3)=0 &rarr; P=0 (guaranteed overlap, tolerates 2 replicas down).
+        </div>
+
+        <h3>3.4 Merkle Tree Comparison Cost</h3>
+        <div class="formula-box">
+          <span class="formula-label">Anti-entropy cost</span>
+          Tree depth &asymp; log&#8322;(n); cost to find a divergence &asymp; O(log n) hash comparisons, vs. O(n) for a naive full-range comparison
+          <br>Worked example: n=1,024 keys &rarr; depth = log&#8322;(1024) = 10. Finding and repairing a small number of divergent keys costs on the order of 10 hash exchanges instead of 1,024 direct key comparisons — over 100x less data exchanged for a single divergent leaf.
+        </div>
+
+        <h3>3.5 SLA / Latency Framing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Production SLA (from the paper)</span>
+          99.9% of read and write requests complete within 300 ms
+          <br>Amazon's internal SLAs were expressed at the 99.9th percentile (not average/median) because average-based SLAs hide the experience of the customers most affected by tail latency. Since R/W responses are gated by the slowest-of-R or slowest-of-W replica, keeping R and W smaller than N directly lowers tail latency.
+        </div>
+
+        <h2 id="where-dynamo-sits-on-cap">Where Dynamo Sits on CAP</h2>
+        <p>CAP theorem states you can't simultaneously guarantee all three of Consistency (every read sees the latest write), Availability (every request gets a non-error response), and Partition tolerance (the system keeps working when network links are cut) — when a partition actually occurs, you must give up either strict consistency or availability for its duration.</p>
+        <p>Dynamo is a textbook <strong>AP system</strong>: when the network is partitioned or nodes are unreachable, it chooses to <strong>stay available</strong> (via sloppy quorum, hinted handoff, and accepting writes on non-ideal replicas) rather than reject requests to preserve strict consistency. It relies on vector clocks plus reconciliation, and background Merkle-tree anti-entropy, to bring replicas back into agreement once the partition heals — a model called <strong>eventual consistency</strong>: given enough time with no new writes, all replicas converge, but at any instant, different replicas can legitimately disagree.</p>
+        <p><strong>Practically, this means:</strong> a write is never rejected just because some replicas are unreachable (as long as enough are up to satisfy W); a read may return more than one version, pushing conflict resolution onto the application; with well-chosen R/W (R+W&gt;N) you get read-your-own-writes-style guarantees under normal conditions, but never a hard guarantee under all failure conditions; and services layered on Dynamo pick their own point on the consistency/availability/latency dial per use case by tuning N, R, W.</p>
+
+        <h2 id="real-world-usage-and-evolution-into-dynamodb">Real-World Usage and Evolution into DynamoDB</h2>
+        <p><strong>Inside Amazon (2007-era Dynamo).</strong> The original Dynamo ran internally supporting services with strict availability needs: shopping cart, session management, product catalog, best-seller lists — the paper notes the shopping cart service alone handled tens of millions of requests and well over 3 million checkouts in a single day during 2006-era peak holiday traffic.</p>
+        <p><strong>The gap that led to DynamoDB.</strong> Many Amazon teams actually preferred Amazon SimpleDB (AWS's earlier hosted NoSQL offering) over running their own Dynamo cluster, despite SimpleDB's roughly 10 GB cap per database/domain, because SimpleDB was fully managed while Dynamo required operating your own fleet. That revealed preference — operational simplicity beating raw scalability — directly motivated a new, fully-managed service combining Dynamo's scalability model with SimpleDB's "just declare a table" simplicity.</p>
+        <p><strong>Amazon DynamoDB launched January 18, 2012</strong> (announced by CTO Werner Vogels) as a public, fully managed cloud database — a related but <strong>completely separate implementation</strong> from the original internal Dynamo, sharing design principles rather than code.</p>
+        <p><strong>What changed over the years</strong> (per AWS's 2022 USENIX paper and blog posts): multi-tenancy (many customers' partitions co-reside on shared storage nodes, requiring admission control against noisy neighbors); fixed-size (~10 GB) partitions, each a replication group of 3 replicas across Availability Zones with a leader handling writes; a write-ahead log + B-tree storage split, with the log periodically synced to S3 for point-in-time restore; "log replicas" that spin up almost instantly by copying just the recent WAL rather than a full multi-GB partition; and Global/Local Secondary Indexes, DynamoDB Streams, Global Tables, on-demand billing, multi-item ACID transactions, and adaptive capacity — all addressing exactly the kind of uneven traffic the original paper's virtual-node work targeted, at much larger multi-tenant scale. AWS reported that during Prime Day 2024, DynamoDB handled tens of trillions of API calls and peaked at about 146 million requests per second while maintaining single-digit-millisecond latency.</p>
+
+        <h2 id="trade-offs-and-known-criticisms">Trade-offs and Known Criticisms</h2>
+        <ul>
+          <li><strong>Eventual consistency surprises application developers.</strong> A <code>get()</code> can return multiple sibling versions instead of one clear answer, a real cognitive burden compared to a traditional relational database's single-answer reads.</li>
+          <li><strong>Vector clocks can grow unboundedly</strong> if writes spread across many coordinating nodes (more likely exactly during the failure scenarios sloppy quorum is designed to survive) — the timestamp-truncation fix trades perfect causal history for bounded overhead, and can rarely cause an incorrect ordering.</li>
+          <li><strong>Semantic reconciliation pushes work to applications.</strong> Not every data type has an obvious safe merge function like "union the cart items" — many require custom, error-prone conflict-resolution logic or last-write-wins fallback.</li>
+          <li><strong>Tuning R/W/N is a real operational burden</strong>, requiring understanding the quorum math and monitoring real tail latencies — get it wrong and you either pay unnecessary latency or silently accept stale reads more often than intended.</li>
+          <li><strong>No secondary indexes or complex queries</strong> in the original Dynamo — a pure key-value get/put interface, a deliberate simplicity trade-off that shaped a whole generation of NoSQL databases' "primary-key-first" design philosophy.</li>
+          <li><strong>Merkle tree recomputation cost</strong> whenever key-range boundaries shift — a real operational pain point that motivated the later fixed-partition (Strategy 3) approach.</li>
+          <li><strong>"Always writable" can surface stale writes as "fresher" than they are</strong> — hinted-handoff and sloppy quorum intentionally relax strict replica placement, so unlucky, clustered failure windows can occasionally break the R+W&gt;N assumption in practice.</li>
+        </ul>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <h3>Conceptual</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">What single business requirement most shaped Dynamo's design, and why?</div>
+          <div class="qa-a">The "always writable" requirement for services like the shopping cart — a write must never be rejected, even during node/network failures — which pushed the design toward prioritizing availability over strict consistency (an AP choice on CAP), sloppy quorum, and vector-clock-based multi-version reconciliation instead of a single always-consistent answer.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does Dynamo use virtual nodes instead of assigning one ring position per physical machine?</div>
+          <div class="qa-a">One position per node causes uneven key/load distribution and concentrates failure-recovery load onto a single neighboring node. Many small virtual nodes per physical node spread both problems across many peers evenly, and let more powerful machines be given proportionally more virtual nodes.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is a preference list, and why is it usually longer than N?</div>
+          <div class="qa-a">The ordered list of nodes responsible for a key, built by walking the ring clockwise from the key's hash position and collecting N distinct physical nodes. It's kept longer than N so that if some of the top-N are down, already-known fallback nodes exist further down the list for sloppy quorum, without computing anything new at failure time.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Explain sloppy quorum and hinted handoff with an example.</div>
+          <div class="qa-a">Sloppy quorum means reads/writes go to whichever N nodes in the extended preference list are currently healthy, not necessarily the literal top N. Hinted handoff makes this safe: if node D is down, its replica is temporarily stored on a stand-in node tagged "belongs to D," and once D recovers, the stand-in forwards it back and deletes its temporary copy.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between an "ancestor" version and a "concurrent" (sibling) version in vector clock terms?</div>
+          <div class="qa-a">Clock 1 is an ancestor of clock 2 if every (node, counter) pair in clock 1 is less-than-or-equal-to the corresponding pair in clock 2 (with at least one strictly less) — clock 2 causally descends from clock 1 and clock 1 can be discarded. If neither clock's pairs dominate the other's, they're concurrent siblings representing independent edits that must both be kept and reconciled.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does Dynamo prefer to keep R and W smaller than N?</div>
+          <div class="qa-a">Because the latency of a read/write is dictated by the slowest of the R (or W) replicas it waits on — requiring all N to respond would make every request as slow as the flakiest single replica. Keeping R, W below N (while still satisfying R+W&gt;N) balances guaranteed overlap against tail latency.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What does a Merkle tree let two replicas avoid doing?</div>
+          <div class="qa-a">Avoid transferring or hashing an entire key range just to find a handful of differing keys. By comparing hash-of-hash summaries top-down and only recursing into branches whose hashes differ, two replicas can pinpoint exactly which keys are out of sync in O(log n) comparisons instead of an O(n) full scan.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does gossip-based membership avoid needing a central coordinator, and what's the trade-off?</div>
+          <div class="qa-a">Each node periodically exchanges its local membership history with one random peer, and changes propagate epidemic-style until every node eventually learns them — no single point of failure or bottleneck. The trade-off is that membership knowledge is only eventually consistent across the cluster too — there can be a brief window where different nodes have slightly different views of who's in the ring.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is Dynamo described as a "zero-hop" DHT, and why did that matter for Amazon's use case?</div>
+          <div class="qa-a">Because gossip propagates full ring/membership knowledge to every node, any node can compute a key's entire preference list locally and route directly to the right replica in one hop — unlike classic DHTs (e.g. Chord, Pastry) that route through several intermediate peers. Multi-hop routing adds variable latency at each hop, which specifically hurts 99.9th-percentile tail latency — exactly what Amazon's strict SLA requirements couldn't tolerate.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the practical difference between hinted handoff and the Merkle-tree anti-entropy process?</div>
+          <div class="qa-a">Hinted handoff is a fast, targeted fix for a specific, expected-to-be-temporary outage (a stand-in node holds a hint to forward data back). Merkle-tree anti-entropy is a general, ongoing background process that detects and repairs any divergence between replicas regardless of cause — including permanent node loss, where no hint ever makes it home.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What is DynamoDB's relationship to the original Dynamo — same system or different?</div>
+          <div class="qa-a">A different implementation built by largely different engineers 5 years later (launched 2012), sharing core design principles (partitioning, replication, tunable consistency) but re-architected as a fully managed, multi-tenant public cloud service rather than an internally operated per-team cluster — the paper explicitly frames them as distinct systems with a shared lineage.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Name one real known weakness/criticism of the vector clock approach.</div>
+          <div class="qa-a">Clock size can grow without bound if many different nodes end up coordinating writes to the same key (common during extended partitions), which Dynamo mitigates by truncating the oldest (node, counter) pair past a threshold — a pragmatic fix that can occasionally cause incorrect causal ordering.</div>
+        </div>
+
+        <h3>Math &amp; Calculation</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">If N=5, what is the minimum R and W that still guarantee strong (overlapping) reads, and what happens to availability compared to R=W=3?</div>
+          <div class="qa-a">You need R+W &ge; 6 (i.e. R+W &gt; 5). The smallest balanced pair is R=3, W=3 (or asymmetric options like R=2,W=4). Using R=W=3 means both reads and writes tolerate up to 2 of the 5 replicas being unreachable while still meeting quorum — pushing R or W up to 4 would guarantee overlap more comfortably but reduce availability and increase tail latency.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Compute the probability that a read misses the latest write when N=4, W=1, R=1.</div>
+          <div class="qa-a">P(no overlap) = C(N&minus;W, R) / C(N, R) = C(3,1)/C(4,1) = 3/4 = 75%. There's a 75% chance the read touches none of the write's single replica — even worse than the N=3 case, because there are more "other" replicas for a single random read to land on instead.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">With Q=1,200 fixed partitions and S=40 physical nodes, how many virtual nodes does each physical node hold, and what happens if 10 more nodes join (S=50)?</div>
+          <div class="qa-a">Virtual nodes per node = Q/S = 1200/40 = 30 before the join. After 10 nodes join (S=50): 1200/50 = 24 virtual nodes per node — each existing node gives up a few of its virtual-node partitions (6 each on average) to the new nodes, rather than the entire ring being rehashed.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does R+W &gt; N mathematically guarantee overlap — walk through the pigeonhole logic.</div>
+          <div class="qa-a">There are only N total replica slots. A write claims W of them, a read (independently) claims R of them. If they were completely disjoint, together they'd occupy W+R distinct slots — but only N slots exist. If W+R &gt; N, that's more claimed slots than available distinct slots, so by the pigeonhole principle at least one slot must be shared between the two sets — guaranteeing at least one replica was touched by both the write and the read.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">A Merkle tree covers a key range of 1 million keys. Roughly how many hash comparisons are needed to locate one divergent key, and how does that compare to a full scan?</div>
+          <div class="qa-a">Tree depth &asymp; log&#8322;(1,000,000) &asymp; 20, so roughly 20 hash comparisons (one per level, following the single path down to the divergent leaf) versus comparing all 1,000,000 keys directly in a full scan — on the order of 50,000x fewer comparisons for this single-divergence case.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">If N=3 and you must guarantee overlap while minimizing total replicas contacted per operation (R+W), what's the best choice, and what does it cost you?</div>
+          <div class="qa-a">The minimum R+W satisfying R+W&gt;3 with integer R,W&ge;1 is R+W=4, achievable as (R=2,W=2), (R=1,W=3), or (R=3,W=1). Symmetric (2,2) balances read and write latency/availability evenly. Asymmetric choices shift the latency/availability burden onto whichever operation type you set closer to N.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is R=W=N (e.g. N=3,R=3,W=3) rarely used in practice, even though it maximizes consistency?</div>
+          <div class="qa-a">Because it eliminates Dynamo's core availability advantage — if even one of the N replicas is unreachable, both reads and writes fail outright, and latency is pinned to the single slowest replica every time, which directly conflicts with Amazon's 99.9th-percentile latency SLAs.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Roughly how many total virtual-node hash comparisons would a client need to locate the preference list for a key on a ring with 2^128 possible positions, assuming an efficient local lookup structure?</div>
+          <div class="qa-a">With a sorted structure (e.g. a balanced search tree) of V total virtual nodes across the cluster, a binary search locates the first token clockwise from the key's hash in O(log V) comparisons — e.g. for V=3,000 virtual nodes (60 physical nodes &times; 50 tokens each), that's about log&#8322;(3000) &asymp; 12 comparisons, regardless of the 2<sup>128</sup> size of the underlying hash space itself.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Dynamo is an AP system built around one requirement — never refuse a write — solved with five techniques: consistent hashing with virtual nodes for partitioning, sloppy quorum + hinted handoff for temporary-failure availability, vector clocks for multi-version conflict tracking, Merkle trees for background anti-entropy, and gossip for decentralized membership/failure detection. The tunable R+W&gt;N quorum rule is the mathematical guarantee underpinning its consistency knob, with R and W kept below N to bound tail latency. DynamoDB (2012) is a separate, fully-managed reimplementation sharing Dynamo's core principles at vastly larger multi-tenant scale.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>DeCandia et al. — <a href="https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf" target="_blank" rel="noopener">"Dynamo: Amazon's Highly Available Key-value Store"</a> (SOSP 2007 paper)</li>
+          <li>Werner Vogels — <a href="https://www.allthingsdistributed.com/2007/10/amazons_dynamo.html" target="_blank" rel="noopener">"Amazon's Dynamo"</a> (All Things Distributed, 2007 announcement)</li>
+          <li>Werner Vogels — <a href="https://www.allthingsdistributed.com/2012/01/amazon-dynamodb.html" target="_blank" rel="noopener">"Amazon DynamoDB — a Fast and Scalable NoSQL Database Service"</a> (Jan 18, 2012 launch announcement)</li>
+          <li>Cornell CS 5414 — <a href="https://www.cs.cornell.edu/courses/cs5414/2017fa/papers/dynamo.pdf" target="_blank" rel="noopener">course mirror of the Dynamo paper</a></li>
+          <li>Amazon Science — <a href="https://www.amazon.science/latest-news/amazons-dynamodb-10-years-later" target="_blank" rel="noopener">"Amazon's DynamoDB — 10 years later"</a></li>
+          <li>Alex DeBrie — <a href="https://www.alexdebrie.com/posts/dynamodb-paper/" target="_blank" rel="noopener">"Key Takeaways from the DynamoDB Paper"</a></li>
+          <li>Elhemali et al. — <a href="https://www.usenix.org/system/files/atc22-elhemali.pdf" target="_blank" rel="noopener">"Amazon DynamoDB: A Scalable, Predictably Performant, and Fully Managed NoSQL Database Service"</a> (USENIX ATC 2022)</li>
+          <li>AWS News Blog — <a href="https://aws.amazon.com/blogs/aws/how-aws-powered-prime-day-2024-for-record-breaking-sales/" target="_blank" rel="noopener">"How AWS powered Prime Day 2024 for record-breaking sales"</a></li>
+          <li>AWS News Blog — <a href="https://aws.amazon.com/blogs/aws/happy-birthday-dynamodb/" target="_blank" rel="noopener">"Happy 10th Birthday, DynamoDB!"</a></li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="optimizely.html"><span class="dir">Previous</span>A/B Testing Platform (Optimizely)</a>
+          <a class="next" href="cassandra.html"><span class="dir">Next</span>Apache Cassandra</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

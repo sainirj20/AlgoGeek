@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design a Notification System | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">Design a Notification System</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-scope">Problem Statement &amp; Scope</a></li>
+        <li><a href="#functional-requirements">Functional Requirements</a></li>
+        <li><a href="#non-functional-requirements">Non-Functional Requirements</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#api-design">API Design</a></li>
+        <li><a href="#low-level-design-deep-dive">Low-Level Design (Deep Dive)</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-sharding-and-partitioning">Data Sharding and Partitioning</a></li>
+        <li><a href="#feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#caching-strategy">Caching Strategy</a></li>
+        <li><a href="#monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</a></li>
+        <li><a href="#security-considerations">Security Considerations</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing a Notification System</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a centralized, multi-channel <strong>Notification Platform</strong> &mdash; the internal system that lets any product team at a large consumer app (payments, ride/trip status, security/fraud, social activity, growth/marketing) ask to notify an end user or an audience of end users, and have the platform figure out the rest: which channels (push, email, SMS, in-app) to use, whether the user even wants to hear from this category right now, how to render and localize the copy, and how to get it delivered without falling over. Covers requirements and capacity estimation, the fan-out high-level architecture, API and low-level design (preference/quiet-hours resolution and provider-aware rate-limited dispatch), database schema, sharding, a feature-specific deep dive on draining a 50-million-recipient broadcast without starving OTP traffic, replication and fault tolerance, caching, monitoring, security, and a bank of follow-up interview questions. The thread running through every section is that this system carries <strong>two fundamentally different delivery contracts under one roof</strong> &mdash; a latency-critical, never-drop lane for OTP/security/transactional notifications, and a throughput-bound, provider-throttled lane for bulk/marketing broadcasts &mdash; and almost every design decision (separate priority queues, separate token buckets per provider credential, separate worker pools) exists purely to keep the second lane from ever being able to degrade the first.</em></p>
+
+        <h2 id="problem-statement-and-scope">Problem Statement &amp; Scope</h2>
+        <p>Design a centralized, multi-channel notification platform, used internally by many product teams, that lets any of them:</p>
+        <ul>
+          <li><strong>Request a notification be sent</strong> to a single end user, a named segment (e.g. "users with an expiring coupon"), or a broadcast audience (e.g. "everyone in India"), specifying a template and a priority.</li>
+          <li>Reach the user over whichever combination of <strong>push (APNs/FCM), email, SMS, and in-app/websocket</strong> channels is appropriate for that notification's category &mdash; without every producer team having to integrate with four different provider SDKs themselves.</li>
+          <li>Have the platform <strong>honor that specific user's own preferences</strong>: which categories they've opted into per channel, and their quiet-hours window, before anything is sent.</li>
+          <li>Get <strong>templated, localized, personalized</strong> copy rendered server-side rather than every producer team hand-building payload strings per locale.</li>
+          <li>Get a <strong>delivery guarantee appropriate to the notification's priority</strong> &mdash; an OTP cannot silently vanish; a marketing blast can be throttled, delayed, or dropped under load without anyone paging on-call.</li>
+          <li>Query <strong>delivery status</strong> (sent/delivered/opened/failed) for anything they sent, and get their event correctly <strong>deduplicated</strong> if their own service retried or double-published it.</li>
+        </ul>
+
+        <h3>In scope</h3>
+        <p>The ingestion/authorization API for producer services; template rendering and localization; per-user preference and quiet-hours resolution; channel selection; priority-tiered, durable queuing; provider-aware, rate-limited dispatch to push/email/SMS/in-app; deduplication; retry-with-backoff and dead-lettering; delivery-receipt tracking and status query.</p>
+
+        <h3>Out of scope (acknowledged, not designed in depth)</h3>
+        <p>The upstream <em>relevance</em> layer that decides whether a candidate event is even worth surfacing to a user in the first place &mdash; the kind of ranking/ML system Pinterest describes for its own notifications (see References) sits <em>in front of</em> a platform like this one, not inside it; we assume a producer service has already decided "notify this user about this thing" by the time it calls us. Also out of scope: building the push/email/SMS provider infrastructure itself (APNs, FCM, SMTP relays, SMS carrier gateways) &mdash; we integrate with them as clients, we don't reimplement them; and the in-app notification-center UI/feed-ranking experience.</p>
+
+        <div class="callout">
+          <div class="callout-title">Key design tension</div>
+          Three facts about this platform's own inputs are in permanent tension, and almost the entire architecture exists to resolve it. First, <strong>any internal service can ask to notify a user</strong> &mdash; the platform has no control over how "important" a caller thinks its own event is. Second, <strong>some of those requests are a single OTP that must land in a few seconds</strong>, because a login or a payment is blocked on it. Third, <strong>some of those requests are a broadcast to 50 million recipients</strong> that has to be throttled hard enough not to get the platform's own push/SMS/email credentials rate-limited or banned by the provider. Get the isolation between those wrong &mdash; let a broadcast's fan-out compete for the same queue, the same workers, or the same provider rate-limit budget as an OTP &mdash; and a marketing campaign can delay someone's login code. That is not a hypothetical edge case in an interview; it is the single most common way a "just build a queue and some workers" first draft of this system fails.
+        </div>
+
+        <h2 id="functional-requirements">Functional Requirements</h2>
+        <table>
+          <tr><th>#</th><th>Requirement</th><th>Notes</th></tr>
+          <tr><td>FR1</td><td>Any internal service can request a notification</td><td>Via template id + audience (single user, named segment, or broadcast) + priority + optional channel hints. The caller does not need to know which channels exist or how preferences work.</td></tr>
+          <tr><td>FR2</td><td>Multi-channel delivery</td><td>Push (APNs/FCM), email, SMS, in-app/websocket. Each notification <em>category</em> (e.g. "order-shipped", "security-alert", "weekly-digest") has a configured default channel set; the platform picks the final channel(s) per user after preference resolution.</td></tr>
+          <tr><td>FR3</td><td>Per-category user preferences + quiet hours</td><td>Users opt in/out of each (category, channel) pair independently and configure a quiet-hours window (start/end, in their own timezone) that suppresses or defers non-critical sends.</td></tr>
+          <tr><td>FR4</td><td>Templating with localization &amp; personalization</td><td>Server-rendered templates per (category, channel, locale) with variable substitution from the request payload &mdash; producer teams never hand-build user-facing strings.</td></tr>
+          <tr><td>FR5</td><td>Priority tiers with different delivery guarantees</td><td><strong>CRITICAL</strong> (security/OTP: bypass opt-out and quiet hours, lowest possible latency, richest retry budget), <strong>TRANSACTIONAL</strong> (order/trip/payment status: reliable, moderate latency, honors preferences but not usually suppressed by quiet hours), <strong>BEST_EFFORT</strong> (marketing/digest/bulk: fully throttled, droppable under load, honors quiet hours strictly).</td></tr>
+          <tr><td>FR6</td><td>Delivery-status tracking</td><td>SENT &rarr; DELIVERED &rarr; OPENED/CLICKED, or FAILED, per channel, queryable by the producer service per notification and (internally) per user.</td></tr>
+          <tr><td>FR7</td><td>Deduplication</td><td>The same logical event (a retried producer call, or the same real-world event published twice by two upstream systems) must not spam the user with duplicate notifications.</td></tr>
+          <tr><td>FR8</td><td>Retry with backoff, eventual dead-lettering</td><td>Transient provider failures (5xx, timeout, transient rate-limit) are retried with backoff; permanent failures (invalid/unregistered device token, hard-bounced email, disconnected number) are dead-lettered for inspection, not retried forever.</td></tr>
+          <tr><td>FR9</td><td>Internal observability</td><td>Per-producer-service send volume, delivery-rate, and failure-rate visibility &mdash; a downstream consumer of the same event stream, not on the send critical path.</td></tr>
+        </table>
+
+        <h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+        <p>These are the constraints that actually shape the architecture.</p>
+        <ul>
+          <li><strong>Extremely high write throughput, spiky and bursty.</strong> A single API call can logically represent a request to notify one user or fifty million; the ingestion path and the fan-out path have to scale independently of each other, because the former is bounded by request rate and the latter by recipient count.</li>
+          <li><strong>Latency that depends entirely on priority.</strong> A CRITICAL/OTP notification needs end-to-end delivery in low single-digit seconds P95; a BEST_EFFORT marketing send is fine landing anywhere from minutes to hours later, throttled to whatever rate keeps provider APIs healthy. Treating these as one latency target is the most common design mistake.</li>
+          <li><strong>At-least-once delivery, made safe by idempotency.</strong> Distributed queues, retries, and provider redelivery all make exactly-once unrealistic to guarantee end-to-end; the system instead guarantees at-least-once and relies on a stable idempotency/dedup key so a duplicate delivery is a rare, harmless UX blip rather than a correctness bug.</li>
+          <li><strong>Must never overwhelm downstream provider APIs.</strong> APNs, FCM, SMTP relays, and SMS gateways all have real throughput ceilings and will throttle or ban misbehaving senders. The dispatch tier must be <strong>provider-aware and rate-limited per credential</strong>, independent of how much internal demand exists.</li>
+          <li><strong>Horizontally scalable fan-out for broadcast-style sends.</strong> Expanding "notify everyone in India" into per-user dispatch tasks has to be a streaming, backpressured, horizontally-partitioned job &mdash; not a single service materializing 50 million rows in memory.</li>
+          <li><strong>Tenant/priority isolation.</strong> One producer team's misconfigured broadcast, or a genuinely huge campaign, must not be able to starve another team's transactional traffic or, worse, security-critical OTPs &mdash; this drives the priority-queue and per-lane-provider-credential design in Sections 5, 7, and 10.</li>
+        </ul>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p><strong>Given assumptions (illustrative, for this exercise):</strong> &asymp;250M registered end users across all products the platform serves &mdash; the same order of magnitude as the user base behind a large ride-hailing or consumer app. We ground a couple of the resulting figures against real, published numbers from Uber's own real-time push platform (RAMEN), which has publicly reported operating <strong>1.5M+ concurrent persistent connections</strong> and pushing <strong>up to &asymp;250,000 messages/sec</strong> at peak (see References) &mdash; not as a claim that our numbers equal theirs, but as a sanity check that our assumptions land in a plausible, real-world order of magnitude.</p>
+
+        <h3>Steady-state notification volume</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Registered users = 250M; avg notification-send "targets" (one user, one channel decision) per user per day, across all categories combined &asymp; 4
+          <br>Steady-state baseline = 250M &times; 4 = 1,000M &asymp; 1.0B targets/day
+          <br>Broadcast/segment campaigns: assume &asymp;20 major campaigns/day, avg audience 5M &rarr; 20 &times; 5M = 100M targets/day
+          <br>Total &asymp; 1.0B + 0.1B &asymp; 1.1B notification-send targets/day
+        </div>
+
+        <h3>Throughput (TPS)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Average TPS = 1.1B &divide; 86,400 s &asymp; 12,730/sec &asymp; &#8776;13k/sec average, all channels &amp; priorities combined
+          <br>Daily peak-hour multiplier (assumption, evening engagement peak): &times;5 &rarr; &asymp;65,000/sec at ordinary daily peak
+          <br><em>(Same order of magnitude as, and comfortably under, Uber RAMEN's own cited &asymp;250,000 msgs/sec peak &mdash; reasonable, since RAMEN also carries high-frequency real-time trip-state pushes that a "notifications" system in the traditional sense does not.)</em>
+        </div>
+
+        <h3>The broadcast problem: draining 50M recipients without blowing a provider's rate limit</h3>
+        <p>This is the number that actually drives the hardest part of the design (see Section 10).</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Worst-case single broadcast = 50,000,000 recipients; target full drain time &le; 30 minutes (1,800 s)
+          <br>Required sustained fan-out throughput for that one broadcast = 50M &divide; 1,800 s &asymp; 27,800 recipients/sec
+          <br>Assumed safe sustained ceiling per push-provider credential/project (illustrative, not a literal vendor SLA) &asymp; 8,000 sends/sec
+          <br>Dedicated broadcast-lane provider-credential shards needed = 27,800 &divide; 8,000 &asymp; 3.5 &rarr; provision <strong>4 shards</strong> (&asymp;7,000/sec each, headroom under the 8,000/sec ceiling)
+          <br>Steady push-only traffic at ordinary daily peak (assume push &asymp;50% of the 65,000/sec all-channel peak) &asymp; 32,500/sec &rarr; 32,500 &divide; 8,000 &asymp; 4.1 &rarr; provision <strong>5 separate critical/transactional-lane shards</strong>, entirely distinct credential pool from the 4 broadcast-lane shards
+        </div>
+        <p>The two shard pools above are deliberately never allowed to share a token bucket &mdash; that separation is the entire point of Section 10.</p>
+
+        <h3>In-app / WebSocket channel connection scale</h3>
+        <div class="formula-box">
+          <span class="formula-label">Assumption</span>
+          Peak concurrent in-app/WebSocket connections &asymp; 1.5M (grounded by Uber RAMEN's own cited growth from &asymp;600K to 1.5M+ concurrent persistent connections)
+        </div>
+
+        <h3>Storage growth (delivery receipts)</h3>
+        <p>Each notification-send target produces &asymp;1 DeliveryAttempt row plus up to 2 status-update rows (delivered, opened/clicked) for channels that report engagement &asymp; 2.5 rows/target on average; &asymp;180 bytes/row (ids, provider message id, timestamps, channel, status).</p>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Raw = 1.1B &times; 2.5 &times; 180 B &asymp; 495 GB/day &rarr; + &asymp;40% secondary indexes (dedup key, user_id, notification_id lookups) &asymp; 693 GB/day &rarr; round to &asymp;700 GB/day
+          <br>Hot retention window (support/debugging) &asymp; 90 days &rarr; 700 GB &times; 90 &asymp; 63 TB
+          <br>&times; 3 replicas (quorum) &asymp; 189 TB provisioned; older data rolls into cold/aggregate-only storage beyond 90 days
+        </div>
+
+        <h3>Dispatch-tier instances at peak (Little's Law)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Calculation</span>
+          Broadcast-lane dispatch (&asymp;7,000/sec/shard &times; 4 shards = 28,000/sec, &asymp;15 ms provider-call hold): 28,000 &times; 0.015 s &asymp; 420 concurrent
+          <br>Critical/transactional-lane dispatch (&asymp;32,500/sec, &asymp;15 ms hold): 32,500 &times; 0.015 &asymp; 488 concurrent
+          <br>Total &asymp; 910 concurrent dispatch calls &rarr; &divide; 150 concurrent-per-instance &asymp; 6.1 &rarr; provision across 3 AZs &times; 3 instances/lane &times; 2 lanes &asymp; 18 dispatch-tier instances at peak, excluding the fan-out/preference-resolution tier sized separately in Section 10
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Takeaway</div>
+          The <strong>steady per-user traffic</strong> (&asymp;13k/sec average, &asymp;65k/sec daily peak) is a fairly ordinary high-throughput queueing problem. The <strong>broadcast case</strong> (27,800/sec sustained just to hit a 30-minute drain target on one send) is the number that forces the entire priority-queue-plus-per-credential-token-bucket architecture in Sections 5, 7, and 10 &mdash; without it, this would just be "a queue and some workers."
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+
+        <h3>Services</h3>
+        <table>
+          <tr><th>Service</th><th>Responsibility</th></tr>
+          <tr><td>Notification API / Ingestion</td><td>AuthN/Z for producer services, request schema validation, idempotency-key check, initial dedup, and priority classification. The only entry point into the platform.</td></tr>
+          <tr><td>Fan-out Expander</td><td>For SEGMENT/BROADCAST audiences, streams the recipient list (from a segment/audience service) and enqueues one per-user dispatch task per recipient, itself rate-limited so list expansion can't spike downstream &mdash; see Section 10.</td></tr>
+          <tr><td>Priority Queues (durable)</td><td>Three logically and physically separate queues &mdash; CRITICAL, TRANSACTIONAL, BEST_EFFORT/broadcast &mdash; so a large low-priority send can never sit in front of a high-priority one.</td></tr>
+          <tr><td>Preference &amp; Channel-Selection Service (fan-out worker pool)</td><td>Per recipient: resolves category opt-in/out, quiet hours, and channel priority order into a final decision &mdash; suppress, or send via which channel(s) &mdash; and renders the localized/personalized template. See Low-Level Design 7.1.</td></tr>
+          <tr><td>Push / Email / SMS / In-App Dispatch Services</td><td>One per channel; each owns its own provider-aware, token-bucket rate-limited client pool (Low-Level Design 7.2) and translates the resolved, rendered notification into that provider's wire format.</td></tr>
+          <tr><td>Provider APIs (external)</td><td>APNs/FCM for push, an SMTP relay/ESP for email, an SMS aggregator (Twilio-style) for SMS, and our own WebSocket Gateway for in-app &mdash; the only network egress points, and the resources every rate limit in this design exists to protect.</td></tr>
+          <tr><td>Delivery-Receipt / Tracking Pipeline</td><td>Ingests provider callbacks/webhooks (delivered, bounced, opened, failed) and normalizes them into DeliveryAttempt/Receipt rows, feeding both the status-query API and Monitoring.</td></tr>
+          <tr><td>User Preference Service</td><td>Owns per-user, per-(category, channel) opt-in state and quiet-hours configuration; read-heavy, cached aggressively (see Caching Strategy).</td></tr>
+          <tr><td>Template Service</td><td>Owns versioned, localized templates per (category, channel, locale); rendering is a pure function of template + payload params.</td></tr>
+          <tr><td>Dead-Letter &amp; Retry Manager</td><td>Owns exponential-backoff retry scheduling for transient failures and dead-lettering for permanent ones (Replication and Fault Tolerance).</td></tr>
+          <tr><td>Supporting infra</td><td>Redis (preference/device-token/template cache, distributed token-bucket counters), Kafka (event bus &amp; durable priority queues), Cassandra/DynamoDB-style store for delivery receipts (write-heavy, time-partitioned), Postgres for NotificationRequest/UserPreference/Template metadata.</td></tr>
+        </table>
+
+        <h3>Architecture overview</h3>
+        <p>The diagram below turns the service list into a wiring diagram: producer services call a single ingestion API, which routes into one of three durable, priority-separated queues; a fan-out/preference worker pool drains all three (with priority-ordered scheduling) and resolves each recipient's channel decision; per-channel dispatch services &mdash; each with its own provider-aware rate limiter &mdash; push out to the real provider APIs; and provider delivery callbacks flow back through a tracking pipeline that feeds status queries and monitoring.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 700" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ns-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ns-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-ns-1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="170" y="10" width="400" height="48" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="30" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Producer Services</text>
+            <text x="370" y="46" text-anchor="middle" fill="#cbd8ef" font-size="8">payments &#183; trips &#183; security/fraud &#183; social &#183; growth/marketing</text>
+
+            <line x1="370" y1="58" x2="370" y2="82" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-ns-1)"></line>
+
+            <rect x="170" y="84" width="400" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="105" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Notification API / Ingestion</text>
+            <text x="370" y="120" text-anchor="middle" fill="#cbd8ef" font-size="8">authN/Z &#183; schema validation &#183; idempotency key &#183; dedup</text>
+
+            <line x1="290" y1="134" x2="130" y2="170" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="370" y1="134" x2="370" y2="170" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="450" y1="134" x2="610" y2="170" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ns-1)"></line>
+
+            <rect x="20" y="172" width="220" height="52" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="130" y="193" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">CRITICAL Queue</text>
+            <text x="130" y="208" text-anchor="middle" fill="#6b4a10" font-size="8">OTP / security &mdash; never delayed</text>
+
+            <rect x="260" y="172" width="220" height="52" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="193" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">TRANSACTIONAL Queue</text>
+            <text x="370" y="208" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">order/trip/payment status</text>
+
+            <rect x="500" y="172" width="220" height="52" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-dasharray="5,3"></rect>
+            <text x="610" y="193" text-anchor="middle" fill="var(--color-text)" font-size="10" font-weight="700">BEST_EFFORT / Broadcast Queue</text>
+            <text x="610" y="208" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">marketing &#183; digests &#183; fan-out tasks</text>
+
+            <line x1="130" y1="224" x2="330" y2="256" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="370" y1="224" x2="370" y2="254" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="610" y1="224" x2="410" y2="256" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ns-1m)"></line>
+
+            <rect x="145" y="256" width="450" height="58" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="278" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Fan-out / Preference &amp; Channel-Selection Worker Pool</text>
+            <text x="370" y="294" text-anchor="middle" fill="#cbd8ef" font-size="8">quiet hours &#183; opt-in/out &#183; template render &#183; dedup &#183; per-provider token buckets</text>
+
+            <line x1="240" y1="314" x2="97" y2="342" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="330" y1="314" x2="282" y2="342" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="420" y1="314" x2="467" y2="342" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="500" y1="314" x2="652" y2="342" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-1)"></line>
+
+            <rect x="15" y="344" width="165" height="52" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="97" y="365" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Push Dispatch</text>
+            <text x="97" y="380" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">token bucket / credential</text>
+
+            <rect x="200" y="344" width="165" height="52" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="282" y="365" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Email Dispatch</text>
+            <text x="282" y="380" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">token bucket / credential</text>
+
+            <rect x="385" y="344" width="165" height="52" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="467" y="365" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">SMS Dispatch</text>
+            <text x="467" y="380" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">token bucket / credential</text>
+
+            <rect x="570" y="344" width="165" height="52" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="652" y="365" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">In-App Dispatch</text>
+            <text x="652" y="380" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">WebSocket fan-out</text>
+
+            <line x1="97" y1="396" x2="97" y2="420" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="282" y1="396" x2="282" y2="420" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="467" y1="396" x2="467" y2="420" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-1)"></line>
+            <line x1="652" y1="396" x2="652" y2="420" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-1)"></line>
+
+            <rect x="15" y="422" width="165" height="48" rx="6" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="97" y="443" text-anchor="middle" fill="var(--color-text)" font-size="9" font-weight="700">APNs / FCM</text>
+            <text x="97" y="458" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">push providers</text>
+
+            <rect x="200" y="422" width="165" height="48" rx="6" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="282" y="443" text-anchor="middle" fill="var(--color-text)" font-size="9" font-weight="700">SMTP Relay / ESP</text>
+            <text x="282" y="458" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">email provider</text>
+
+            <rect x="385" y="422" width="165" height="48" rx="6" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="467" y="443" text-anchor="middle" fill="var(--color-text)" font-size="9" font-weight="700">SMS Gateway</text>
+            <text x="467" y="458" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">carrier aggregator</text>
+
+            <rect x="570" y="422" width="165" height="48" rx="6" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.5"></rect>
+            <text x="652" y="443" text-anchor="middle" fill="var(--color-text)" font-size="9" font-weight="700">WebSocket Gateway</text>
+            <text x="652" y="458" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">own infra, in-app</text>
+
+            <line x1="97" y1="470" x2="300" y2="502" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ns-1m)"></line>
+            <line x1="282" y1="470" x2="340" y2="502" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ns-1m)"></line>
+            <line x1="467" y1="470" x2="420" y2="502" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ns-1m)"></line>
+            <line x1="652" y1="470" x2="470" y2="502" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-ns-1m)"></line>
+
+            <rect x="170" y="504" width="400" height="50" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="370" y="525" text-anchor="middle" fill="#6b4a10" font-size="10" font-weight="700">Delivery-Receipt / Tracking Pipeline</text>
+            <text x="370" y="540" text-anchor="middle" fill="#6b4a10" font-size="8">normalizes provider callbacks &rarr; sent/delivered/opened/failed</text>
+
+            <line x1="370" y1="554" x2="370" y2="578" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ns-1)"></line>
+
+            <rect x="220" y="580" width="300" height="46" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="600" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Delivery Status Store</text>
+            <text x="370" y="614" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">feeds status-query API &amp; Monitoring</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. Service topology: a single ingestion API routes into three durable, priority-separated queues; a fan-out/preference worker pool resolves each recipient's channel decision; per-channel dispatch services each protect their own provider credential with an independent token bucket; provider callbacks flow back through a tracking pipeline into the delivery status store.</div>
+        </div>
+
+        <h3>Data flow (a): Single-user transactional notification (e.g. "your order has shipped")</h3>
+        <ol>
+          <li>Producer service &rarr; Notification API: template_id, target user_id, priority=TRANSACTIONAL, idempotency_key, payload params.</li>
+          <li>Ingestion: idempotency/dedup check &rarr; if new, insert NotificationRequest, enqueue onto the TRANSACTIONAL queue.</li>
+          <li>Fan-out worker: resolve preferences + quiet hours for this (user, category) &rarr; decide final channel(s), e.g. push + in-app.</li>
+          <li>Render localized template with payload params &rarr; hand off to Push Dispatch and In-App Dispatch.</li>
+          <li>Each dispatch service consumes a token from its provider's rate-limit bucket, calls the provider, records a DeliveryAttempt.</li>
+          <li>(async) Provider callback (delivered/opened/failed) &rarr; Tracking Pipeline &rarr; Delivery Status Store &rarr; queryable via the status API.</li>
+        </ol>
+
+        <h3>Data flow (b): Broadcast notification (e.g. "app-wide outage notice" to 50M users)</h3>
+        <p>This is the pipeline that Section 10 works through in full detail: a single logical request never turns into a single logical send &mdash; it turns into tens of millions of independently rate-limited dispatch tasks, deliberately throttled to a rate the provider can absorb.</p>
+        <ol>
+          <li>Producer service &rarr; Notification API: template_id, audience=BROADCAST(segment_ref), priority=BEST_EFFORT.</li>
+          <li>Ingestion enqueues one NotificationRequest row (not 50M) onto the Fan-out Expander's input.</li>
+          <li>Fan-out Expander streams the audience list from the segment service and enqueues one per-user dispatch task per recipient onto the broadcast-lane queue partitions, itself at a bounded enqueue rate.</li>
+          <li>A dedicated, autoscaled broadcast worker pool drains those tasks, resolving preferences/quiet-hours per user exactly as in the single-user path.</li>
+          <li>Dispatch consumes from broadcast-lane-only token buckets (separate credential pool from the transactional lane) &mdash; see Section 10 for the exact math.</li>
+          <li>Delivery receipts flow back identically to the single-user path, at proportionally higher volume.</li>
+        </ol>
+
+        <h2 id="api-design">API Design</h2>
+        <p>Conventions: JSON over HTTPS/gRPC for internal producer&rarr;platform calls. Every send request requires a producer-generated idempotency key, unique per logical event. Timestamps are ISO-8601 UTC; the platform converts to the user's local timezone only for quiet-hours evaluation.</p>
+
+        <h3>Send a notification</h3>
+        <pre><code>POST /v1/notifications
+Idempotency-Key: 8f2e...c1 (required)
+Authorization: Bearer &lt;service_token&gt;
+
+{
+  "template_id": "order_shipped_v3",
+  "category": "order_status",
+  "priority": "TRANSACTIONAL",           // CRITICAL | TRANSACTIONAL | BEST_EFFORT
+  "audience": { "type": "USER", "user_id": "u_9f21" },
+  // or: "audience": { "type": "SEGMENT", "segment_ref": "seg_abc123" }
+  // or: "audience": { "type": "BROADCAST", "segment_ref": "seg_all_in_IN" }
+  "channel_hints": ["PUSH", "IN_APP"],    // optional; platform still applies preferences
+  "params": { "order_id": "ORD-88213", "eta": "2026-08-05" }
+}
+
+202 Accepted
+{ "notification_id": "ntf_01H...", "status": "ACCEPTED|DEDUPED" }</code></pre>
+
+        <h3>Query delivery status</h3>
+        <pre><code>GET /v1/notifications/{notification_id}/status
+&#8594; 200 {
+  "notification_id": "ntf_01H...",
+  "audience_size": 1,                     // or recipient count for segment/broadcast
+  "status_summary": { "sent": 1, "delivered": 1, "opened": 0, "failed": 0 }
+}
+
+GET /v1/notifications/{notification_id}/status?user_id=u_9f21   // per-recipient detail
+&#8594; 200 { "user_id","channel","status":"DELIVERED","delivered_at","opened_at" }</code></pre>
+
+        <h3>User preferences</h3>
+        <pre><code>GET /v1/users/{user_id}/preferences
+&#8594; 200 { "preferences": [
+    { "category":"order_status","channel":"PUSH","opted_in":true },
+    { "category":"marketing","channel":"EMAIL","opted_in":false } ],
+  "quiet_hours": { "start":"22:00","end":"07:30","timezone":"Asia/Kolkata" } }
+
+PUT /v1/users/{user_id}/preferences
+{ "category":"marketing","channel":"SMS","opted_in":false }
+&#8594; 200 { "updated": true }
+
+PUT /v1/users/{user_id}/preferences/quiet-hours
+{ "start":"22:00","end":"07:30","timezone":"Asia/Kolkata" }
+&#8594; 200 { "updated": true }</code></pre>
+
+        <h3>Internal: provider delivery-receipt callback</h3>
+        <pre><code>POST /internal/v1/delivery-receipts
+{ "provider":"fcm","provider_message_id":"...","notification_id":"ntf_01H...",
+  "user_id":"u_9f21","channel":"PUSH","event":"DELIVERED|OPENED|FAILED","occurred_at":"..." }
+&#8594; 202 Accepted  // normalized and written to the Delivery Status Store asynchronously</code></pre>
+        <p>Idempotent reads (status, preferences) are served from cache where possible (see Caching Strategy). Every mutating call (send, preference update) carries or is keyed by an idempotency key so a producer's retried call is safe by construction.</p>
+
+        <h3>What the platform does with the Idempotency-Key</h3>
+        <ol>
+          <li>Compute a hash of the canonical request body.</li>
+          <li><strong>Miss</strong> &rarr; atomically insert (idempotency_key, producer_service_id, request_hash, status=ACCEPTED) guarded by a unique constraint; proceed to enqueue.</li>
+          <li><strong>Hit, same hash</strong> &rarr; return the stored notification_id and status verbatim (status becomes <code>DEDUPED</code>). Nothing is re-enqueued, and no second send happens.</li>
+          <li><strong>Hit, different hash</strong> &rarr; 422 Unprocessable Entity &mdash; a caller reusing a key for a materially different request is a caller bug, not something to silently mask.</li>
+        </ol>
+
+        <h2 id="low-level-design-deep-dive">Low-Level Design (Deep Dive)</h2>
+
+        <h3>7.1 Preference resolution &amp; channel-selection logic</h3>
+        <p>Given a notification's category and priority, the fan-out worker must decide, for one specific user: suppress entirely, or send via which channel(s). This is evaluated once per (notification, recipient) pair, always from cached preference/quiet-hours data (never a cold DB read on this hot path &mdash; see Caching Strategy).</p>
+        <pre><code>def resolve_channels(user_id, category, priority, channel_hints):
+  prefs = get_cached_preferences(user_id, category)   # opt-in map + quiet hours, cache-first
+
+  if priority == "CRITICAL":
+    # Security/OTP bypasses category opt-out and quiet hours entirely &mdash; this is a
+    # safety/compliance decision, not a UX one. Still respects channel *availability*
+    # (no point picking a channel with no valid device token / verified address).
+    return most_reliable_available_channel(user_id, prefer=["PUSH", "SMS"])
+
+  if not prefs.any_channel_opted_in(category):
+    return []   # suppressed entirely &mdash; no delivery attempt is made, at all
+
+  local_now = to_user_timezone(now(), prefs.timezone)
+  in_quiet_hours = prefs.quiet_start &lt;= local_now &lt;= prefs.quiet_end
+
+  if in_quiet_hours and priority == "BEST_EFFORT":
+    if prefs.defer_after_quiet_hours:
+      return schedule_after(prefs.quiet_end)      # re-enqueue for after quiet hours, not dropped
+    return []                                     # suppressed for this cycle
+
+  candidates = [c for c in channel_hints if prefs.is_opted_in(category, c)]
+  if not candidates:
+    return []
+  # avoid multi-channel spam for a single event: pick the user's preferred single
+  # channel unless the category is explicitly configured as multi-channel (e.g. CRITICAL-adjacent)
+  return select_primary_channel(candidates, prefs.channel_priority_order)</code></pre>
+        <p>Note that TRANSACTIONAL notifications intentionally still respect category opt-out (a user who muted "order_status" pushes should stay muted) but are <em>not</em> suppressed by quiet hours in this design &mdash; a "your ride has arrived" notification loses its entire purpose if deferred until morning. Only BEST_EFFORT/marketing is quiet-hours-suppressible. This distinction is exactly what the priority tier is for.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ns-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ns-2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="290" y="10" width="160" height="42" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="35" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">Notification arrives for user X</text>
+
+            <line x1="370" y1="52" x2="370" y2="76" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ns-2)"></line>
+
+            <rect x="255" y="78" width="230" height="44" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="370" y="104" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">priority == CRITICAL ?</text>
+
+            <line x1="255" y1="100" x2="110" y2="130" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-ns-2)"></line>
+            <text x="150" y="118" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-weight="600">yes</text>
+            <rect x="20" y="132" width="180" height="46" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="110" y="152" text-anchor="middle" fill="#6b4a10" font-size="8" font-weight="700">Bypass opt-out &amp; quiet</text>
+            <text x="110" y="166" text-anchor="middle" fill="#6b4a10" font-size="8" font-weight="700">hours &mdash; pick most reliable channel</text>
+
+            <line x1="485" y1="100" x2="560" y2="130" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-ns-2)"></line>
+            <text x="545" y="118" text-anchor="middle" font-size="8" fill="var(--color-text-muted)">no</text>
+
+            <rect x="470" y="132" width="230" height="44" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="585" y="149" text-anchor="middle" fill="var(--color-primary)" font-size="8" font-weight="700">opted in for (category,</text>
+            <text x="585" y="163" text-anchor="middle" fill="var(--color-primary)" font-size="8" font-weight="700">channel) ?</text>
+
+            <line x1="585" y1="176" x2="585" y2="200" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-ns-2)"></line>
+            <text x="605" y="192" text-anchor="middle" font-size="8" fill="var(--color-text-muted)">no</text>
+            <rect x="490" y="202" width="190" height="40" rx="6" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.6"></rect>
+            <text x="585" y="226" text-anchor="middle" fill="var(--color-accent-dark)" font-size="9" font-weight="700">SUPPRESS &mdash; no attempt</text>
+
+            <line x1="500" y1="176" x2="400" y2="215" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-ns-2)"></line>
+            <text x="475" y="200" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-weight="600">yes</text>
+
+            <rect x="285" y="217" width="230" height="46" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="400" y="235" text-anchor="middle" fill="var(--color-primary)" font-size="8" font-weight="700">in quiet hours AND</text>
+            <text x="400" y="249" text-anchor="middle" fill="var(--color-primary)" font-size="8" font-weight="700">priority == BEST_EFFORT ?</text>
+
+            <line x1="285" y1="245" x2="150" y2="278" stroke="var(--color-primary)" stroke-width="1.2" marker-end="url(#arrow-ns-2)"></line>
+            <text x="220" y="264" text-anchor="middle" font-size="8" fill="var(--color-primary)" font-weight="600">yes</text>
+            <rect x="60" y="280" width="180" height="46" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="150" y="299" text-anchor="middle" fill="#6b4a10" font-size="8" font-weight="700">Suppress now, or defer</text>
+            <text x="150" y="313" text-anchor="middle" fill="#6b4a10" font-size="8" font-weight="700">to schedule_after(quiet_end)</text>
+
+            <line x1="515" y1="245" x2="620" y2="278" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-ns-2)"></line>
+            <text x="590" y="264" text-anchor="middle" font-size="8" fill="var(--color-text-muted)">no</text>
+            <rect x="530" y="280" width="200" height="46" rx="6" fill="none" stroke="var(--color-primary)" stroke-width="1.6"></rect>
+            <text x="630" y="299" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">SEND &mdash; render template,</text>
+            <text x="630" y="313" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">hand off to channel dispatch</text>
+          </svg>
+          <div class="diagram-caption">Figure 2. Preference &amp; channel-selection decision flow: CRITICAL bypasses opt-out and quiet hours entirely; TRANSACTIONAL respects opt-out but not quiet hours; only BEST_EFFORT is fully suppressible &mdash; this is the load-bearing distinction the priority tier exists to encode.</div>
+        </div>
+
+        <h3>7.2 Provider-aware, rate-limited dispatch worker (token bucket per provider credential)</h3>
+        <p>Each dispatch service (Push/Email/SMS) maintains one distributed token bucket per (channel, provider_credential) pair, backed by Redis so every worker instance shares the same limit rather than each independently believing it has the full quota.</p>
+        <pre><code>-- Redis Lua script: atomic check-and-consume, evaluated server-side so concurrent
+-- workers can never both read "tokens available" and both consume past the ceiling
+local key, refill_rate, capacity, now = KEYS[1], tonumber(ARGV[1]), tonumber(ARGV[2]), tonumber(ARGV[3])
+local bucket = redis.call("HMGET", key, "tokens", "ts")
+local tokens = tonumber(bucket[1]) or capacity
+local last_ts = tonumber(bucket[2]) or now
+tokens = math.min(capacity, tokens + (now - last_ts) * refill_rate)
+if tokens &lt; 1 then
+  redis.call("HMSET", key, "tokens", tokens, "ts", now)
+  return 0                                    -- rejected: caller must back off, not call the provider
+end
+redis.call("HMSET", key, "tokens", tokens - 1, "ts", now)
+return 1                                      -- 1 token consumed: safe to call the provider now</code></pre>
+        <pre><code>def dispatch_worker_loop(channel, credential_shard):
+  while True:
+    task = pull_from_queue(channel, credential_shard)     # priority-ordered pull
+    if not try_consume_token(bucket_key(channel, credential_shard)):
+      backoff_sleep(jittered=True)            # bucket empty &mdash; this IS the backpressure mechanism
+      requeue(task)
+      continue
+    result = call_provider(channel, credential_shard, task.rendered_payload)
+    record_delivery_attempt(task.notification_id, task.user_id, channel, result)
+    if result.is_permanent_failure():
+      dead_letter(task, reason=result.reason)   # e.g. unregistered device token, hard bounce
+    elif result.is_transient_failure():
+      schedule_retry(task, backoff=next_backoff(task.attempt_number))</code></pre>
+        <p>The key property: when the bucket for a given (channel, credential) is empty, the worker <strong>backs off instead of calling the provider</strong>. This is what naturally throttles a broadcast's drain rate to whatever the provider can actually absorb, without any dispatch worker ever needing to know how big the broadcast is.</p>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>Postgres-style DDL for metadata/config tables (strongly consistent, low-to-moderate write volume); DeliveryAttempt is the write-heavy table and in practice lives in a wide-column/time-partitioned store (Cassandra/DynamoDB-style) rather than Postgres &mdash; see Data Sharding. IDs are Snowflake-style BIGINT.</p>
+
+        <h3>notification_requests</h3>
+        <pre><code>CREATE TABLE notification_requests (
+  notification_id BIGINT PRIMARY KEY,          -- snowflake
+  producer_service_id VARCHAR(64) NOT NULL,    -- for authZ + observability, never for content trust
+  template_id VARCHAR(64) NOT NULL,
+  category VARCHAR(64) NOT NULL,
+  priority VARCHAR(16) NOT NULL,                -- CRITICAL|TRANSACTIONAL|BEST_EFFORT
+  audience_type VARCHAR(16) NOT NULL,           -- USER|SEGMENT|BROADCAST
+  target_user_id BIGINT,                        -- set only when audience_type=USER
+  segment_ref VARCHAR(128),                     -- set for SEGMENT|BROADCAST, resolved by Fan-out Expander
+  channel_hints VARCHAR(64)[],                   -- optional caller hints, e.g. {PUSH,IN_APP}
+  payload_params JSONB NOT NULL,
+  idempotency_key VARCHAR(128) NOT NULL,
+  request_hash CHAR(64) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'ACCEPTED', -- ACCEPTED|EXPANDING|DISPATCHING|COMPLETED|DEDUPED
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (producer_service_id, idempotency_key)
+);</code></pre>
+
+        <h3>user_preferences</h3>
+        <pre><code>CREATE TABLE user_preferences (
+  user_id BIGINT NOT NULL,
+  category VARCHAR(64) NOT NULL,
+  channel VARCHAR(16) NOT NULL,                  -- PUSH|EMAIL|SMS|IN_APP
+  opted_in BOOLEAN NOT NULL DEFAULT true,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, category, channel)
+);
+
+CREATE TABLE user_quiet_hours (
+  user_id BIGINT PRIMARY KEY,
+  quiet_start TIME NOT NULL,
+  quiet_end TIME NOT NULL,
+  timezone VARCHAR(64) NOT NULL,
+  defer_after_quiet_hours BOOLEAN NOT NULL DEFAULT true,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);</code></pre>
+
+        <h3>templates</h3>
+        <pre><code>CREATE TABLE templates (
+  template_id VARCHAR(64) NOT NULL,
+  version INT NOT NULL,
+  category VARCHAR(64) NOT NULL,
+  channel VARCHAR(16) NOT NULL,
+  locale VARCHAR(16) NOT NULL,                   -- e.g. en-US, hi-IN
+  subject_template TEXT,                          -- null for SMS/push
+  body_template TEXT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (template_id, version, locale)
+);</code></pre>
+
+        <h3>device_tokens</h3>
+        <pre><code>CREATE TABLE device_tokens (
+  device_token_id BIGINT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  platform VARCHAR(16) NOT NULL,                 -- IOS|ANDROID|WEB
+  push_token VARCHAR(512) NOT NULL,               -- opaque, provider-issued (APNs/FCM)
+  app_version VARCHAR(32),
+  status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',   -- ACTIVE|EXPIRED|UNREGISTERED
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, platform, push_token)
+);
+
+CREATE INDEX idx_device_tokens_user ON device_tokens(user_id) WHERE status = 'ACTIVE';</code></pre>
+
+        <h3>delivery_attempts (receipts) &mdash; write-heavy, time-partitioned store</h3>
+        <pre><code>CREATE TABLE delivery_attempts (
+  attempt_id BIGINT,                              -- snowflake, embeds time
+  notification_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  channel VARCHAR(16) NOT NULL,
+  provider VARCHAR(32) NOT NULL,                  -- fcm|apns|smtp_relay|sms_gateway
+  provider_message_id VARCHAR(128),
+  attempt_number INT NOT NULL DEFAULT 1,
+  status VARCHAR(16) NOT NULL,                    -- QUEUED|SENT|DELIVERED|OPENED|FAILED|DEAD_LETTERED
+  failure_reason VARCHAR(64),
+  attempted_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY ((user_id), attempted_at, attempt_id)  -- partition key user_id, clustered by time
+);</code></pre>
+
+        <h2 id="data-sharding-and-partitioning">Data Sharding and Partitioning</h2>
+        <ul>
+          <li><strong>Queues/workers partitioned by priority tier, then by channel/provider.</strong> CRITICAL, TRANSACTIONAL, and BEST_EFFORT are separate Kafka topics (or separate queue clusters entirely), each further partitioned per channel so a slow SMS provider can never back up push dispatch, and vice versa. This is the physical enforcement of the isolation described in the Problem Statement's key tension.</li>
+          <li><strong>Broadcast fan-out tasks partitioned by a hash of user_id.</strong> The Fan-out Expander writes per-user dispatch tasks onto many partitions (not one hot partition per broadcast), so 50M tasks spread evenly across the broadcast-lane worker pool and no single partition/consumer becomes the bottleneck.</li>
+          <li><strong>Delivery-receipt storage sharded by user_id, clustered by time.</strong> Partitioning by user_id (see the DDL above) makes "get this user's recent notification history" a single-partition query; clustering within a partition by attempted_at makes both point-in-time lookups and time-window retention/expiry (drop partitions older than the hot-retention window) cheap, mirroring the delivery_attempts schema.</li>
+          <li><strong>Provider credentials themselves are a sharding dimension.</strong> As shown in Capacity Estimation, the broadcast lane and the critical/transactional lane are provisioned with entirely separate pools of provider credentials/projects (e.g. separate FCM sender IDs, separate SMS gateway accounts) &mdash; this is sharding applied to the <em>external</em> rate-limit budget, not just internal storage, and it's what Section 10 depends on.</li>
+          <li><strong>Preference and device-token lookups are colocated with the delivery-receipt shard key (user_id)</strong> so a single fan-out worker's per-recipient resolution touches one shard/cache node, not a cross-shard join, on the hottest path in the system.</li>
+        </ul>
+
+        <h2 id="feature-specific-logic-deep-dive">Feature-Specific Logic (Deep Dive)</h2>
+        <h3>10.1 Draining a 50-million-recipient broadcast without starving transactional traffic</h3>
+        <p>This is the single hardest requirement in the whole design, and it's the reason the architecture has two of almost everything (queues, worker pools, provider-credential shards) instead of one shared pool with "priority" as a mere sort key. A sort key inside one shared queue is not isolation: a broadcast large enough can still monopolize shared workers or a shared provider-rate-limit budget even if it's dequeued "last." Real isolation requires separate resources end to end.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 460" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-ns-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-ns-3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="20" y="10" width="330" height="46" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="185" y="30" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">CRITICAL / TRANSACTIONAL Queue</text>
+            <text x="185" y="45" text-anchor="middle" fill="#cbd8ef" font-size="8">OTP, order/trip status &mdash; low volume, never delayed</text>
+
+            <rect x="390" y="10" width="330" height="46" rx="8" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-dasharray="5,3"></rect>
+            <text x="555" y="30" text-anchor="middle" fill="var(--color-text)" font-size="10" font-weight="700">Broadcast Queue (50M tasks)</text>
+            <text x="555" y="45" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Fan-out Expander enqueues at a bounded rate</text>
+
+            <line x1="185" y1="56" x2="185" y2="80" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-ns-3)"></line>
+            <line x1="555" y1="56" x2="555" y2="80" stroke="var(--color-text-muted)" stroke-width="1.4" stroke-dasharray="4,3" marker-end="url(#arrow-ns-3)"></line>
+
+            <rect x="40" y="82" width="290" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="185" y="102" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">Reserved Worker Pool</text>
+            <text x="185" y="117" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">small, always-on, never autoscaled away</text>
+
+            <rect x="410" y="82" width="290" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="555" y="102" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="700">Broadcast Worker Pool</text>
+            <text x="555" y="117" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">autoscaled up to a hard cap</text>
+
+            <line x1="185" y1="132" x2="185" y2="156" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ns-3)"></line>
+            <line x1="555" y1="132" x2="555" y2="156" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-ns-3)"></line>
+
+            <rect x="40" y="158" width="290" height="60" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="185" y="178" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">Token Buckets: Credentials A</text>
+            <text x="185" y="193" text-anchor="middle" fill="#6b4a10" font-size="8">5 shards &#183; &asymp;6,500/sec each</text>
+            <text x="185" y="207" text-anchor="middle" fill="#6b4a10" font-size="8">refill rate never exceeds provider ceiling</text>
+
+            <rect x="410" y="158" width="290" height="60" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="555" y="178" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">Token Buckets: Credentials B</text>
+            <text x="555" y="193" text-anchor="middle" fill="#6b4a10" font-size="8">4 shards &#183; &asymp;7,000/sec each</text>
+            <text x="555" y="207" text-anchor="middle" fill="#6b4a10" font-size="8">completely separate pool from Credentials A</text>
+
+            <line x1="185" y1="218" x2="185" y2="242" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-ns-3)"></line>
+            <line x1="555" y1="218" x2="555" y2="242" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-ns-3)"></line>
+
+            <rect x="150" y="244" width="440" height="46" rx="8" fill="none" stroke="var(--color-accent-dark)" stroke-width="1.6"></rect>
+            <text x="370" y="264" text-anchor="middle" fill="var(--color-text)" font-size="9" font-weight="700">Push Provider (APNs/FCM) &mdash; the shared, protected resource</text>
+            <text x="370" y="279" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">two lanes hit the same provider, but never the same rate-limit budget</text>
+
+            <rect x="60" y="310" width="620" height="80" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="370" y="332" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">50,000,000 recipients &divide; 1,800 s target drain = 27,800/sec required</text>
+            <text x="370" y="349" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">27,800 &divide; 4 broadcast-lane shards &asymp; 7,000/sec per shard (under the 8,000/sec ceiling)</text>
+            <text x="370" y="366" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">If queue depth grows: autoscale worker COUNT, never raise a bucket's refill rate</text>
+            <text x="370" y="382" text-anchor="middle" fill="#6b4a10" font-size="9" font-weight="700">above the provider's safe ceiling &mdash; you scale workers, never the ceiling itself</text>
+
+            <text x="370" y="415" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">Because the two lanes never share a bucket, a worker in the broadcast pool</text>
+            <text x="370" y="432" text-anchor="middle" font-size="9" fill="var(--color-text-muted)" font-style="italic">backing off on an empty bucket has zero effect on the reserved lane's throughput.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Two lanes, two provider-credential pools, one shared downstream provider: the broadcast lane's token buckets can run dry and force its own workers to back off without ever touching the reserved lane's separate buckets &mdash; that separation, not queue ordering alone, is what prevents starvation.</div>
+        </div>
+        <p><strong>Backpressure and draining strategy, concretely:</strong></p>
+        <ol>
+          <li>The Fan-out Expander enqueues the 50M per-user tasks at a bounded rate itself (e.g. no faster than the broadcast lane's total token-bucket capacity across its 4 shards, &asymp;28,000/sec) &mdash; so even list expansion can't create an unbounded queue-depth spike.</li>
+          <li>Broadcast workers pull from queue, attempt to consume a token from their shard's bucket; on success, dispatch; on empty bucket, back off (with jitter) and let the task sit queued rather than calling the provider.</li>
+          <li>If the broadcast lane's queue depth grows because the provider is degraded, the platform autoscales the broadcast <em>worker count</em> up to a hard cap &mdash; more workers doing more polling and backing off, not a higher token-bucket refill rate. The provider's real ceiling is a property of the provider, not something more compute can raise.</li>
+          <li>If a time-sensitive campaign needs a faster guaranteed drain than the standing 4-shard pool allows, that is a <strong>capacity-planning conversation</strong> (provision more provider credentials/quota ahead of time) &mdash; never something achieved by borrowing capacity or workers from the reserved critical/transactional lane.</li>
+          <li>The reserved lane's small, always-on worker pool and separate token buckets mean an OTP sent during a live 50M broadcast sees the same latency it would see with no broadcast running at all.</li>
+        </ol>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li><strong>Durable, replicated queues.</strong> The priority queues (Kafka or equivalent) are replicated across brokers; a notification task is acknowledged as enqueued only after it's durably replicated, so a broker failure can't silently drop a pending send.</li>
+          <li><strong>Retry with exponential backoff and jitter, on transient failures.</strong> A provider 5xx, timeout, or transient rate-limit response schedules a retry with exponentially increasing delay plus random jitter &mdash; jitter specifically to avoid a "thundering herd" of retries all landing on the provider at the same instant after an outage, the same reasoning AWS's own Builders' Library documents for retries generally (see References).</li>
+          <li><strong>Dead-letter queue for permanent failures.</strong> An invalid/unregistered device token, a hard-bounced email address, or a disconnected phone number is a permanent failure &mdash; retrying it forever wastes provider quota that the broadcast math above depends on staying available. These are moved to a DLQ for inspection (and, for device tokens, to mark the token EXPIRED so future sends don't repeat the mistake) rather than retried indefinitely or silently dropped.</li>
+          <li><strong>Provider outage / failover between multiple providers per channel.</strong> Where the channel supports it (SMS especially), configure a secondary provider and failover to it when the primary's error rate crosses a threshold, via a circuit breaker &mdash; fail fast to the secondary rather than piling up retries against a provider that is currently down.</li>
+          <li><strong>Idempotency keys make retries safe end-to-end.</strong> Both the producer-facing Idempotency-Key (Section 6) and internal retry/redelivery paths key off a stable identifier, so a retried send &mdash; whether from a producer's own retry or an internal recovery after a worker crash &mdash; can never fan out to the same user twice. This is the same "retries are safe because everything is idempotent" discipline used throughout reliable distributed systems (see References).</li>
+          <li><strong>Broadcast-lane isolation is itself a fault-tolerance property.</strong> Because the broadcast lane has its own workers and its own provider credentials, a broadcast that goes wrong (a bad segment definition, a provider outage on that specific credential pool) degrades only bulk sends &mdash; it cannot cascade into degrading OTP/security delivery, which sits on entirely separate infrastructure.</li>
+        </ul>
+
+        <h2 id="caching-strategy">Caching Strategy</h2>
+        <p>Guiding rule: <strong>cache anything read on the hot per-recipient path that changes rarely; never cache the provider rate-limit token bucket itself as anything other than the single shared source of truth (Redis), since that one has to be exactly consistent across workers.</strong></p>
+        <table>
+          <tr><th>Data</th><th>Cache?</th><th>Rationale / invalidation</th></tr>
+          <tr><td>Resolved user preferences + quiet hours</td><td><strong>Yes</strong> &mdash; read-through cache, TTL minutes, keyed by user_id</td><td>Read once per (notification, recipient) on the hottest path in the system (Section 7.1); changes rarely; invalidate on preference update.</td></tr>
+          <tr><td>Active device tokens</td><td><strong>Yes</strong>, populated on token registration/refresh</td><td>Avoids a DB hit per push dispatch; refreshed whenever the client re-registers, and invalidated when a provider reports the token unregistered (feeds the dead-letter path).</td></tr>
+          <tr><td>Rendered/localized templates</td><td><strong>Yes</strong>, keyed by (template_id, version, locale)</td><td>Template body is a pure function of template + params; caching the compiled template (not the final personalized output, which varies per recipient) avoids re-parsing on every render.</td></tr>
+          <tr><td>Segment/audience membership for a broadcast</td><td><strong>Yes</strong>, materialized once per campaign by the Fan-out Expander</td><td>The recipient list for a given broadcast is computed once and streamed, not recomputed per recipient.</td></tr>
+          <tr><td><strong>Provider rate-limit token bucket state</strong></td><td><strong>Shared, not per-worker-cached</strong></td><td>Must live in one place all workers for that (channel, credential) agree on (Redis), evaluated atomically per Section 7.2. Caching a local copy per worker reopens exactly the race the Lua script exists to prevent &mdash; two workers could both believe tokens are available and both call the provider.</td></tr>
+          <tr><td>Delivery status for a completed notification</td><td><strong>Yes</strong>, once terminal (DELIVERED/OPENED/FAILED)</td><td>Status-query traffic for an old, finished notification is safe to serve from cache indefinitely; only in-flight notifications need a fresher read.</td></tr>
+        </table>
+
+        <h2 id="monitoring-logging-analytics-and-notifications">Monitoring, Logging, Analytics and Notifications</h2>
+        <p><strong>Key SLIs / metrics:</strong></p>
+        <ul>
+          <li><strong>End-to-end delivery latency, tracked separately per priority tier.</strong> CRITICAL P95/P99 is the single most important number in the system &mdash; a regression here is a security-relevant incident, not just a performance one.</li>
+          <li><strong>Delivery success/failure rate per channel and per provider credential shard.</strong> A spike in FAILED for one shard usually means that credential is being throttled or is approaching a provider-side ban, and should page before the provider takes independent action.</li>
+          <li><strong>Broadcast queue depth and projected drain time.</strong> Recompute continuously as a broadcast is draining; if projected drain time exceeds the campaign's target (Capacity Estimation), that's a signal for capacity planning, not for borrowing capacity from the reserved lane.</li>
+          <li><strong>Token-bucket utilization per (channel, credential) shard.</strong> Consistently near 100% utilization on the reserved/critical lane is itself a warning sign &mdash; that lane should have comfortable headroom at all times.</li>
+          <li><strong>Opt-out / complaint / unsubscribe rate per category.</strong> A rising trend for a given category is a product signal as much as an engineering one &mdash; exactly the kind of measurement LinkedIn's own Air Traffic Controller work reports optimizing against (see References).</li>
+          <li>Idempotency-key hit rate (how often producers retry), DLQ depth and age, dedup rate, and per-producer-service send volume for internal chargeback/accountability.</li>
+        </ul>
+        <p><strong>Audit logging:</strong> every NotificationRequest and every DeliveryAttempt is retained (per the storage plan in Capacity Estimation) with the requesting producer_service_id, so any user-visible notification can be traced back to exactly which internal service and which template version caused it &mdash; essential both for debugging "why did I get this?" support tickets and for the internal-abuse controls in Security Considerations.</p>
+        <p><strong>Notification triggers for the platform's own operators:</strong> credential shard approaching its provider-side rate limit, DLQ depth crossing a threshold, broadcast projected drain time exceeding target, CRITICAL-lane latency P99 regression. All delivered through the same kind of on-call alerting a payments or infra platform would use &mdash; this system is, after all, itself a producer of the alerts that describe its own health.</p>
+
+        <h2 id="security-considerations">Security Considerations</h2>
+        <ul>
+          <li><strong>Internal-service authorization to send.</strong> Every call to the Notification API authenticates as a specific producer_service_id and is authorized against which categories/priorities it's allowed to use &mdash; a low-trust internal service should not be able to mint a CRITICAL-priority send and skip the queues that exist to protect OTP delivery. This is the anti-abuse control that makes the "any internal service can ask us to notify a user" requirement (FR1) safe.</li>
+          <li><strong>PII handling in templates, payloads, and logs.</strong> Payload params frequently carry PII (order details, phone-adjacent data); templates and logs must avoid writing raw PII into long-retention audit logs or third-party monitoring tools, and rendered message bodies containing PII should not be logged verbatim, only their metadata (template_id, category, status).</li>
+          <li><strong>Provider credential security.</strong> APNs keys, FCM service-account credentials, SMTP/ESP API keys, and SMS gateway credentials are secrets with real financial and reputational blast radius if leaked (a leaked SMS credential can be used to send spam that gets the account banned) &mdash; stored in a KMS/secrets manager with rotation, least-privilege scoped per credential shard.</li>
+          <li><strong>Respecting user consent and regulatory requirements.</strong> Marketing/BEST_EFFORT sends must respect applicable opt-in law (e.g., consent requirements for commercial email/SMS); an opt-out must take effect promptly and be honored by the preference-resolution path in Section 7.1, not just recorded and ignored.</li>
+          <li><strong>Rate limiting and anomaly detection on the ingestion API itself.</strong> Per-producer-service request-rate limits at the Notification API prevent a buggy or compromised internal caller from generating an unbounded number of NotificationRequests before the Fan-out Expander/dispatch tiers even see load.</li>
+          <li><strong>Idempotency as a security control, not just a correctness one.</strong> The same idempotency-key discipline that prevents duplicate sends from a legitimate retry also prevents a replay of a captured request from spamming a user a second time.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <p>Interviewers commonly push into these areas after the base design. Rehearse the reasoning out loud, not just the one-line answer &mdash; the "why" is what actually gets evaluated.</p>
+
+        <h3>Rate Limiting, Priority &amp; Broadcast</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q1. A product team fires a 50-million-recipient broadcast right when someone else's login OTP needs to go out. Walk me through exactly why the OTP isn't delayed.</div>
+          <div class="qa-a">The OTP travels on the CRITICAL queue, consumed by a small, always-on reserved worker pool that draws from its own provider-credential token buckets &mdash; a pool that is never shared with the broadcast lane. The broadcast's 50M tasks live on a completely separate queue, worked by a separate (autoscaled) worker pool, drawing tokens from a separate credential pool sized specifically for bulk traffic (Section 10). When the broadcast lane's buckets run dry and its workers back off, that has zero effect on the reserved lane's buckets, because they were never the same resource. The isolation is physical (separate queues, separate workers, separate provider credentials), not just a priority field sorted within one shared pool.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q2. Why token buckets specifically, and why per provider credential rather than one global limiter?</div>
+          <div class="qa-a">The thing we're actually protecting is the provider's own rate limit, and that limit is enforced per credential/API key/project on the provider's side &mdash; a global internal limiter that doesn't map to that boundary would either under-utilize a healthy credential or (worse) let two different internal callers unknowingly combine to blow past one credential's real ceiling. A token bucket specifically (versus, say, a fixed window counter) smooths out burstiness while still enforcing a hard sustained ceiling, and its state has to be centralized (Redis) rather than per-worker-local, since the limit is only meaningful if every worker calling that credential agrees on how many tokens are left.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q3. Your broadcast's queue depth is growing because the provider is having a bad day. What do you do &mdash; and what do you explicitly not do?</div>
+          <div class="qa-a">Autoscale the broadcast lane's worker <em>count</em> up to a hard cap so more workers are polling and backing off correctly; that's safe because more workers respecting an unchanged token-bucket refill rate doesn't increase provider load. What you explicitly don't do is raise the bucket's refill rate to "catch up" &mdash; the provider's ceiling didn't move, and pushing past it risks getting the credential throttled harder or banned, which would then also threaten whatever legitimate traffic remains on that same credential.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q4. How would you decide the number of provider-credential shards to provision for the broadcast lane in the first place?</div>
+          <div class="qa-a">Work backwards from the largest broadcast you need to support and your target drain time: required throughput = recipients &divide; target seconds, then divide by the provider's safe sustained ceiling per credential to get the shard count, with headroom (Capacity Estimation walks this exact math: 50M &divide; 1,800s &asymp; 27,800/sec &divide; 8,000/sec/credential &asymp; 4 shards). Re-derive this whenever the largest expected broadcast size or the drain-time SLA changes &mdash; it's a capacity-planning input, not a constant.</div>
+        </div>
+
+        <h3>Idempotency, Deduplication &amp; Delivery Guarantees</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q5. A producer service's call to send a notification times out and it retries. How do you guarantee the user doesn't get the notification twice?</div>
+          <div class="qa-a">The retry carries the same Idempotency-Key. The unique-constraint insert on (producer_service_id, idempotency_key) means only the first attempt is ever accepted and enqueued; the retry's insert hits the unique-constraint violation, the platform looks up the stored notification_id, and returns it with status DEDUPED rather than enqueueing a second send. This is the same insert-first, unique-constraint pattern used for idempotent APIs generally.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q6. The system guarantees at-least-once delivery, not exactly-once. Why is that the right trade-off here, and where could a user still see a duplicate?</div>
+          <div class="qa-a">Exactly-once across a producer call, a durable queue, a worker crash-and-recovery, and a third-party provider's own delivery semantics is not realistically achievable end-to-end; chasing it would add coordination overhead disproportionate to the benefit. At-least-once plus idempotency at the request layer removes the common duplicate case (a producer retry) entirely. The residual gap is provider-level: if a dispatch worker calls the provider, the provider accepts and actually delivers, but the worker crashes before recording that success, a retry could ask the provider to send again. This is rare, and its impact (an occasional duplicate push) is a minor UX blip rather than a correctness bug &mdash; a deliberate, documented trade-off.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q7. Two upstream systems both publish an event for the same real-world occurrence (e.g., a payment webhook fires twice). How does the platform avoid notifying the user twice for the same logical thing?</div>
+          <div class="qa-a">This is a different dedup problem than idempotency-key retries, because the two calls are legitimately distinct requests from the platform's point of view &mdash; the fix has to be a content-level dedup key, not just a request-level one. The producer is expected to derive a stable dedup key from the business event itself (e.g., payment_id + event_type) and pass it as (or alongside) the idempotency key; the platform then treats a second request with the same derived key, within a configured dedup window, as a duplicate and suppresses the second send rather than merely deduping identical retries.</div>
+        </div>
+
+        <h3>Preferences, Quiet Hours &amp; Priority Design</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q8. Explain the quiet-hours logic: why does TRANSACTIONAL bypass quiet hours but not category opt-out, while BEST_EFFORT respects both?</div>
+          <div class="qa-a">Quiet hours exist to protect a user from being woken up by something that can wait; a "your ride has arrived" or "your payment failed" notification loses its purpose entirely if deferred until morning, so TRANSACTIONAL is exempted from quiet-hours suppression by design. Category opt-out is a different axis &mdash; it represents "I don't want this category of message at all," which the user should be able to enforce even for transactional categories they've explicitly muted. BEST_EFFORT/marketing has no urgency justifying a 2 a.m. push, so it respects both opt-out and quiet hours, and can be deferred to right after the quiet-hours window rather than dropped outright, if the user's preference allows deferral.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q9. Why does CRITICAL bypass user preferences and quiet hours entirely &mdash; isn't that overriding user consent?</div>
+          <div class="qa-a">CRITICAL is scoped narrowly to security/authentication use cases (OTPs, suspicious-login alerts) where the notification is not discretionary marketing content but a safety mechanism the user's own action (a login attempt) is blocked on. Treating it as suppressible by a "do not disturb" preference would mean a user's own quiet-hours setting could lock them out of their own account overnight. This is a deliberate, narrow carve-out &mdash; it should never be a channel available to a general product team's own request, which is exactly why authorization to use CRITICAL priority is gated per producer_service_id (Security Considerations), not opened to whoever calls the API.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q10. How does the priority tier change the queueing design itself, not just the suppression logic?</div>
+          <div class="qa-a">Priority determines which physical queue, which worker pool, and which provider-credential pool a task uses &mdash; it is a routing decision made at ingestion, not a sort-order hint evaluated later. CRITICAL gets a small, always-on reserved pool sized for low, steady OTP volume with generous headroom; BEST_EFFORT gets an autoscaled pool sized for bursty, enormous broadcast volume with a hard ceiling; TRANSACTIONAL sits in between. Because the separation happens this early and this completely, a load or backpressure event in one tier is structurally incapable of propagating into another.</div>
+        </div>
+
+        <h3>Failure Handling &amp; Scale</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">Q11. A push provider starts returning "unregistered token" for a growing share of your traffic. What's your response, end to end?</div>
+          <div class="qa-a">"Unregistered token" is a permanent failure, so the delivery attempt is dead-lettered, not retried &mdash; retrying it burns provider-rate-limit quota (the exact resource Section 10's math is built around) for a send that can never succeed. The corresponding device_tokens row is marked EXPIRED so future notifications for that user stop selecting push for that device and fall back to another opted-in channel if one exists. A rising rate of this specific failure reason is also a monitoring signal worth its own alert, since a spike often means an app update changed token issuance and a lot of tokens went stale at once.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q12. How would you extend this design to support a new channel &mdash; say, WhatsApp Business messaging &mdash; without touching the core fan-out logic?</div>
+          <div class="qa-a">Add a new Dispatch Service for the channel with its own provider-aware token-bucket rate limiter (mirroring Push/Email/SMS), register it in the Template Service for that channel's rendering format, and extend user_preferences and channel_hints to include the new channel value. The Fan-out/Preference worker pool's resolution logic (Section 7.1) is already channel-agnostic &mdash; it resolves to a channel name and hands off to whichever Dispatch Service owns it &mdash; so the core preference/quiet-hours/priority logic requires no changes at all.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          This design's entire difficulty comes from one fact: the same platform has to carry an OTP that must land in seconds and a 50-million-recipient broadcast that must not get the company's push credentials rate-limited or banned &mdash; and it has to do both without either one ever affecting the other. The fix is not a shared queue with a priority field; it's <strong>physically separate queues, separate worker pools, and separate provider-credential token-bucket pools</strong> per priority tier, so that a broadcast worker backing off on an empty bucket is structurally incapable of touching the reserved lane's throughput. Layered on that: preference and quiet-hours resolution (Section 7.1) is where CRITICAL, TRANSACTIONAL, and BEST_EFFORT diverge in behavior &mdash; bypass everything, respect opt-out only, or respect everything &mdash; and that divergence is exactly why the priority field has to exist as more than a queue-ordering hint. Idempotency keys and content-level dedup keys make at-least-once delivery safe without needing the much harder guarantee of exactly-once, and dead-lettering permanent failures (rather than retrying them forever) protects the very provider-rate-limit budget the broadcast math in Section 10 depends on staying available.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Uber Engineering, <a href="https://www.uber.com/en-IN/blog/real-time-push-platform/" target="_blank" rel="noopener">"Uber's Real-Time Push Platform"</a> &mdash; the real RAMEN system: high/medium/low priority tiers, per-message TTL and deduplication, at-least-once delivery, and the cited scale figures (1.5M+ concurrent connections, up to &asymp;250,000 messages/sec) used to ground this page's capacity estimates.</li>
+          <li>Pinterest Engineering, <a href="https://medium.com/pinterest-engineering/nep-notification-system-and-relevance-a7fff21986c7" target="_blank" rel="noopener">"NEP: Notification System and Relevance"</a> &mdash; Pinterest's real notification event-processing system: channel selection (email/push/in-app), frequency/volume budgeting via a PID controller, and the relevance-ranking layer this design deliberately treats as out of scope and upstream.</li>
+          <li>LinkedIn Engineering, <a href="https://www.linkedin.com/blog/engineering/messaging-notifications/air-traffic-controller-member-first-notifications-at-linkedin" target="_blank" rel="noopener">"Air Traffic Controller: Member-First Notifications at LinkedIn"</a> &mdash; LinkedIn's real unified notification decisioning layer and its "5 Rights" framing (right message, right member, right channel, right time, right frequency), the real-world grounding for this page's preference/quiet-hours/channel-selection design in Section 7.1.</li>
+          <li>AWS Builders' Library, <a href="https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/" target="_blank" rel="noopener">"Timeouts, retries, and backoff with jitter"</a> &mdash; the reasoning behind exponential backoff plus jitter used throughout Replication and Fault Tolerance, and the same idempotent-retry discipline referenced for dedup/idempotency in Sections 6 and 11.</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="discord.html"><span class="dir">Previous</span>Design Discord</a>
+          <a class="next" href="netflix-recommendations.html"><span class="dir">Next</span>Netflix Recommendations</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

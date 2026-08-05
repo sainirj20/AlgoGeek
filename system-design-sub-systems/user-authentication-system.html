@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing a User Login and Authentication System | System Design — Sub Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Sub Systems</a><span class="sep">/</span><span class="current">User Login &amp; Authentication System</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Sub Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement">Problem Statement</a></li>
+        <li><a href="#clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</a></li>
+        <li><a href="#requirements-and-goals">Requirements and Goals</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#system-api-design">System / API Design</a></li>
+        <li><a href="#data-model-and-database-choice">Data Model and Database Choice</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#deep-dive-login-request-flow">Deep Dive &mdash; Login Request Flow</a></li>
+        <li><a href="#deep-dive-password-storage-and-hashing">Deep Dive &mdash; Password Storage and Hashing</a></li>
+        <li><a href="#deep-dive-session-management-stateful-sessions-vs-stateless-jwts">Deep Dive &mdash; Session Management: Stateful Sessions vs. Stateless JWTs</a></li>
+        <li><a href="#deep-dive-oauth2-oidc-social-login">Deep Dive &mdash; OAuth2 / OIDC Social Login</a></li>
+        <li><a href="#deep-dive-multi-factor-authentication">Deep Dive &mdash; Multi-Factor Authentication</a></li>
+        <li><a href="#deep-dive-password-reset-flow">Deep Dive &mdash; Password Reset Flow</a></li>
+        <li><a href="#data-partitioning-and-replication">Data Partitioning and Replication</a></li>
+        <li><a href="#rate-limiting-and-brute-force-protection">Rate Limiting and Brute-Force Protection</a></li>
+        <li><a href="#security-privacy-and-permissions">Security, Privacy, and Permissions</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging, and Analytics</a></li>
+        <li><a href="#load-balancing">Load Balancing</a></li>
+        <li><a href="#scaling-to-multiple-regions">Scaling to Multiple Regions</a></li>
+        <li><a href="#bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</a></li>
+        <li><a href="#one-page-design-summary">One-Page Design Summary</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing a User Login and Authentication System</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a user login and authentication system for a website: requirements and precise capacity estimation, API &amp; data model, high-level architecture, deep dives into password storage, session management (stateful vs. JWT), OAuth2/OIDC social login, MFA (TOTP/WebAuthn), rate limiting &amp; brute-force defense, sharding &amp; replication, security hardening, monitoring/anomaly detection, and a bank of 20 follow-up interview questions.</em></p>
+
+        <h2 id="problem-statement">Problem Statement</h2>
+        <p>Design a login and authentication system for a website that lets users register with an email/username and password (or via a third-party identity provider like Google or GitHub), log in and out, stay signed in across visits ("remember me"), reset a forgotten password, optionally enable multi-factor authentication, and have their account automatically protected against automated guessing and credential-stuffing attacks. Nearly every other feature of the product — profile pages, checkout, messaging, admin tools — sits behind this system, so it is on the critical path of the entire application, not an isolated feature.</p>
+
+        <h3>Why does this problem matter in an interview?</h3>
+        <p>Authentication is deceptively "solved" — most candidates have used a login form thousands of times, which tempts them to describe only the happy path (check password, set a cookie, done). A strong candidate instead treats this as fundamentally a <strong>security design problem</strong> first and a CRUD problem second: every design decision (how passwords are hashed, how sessions are represented, how errors are worded, how rate limits are shaped) has to be justified against a specific attack it defends against — credential stuffing, session hijacking, timing side-channels, CSRF, account enumeration — not just against "does it work."</p>
+
+        <h3>What makes this different from a typical data-heavy system design question?</h3>
+        <ul>
+          <li>The dominant non-functional requirement is <strong>security</strong>, not throughput or storage — this is unusual among "classic" system design questions and should visibly reshape the whole conversation.</li>
+          <li>Correctness constraints (unique emails, atomic failed-login counters, exactly-once password updates) push this toward strongly-consistent storage, unlike read-heavy, eventually-consistent systems such as a URL shortener.</li>
+          <li>The traffic pattern is <strong>spiky and adversarial</strong>: legitimate demand has daily/weekly cycles and occasional mass-relogin surges, while illegitimate demand (credential-stuffing bots) is adversarially adaptive and tries to blend in with the legitimate traffic shape.</li>
+        </ul>
+
+        <h2 id="clarifying-questions-to-ask-the-interviewer">Clarifying Questions to Ask the Interviewer</h2>
+        <p>Spend the first few minutes narrowing scope before drawing any boxes — a strong candidate states reasonable defaults out loud rather than waiting for every answer.</p>
+        <ol>
+          <li>What's the expected scale — registered users, daily active users, and peak login rate?</li>
+          <li>Is social/OAuth login (Google, GitHub, Apple) in scope, or password-only?</li>
+          <li>Is multi-factor authentication required, and if so which factors (TOTP, SMS, email OTP, WebAuthn/passkeys)?</li>
+          <li>What compliance regime applies (GDPR, SOC 2, PCI-adjacent) — does that constrain data retention or audit logging?</li>
+          <li>Is this a single web app, or do we also need to support native mobile clients and third-party API consumers (which changes how tokens should be delivered — cookies vs. bearer tokens)?</li>
+          <li>Do we need single sign-on (SSO) across multiple first-party products, or is this authentication scoped to one site?</li>
+          <li>What's the acceptable latency budget for login — is sub-200 ms end-to-end a hard requirement?</li>
+          <li>Should we assume a single region initially, or must the design support multi-region active-active from day one?</li>
+          <li>Is there an existing user base to migrate, and does it constrain the password-hashing algorithm we can assume for old records?</li>
+        </ol>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          A good opening line: "I'll assume 50 million registered users, 5 million DAU, password-plus-optional-MFA as the baseline with OAuth2 social login and WebAuthn as an upgrade path, and that security dominates every trade-off here — I'll call out the couple of places where availability and strict security pull in different directions." This signals judgment without waiting to be spoon-fed every requirement.
+        </div>
+
+        <h2 id="requirements-and-goals">Requirements and Goals</h2>
+
+        <h3>Functional Requirements</h3>
+        <ol>
+          <li><strong>Registration</strong> — sign up with email/username + password; optional social/OAuth registration (Google, GitHub, etc.).</li>
+          <li><strong>Email verification</strong> — a newly registered email must be confirmed via a single-use link before the account is treated as fully trusted (e.g. before password reset can target it).</li>
+          <li><strong>Login</strong> — authenticate with email/username + password, or via a linked OAuth identity provider.</li>
+          <li><strong>Logout</strong> — end the current session; also support "log out of all devices."</li>
+          <li><strong>Session management</strong> — keep a user signed in across requests and, if selected, across browser restarts ("remember me").</li>
+          <li><strong>Password reset / forgot password</strong> — a self-service flow that emails a single-use, time-boxed reset link.</li>
+          <li><strong>Password change</strong> — an authenticated user can change their password, given their current password.</li>
+          <li><strong>Multi-factor authentication</strong> — optional second factor via TOTP, SMS/email OTP, or WebAuthn/passkeys.</li>
+          <li><strong>Account lockout</strong> — temporarily lock or challenge an account after repeated failed login attempts.</li>
+          <li><strong>Account deletion / deactivation</strong> — a user can deactivate (recoverable) or permanently delete (subject to compliance holds) their account.</li>
+        </ol>
+
+        <h3>Non-Functional Requirements</h3>
+        <ol>
+          <li><strong>Security is the dominant concern:</strong> the system must resist credential stuffing, brute-force guessing, session hijacking, CSRF, and timing side-channel attacks. Every other requirement is secondary to this one.</li>
+          <li><strong>High availability:</strong> authentication is on the critical path of every other feature — an auth outage is a total product outage, not a degraded experience.</li>
+          <li><strong>Low latency:</strong> target sub-200 ms p99 for login, well under 50 ms for token/session validation on every subsequent request.</li>
+          <li><strong>Scalability:</strong> millions of registered users, with sharply spiky traffic — e.g. a "morning login surge" or a flood of re-logins after an incident forces mass session invalidation.</li>
+          <li><strong>Auditability:</strong> every authentication-relevant event (login, logout, password change, MFA enrollment, lockout) must be durably logged for security review and compliance.</li>
+          <li><strong>Durability:</strong> a credential, once written, must never be silently lost — unlike session state, which is allowed to be lossy.</li>
+        </ol>
+
+        <h3>Extended / Out-of-Scope</h3>
+        <p>We go deep on registration/login/session/MFA/password-reset, the credential store, and abuse prevention. We explicitly call out — but don't design in depth — full SSO/SAML federation across unrelated products, a general-purpose fraud/risk-scoring ML platform, and legal/compliance workflow automation (e.g. GDPR erasure request tooling beyond the basic delete/deactivate API), since each is a substantial system of its own.</p>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>Unlike read-heavy systems where capacity is dominated by storage and bandwidth, an auth system's capacity story has a subtlety most candidates miss: the CPU cost of password verification is itself a first-class capacity input, because a secure password hash is deliberately slow. We derive traffic, storage, and — critically — hashing compute footprint below.</p>
+
+        <h3>Assumptions used for the math below</h3>
+        <table>
+          <tr><th>Assumption</th><th>Value</th></tr>
+          <tr><td>Registered users</td><td>50,000,000</td></tr>
+          <tr><td>Daily active users (DAU)</td><td>5,000,000 (10% of registered)</td></tr>
+          <tr><td>Avg. password/MFA logins per DAU per day</td><td>1.3 (multi-device, expired sessions)</td></tr>
+          <tr><td>Avg. active session duration before idling</td><td>20 minutes (1,200 s)</td></tr>
+          <tr><td>Access token TTL</td><td>15 minutes (900 s)</td></tr>
+          <tr><td>Normal daily peak-to-average multiplier</td><td>5&times; (commute-hour clustering)</td></tr>
+          <tr><td>Password verify cost (bcrypt cost-factor 12 / tuned Argon2id)</td><td>&asymp;250 ms CPU-bound per verify</td></tr>
+          <tr><td>MFA adoption</td><td>15% of registered users</td></tr>
+        </table>
+
+        <h3>Login Traffic (Average and Normal Peak)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          Logins/day = 5,000,000 DAU &times; 1.3 = 6,500,000 logins/day
+          <br>Average login QPS = 6,500,000 &divide; 86,400s &asymp; 75 QPS
+          <br>Normal peak QPS (5&times; during commute-hour clustering) = 75 &times; 5 &asymp; 375 QPS
+        </div>
+
+        <h3>The "Morning Login Surge" — an Extreme Spike, Not Just a Normal Peak</h3>
+        <p>The scenario this section is named for is not the ordinary daily peak above — it's a <em>thundering herd</em>: an overnight session-store outage, a forced mass logout after a security incident, or a viral event drives a large fraction of DAU to re-authenticate within a tight window, all at once.</p>
+        <div class="formula-box">
+          <span class="formula-label">Surge derivation</span>
+          Assume 25% of DAU (1,250,000 users) attempt to log in within a 10-minute (600s) recovery window
+          <br>Surge QPS = 1,250,000 &divide; 600s &asymp; 2,083 QPS
+          <br>Design target: provision for &asymp;3,000 QPS burst headroom &mdash; roughly <strong>40&times;</strong> average traffic
+        </div>
+        <p>This &gt;40&times; elastic range between steady-state (~75 QPS) and worst-case surge (~3,000 QPS) is why the Auth Service tier must autoscale horizontally rather than be provisioned for a fixed peak — and why rate limiting must be able to distinguish "legitimate thundering herd" from "credential-stuffing botnet" so it throttles the latter without locking out the former (see Rate Limiting below).</p>
+
+        <h3>The Hidden Capacity Cost of Password Hashing</h3>
+        <p>Because a secure password hash (bcrypt/Argon2id) is deliberately CPU/memory-hard and effectively single-threaded per verification, sustained login QPS translates directly into a compute footprint — a subtlety that's easy to miss if you only think about hashing as a security knob.</p>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          Concurrent verify operations in flight at surge = surge QPS &times; verify latency
+          <br>= 2,500 QPS &times; 0.25s &asymp; 625 concurrent hash computations
+          <br>Throughput per core &asymp; 1 &divide; 0.25s = 4 verifies/sec/vCPU (hashing doesn't parallelize within one operation)
+          <br>Dedicated compute needed = 2,500 &divide; 4 &asymp; <strong>625 vCPU-equivalents</strong>, just for password verification, before any I/O handling
+        </div>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Doubling the hash cost factor (to keep pace with attacker hardware getting faster) roughly halves verify throughput per core, which roughly doubles the compute bill at a fixed QPS target. This is exactly why cost-factor tuning is a deliberate, periodically-revisited trade-off between security margin and infrastructure spend — a cost factor calibrated in 2015 is meaningfully too weak by 2026 hardware standards, and a senior candidate should say so unprompted.
+        </div>
+
+        <h3>Token Refresh Traffic and Concurrent Sessions</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          Concurrent active sessions &asymp; (logins/day &times; avg session duration) &divide; 86,400s
+          <br>= (6,500,000 &times; 1,200) &divide; 86,400 &asymp; 90,278 concurrent sessions
+          <br>Refresh QPS &asymp; concurrent sessions &divide; access-token TTL = 90,278 &divide; 900s &asymp; 100 QPS (steady-state)
+        </div>
+        <p>Refresh calls are cheap relative to logins — they verify a stored token hash, not a slow password hash — but they run at comparable volume and share the same latency budget, so they must be capacity-planned separately, not assumed to be "free" just because they don't touch the password hasher.</p>
+
+        <h3>Storage Estimates</h3>
+        <div class="formula-box">
+          <span class="formula-label">users table</span>
+          50,000,000 rows &times; &asymp;300 bytes/row &asymp; 15 GB raw &rarr; &times;3 replication &asymp; 45 GB
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">auth_credentials table</span>
+          Avg. 1.3 credentials/user (password + occasional OAuth link) = 65,000,000 rows &times; &asymp;250 bytes (PHC-encoded hash + metadata)
+          <br>&asymp; 16.25 GB raw &rarr; &times;3 replication &asymp; 49 GB
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">mfa_secrets + backup codes</span>
+          15% adoption &times; 50M = 7,500,000 users &times; &asymp;300 bytes (encrypted secret + 8 hashed backup codes)
+          <br>&asymp; 2.25 GB raw &rarr; &times;3 replication &asymp; 6.75 GB
+        </div>
+        <div class="formula-box">
+          <span class="formula-label">login_history / audit log (dominant storage cost)</span>
+          &asymp;10,000,000 auth-relevant events/day (logins, failures, logouts, password/MFA events) &times; &asymp;200 bytes/event
+          <br>&asymp; 2 GB/day raw &rarr; &times; 365 days (1-yr hot retention) &asymp; 730 GB/year &rarr; &times;3 replication &asymp; <strong>&asymp;2.2 TB/year</strong>
+        </div>
+        <p>Audit volume dwarfs every other table by two orders of magnitude — exactly why it's streamed through Kafka into a columnar/cold analytics store rather than left to grow unbounded inside the transactional primary database (see Monitoring, Logging and Analytics below).</p>
+
+        <h3>Session / Redis Sizing</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          90,278 concurrent sessions &times; &asymp;1 KB/session (user_id, device info, ip, mfa_verified flag, TTL)
+          <br>&asymp; 90 MB of live session state
+        </div>
+        <p>Even with a generous multiple for refresh-token hash caching and rate-limit counters, this comfortably fits in a small Redis Cluster (e.g. 3 primary shards &times; 2 replicas each), with enormous headroom — unlike a read-heavy caching problem, auth session data is small per record and inherently short-lived (TTL-bounded), so the store is sized for latency and availability, not raw capacity.</p>
+
+        <h3>High-Level Estimate Summary</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Average login QPS</td><td>&asymp;75</td></tr>
+          <tr><td>Normal peak QPS</td><td>&asymp;375 (5&times;)</td></tr>
+          <tr><td>Extreme surge QPS ("morning surge")</td><td>&asymp;2,000&ndash;3,000 (&gt;30&times;)</td></tr>
+          <tr><td>Dedicated hashing compute at surge</td><td>&asymp;625 vCPU-equivalents</td></tr>
+          <tr><td>Token-refresh QPS (steady-state)</td><td>&asymp;100</td></tr>
+          <tr><td>Concurrent active sessions</td><td>&asymp;90,000</td></tr>
+          <tr><td>Storage (users + credentials + MFA, 3&times; replicated)</td><td>&asymp;100 GB</td></tr>
+          <tr><td>Audit/login-history storage</td><td>&asymp;2.2 TB/year (3&times; replicated)</td></tr>
+          <tr><td>Redis session footprint</td><td>&asymp;100&ndash;200 MB (tiny)</td></tr>
+        </table>
+
+        <h2 id="system-api-design">System / API Design</h2>
+        <p>A REST API over HTTPS, with tokens delivered either as httpOnly cookies (first-party web) or as JSON bearer tokens (native/mobile and third-party API consumers) depending on client type.</p>
+
+        <h3>Register</h3>
+        <pre><code>POST /api/v1/auth/register
+
+Request body:
+{
+  "email": string,           // required
+  "username": string,        // optional
+  "password": string         // required, min length per NIST 800-63B (see Security section)
+}
+
+Response 201 Created:
+{ "user_id": "u_9f8c...", "email_verification_sent": true }
+
+Errors: 400 weak/breached password &middot; 409 email already registered (see enumeration note below) &middot; 429 rate-limited</code></pre>
+
+        <h3>Login</h3>
+        <pre><code>POST /api/v1/auth/login
+
+Request body:
+{
+  "identifier": string,      // email or username
+  "password": string,
+  "remember_me": boolean     // optional, extends refresh-token TTL
+}
+
+Response 200 (no MFA enrolled):
+{ "access_token": "...", "refresh_token": "...", "expires_in": 900 }
+
+Response 200 (MFA required):
+{ "mfa_required": true, "mfa_challenge_token": "...", "methods": ["totp", "webauthn"] }
+
+Errors: 401 invalid credentials (identical message for wrong password AND unknown user)
+        423 account locked &middot; 429 rate-limited &middot; 403 CAPTCHA required</code></pre>
+
+        <h3>MFA Challenge Verification</h3>
+        <pre><code>POST /api/v1/auth/mfa/verify
+
+Request body: { "mfa_challenge_token": "...", "code": "123456" }
+Response 200: { "access_token": "...", "refresh_token": "...", "expires_in": 900 }
+Errors: 401 invalid code &middot; 429 too many attempts (see MFA deep dive)</code></pre>
+
+        <h3>Token Refresh</h3>
+        <pre><code>POST /api/v1/auth/token/refresh
+
+Request body: { "refresh_token": "..." }   // or via httpOnly cookie
+Response 200: { "access_token": "...", "refresh_token": "...", "expires_in": 900 }  // refresh token rotated
+Errors: 401 invalid/expired/revoked refresh token &rarr; client must show the login screen</code></pre>
+
+        <h3>Logout / Logout Everywhere</h3>
+        <pre><code>POST /api/v1/auth/logout             // revokes only the current refresh token
+POST /api/v1/auth/logout-all         // revokes every refresh token for this user_id
+Auth: valid access token required for both
+Response 200: { "status": "logged_out" }</code></pre>
+
+        <h3>Forgot / Reset Password</h3>
+        <pre><code>POST /api/v1/auth/password/forgot
+Request: { "email": string }
+Response 200 (ALWAYS, regardless of whether the email exists &mdash; see Security section):
+{ "message": "If that email is registered, a reset link has been sent." }
+
+POST /api/v1/auth/password/reset
+Request: { "reset_token": string, "new_password": string }
+Response 200: { "status": "password_updated" }
+Errors: 400 invalid/expired/already-used token &middot; 400 weak/breached password</code></pre>
+
+        <h3>Social Login (OAuth2 / OIDC)</h3>
+        <pre><code>GET /api/v1/auth/oauth/{provider}/authorize   &rarr; 302 redirect to the provider's consent screen
+GET /api/v1/auth/oauth/{provider}/callback    &rarr; exchanges the code, links/creates the local account,
+                                                  issues our own access/refresh tokens (see OAuth deep dive)</code></pre>
+
+        <h3>Account Management</h3>
+        <pre><code>POST   /api/v1/auth/password/change   Auth required: { "current_password": ..., "new_password": ... }
+POST   /api/v1/auth/mfa/totp/enroll   Auth required &rarr; { "secret": ..., "qr_code_url": ..., "backup_codes": [...] }
+POST   /api/v1/auth/mfa/totp/confirm  Auth required: { "code": "123456" } &rarr; enables MFA
+DELETE /api/v1/account                Auth required &rarr; deactivates (soft) or queues permanent deletion</code></pre>
+        <div class="callout">
+          <div class="callout-title">Interview tip</div>
+          Notice every error response above is deliberately vague about <em>why</em> a request failed whenever the honest answer would leak whether an account exists. That's not an oversight — it's the account-enumeration defense discussed in depth in the Security section, and interviewers frequently probe exactly this.
+        </div>
+
+        <h2 id="data-model-and-database-choice">Data Model and Database Choice</h2>
+
+        <h3>Nature of the Data</h3>
+        <ul>
+          <li>Comparatively low volume next to a URL shortener or a feed system — tens of millions of users, not tens of billions of objects.</li>
+          <li>Correctness constraints dominate: an email must be unique, a failed-login counter must increment atomically, a password update must never be partially applied.</li>
+          <li>Strong relationships exist between tables (a user has many credentials, many refresh tokens, many audit events) — real foreign keys and referential integrity matter here.</li>
+          <li>The hottest read is a simple key lookup (find a user by email at login time), but it must be backed by strict uniqueness guarantees, unlike a URL shortener's simple, loosely-constrained key-value access.</li>
+        </ul>
+        <p>These properties — strong consistency requirements, real relationships, and moderate (not extreme) volume — favor a <strong>sharded relational (or NewSQL) store</strong> for the durable user/credential/audit data, in contrast to the NoSQL-first recommendation you'd make for a pure high-volume key-value workload. Session and refresh-token <em>hot</em> state, by contrast, is kept in Redis rather than the primary store (see Data Partitioning below) — this system deliberately uses two different storage tiers for two different consistency/durability profiles.</p>
+
+        <h3>Core Schema</h3>
+        <table>
+          <tr><th colspan="2">Table: users</th></tr>
+          <tr><td>user_id (PK)</td><td>bigint (or UUID/snowflake)</td></tr>
+          <tr><td>username (nullable, unique)</td><td>varchar(32)</td></tr>
+          <tr><td>email (unique, case-insensitive)</td><td>varchar(255)</td></tr>
+          <tr><td>email_verified</td><td>boolean, default false</td></tr>
+          <tr><td>status</td><td>enum(active, locked, suspended, deactivated, deleted)</td></tr>
+          <tr><td>failed_login_count</td><td>smallint, default 0</td></tr>
+          <tr><td>locked_until (nullable)</td><td>timestamp</td></tr>
+          <tr><td>created_at / updated_at / last_login_at</td><td>timestamp</td></tr>
+        </table>
+        <p>Indexes: unique index on <code>lower(email)</code>; unique index on <code>lower(username)</code> where not null. These two indexes are the busiest indexes in the whole schema, since every login and every registration-uniqueness check hits one of them.</p>
+
+        <table>
+          <tr><th colspan="2">Table: auth_credentials (supports multiple auth methods per user)</th></tr>
+          <tr><td>credential_id (PK)</td><td>bigint</td></tr>
+          <tr><td>user_id (FK &rarr; users.user_id)</td><td>bigint</td></tr>
+          <tr><td>provider_type</td><td>enum(password, google, github, apple, ...)</td></tr>
+          <tr><td>provider_user_id (nullable &mdash; null for provider_type=password)</td><td>varchar(255)</td></tr>
+          <tr><td>password_hash (nullable &mdash; PHC string: algo, params, salt, hash)</td><td>varchar(255)</td></tr>
+          <tr><td>password_algo (e.g. "argon2id" &mdash; drives lazy migration)</td><td>varchar(16)</td></tr>
+          <tr><td>created_at / updated_at</td><td>timestamp</td></tr>
+        </table>
+        <p>Constraints: <code>UNIQUE(provider_type, provider_user_id)</code> so the same external identity can never be linked to two local users; <code>UNIQUE(user_id, provider_type)</code> so a user has at most one credential per provider. This table is exactly why we say "credentials," not "passwords" — a user may have a password row, a Google row, and a GitHub row simultaneously.</p>
+
+        <table>
+          <tr><th colspan="2">Table: refresh_tokens (durable, server-validated)</th></tr>
+          <tr><td>token_id (PK)</td><td>bigint / UUID</td></tr>
+          <tr><td>user_id (FK)</td><td>bigint</td></tr>
+          <tr><td>token_hash (SHA-256 of the opaque token &mdash; raw token never stored)</td><td>varchar(64)</td></tr>
+          <tr><td>device_info / ip_at_issuance</td><td>varchar(255) / varchar(45)</td></tr>
+          <tr><td>issued_at / expires_at</td><td>timestamp</td></tr>
+          <tr><td>revoked / revoked_at (nullable)</td><td>boolean / timestamp</td></tr>
+          <tr><td>replaced_by_token_id (nullable &mdash; rotation chain for reuse detection)</td><td>bigint</td></tr>
+        </table>
+        <p>Indexes: <code>INDEX(user_id)</code> (powers "logout everywhere" &mdash; enumerate and revoke every row for a user), <code>INDEX(expires_at)</code> (powers a periodic cleanup job for expired rows), unique index on <code>token_hash</code>.</p>
+
+        <table>
+          <tr><th colspan="2">Table: password_reset_tokens</th></tr>
+          <tr><td>token_id (PK)</td><td>bigint</td></tr>
+          <tr><td>user_id (FK)</td><td>bigint</td></tr>
+          <tr><td>token_hash (SHA-256 of the raw token sent by email)</td><td>varchar(64)</td></tr>
+          <tr><td>created_at / expires_at (created_at + 30 min)</td><td>timestamp</td></tr>
+          <tr><td>used_at (nullable &mdash; single-use enforcement)</td><td>timestamp</td></tr>
+          <tr><td>requested_ip</td><td>varchar(45)</td></tr>
+        </table>
+
+        <table>
+          <tr><th colspan="2">Table: mfa_secrets</th></tr>
+          <tr><td>mfa_id (PK)</td><td>bigint</td></tr>
+          <tr><td>user_id (FK)</td><td>bigint</td></tr>
+          <tr><td>method</td><td>enum(totp, sms, email_otp, webauthn)</td></tr>
+          <tr><td>secret_encrypted (KMS-encrypted TOTP shared secret)</td><td>varbinary</td></tr>
+          <tr><td>webauthn_credential_id / public_key (nullable)</td><td>varbinary</td></tr>
+          <tr><td>webauthn_sign_count (nullable &mdash; replay-protection counter)</td><td>bigint</td></tr>
+          <tr><td>enabled</td><td>boolean</td></tr>
+          <tr><td>created_at / last_used_at</td><td>timestamp</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">Table: mfa_backup_codes</th></tr>
+          <tr><td>code_id (PK)</td><td>bigint</td></tr>
+          <tr><td>user_id (FK)</td><td>bigint</td></tr>
+          <tr><td>code_hash (each code individually hashed, same rigor as a password)</td><td>varchar(255)</td></tr>
+          <tr><td>used_at (nullable &mdash; single-use)</td><td>timestamp</td></tr>
+        </table>
+
+        <table>
+          <tr><th colspan="2">Table: login_history / audit_log</th></tr>
+          <tr><td>event_id (PK &mdash; time-ordered, e.g. ULID)</td><td>bigint / ULID</td></tr>
+          <tr><td>user_id (nullable &mdash; null if the identifier didn't match any account)</td><td>bigint</td></tr>
+          <tr><td>event_type</td><td>enum(login_success, login_failure, logout, password_change, mfa_enabled, account_locked, ...)</td></tr>
+          <tr><td>ip_address / geo_country / geo_city</td><td>varchar(45) / varchar</td></tr>
+          <tr><td>user_agent</td><td>varchar(512)</td></tr>
+          <tr><td>created_at (partitioned by month)</td><td>timestamp</td></tr>
+          <tr><td>metadata (JSON &mdash; free-form extra context)</td><td>json</td></tr>
+        </table>
+        <p>Indexes: <code>INDEX(user_id, created_at)</code> for "show my recent activity," <code>INDEX(event_type, created_at)</code> for security dashboards. Given the storage math above (&asymp;2.2 TB/year), this table is partitioned by month and aged out to cold/cheap storage well before it threatens the primary database's operational headroom.</p>
+
+        <div class="callout">
+          <div class="callout-title">Where did the "sessions" table go?</div>
+          There is deliberately no durable <code>sessions</code> SQL table in this design. Ephemeral session/access-token validity lives entirely in Redis (or is implicit in a stateless JWT's signature), while the one thing that truly must survive a cache flush — the ability to revoke a login before it naturally expires — is captured durably in <code>refresh_tokens</code> instead. See the Session Management deep dive for the full reasoning.
+        </div>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Clients (web, mobile, third-party API consumers) hit an API Gateway that terminates TLS, enforces global/per-IP rate limits, and forwards to a load balancer in front of a horizontally-autoscaled, stateless Auth Service fleet. The Auth Service talks to Redis for session/refresh-token/rate-limit state, to a sharded and replicated Primary DB for durable user/credential/audit data, and to a separate MFA Service for TOTP/SMS/WebAuthn verification. Social login redirects the client out to an external identity provider and back via an OAuth2 callback. Every auth-relevant event is fired asynchronously to Kafka, which feeds an Analytics/SIEM pipeline for anomaly detection and compliance audit — fully decoupled from the login latency budget.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 520" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-auth-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-auth-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="15" width="200" height="45" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="34" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600">Client</text>
+            <text x="370" y="49" text-anchor="middle" fill="#cbd8ef" font-size="9">Web &#183; Mobile &#183; SPA</text>
+
+            <rect x="560" y="15" width="160" height="45" rx="7" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="640" y="34" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-weight="600">External IdP</text>
+            <text x="640" y="49" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Google &#183; GitHub &#183; Apple</text>
+
+            <rect x="180" y="90" width="380" height="50" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="112" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">API Gateway</text>
+            <text x="370" y="128" text-anchor="middle" fill="#cbd8ef" font-size="9">TLS termination &#183; WAF &#183; global rate limiting</text>
+
+            <rect x="270" y="170" width="200" height="45" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="197" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Load Balancer</text>
+
+            <rect x="180" y="245" width="380" height="60" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="270" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">Auth Service</text>
+            <text x="370" y="288" text-anchor="middle" fill="#cbd8ef" font-size="9">stateless &#183; horizontally autoscaled</text>
+
+            <rect x="20" y="335" width="160" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="100" y="357" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Kafka</text>
+            <text x="100" y="372" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">audit / security</text>
+            <text x="100" y="384" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">events</text>
+
+            <rect x="200" y="335" width="160" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="280" y="357" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Redis Cluster</text>
+            <text x="280" y="372" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">sessions &#183; refresh</text>
+            <text x="280" y="384" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">tokens &#183; rate limits</text>
+
+            <rect x="380" y="335" width="160" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="460" y="357" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">MFA Service</text>
+            <text x="460" y="372" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">TOTP &#183; SMS/email</text>
+            <text x="460" y="384" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">WebAuthn</text>
+
+            <rect x="560" y="335" width="160" height="65" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="640" y="357" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Primary DB</text>
+            <text x="640" y="372" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">sharded &#183; users/creds</text>
+            <text x="640" y="384" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">audit &#183; replicated</text>
+
+            <rect x="20" y="430" width="160" height="45" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.3"></rect>
+            <text x="100" y="450" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-weight="600">Analytics / SIEM</text>
+            <text x="100" y="463" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">anomaly &amp; fraud detection</text>
+
+            <rect x="560" y="430" width="160" height="45" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="640" y="450" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-weight="600">Read Replicas</text>
+            <text x="640" y="463" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">async replication</text>
+
+            <line x1="370" y1="60" x2="370" y2="88" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-auth-1)"></line>
+            <line x1="370" y1="140" x2="370" y2="168" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-auth-1)"></line>
+            <line x1="370" y1="215" x2="370" y2="243" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-auth-1)"></line>
+
+            <line x1="230" y1="305" x2="100" y2="333" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-auth-1m)"></line>
+            <line x1="300" y1="305" x2="280" y2="333" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-1)"></line>
+            <line x1="440" y1="305" x2="460" y2="333" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-1)"></line>
+            <line x1="510" y1="305" x2="640" y2="333" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-1)"></line>
+
+            <line x1="100" y1="400" x2="100" y2="428" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-auth-1m)"></line>
+            <line x1="640" y1="400" x2="640" y2="428" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-auth-1m)"></line>
+
+            <line x1="470" y1="37" x2="558" y2="37" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-auth-1m)"></line>
+            <line x1="600" y1="60" x2="440" y2="243" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-auth-1m)"></line>
+            <text x="560" y="150" text-anchor="middle" fill="var(--color-text-muted)" font-size="7">OAuth callback</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level topology &mdash; Client and API Gateway (TLS, WAF, global rate limiting) front a horizontally autoscaled, stateless Auth Service, which fans out to Redis (sessions, refresh tokens, rate-limit counters), a sharded/replicated Primary DB, and an MFA Service. An async Kafka &rarr; Analytics/SIEM pipeline carries audit events off the critical path. Social login redirects the client to an external IdP and back via an OAuth2 callback.</div>
+        </div>
+
+        <h3>Key Design Principles Reflected in the Diagram</h3>
+        <ul>
+          <li><strong>Stateless Auth Service:</strong> no server holds session affinity in memory, so any instance can handle any request &mdash; horizontal scaling and load balancing are trivial.</li>
+          <li><strong>Two storage tiers with two different jobs:</strong> Redis for fast, ephemeral, TTL-bounded session/token state; the Primary DB for durable, strongly-consistent credential and audit data.</li>
+          <li><strong>Everything not strictly needed to answer "is this login valid?"</strong> (audit logging, anomaly detection) is pushed off the critical path and handled asynchronously.</li>
+          <li><strong>Defense in depth before ever reaching the database:</strong> WAF/rate limiting at the gateway &rarr; in-memory/Redis rate-limit counters &rarr; the credential store itself, each layer absorbing abusive traffic before it reaches the next.</li>
+        </ul>
+
+        <h2 id="deep-dive-login-request-flow">Deep Dive &mdash; Login Request Flow</h2>
+        <p>This is the sequence every single login traverses, and it's where the two most important LLD details live: a <strong>constant-time comparison</strong> for the password check, and a deliberately <strong>generic error</strong> that never distinguishes "wrong password" from "no such account."</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 640" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-auth-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="140" y="15" width="420" height="45" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="350" y="34" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">1. Client &rarr; POST /auth/login</text>
+            <text x="350" y="49" text-anchor="middle" fill="#cbd8ef" font-size="9">{ email, password }</text>
+
+            <rect x="140" y="95" width="420" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="115" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">2. API Gateway</text>
+            <text x="350" y="130" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">WAF &middot; per-IP rate limit</text>
+
+            <rect x="140" y="175" width="420" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="195" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">3. Auth Service</text>
+            <text x="350" y="210" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">email &rarr; user_id (cached global index)</text>
+
+            <rect x="140" y="255" width="420" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="275" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">4. Fetch credential row</text>
+            <text x="350" y="290" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">Redis cache-aside, else Primary DB</text>
+
+            <rect x="140" y="335" width="420" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="357" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">5. Constant-time verify</text>
+            <text x="350" y="372" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">submitted password vs. stored Argon2id/bcrypt hash</text>
+            <text x="350" y="384" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">dummy hash run even if no account was found</text>
+
+            <rect x="60" y="425" width="280" height="90" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="200" y="446" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">6a. MATCH</text>
+            <text x="200" y="461" text-anchor="middle" fill="#cbd8ef" font-size="8">reset fail-counter &middot; create session</text>
+            <text x="200" y="474" text-anchor="middle" fill="#cbd8ef" font-size="8">issue access/refresh tokens</text>
+            <text x="200" y="487" text-anchor="middle" fill="#cbd8ef" font-size="8">log login_success</text>
+
+            <rect x="360" y="425" width="280" height="90" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="500" y="446" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-weight="600">6b. NO MATCH</text>
+            <text x="500" y="461" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(or account not found)</text>
+            <text x="500" y="474" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">incr. fail-counter &middot; maybe lock</text>
+            <text x="500" y="487" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">log login_failure</text>
+
+            <rect x="140" y="550" width="420" height="70" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="350" y="571" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">7. Response to client</text>
+            <text x="350" y="586" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">success &rarr; 200 + tokens (or Set-Cookie)</text>
+            <text x="350" y="598" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">failure &rarr; 401 &ldquo;Invalid email or password&rdquo; (identical, either branch)</text>
+
+            <line x1="350" y1="60" x2="350" y2="93" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-auth-2)"></line>
+            <line x1="350" y1="140" x2="350" y2="173" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-auth-2)"></line>
+            <line x1="350" y1="220" x2="350" y2="253" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-auth-2)"></line>
+            <line x1="350" y1="300" x2="350" y2="333" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-auth-2)"></line>
+            <line x1="250" y1="390" x2="200" y2="423" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-2)"></line>
+            <line x1="450" y1="390" x2="500" y2="423" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-2)"></line>
+            <line x1="200" y1="515" x2="300" y2="548" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-2)"></line>
+            <line x1="500" y1="515" x2="400" y2="548" stroke="var(--color-text-muted)" stroke-width="1.3" marker-end="url(#arrow-auth-2)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 2. Login request flow &mdash; every step up through the constant-time hash comparison is identical whether or not the account exists; only after step 5 does the flow branch, and even then the client-visible response in step 7 is worded and shaped identically on failure regardless of which branch was taken.</div>
+        </div>
+
+        <h3>Login Algorithm (Pseudocode)</h3>
+        <pre><code>function login(identifier, password):
+    user = lookupUserByEmailOrUsername(identifier)   // may be null
+    credential = user ? fetchPasswordCredential(user.user_id) : null
+
+    // Always run a verify, even for a non-existent user, against a fixed
+    // dummy hash of the same algorithm/params &mdash; this equalizes latency
+    // so response TIME does not leak whether the account exists.
+    hashToCompare = credential ? credential.password_hash : DUMMY_HASH
+    matched = constantTimeVerify(password, hashToCompare)   // e.g. Argon2id/bcrypt "verify"
+
+    if user is null or not matched or user.status != 'active':
+        recordFailedAttempt(identifier, sourceIp)   // Redis counters, see Rate Limiting
+        logEvent('login_failure', user?.user_id, sourceIp)
+        return genericError(401, "Invalid email or password")   // identical message, identical shape
+
+    resetFailedAttempts(user.user_id)
+    if user.mfa_enabled:
+        return issueMfaChallenge(user.user_id)
+    session = createSession(user.user_id)             // Redis + refresh_tokens row
+    logEvent('login_success', user.user_id, sourceIp)
+    return { access_token, refresh_token }</code></pre>
+        <p>Two details are load-bearing, not stylistic: (1) <code>constantTimeVerify</code> uses a comparison whose execution time doesn't depend on <em>where</em> the inputs first differ (bcrypt/Argon2id's own comparison primitives already do this internally for the final hash comparison), which defeats a timing attack that could otherwise recover a hash byte-by-byte from response latency; and (2) running the hash step even when no user was found keeps the <em>overall request latency</em> statistically indistinguishable between "wrong password" and "no such account," closing a side channel that a generic error message alone doesn't close.</p>
+
+        <h2 id="deep-dive-password-storage-and-hashing">Deep Dive &mdash; Password Storage and Hashing</h2>
+
+        <h3>Why Not Plain SHA-256 (or MD5)?</h3>
+        <p>General-purpose cryptographic hashes like SHA-256 are designed to be <strong>fast</strong> — that's a virtue for checksumming a file, and a liability for password storage. Modern GPUs and ASICs can compute billions of SHA-256 hashes per second, so a stolen table of salted SHA-256 hashes can be brute-forced (or dictionary-attacked) at enormous speed. What you actually want is a hash function that is deliberately <strong>slow and expensive</strong> to compute, so an attacker who steals the hash table still can't afford to test more than a small number of candidate passwords per second per dollar of hardware.</p>
+
+        <h3>Adaptive, Memory-Hard Hash Functions</h3>
+        <table class="sortable">
+          <tr><th>Algorithm</th><th>Hardness</th><th>Notes</th></tr>
+          <tr><td>bcrypt</td><td>CPU-hard, tunable cost factor (work factor 2<sup>n</sup>)</td><td>Battle-tested since 1999, available in virtually every language; not memory-hard, so somewhat more GPU-parallelizable than Argon2id.</td></tr>
+          <tr><td>scrypt</td><td>Memory-hard + CPU-hard</td><td>Good GPU/ASIC resistance; more complex parameter tuning than bcrypt or Argon2id.</td></tr>
+          <tr><td>Argon2id (recommended)</td><td>Memory-hard + CPU-hard, side-channel resistant hybrid mode</td><td>Winner of the 2015 Password Hashing Competition; current OWASP-recommended default (e.g. m=19 MiB, t=2, p=1, or m=64 MiB with correspondingly lower iterations depending on server memory budget).</td></tr>
+        </table>
+        <p><strong>Recommendation:</strong> Argon2id as the default for new credentials, with bcrypt (cost factor 12+) as an acceptable, more universally-supported fallback where Argon2id libraries aren't available. Either choice must be paired with:</p>
+        <ul>
+          <li><strong>A unique, random salt per user</strong> (bcrypt/Argon2id generate and store this automatically) &mdash; defeats precomputed rainbow-table attacks and ensures two users with the same password never produce the same stored hash.</li>
+          <li><strong>A pepper</strong> &mdash; an additional application-wide secret (not stored in the database) mixed into the hash input, typically held in a KMS/HSM/secrets manager. A pepper means a database leak <em>alone</em> is not enough to offline-crack passwords; the attacker also needs the application's secret store, a materially higher bar.</li>
+        </ul>
+
+        <h3>Migrating Password-Hashing Algorithms Without Forcing a Mass Reset</h3>
+        <p>Storing the algorithm name and parameters alongside each hash (the PHC string format, e.g. <code>$argon2id$v=19$m=65536,t=3,p=4$&lt;salt&gt;$&lt;hash&gt;</code>) enables <strong>lazy migration</strong>: verify the submitted password against whichever algorithm/params are recorded for that row; if it succeeds and the recorded algorithm is outdated (or the cost factor is below the current minimum), re-hash the plaintext password with the new algorithm/params and overwrite the stored value &mdash; all inside the same successful-login transaction. Users who don't log in for a long time simply migrate later, the first time they do; no bulk forced reset, no downtime, and it costs nothing extra since you already have the plaintext password in memory at exactly the moment it's verified.</p>
+
+        <h2 id="deep-dive-session-management-stateful-sessions-vs-stateless-jwts">Deep Dive &mdash; Session Management: Stateful Sessions vs. Stateless JWTs</h2>
+        <p>This is the single most consequential architectural choice in the whole design, and it's a genuine trade-off — state it explicitly rather than presenting one option as obviously correct.</p>
+        <table>
+          <tr><th></th><th>Stateful sessions (Redis + session-ID cookie)</th><th>Stateless JWT (self-contained, signed)</th></tr>
+          <tr><td>Revocation</td><td>Instant &mdash; delete the Redis key</td><td>Hard &mdash; a valid, unexpired JWT can't be un-signed; needs a blocklist or short TTL</td></tr>
+          <tr><td>Validation cost</td><td>A Redis round-trip on every request</td><td>Local signature verification, no store round-trip</td></tr>
+          <tr><td>Horizontal scaling</td><td>Trivial for compute; Redis itself must scale</td><td>Trivial &mdash; any server can verify independently</td></tr>
+          <tr><td>Payload size</td><td>Small opaque ID</td><td>Larger (encodes claims); sent on every request</td></tr>
+          <tr><td>Cross-service use</td><td>Every service needs Redis access</td><td>Any service with the public key can verify, no shared store</td></tr>
+        </table>
+
+        <h3>Recommended Hybrid, and Why</h3>
+        <p>Use a <strong>short-lived, stateless JWT access token</strong> (~15 minutes, signed asymmetrically with RS256/EdDSA so any downstream service can verify with only the public key) for the hot path of ordinary API calls, paired with a <strong>long-lived, stateful, opaque refresh token</strong> (~30 days, hashed and stored server-side in <code>refresh_tokens</code>) used only to mint new access tokens. This gets the best of both: the vast majority of requests (regular API calls) pay zero store round-trip cost and scale horizontally for free, while the one operation that needs true revocability (killing a session before its natural expiry) is anchored in a real, server-checkable record. The "JWT can't be revoked" problem is solved by keeping the JWT's blast radius small (15 minutes) and putting all revocation authority in the refresh token instead.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 700" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-auth-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-auth-3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="150" y="15" width="400" height="45" rx="7" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="350" y="34" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Login success</text>
+            <text x="350" y="49" text-anchor="middle" fill="#cbd8ef" font-size="9">(password + MFA verified)</text>
+
+            <rect x="150" y="90" width="400" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="112" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Issue tokens</text>
+            <text x="350" y="127" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">Access: JWT, ~15 min TTL, stateless</text>
+            <text x="350" y="141" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">Refresh: opaque, ~30 day TTL, hashed &amp; stored</text>
+
+            <rect x="150" y="190" width="400" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="210" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Client calls APIs</text>
+            <text x="350" y="225" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">verify JWT signature only &mdash; no store round-trip</text>
+
+            <rect x="220" y="265" width="260" height="40" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="350" y="289" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Access token expired?</text>
+
+            <rect x="150" y="335" width="400" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="355" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">yes &rarr; POST /auth/token/refresh</text>
+            <text x="350" y="370" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">send Refresh Token</text>
+
+            <rect x="150" y="410" width="400" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="350" y="432" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Auth Service validates</text>
+            <text x="350" y="447" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">hash match &middot; not expired &middot; not revoked</text>
+
+            <rect x="150" y="495" width="400" height="75" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="350" y="517" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Rotate tokens</text>
+            <text x="350" y="532" text-anchor="middle" fill="#cbd8ef" font-size="9">new Access + new Refresh (old marked used)</text>
+            <text x="350" y="545" text-anchor="middle" fill="#cbd8ef" font-size="9">reuse of a used token &rarr; revoke family, force re-login</text>
+
+            <rect x="580" y="410" width="110" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="635" y="428" text-anchor="middle" fill="var(--color-primary)" font-size="8" font-weight="600">Logout (device):</text>
+            <text x="635" y="440" text-anchor="middle" fill="var(--color-text-muted)" font-size="7">revoke this token</text>
+            <text x="635" y="454" text-anchor="middle" fill="var(--color-primary)" font-size="8" font-weight="600">Logout-all:</text>
+            <text x="635" y="466" text-anchor="middle" fill="var(--color-text-muted)" font-size="7">revoke ALL tokens</text>
+
+            <rect x="580" y="500" width="110" height="65" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="635" y="522" text-anchor="middle" fill="var(--color-text-muted)" font-size="7">Revoked token used</text>
+            <text x="635" y="533" text-anchor="middle" fill="var(--color-text-muted)" font-size="7">later &rarr; 401 &rarr;</text>
+            <text x="635" y="544" text-anchor="middle" fill="var(--color-text-muted)" font-size="7">re-login required</text>
+
+            <line x1="350" y1="60" x2="350" y2="88" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-auth-3)"></line>
+            <line x1="350" y1="160" x2="350" y2="188" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-auth-3)"></line>
+            <line x1="350" y1="235" x2="350" y2="263" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-auth-3)"></line>
+            <line x1="350" y1="305" x2="350" y2="333" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-auth-3)"></line>
+            <text x="380" y="320" fill="var(--color-text-muted)" font-size="7">yes</text>
+            <line x1="350" y1="380" x2="350" y2="408" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-auth-3)"></line>
+            <line x1="350" y1="465" x2="350" y2="493" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-auth-3)"></line>
+
+            <path d="M530,285 Q 610,285 530,220" fill="none" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-auth-3m)"></path>
+            <text x="600" y="255" fill="var(--color-text-muted)" font-size="7">no</text>
+
+            <path d="M200,495 Q 90,365 200,238" fill="none" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-auth-3m)"></path>
+            <text x="95" y="365" fill="var(--color-text-muted)" font-size="7">resume calls</text>
+
+            <line x1="550" y1="130" x2="632" y2="408" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-auth-3m)"></line>
+            <line x1="635" y1="480" x2="635" y2="498" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-auth-3m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 3. Access/refresh token lifecycle &mdash; short-lived JWTs are verified locally with no store round-trip; refresh calls rotate the refresh token and detect reuse (a stolen, already-used refresh token immediately revokes the whole family); logout (device or all-devices) revokes the durable refresh-token record(s), bounding how long a stolen credential can be used after the fact.</div>
+        </div>
+
+        <h3>Token Refresh Algorithm (Pseudocode)</h3>
+        <pre><code>function refresh(oldRefreshToken):
+    hash = sha256(oldRefreshToken)
+    row = refreshTokens.findByHash(hash)
+
+    if row is null:
+        return error(401, "invalid_token")
+
+    if row.revoked:
+        // Reuse of an already-rotated token is a strong signal of theft:
+        // someone else has a copy of a token we already superseded.
+        revokeAllTokensForUser(row.user_id)   // kill the whole family
+        logEvent('refresh_token_reuse_detected', row.user_id)
+        return error(401, "reuse_detected_relogin_required")
+
+    if row.expires_at < now():
+        return error(401, "expired_token")
+
+    newRefresh = generateOpaqueToken()
+    insertRow(refreshTokens, { user_id: row.user_id, token_hash: sha256(newRefresh),
+                               issued_at: now(), expires_at: now() + REFRESH_TTL })
+    markRevoked(row, replaced_by = newRefresh.token_id)
+
+    newAccess = signJwt({ sub: row.user_id, exp: now() + ACCESS_TTL })
+    return { access_token: newAccess, refresh_token: newRefresh }</code></pre>
+
+        <h2 id="deep-dive-oauth2-oidc-social-login">Deep Dive &mdash; OAuth2 / OIDC Social Login</h2>
+        <p>Social login is delegated authentication: an external identity provider (Google, GitHub, Apple, ...) vouches for the user's identity, and our Auth Service maps that vouched identity onto our own <code>users</code>/<code>auth_credentials</code> tables via the OAuth2 <strong>authorization code flow</strong> (with PKCE), never trusting the IdP's own tokens as our session credential.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 480" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-auth-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="30" y="15" width="160" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.4"></rect>
+            <text x="110" y="40" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Client (Browser)</text>
+
+            <rect x="270" y="15" width="160" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.4"></rect>
+            <text x="350" y="40" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Auth Service</text>
+
+            <rect x="510" y="15" width="160" height="40" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="590" y="40" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-weight="600">External IdP (Google)</text>
+
+            <line x1="110" y1="55" x2="110" y2="460" stroke="var(--color-border)" stroke-dasharray="3,3"></line>
+            <line x1="350" y1="55" x2="350" y2="460" stroke="var(--color-border)" stroke-dasharray="3,3"></line>
+            <line x1="590" y1="55" x2="590" y2="460" stroke="var(--color-border)" stroke-dasharray="3,3"></line>
+
+            <line x1="110" y1="90" x2="345" y2="90" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-4)"></line>
+            <text x="230" y="83" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">1. GET .../authorize</text>
+
+            <line x1="345" y1="130" x2="115" y2="130" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-4)"></line>
+            <text x="230" y="123" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">2. 302 &rarr; Google (state + PKCE)</text>
+
+            <line x1="110" y1="170" x2="585" y2="170" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-4)"></line>
+            <text x="350" y="163" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">3. User authenticates + consents</text>
+
+            <line x1="585" y1="210" x2="115" y2="210" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-4)"></line>
+            <text x="350" y="203" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">4. 302 &rarr; callback?code&amp;state</text>
+
+            <line x1="110" y1="250" x2="345" y2="250" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-4)"></line>
+            <text x="230" y="243" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">5. GET callback?code&amp;state</text>
+
+            <line x1="350" y1="290" x2="585" y2="290" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-4)"></line>
+            <text x="470" y="283" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">6. POST token endpoint (code+secret)</text>
+
+            <line x1="585" y1="330" x2="355" y2="330" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-4)"></line>
+            <text x="470" y="323" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">7. ID token + access token</text>
+
+            <rect x="230" y="355" width="240" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.3"></rect>
+            <text x="350" y="373" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">8. Validate ID token</text>
+            <text x="350" y="385" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">link/create local user via</text>
+            <text x="350" y="397" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">auth_credentials(provider, sub)</text>
+
+            <line x1="345" y1="430" x2="115" y2="430" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-4)"></line>
+            <text x="230" y="423" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">9. 200: issue OUR access/refresh tokens</text>
+          </svg>
+          <div class="diagram-caption">Figure 4. OAuth2 authorization-code flow for social login &mdash; the IdP's own tokens (step 7) are validated and then discarded as a session credential; only after step 8 links the identity to a local <code>auth_credentials</code> row does the Auth Service mint its own tokens (step 9).</div>
+        </div>
+
+        <h3>Mapping External Identities onto the Local User Table</h3>
+        <ul>
+          <li>On first callback for a given <code>(provider, provider_user_id)</code> pair: if the IdP-supplied, verified email matches an existing local account, <strong>link</strong> the new <code>auth_credentials</code> row to that user (with an explicit confirmation step if the local account's email isn't itself verified, to avoid an attacker linking an account they don't own); otherwise <strong>create</strong> a new user.</li>
+          <li>The <code>state</code> parameter is itself a CSRF defense for the OAuth handshake specifically — the Auth Service generates and stores it before redirecting, and rejects the callback if the returned <code>state</code> doesn't match.</li>
+          <li>PKCE (Proof Key for Code Exchange) protects the code-exchange step even for public clients (mobile/SPA) that can't safely hold a client secret.</li>
+          <li>A user's IdP-issued access/ID tokens are never stored as our own session credential — they're used once, at the callback, purely to establish identity and populate the local profile.</li>
+        </ul>
+
+        <h2 id="deep-dive-multi-factor-authentication">Deep Dive &mdash; Multi-Factor Authentication</h2>
+        <p>MFA adds a second, independent proof of identity — "something you have" (an authenticator app, a phone, a hardware key) on top of "something you know" (the password) — so a leaked password alone is no longer sufficient to take over an account.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 700" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-auth-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-auth-5m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <rect x="140" y="15" width="420" height="40" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="33" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">User enables MFA</text>
+            <text x="350" y="46" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(Settings &rarr; Security)</text>
+
+            <rect x="140" y="80" width="420" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="100" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Generate shared secret</text>
+            <text x="350" y="114" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">160-bit, base32; AES-encrypted at rest in mfa_secrets</text>
+
+            <rect x="140" y="160" width="420" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="180" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Render QR (otpauth://)</text>
+            <text x="350" y="195" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">user scans into an authenticator app</text>
+
+            <rect x="140" y="240" width="420" height="40" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="264" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Confirm with current 6-digit code</text>
+
+            <rect x="140" y="305" width="420" height="55" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.4"></rect>
+            <text x="350" y="326" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">MFA enabled</text>
+            <text x="350" y="341" text-anchor="middle" fill="#cbd8ef" font-size="8">+ one-time backup codes issued (hashed at rest)</text>
+
+            <line x1="140" y1="385" x2="560" y2="385" stroke="var(--color-border)" stroke-dasharray="2,3"></line>
+            <text x="470" y="380" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">every subsequent login</text>
+
+            <rect x="140" y="405" width="420" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="424" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Password verified &rarr; MFA challenge</text>
+            <text x="350" y="438" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">issue short-lived challenge token</text>
+
+            <rect x="140" y="475" width="420" height="40" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="499" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">User submits 6-digit code (or backup code)</text>
+
+            <rect x="140" y="540" width="420" height="60" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="350" y="560" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">Compute TOTP(secret, timestep)</text>
+            <text x="350" y="573" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">= Truncate(HMAC-SHA1(secret, &lfloor;unix_time/30&rfloor;))</text>
+            <text x="350" y="586" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">compare, &plusmn;1 step drift window</text>
+
+            <rect x="60" y="625" width="280" height="60" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.4"></rect>
+            <text x="200" y="648" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Match</text>
+            <text x="200" y="663" text-anchor="middle" fill="#cbd8ef" font-size="8">issue tokens &middot; log mfa_success</text>
+
+            <rect x="360" y="625" width="280" height="60" rx="6" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="4,3" stroke-width="1.3"></rect>
+            <text x="500" y="648" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-weight="600">No match</text>
+            <text x="500" y="663" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">incr. MFA-fail counter &middot; retry cap</text>
+
+            <line x1="350" y1="55" x2="350" y2="78" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-5)"></line>
+            <line x1="350" y1="135" x2="350" y2="158" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-5)"></line>
+            <line x1="350" y1="215" x2="350" y2="238" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-5)"></line>
+            <line x1="350" y1="280" x2="350" y2="303" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-5)"></line>
+            <line x1="350" y1="360" x2="350" y2="403" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-5)"></line>
+            <line x1="350" y1="450" x2="350" y2="473" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-5)"></line>
+            <line x1="350" y1="515" x2="350" y2="538" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-5)"></line>
+            <line x1="250" y1="600" x2="200" y2="623" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-5)"></line>
+            <line x1="450" y1="600" x2="500" y2="623" stroke="var(--color-text-muted)" stroke-width="1.3" marker-end="url(#arrow-auth-5m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 5. MFA enrollment (top, one-time) and verification (bottom, every login) &mdash; TOTP per RFC 6238: a 6-digit code derived from a shared secret and the current 30-second time-step, compared with a small drift window to tolerate clock skew.</div>
+        </div>
+
+        <h3>TOTP (RFC 6238) in Detail</h3>
+        <p>TOTP = HOTP (RFC 4226, an HMAC-based one-time password over a counter) with the counter replaced by <code>floor(unix_time / 30)</code>. Concretely: <code>code = Truncate(HMAC-SHA1(secret, time_counter)) mod 10^6</code>, zero-padded to 6 digits. Because clocks drift, the server checks the current time-step and typically &plusmn;1 step (i.e. up to 30 seconds of drift each direction) — widening this window trades security margin (a slightly larger brute-force window per code) for user tolerance of clock skew, so it should stay narrow.</p>
+
+        <h3>Backup Codes and WebAuthn / Passkeys</h3>
+        <ul>
+          <li><strong>Backup codes</strong> are single-use recovery codes generated at enrollment (e.g. 8&ndash;10 codes) for when a user loses their authenticator device. Each code has fairly low entropy individually, so each one must be hashed at rest with the same rigor as a password, not stored in plaintext.</li>
+          <li><strong>WebAuthn/passkeys</strong> are the strongest modern option: a public/private keypair is generated per site inside a hardware or platform authenticator (a phone's secure enclave, a security key); the private key never leaves the device, and the server only ever stores a public key. This is <strong>phishing-resistant</strong> by construction — the credential is cryptographically bound to the site's origin, so a lookalike phishing domain simply cannot obtain a valid signature — and it removes shared secrets from the server entirely, unlike TOTP (where the server does hold a secret capable of generating valid codes) or passwords (where the server holds a hash of the actual secret).</li>
+        </ul>
+
+        <h2 id="deep-dive-password-reset-flow">Deep Dive &mdash; Password Reset Flow</h2>
+        <p>The forgot-password flow is a favorite interview probe because it's easy to get subtly wrong in ways that leak account existence or leave a long-lived, reusable secret lying around.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 650" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-auth-6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+
+            <rect x="140" y="15" width="420" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="35" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">User submits email</text>
+            <text x="350" y="49" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">&ldquo;Forgot password?&rdquo;</text>
+
+            <rect x="140" y="95" width="420" height="60" rx="6" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.4"></rect>
+            <text x="350" y="116" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">ALWAYS 200: generic message</text>
+            <text x="350" y="131" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">identical response whether or not</text>
+            <text x="350" y="143" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">the email is registered</text>
+
+            <rect x="140" y="185" width="420" height="80" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="206" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">If email matches: mint token</text>
+            <text x="350" y="221" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">256-bit random; store SHA-256(token)</text>
+            <text x="350" y="234" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">+ 30-min expiry, used_at = NULL</text>
+            <text x="350" y="247" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(raw token is never persisted)</text>
+
+            <rect x="140" y="295" width="420" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="316" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Email raw token as single-use link</text>
+            <text x="350" y="330" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">to the verified email address only</text>
+
+            <rect x="140" y="375" width="420" height="45" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="402" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">User clicks link, submits { token, new_password }</text>
+
+            <rect x="140" y="450" width="420" height="70" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="350" y="471" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Validate: hash lookup, not expired,</text>
+            <text x="350" y="486" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">not used &middot; new password checked against</text>
+            <text x="350" y="499" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Have I Been Pwned breach corpus</text>
+
+            <rect x="140" y="550" width="420" height="75" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.4"></rect>
+            <text x="350" y="572" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">On success: store new hash</text>
+            <text x="350" y="587" text-anchor="middle" fill="#cbd8ef" font-size="8">mark token used (single-use) &middot; revoke ALL</text>
+            <text x="350" y="600" text-anchor="middle" fill="#cbd8ef" font-size="8">existing sessions &middot; notify user by email</text>
+
+            <line x1="350" y1="60" x2="350" y2="93" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-6)"></line>
+            <line x1="350" y1="155" x2="350" y2="183" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-6)"></line>
+            <line x1="350" y1="265" x2="350" y2="293" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-6)"></line>
+            <line x1="350" y1="345" x2="350" y2="373" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-6)"></line>
+            <line x1="350" y1="420" x2="350" y2="448" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-6)"></line>
+            <line x1="350" y1="520" x2="350" y2="548" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-auth-6)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 6. Password-reset flow &mdash; the initial response never reveals whether the email exists; the reset token is single-use, time-boxed to 30 minutes, and only its hash is ever stored; a successful reset revokes every existing session, closing the door on an attacker who had already hijacked one.</div>
+        </div>
+
+        <h3>Password-Reset Token Algorithm (Pseudocode)</h3>
+        <pre><code>function requestPasswordReset(email):
+    user = lookupUserByEmail(email)     // may be null
+    if user is not null:
+        rawToken = randomBytes(32)                       // 256 bits of entropy
+        tokenHash = sha256(rawToken)
+        insertRow(passwordResetTokens, { user_id: user.user_id, token_hash: tokenHash,
+                                          expires_at: now() + 30_MINUTES, used_at: null })
+        sendEmail(user.email, resetLinkContaining(rawToken))   // raw token leaves the server only in this email
+    // Identical response either way &mdash; do not reveal whether the account exists
+    return { message: "If that email is registered, a reset link has been sent." }
+
+function resetPassword(rawToken, newPassword):
+    tokenHash = sha256(rawToken)
+    row = passwordResetTokens.findByHash(tokenHash)
+    if row is null or row.used_at is not null or row.expires_at < now():
+        return error(400, "invalid_or_expired_token")
+    if isWeakOrBreached(newPassword):                     // length + HIBP k-anonymity check
+        return error(400, "password_not_acceptable")
+
+    updateCredential(row.user_id, hash: hashPassword(newPassword))
+    markUsed(row)                                          // single-use, enforced by used_at
+    revokeAllSessions(row.user_id)                          // kill any session an attacker may hold
+    sendEmail(row.user_id.email, "Your password was changed")
+    return { status: "password_updated" }</code></pre>
+
+        <h2 id="data-partitioning-and-replication">Data Partitioning and Replication</h2>
+
+        <h3>Sharding by user_id</h3>
+        <p>Shard <code>users</code>, <code>auth_credentials</code>, <code>refresh_tokens</code> (durable copy), <code>mfa_secrets</code>, and <code>login_history</code> by <code>hash(user_id)</code> using consistent hashing across a set of logical shards mapped onto physical nodes (e.g. via a Vitess-style topology or a sharding proxy). Nearly every access pattern <em>after</em> the initial login lookup is naturally keyed by <code>user_id</code>, so this is the right primary partition key for the bulk of the schema.</p>
+
+        <h3>The Login-by-Email Problem: a Global Secondary Index</h3>
+        <p>Login itself arrives keyed by <strong>email or username</strong>, not <code>user_id</code> — so a pure <code>hash(user_id)</code> shard map can't answer "which shard holds this email" without an extra hop. Two options:</p>
+        <ul>
+          <li><strong>Dedicated email&rarr;user_id index (recommended):</strong> maintain a small, heavily-cached lookup structure (a compact table or dedicated service) mapping <code>normalized_email &rarr; user_id</code>, kept mostly resident in Redis given how hot and small it is — every login and every registration-uniqueness check hits it. This decouples "how do we shard everything else" from "how do people log in," and lets this specific hot path be optimized (and monitored) independently.</li>
+          <li><strong>Shard credentials by hash(email) instead:</strong> routes the login-time credential fetch directly to the correct shard with no extra hop, at the cost of needing a <em>second</em>, <code>user_id</code>-based index for every other service that references users by ID.</li>
+        </ul>
+        <p>The dedicated index is the more common production pattern, precisely because this lookup is hot enough to deserve first-class caching regardless of how the rest of the schema is sharded.</p>
+
+        <h3>Why Sessions and Refresh Tokens Live in Redis, Not the Sharded Primary Store</h3>
+        <ul>
+          <li><strong>Ephemeral by nature:</strong> Redis expires keys natively via TTL, with no cleanup cron needed — session state that outlives its TTL should simply cease to exist.</li>
+          <li><strong>Extreme QPS, low-latency, pure key lookup:</strong> this access pattern must not compete for capacity with the credential store's transactional workload.</li>
+          <li><strong>Fundamentally different durability requirement:</strong> losing session state just forces a re-login (recoverable, low-cost); losing a credential or a uniqueness constraint would be a serious correctness/security bug. Two different durability profiles justify two different storage tiers.</li>
+        </ul>
+
+        <h3>Replication</h3>
+        <ul>
+          <li><strong>Primary DB:</strong> synchronous or semi-synchronous replication within a region for credential writes (registration, password change) — losing a just-written password change is unacceptable — with asynchronous cross-region replication for disaster recovery.</li>
+          <li><strong>Redis:</strong> primary + replica per shard for availability; asynchronous replication is acceptable here since a lost session simply forces re-login rather than causing data loss.</li>
+          <li><strong>Read replicas</strong> absorb read-heavy paths (profile lookups, admin dashboards) so they don't compete with the primary's write-heavy credential/session workload.</li>
+        </ul>
+
+        <h2 id="rate-limiting-and-brute-force-protection">Rate Limiting and Brute-Force Protection</h2>
+        <p>Without controls, a single attacker (or, more realistically, a botnet with a huge rotating IP pool) can attempt millions of password guesses against millions of accounts.</p>
+        <ul>
+          <li><strong>Per-IP rate limits</strong> (coarse): catch a single-source brute-force attempt, enforced at the API Gateway so rejected requests never reach the Auth Service.</li>
+          <li><strong>Per-account rate limits</strong> (essential): track failed attempts keyed by <code>user_id</code>/email in Redis, independent of source IP — this is what actually stops <strong>credential stuffing</strong>, since those attacks intentionally spread requests across huge IP pools specifically to evade per-IP limits.</li>
+          <li><strong>Exponential backoff:</strong> after a threshold of failures (e.g. 3), require an increasing delay before the next attempt on that account is accepted (1s, 2s, 4s, 8s, ...).</li>
+          <li><strong>Progressive, temporary lockout</strong> (e.g. 15 minutes after N failures), not permanent — a permanent lock on repeated failure creates a trivial denial-of-service vector where an attacker deliberately fails logins to lock a legitimate user out indefinitely.</li>
+          <li><strong>CAPTCHA escalation:</strong> after M suspicious attempts, require a CAPTCHA or proof-of-work challenge before accepting further attempts — raises automation cost while leaving most human users unaffected.</li>
+        </ul>
+
+        <h3>Credential-Stuffing Detection via Breach Corpus Checking</h3>
+        <p>Beyond rate limiting, proactively check candidate passwords against known-breached-password corpora using the <strong>Have I Been Pwned (HIBP) Pwned Passwords k-anonymity API</strong> pattern: SHA-1 hash the candidate password, send only the first 5 hex characters of that hash to the API, and receive back every known-breached suffix sharing that prefix; the client (or server) then checks locally whether the full hash is among them. The full password (and even its full hash) is never transmitted to the third-party service, yet the check against hundreds of millions of breached credentials is still possible. Run this check at registration, password change, and password reset — never silently at login, since that would require re-hashing on every login for no security gain.</p>
+
+        <div class="formula-box">
+          <span class="formula-label">HIBP k-anonymity request shape</span>
+          candidate = "Tr0ub4dor&amp;3"
+          <br>sha1_hex = SHA1(candidate) &rarr; e.g. "F2B14F901..." (40 hex chars)
+          <br>send GET /range/{first 5 chars} &rarr; API returns all matching suffixes + breach counts
+          <br>reject if the remaining 35 chars appear in the returned set
+        </div>
+
+        <h2 id="security-privacy-and-permissions">Security, Privacy, and Permissions</h2>
+        <ul>
+          <li><strong>HTTPS everywhere,</strong> with HSTS enabled, so no authentication traffic (or session cookie) is ever eligible to travel in plaintext.</li>
+          <li><strong>Secure, httpOnly, sameSite cookies</strong> for any cookie-delivered token — <code>httpOnly</code> blocks JavaScript (and therefore XSS) from reading it, <code>secure</code> blocks it from ever being sent over plain HTTP, <code>sameSite=Lax/Strict</code> blocks it from being auto-attached to most cross-site requests.</li>
+          <li><strong>CSRF tokens</strong> are required specifically because browsers auto-attach cookies to requests — a synchronizer token or double-submit cookie proves the request originated from our own page. Bearer tokens sent explicitly via an <code>Authorization</code> header are <em>not</em> auto-attached by the browser, so they sidestep classic CSRF — a genuine trade-off in favor of the JWT/bearer model, at the cost of needing somewhere safe (not <code>localStorage</code>) to keep the token from XSS.</li>
+          <li><strong>XSS mitigation:</strong> a strict Content-Security-Policy, consistent output encoding, and — as above — keeping any long-lived token out of <code>localStorage</code>/JS-readable storage where a single XSS bug could exfiltrate it wholesale.</li>
+          <li><strong>Password rules — favor NIST SP 800-63B over legacy complexity rules:</strong> require a reasonable minimum length (e.g. 8&ndash;12 characters), allow long passphrases (up to 64+ characters), and do <em>not</em> force arbitrary composition rules ("must contain a symbol") or periodic rotation without cause — both are shown to push users toward predictable patterns (<code>Password1!</code>) rather than genuinely stronger secrets. Screen against breach corpora (see above) instead; that's a far higher-signal check than composition rules.</li>
+          <li><strong>Account-enumeration prevention:</strong> identical response messages and near-identical response latency for "wrong password" and "no such account" (see the login algorithm above); identical registration response whether or not an email is already taken (e.g. "if this email isn't already registered, we've sent a verification link").</li>
+          <li><strong>Secure password-reset flow:</strong> single-use, time-boxed tokens, sent only to the verified email already on file — recapped in full in the dedicated deep dive above.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging, and Analytics</h2>
+        <p>Every auth-relevant event fans out asynchronously to Kafka and into a security analytics/SIEM pipeline, fully decoupled from the login latency budget (per the capacity math above, this pipeline handles roughly 10M events/day at steady state).</p>
+        <ul>
+          <li><strong>Failed-login-rate alerting:</strong> page on-call when the global (or per-account, or per-IP) failed-login rate spikes well above its historical baseline — an early, high-signal indicator of a credential-stuffing campaign in progress.</li>
+          <li><strong>"Impossible travel" / geographic-anomaly detection:</strong> flag a login when the implied travel speed between it and the account's last known login location is physically infeasible (e.g. Mumbai at 10:00, then São Paulo at 10:20 implies ~14,000 km in 20 minutes) &mdash; a strong signal of a stolen credential or hijacked session, triggering a step-up MFA challenge or a temporary hold rather than an outright block.</li>
+          <li><strong>New-device / new-location notifications:</strong> email the user whenever a login succeeds from a device or location fingerprint not seen before, giving them an independent channel to notice an account takeover even if the attacker doesn't trip any automated rule.</li>
+          <li><strong>Immutable audit trail</strong> (the <code>login_history</code> table) for compliance review — every login, logout, password change, MFA enrollment, and lockout, retained per the retention policy and partitioned by month.</li>
+          <li><strong>Security dashboards</strong> aggregating login success/failure rates, MFA adoption, lockout counts, and breach-password-hit rate over time, feeding back into product and security prioritization.</li>
+        </ul>
+
+        <h2 id="load-balancing">Load Balancing</h2>
+        <p>Load balancing sits at three points: clients &harr; Auth Service, Auth Service &harr; Redis, and Auth Service &harr; sharded Primary DB. Start with round-robin (or least-connections) with health-check-based draining — cheap, and it automatically routes around a failing instance. Because this design deliberately avoids server-held session affinity (sessions live in Redis, not in any one app server's memory), <strong>no sticky sessions are required</strong> — any Auth Service instance can serve any request, which is exactly what makes horizontal autoscaling for the "morning login surge" tractable in the first place.</p>
+
+        <h2 id="scaling-to-multiple-regions">Scaling to Multiple Regions</h2>
+        <ul>
+          <li>Run each region active-active with its own Auth Service tier, Redis cluster, and DB replica set; route users to the nearest region via Geo-DNS or anycast for lowest latency.</li>
+          <li>Credential writes (registration, password change) replicate synchronously/quorum within a region and asynchronously cross-region — correctness of the source of truth is prioritized over instant multi-region read-your-writes for this data.</li>
+        </ul>
+        <h3>The Hard Problem: Multi-Region Session Consistency</h3>
+        <p>The interesting trade-off is what happens to a session/refresh-token when a user's <em>next</em> request lands in a different region than the one that issued it:</p>
+        <table>
+          <tr><th>Approach</th><th>Trade-off</th></tr>
+          <tr><td>Sticky-to-home-region</td><td>Simplest &mdash; a session is only valid in its issuing region; a request elsewhere is proxied back or forces re-auth. Adds latency for a genuinely roaming user, but no replication-lag correctness risk.</td></tr>
+          <tr><td>Globally-replicated session store</td><td>Works from anywhere immediately, but async replication leaves a bounded window where a just-issued/just-rotated token isn't yet visible in another region &mdash; risking a spurious "invalid token" if the user's very next request lands elsewhere before replication catches up.</td></tr>
+          <tr><td>Region-hint embedded in the token (recommended middle ground)</td><td>The token itself carries a home-region hint so routing can prefer the issuing region for validation, while still allowing failover to a replica if that region is down &mdash; bounded staleness without full global synchronous replication.</td></tr>
+        </table>
+
+        <h2 id="bottlenecks-single-points-of-failure-and-trade-offs">Bottlenecks, Single Points of Failure, and Trade-Offs</h2>
+        <table>
+          <tr><th>Risk / Bottleneck</th><th>Mitigation</th></tr>
+          <tr><td>Redis (session/refresh cache) outage</td><td>Already-issued access tokens keep working unaffected (stateless JWT, no Redis round-trip); only <em>token refresh</em> and new logins degrade &mdash; a bounded, graceful failure rather than a hard outage (see callout below)</td></tr>
+          <tr><td>Primary DB outage / replica lag</td><td>Read replicas absorb read load; synchronous replication within-region protects credential writes from silent loss</td></tr>
+          <tr><td>Thundering herd after an outage ("morning surge")</td><td>Horizontal autoscaling sized to the &gt;30&times; surge math above; rate limiting tuned to distinguish legitimate mass re-login from a botnet</td></tr>
+          <tr><td>Over-aggressive lockout used as a DoS vector</td><td>Temporary, progressive lockout (never permanent) plus per-IP + per-account limits scoped independently</td></tr>
+          <tr><td>Pepper/signing-key leakage</td><td>Held in a KMS/HSM, rotated periodically, never colocated with the credential database itself</td></tr>
+          <tr><td>Region-wide outage</td><td>Multi-region active-active with region-hinted tokens and DR replication</td></tr>
+          <tr><td>Stolen refresh token used after rotation</td><td>Reuse detection revokes the entire token family immediately, forcing re-login</td></tr>
+        </table>
+
+        <div class="callout">
+          <div class="callout-title">If Redis goes down: degrade, don't hard-fail</div>
+          With the JWT-access + server-validated-refresh hybrid, a Redis outage does <strong>not</strong> invalidate already-issued access tokens &mdash; they verify locally by signature. What breaks: (1) token <em>refresh</em>, since validating a refresh token needs the store &mdash; mitigate by falling back to the durable DB copy of token hashes at higher latency rather than an unconditional failure; (2) revocation checks briefly become less enforceable mid-outage &mdash; an explicit, named trade-off, not an accident; (3) new logins may be rate-limited more conservatively if Redis-backed counters are unavailable. Net effect: users mid-session keep working until their 15-minute access token naturally expires, at which point they're forced to re-login &mdash; a bounded blast radius rather than a full outage.
+        </div>
+
+        <h3>CAP Theorem Lens</h3>
+        <p>Favor strict <strong>consistency</strong> for credential writes and uniqueness constraints (two accounts must never silently collide on the same email; a password update must never be partially applied). Favor <strong>availability</strong> for session/token validation reads on the hot path (a slightly stale "is this still valid" check against a replica beats blocking every API call in the product on synchronous cross-region consistency) &mdash; but with one explicit, named exception: a just-revoked session must become invalid within a bounded, short window, not an indefinite one, since availability-over-consistency taken too far here has a real security cost, not just a UX one.</p>
+
+        <h2 id="one-page-design-summary">One-Page Design Summary</h2>
+        <table class="sortable">
+          <tr><th>Dimension</th><th>Recommended choice</th></tr>
+          <tr><td>Password storage</td><td>Argon2id (or bcrypt cost &ge;12) + per-user salt + application-level pepper in a KMS</td></tr>
+          <tr><td>Session model</td><td>Hybrid: short-lived signed JWT access token (~15 min) + opaque, rotating, server-validated refresh token (~30 days, hashed)</td></tr>
+          <tr><td>Social login</td><td>OAuth2 Authorization Code + PKCE, linked via auth_credentials(provider, provider_user_id)</td></tr>
+          <tr><td>MFA</td><td>TOTP (RFC 6238) + hashed backup codes as baseline; WebAuthn/passkeys as the preferred modern option</td></tr>
+          <tr><td>Primary datastore</td><td>Sharded relational/NewSQL (hash(user_id)) for users/credentials/audit; Redis for sessions/refresh-token cache/rate limits</td></tr>
+          <tr><td>Login lookup</td><td>Dedicated, heavily-cached email&rarr;user_id global secondary index</td></tr>
+          <tr><td>Rate limiting</td><td>Per-IP + per-account token buckets, exponential backoff, progressive (non-permanent) lockout, CAPTCHA escalation, HIBP breach check</td></tr>
+          <tr><td>Consistency model</td><td>Strict consistency for credential writes/uniqueness; AP-leaning for session reads, bounded staleness for revocation</td></tr>
+          <tr><td>Monitoring</td><td>Kafka audit pipeline &rarr; SIEM, impossible-travel detection, failed-login-rate alerting</td></tr>
+        </table>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+        <p>These are organized by theme &mdash; use them to rehearse, or expect a real interview to pick 3&ndash;5 as "and then what?" follow-ups on whatever you presented.</p>
+
+        <h3>Password Storage and Cryptography</h3>
+        <div class="qa-item">
+          <div class="qa-q">Why use bcrypt/Argon2id instead of SHA-256 for storing passwords?</div>
+          <div class="qa-a">SHA-256 is deliberately fast, which is exactly wrong for password storage &mdash; billions of guesses/sec are feasible on modern GPUs against a stolen table. bcrypt/Argon2id are deliberately slow and (for Argon2id) memory-hard, so brute-forcing a stolen hash table is computationally and financially expensive even at scale.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does a timing-safe (constant-time) comparison matter for authentication?</div>
+          <div class="qa-a">A naive byte-by-byte comparison that returns early on the first mismatch leaks information through response time &mdash; an attacker can recover a secret one byte at a time by measuring which candidate takes marginally longer. A constant-time comparison (and, at the login-flow level, always doing a hash computation even for unknown users) removes that timing side-channel.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you migrate users from an old password-hashing algorithm to a new one without forcing a mass password reset?</div>
+          <div class="qa-a">Store the algorithm/params alongside each hash (PHC string format) and migrate lazily: verify with the recorded algorithm at login, and if it succeeds and the algorithm is outdated, re-hash with the new algorithm using the plaintext you already have in memory at that moment, then overwrite the stored value. No bulk reset, no downtime.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why add a pepper in addition to a per-user salt?</div>
+          <div class="qa-a">A salt defeats rainbow tables and cross-user pattern matching but lives right next to the hash in the same database. A pepper is a secret held outside the database (in a KMS/HSM), so a database-only leak isn't sufficient to offline-crack the hashes &mdash; the attacker also needs the application's separate secret store.</div>
+        </div>
+
+        <h3>Sessions, Tokens, and Revocation</h3>
+        <div class="qa-item">
+          <div class="qa-q">JWTs vs. server-side session cookies &mdash; what are the real trade-offs?</div>
+          <div class="qa-a">JWTs verify locally (fast, no store round-trip, trivially horizontally scalable) but can't be revoked before their natural expiry without extra machinery. Server-side sessions revoke instantly but need a shared, available store on every request. The common resolution is the hybrid used here: short-lived JWT access token + stateful, revocable refresh token.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you revoke a JWT before it naturally expires?</div>
+          <div class="qa-a">You generally can't revoke the signature itself, so you minimize the blast radius instead: keep access-token TTLs short (~15 min) and put all real revocation authority in the paired refresh token, which is checked against a server-side store on every refresh. A pure blocklist of revoked JWT IDs is an alternative but reintroduces a store lookup on every request, defeating the point of using JWTs at all.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you implement "log out of all devices"?</div>
+          <div class="qa-a">Iterate and revoke every row in refresh_tokens for that user_id (the table is indexed by user_id for exactly this). Any already-issued access token for another device still works until its short TTL naturally expires, then that device's next refresh attempt is rejected, forcing re-login.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens to already-issued access tokens if Redis goes down?</div>
+          <div class="qa-a">Nothing &mdash; they verify by signature alone, with no dependency on Redis. Only refresh calls and revocation enforcement are affected during the outage, which is a deliberate, bounded degradation rather than a full authentication outage.</div>
+        </div>
+
+        <h3>Attacks and Abuse Prevention</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent credential stuffing specifically (as opposed to simple brute force)?</div>
+          <div class="qa-a">Credential stuffing spreads requests across huge, rotating IP pools specifically to evade per-IP limits, so per-account rate limiting (keyed by user_id/email, independent of source IP) is the primary defense, combined with breach-corpus checking (HIBP k-anonymity) so previously-leaked passwords are rejected proactively rather than only after they're tried.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why should "wrong password" and "user not found" return the same generic error message?</div>
+          <div class="qa-a">A distinguishable response lets an attacker enumerate which emails have accounts at all, which is valuable reconnaissance for a targeted attack (phishing, credential stuffing against a known-valid email). Returning an identical message &mdash; and running the same hash-verification work either way to equalize timing &mdash; removes that signal entirely.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you design account lockout without creating a denial-of-service vector against legitimate users?</div>
+          <div class="qa-a">Use progressive, temporary lockouts (e.g. 15 minutes) rather than permanent ones, and prefer exponential backoff over hard lockout where possible &mdash; both let a legitimate user recover on their own without support intervention, while still meaningfully slowing an attacker.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you detect account takeover after the fact, not just block it at login time?</div>
+          <div class="qa-a">Impossible-travel/geo-anomaly detection on the login_history stream, new-device/new-location email notifications, and monitoring for post-login behavior anomalies (e.g. a sudden password change or MFA disablement immediately after a login from a new location) &mdash; all fed by the same Kafka audit pipeline used for compliance logging.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you securely implement the "forgot password" flow end-to-end?</div>
+          <div class="qa-a">Always return an identical response regardless of whether the email exists; generate a high-entropy random token and store only its hash with a short (~30 min) expiry and single-use enforcement; email the raw token only to the verified address on file; and revoke all existing sessions once the password is actually changed.</div>
+        </div>
+
+        <h3>MFA and Modern Authentication</h3>
+        <div class="qa-item">
+          <div class="qa-q">How do WebAuthn/passkeys improve on passwords, and even on TOTP?</div>
+          <div class="qa-a">WebAuthn uses per-site public/private keypairs generated in a hardware/platform authenticator; the private key never leaves the device and the server only ever stores a public key. It's phishing-resistant by construction (the credential is bound to the origin), and unlike TOTP, the server never holds a secret capable of generating a valid proof on its own.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why does TOTP need a time-synchronization tolerance window, and what's the security cost of widening it?</div>
+          <div class="qa-a">Client and server clocks drift, so the server typically accepts the current 30-second time-step and one step on either side. Widening this window tolerates more drift but also widens the effective brute-force window per submitted code, so it should be kept as narrow as user experience allows.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you let a user recover access if they lose their MFA device and their backup codes?</div>
+          <div class="qa-a">A deliberately slower, higher-friction identity-verification path (e.g. manual support review, a cooling-off period, re-verification against other known account signals) &mdash; explicitly not a fast self-service reset, since a fast path here would just become the attacker's preferred way to bypass MFA entirely.</div>
+        </div>
+
+        <h3>Scaling and Operations</h3>
+        <div class="qa-item">
+          <div class="qa-q">How would you design rate limiting for the login endpoint?</div>
+          <div class="qa-a">Layered: coarse per-IP limits at the API Gateway, finer per-account limits in Redis with exponential backoff, progressive (non-permanent) lockout past a threshold, and CAPTCHA escalation for accounts/IPs that look automated &mdash; each layer catching a different attack shape.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you scale the login path for a sudden 30&times; traffic spike (e.g. after a regional outage)?</div>
+          <div class="qa-a">Horizontal autoscaling of the stateless Auth Service fleet (no session affinity to worry about), pre-provisioned headroom informed by the surge math (see Capacity Estimation), and rate limiting tuned to distinguish a legitimate mass re-login from a credential-stuffing botnet riding the same spike.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you keep sessions consistent across multiple regions?</div>
+          <div class="qa-a">Either keep a session sticky to its issuing region (simplest, adds latency for roaming users), fully replicate the session store globally (best UX, introduces a bounded staleness window), or embed a region hint in the token itself so validation prefers the issuing region while still allowing failover &mdash; a genuine trade-off, not a solved problem.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you roll out a breaking change to the token format without logging out every active user?</div>
+          <div class="qa-a">Version the token (e.g. a "kid"/version claim), accept both old and new formats during a transition window, and let old tokens simply expire naturally on their existing TTL rather than force-invalidating them &mdash; new logins and refreshes pick up the new format automatically.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Treat this as a security design problem first, not a CRUD problem with a login form on top &mdash; every choice (hash algorithm, token model, error wording, rate-limit shape) should be traceable to a specific attack it defends against. Use adaptive, slow, salted (and peppered) password hashing &mdash; never a fast general-purpose hash. Prefer a hybrid session model: short-lived stateless JWTs for the hot path, paired with a stateful, rotating refresh token for the one operation that genuinely needs revocability. Make timing and error messages indistinguishable between "wrong password" and "unknown account" &mdash; enumeration defense is a first-class requirement, not an afterthought. Size compute for the deliberately expensive password hash, not just for network I/O &mdash; the capacity math changes depending on your cost-factor choice. Push everything not required to answer "is this login valid right now" (audit logging, anomaly detection, notifications) onto an asynchronous path, exactly as a read-heavy system pushes analytics off its hot path.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>NIST, <a href="https://pages.nist.gov/800-63-3/sp800-63b.html" target="_blank" rel="noopener">Special Publication 800-63B &mdash; Digital Identity Guidelines: Authentication and Lifecycle Management</a></li>
+          <li>OWASP, <a href="https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html" target="_blank" rel="noopener">Authentication Cheat Sheet</a></li>
+          <li>OWASP, <a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html" target="_blank" rel="noopener">Password Storage Cheat Sheet</a></li>
+          <li>IETF, <a href="https://datatracker.ietf.org/doc/html/rfc6238" target="_blank" rel="noopener">RFC 6238 &mdash; TOTP: Time-Based One-Time Password Algorithm</a></li>
+          <li>IETF, <a href="https://datatracker.ietf.org/doc/html/rfc6749" target="_blank" rel="noopener">RFC 6749 &mdash; The OAuth 2.0 Authorization Framework</a></li>
+          <li>IETF, <a href="https://datatracker.ietf.org/doc/html/rfc9106" target="_blank" rel="noopener">RFC 9106 &mdash; Argon2 Memory-Hard Function for Password Hashing</a></li>
+          <li>OpenID Foundation, <a href="https://openid.net/specs/openid-connect-core-1_0.html" target="_blank" rel="noopener">OpenID Connect Core 1.0</a></li>
+          <li>W3C, <a href="https://www.w3.org/TR/webauthn-3/" target="_blank" rel="noopener">Web Authentication (WebAuthn) Level 3</a></li>
+          <li>Troy Hunt / Have I Been Pwned, <a href="https://haveibeenpwned.com/API/v3#PwnedPasswords" target="_blank" rel="noopener">Pwned Passwords API (k-anonymity model)</a></li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="bloom-filter.html"><span class="dir">Previous</span>Bloom Filters</a>
+          <a class="next" href="notification-service.html"><span class="dir">Next</span>Notification Service</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

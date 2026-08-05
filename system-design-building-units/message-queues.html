@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messaging &amp; Streaming | System Design — Building Units | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Building Units</a><span class="sep">/</span><span class="current">Messaging &amp; Streaming</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Building Units overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#message-queues">Message Queues (Point-to-Point)</a></li>
+        <li><a href="#publish-subscribe">Publish/Subscribe (Pub/Sub) Systems</a></li>
+        <li><a href="#apache-kafka">Apache Kafka — Deep Dive</a></li>
+        <li><a href="#event-driven-architecture">Event-Driven Architecture (EDA) as a Pattern</a></li>
+        <li><a href="#mq-vs-kafka-vs-pubsub">Comparison: Message Queue vs. Kafka vs. Pub/Sub</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN — BUILDING UNITS</span>
+          <h1>Messaging &amp; Streaming</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Messaging and streaming systems let services communicate asynchronously — a producer emits something and moves on, while one or more consumers process it independently, on their own schedule. This decouples the pace and availability of the sender from the receiver, which is what makes a slow or unreliable downstream step (image resizing, a fraud check, a third-party API call) survivable without forcing the caller to wait. The building blocks below span the point-to-point queue (one message picked up by exactly one worker), the fan-out publish/subscribe pattern (one message copied to every subscriber), Apache Kafka's durable, replayable log (which can behave like either), and event-driven architecture as the broader pattern that organizes services around events rather than direct calls.</p>
+
+        <h3 id="message-queues">Message Queues (Point-to-Point)</h3>
+        <p>A message queue is middleware for asynchronous, point-to-point communication: a producer publishes a message onto a named queue, and exactly one consumer processes it — even when many consumers are attached to that same queue. A broker sits in the middle and stores each message durably until it has been successfully processed, which is what decouples producer and consumer in both time (the consumer doesn't need to be running right now) and space (neither side needs to know about the other directly). When several consumers listen on one queue, they compete for messages — the "competing consumers" pattern — and each individual message still only goes to one of them, giving natural load-balancing across a worker pool. A consumer that fails to acknowledge a message within its visibility/prefetch timeout causes the broker to redeliver it, the basic mechanism behind at-least-once delivery.</p>
+        <p>Durability is a deliberate trade-off: durable queues combined with persistent messages and publisher confirms survive a broker restart, while non-durable/transient queues trade that safety for speed. Messages that repeatedly fail, expire, or are explicitly rejected are routed to a dead-letter queue (DLQ) — RabbitMQ implements this as a Dead Letter Exchange, SQS as a redrive policy — so a handful of "poison" messages can't block an entire queue behind them. Delivery guarantees range from at-most-once (fast, but a message can be silently lost) to at-least-once (the practical default — guaranteed delivery but possible duplicates, so consumers must be idempotent) to exactly-once, which in practice is only achieved via at-least-once plus deduplication (as with SQS FIFO's dedup window) rather than as a pure network-level guarantee. Ordering is generally not guaranteed on a standard queue; FIFO variants provide strict per-group ordering at a real throughput cost.</p>
+        <p><strong>Popular tools:</strong> RabbitMQ (AMQP broker — producers publish to an exchange that routes to queues via direct/topic/fanout/headers bindings; quorum queues are the modern Raft-based HA option), Amazon SQS (Standard for near-unlimited best-effort-ordered throughput, FIFO for strict per-group order and exactly-once processing via dedup), Apache ActiveMQ Classic/Artemis (JMS-compliant, multi-protocol, XA/JTA transactions), IBM MQ, Azure Service Bus.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Background job processing (image resizing, sending email), decoupling a slow downstream service from a fast producer, distributing work across a pool of workers, and any retry-heavy workflow that needs DLQ handling. SQS is the zero-ops default on AWS; RabbitMQ suits flexible content-based routing. Reach for a queue when exactly one worker needs to do the job — if multiple independent services must each see every message, or you need to replay history, look at pub/sub or Kafka instead.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Simple mental model and strong decoupling</li><li>Natural load-balancing across competing consumers</li><li>Absorbs backpressure when consumers fall behind</li><li>Built-in retry and DLQ semantics</li></ul></td>
+            <td><ul><li>No built-in replay of past messages</li><li>Ordering is weak by default, or costs throughput to guarantee</li><li>No native fan-out to independent consumer groups</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="publish-subscribe">Publish/Subscribe (Pub/Sub) Systems</h3>
+        <p>Publish/subscribe flips the delivery model: a publisher sends to a logical topic without knowing — or caring — who is listening, and every subscriber attached to that topic receives its own copy of each message. That's fan-out, one message to N subscribers, rather than a queue's one message to one consumer. The broker's job is simply to maintain the list of subscriptions and deliver a copy to each of them; publishers and subscribers are decoupled in both directions, and subscribers can be added or removed without the publisher ever changing.</p>
+        <p>In managed cloud services, a "subscription" is often itself a durable resource rather than a transient socket — Google Cloud Pub/Sub subscriptions, or SQS queues subscribed to an SNS topic, persist undelivered messages so a slow or temporarily offline subscriber doesn't lose them. This SNS + SQS fan-out pattern is one of the most common building blocks in AWS architectures. Delivery guarantees vary by product: Google Cloud Pub/Sub offers at-least-once delivery with an optional exactly-once mode, ordering keys, dead-letter topics, and schema validation, while Amazon SNS is best-effort with no strict ordering on standard topics (FIFO topics exist when paired with SQS FIFO). Many systems also support subscription-level filters so a given subscriber only receives the relevant subset of a topic's traffic.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="26" font-size="13" font-weight="700" fill="#0f2545">Point-to-Point vs. Publish/Subscribe Fan-Out</text>
+
+            <rect x="20" y="45" width="300" height="235" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="170" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">Point-to-Point (Queue)</text>
+            <rect x="60" y="82" width="90" height="30" rx="4" fill="#0f2545"/><text x="105" y="102" text-anchor="middle" font-size="10" fill="#fff">Producer</text>
+            <rect x="205" y="82" width="90" height="30" rx="4" fill="#fff" stroke="#334155"/><text x="250" y="102" text-anchor="middle" font-size="10">Queue</text>
+            <line x1="150" y1="97" x2="205" y2="97" stroke="#334155" marker-end="url(#a2)"/>
+            <rect x="60" y="150" width="100" height="30" rx="4" fill="#fff" stroke="#94a3b8"/><text x="110" y="170" text-anchor="middle" font-size="9.5">Consumer A</text>
+            <rect x="185" y="150" width="100" height="30" rx="4" fill="#fff" stroke="#94a3b8"/><text x="235" y="170" text-anchor="middle" font-size="9.5">Consumer B</text>
+            <line x1="230" y1="112" x2="115" y2="150" stroke="#334155" marker-end="url(#a2)"/>
+            <line x1="255" y1="112" x2="255" y2="150" stroke="#94a3b8" stroke-dasharray="3,3"/>
+            <text x="170" y="200" text-anchor="middle" font-size="9.5" fill="#5a6472">competing consumers —</text>
+            <text x="170" y="214" text-anchor="middle" font-size="9.5" fill="#5a6472">each message delivered to</text>
+            <text x="170" y="228" text-anchor="middle" font-size="9.5" fill="#5a6472">exactly one consumer,</text>
+            <text x="170" y="242" text-anchor="middle" font-size="9.5" fill="#5a6472">removed after ack</text>
+
+            <rect x="360" y="45" width="300" height="235" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="510" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="#6b4a10">Publish/Subscribe (Fan-Out)</text>
+            <rect x="465" y="82" width="90" height="30" rx="4" fill="#0f2545"/><text x="510" y="102" text-anchor="middle" font-size="10" fill="#fff">Publisher</text>
+            <rect x="465" y="120" width="90" height="28" rx="4" fill="#fff" stroke="#334155"/><text x="510" y="139" text-anchor="middle" font-size="10">Topic</text>
+            <line x1="510" y1="112" x2="510" y2="120" stroke="#334155" marker-end="url(#a2)"/>
+            <rect x="380" y="185" width="85" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="422" y="204" text-anchor="middle" font-size="9.5">Subscriber A</text>
+            <rect x="470" y="185" width="85" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="512" y="204" text-anchor="middle" font-size="9.5">Subscriber B</text>
+            <rect x="560" y="185" width="85" height="28" rx="4" fill="#fff" stroke="#94a3b8"/><text x="602" y="204" text-anchor="middle" font-size="9.5">Subscriber C</text>
+            <line x1="500" y1="148" x2="422" y2="185" stroke="#334155" marker-end="url(#a2)"/>
+            <line x1="510" y1="148" x2="512" y2="185" stroke="#334155" marker-end="url(#a2)"/>
+            <line x1="520" y1="148" x2="602" y2="185" stroke="#334155" marker-end="url(#a2)"/>
+            <text x="510" y="242" text-anchor="middle" font-size="9.5" fill="#5a6472">every subscriber gets its</text>
+            <text x="510" y="256" text-anchor="middle" font-size="9.5" fill="#5a6472">own copy of every message —</text>
+            <text x="510" y="270" text-anchor="middle" font-size="9.5" fill="#5a6472">one message &#8594; N receivers</text>
+
+            <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Point-to-point queues deliver each message to exactly one competing consumer; pub/sub fans a single message out to every independent subscriber.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> Redis Pub/Sub (lightweight, in-memory, fire-and-forget — no persistence, good for ephemeral notifications within a Redis-based system), Google Cloud Pub/Sub (fully managed, push/pull, ordering keys, DLQ, schema enforcement), Amazon SNS (fans out to SQS, Lambda, HTTP/S, email, SMS, mobile push), Azure Event Grid, Apache Pulsar (supports both queue and pub/sub semantics natively).</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Broadcasting an event to multiple independent, unrelated services — an "OrderPlaced" event triggering email, inventory, and analytics separately without any of them knowing about each other. Also real-time notification systems, chat presence, push notifications, and cache-invalidation broadcasts, or building an event-driven backbone where new consumers should be addable without ever touching the publisher. If you need topic fan-out but also need replay/history, that's a sign to reach for Kafka-style streaming instead.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Natural fan-out to many independent consumers</li><li>Strong decoupling in both directions</li><li>Trivial to add new subscribers without touching the publisher</li></ul></td>
+            <td><ul><li>Messages can be lost for offline subscribers without a durable subscription layer</li><li>Hard to verify "did everyone process this"</li><li>Generally no history replay</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="apache-kafka">Apache Kafka — Deep Dive</h3>
+        <p>Apache Kafka is a distributed event streaming platform built around a durable, replicated, append-only commit log — not a traditional queue that deletes a message once it's consumed. Multiple independent consumers can read, and re-read, the exact same data at their own pace, which is the fundamental difference from both message queues and classic pub/sub.</p>
+        <p>A Kafka topic is split into partitions, which are the unit of both parallelism and ordering — Kafka guarantees order only within a single partition, never across an entire topic. Brokers store partition data, and a cluster is simply many brokers working together; producers write records, optionally with a key, and that key is hashed to deterministically pick which partition a record lands on, which is how per-key ordering is achieved. Consumer groups are the other half of the model: a set of consumers cooperatively reads a topic by splitting its partitions among group members, so within one group each partition is read by exactly one consumer at a time, while separate consumer groups are fully independent of each other and each receives the entire stream. This is what lets Kafka behave like a queue (one group) and like pub/sub (many groups) simultaneously.</p>
+        <p>Each consumer group tracks its own read position per partition as an offset (stored internally in <code>__consumer_offsets</code>), which enables resuming after a restart and replaying history simply by resetting the offset backward. Every partition is replicated (a replication factor of 3 is typical) with one broker acting as leader for reads/writes and the others as followers that can be promoted if the leader fails. Messages are retained according to a time or size policy regardless of whether they've been consumed — the feature that makes replay and multiple independent consumer groups possible in the first place — and log compaction can instead retain only the latest value per key, useful for changelog/state-restoration use cases. Kafka historically relied on ZooKeeper for cluster metadata and controller election; KRaft, Kafka's own Raft-based consensus layer, replaces it by storing metadata inside Kafka itself, and as of Kafka 4.0 (March 2025) ZooKeeper mode has been fully removed — KRaft is now the only supported mode. Exactly-once semantics are achieved through idempotent producers (a unique ID plus a per-partition sequence number that drops duplicate retries) combined with transactions that atomically commit writes across partitions along with their offsets.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
+            <text x="20" y="24" font-size="13" font-weight="700" fill="#0f2545">Kafka: Partitions, Brokers &amp; Consumer Groups</text>
+
+            <rect x="290" y="40" width="120" height="32" rx="4" fill="#0f2545"/><text x="350" y="61" text-anchor="middle" font-size="10.5" fill="#fff">Producers</text>
+            <text x="350" y="90" text-anchor="middle" font-size="10.5" fill="#5a6472">Topic: orders</text>
+
+            <rect x="60" y="100" width="180" height="80" rx="8" fill="#eaf1ff" stroke="#2563eb"/>
+            <text x="150" y="118" text-anchor="middle" font-size="10" font-weight="700" fill="#1d4ed8">Broker 1</text>
+            <rect x="80" y="128" width="140" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="150" y="149" text-anchor="middle" font-size="9.5">P0 (leader)</text>
+
+            <rect x="260" y="100" width="180" height="80" rx="8" fill="#fff9ec" stroke="#d9a441"/>
+            <text x="350" y="118" text-anchor="middle" font-size="10" font-weight="700" fill="#6b4a10">Broker 2</text>
+            <rect x="280" y="128" width="140" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="350" y="149" text-anchor="middle" font-size="9.5">P1 (leader)</text>
+
+            <rect x="460" y="100" width="180" height="80" rx="8" fill="#f0fdf4" stroke="#166534"/>
+            <text x="550" y="118" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">Broker 3</text>
+            <rect x="480" y="128" width="140" height="34" rx="4" fill="#fff" stroke="#94a3b8"/><text x="550" y="149" text-anchor="middle" font-size="9.5">P2 (leader)</text>
+
+            <line x1="330" y1="72" x2="150" y2="100" stroke="#334155" marker-end="url(#a3)"/>
+            <line x1="350" y1="72" x2="350" y2="100" stroke="#334155" marker-end="url(#a3)"/>
+            <line x1="370" y1="72" x2="550" y2="100" stroke="#334155" marker-end="url(#a3)"/>
+
+            <text x="350" y="205" text-anchor="middle" font-size="10" font-weight="700" fill="#0f2545">Consumer Group A</text>
+            <rect x="80" y="215" width="120" height="30" rx="4" fill="#fff" stroke="#94a3b8"/><text x="140" y="235" text-anchor="middle" font-size="9.5">Consumer A1</text>
+            <rect x="290" y="215" width="120" height="30" rx="4" fill="#fff" stroke="#94a3b8"/><text x="350" y="235" text-anchor="middle" font-size="9.5">Consumer A2</text>
+            <rect x="500" y="215" width="120" height="30" rx="4" fill="#fff" stroke="#94a3b8"/><text x="560" y="235" text-anchor="middle" font-size="9.5">Consumer A3</text>
+            <line x1="150" y1="162" x2="140" y2="215" stroke="#334155" marker-end="url(#a3)"/>
+            <line x1="350" y1="162" x2="350" y2="215" stroke="#334155" marker-end="url(#a3)"/>
+            <line x1="550" y1="162" x2="560" y2="215" stroke="#334155" marker-end="url(#a3)"/>
+            <text x="350" y="258" text-anchor="middle" font-size="9.5" fill="#5a6472">each partition read by exactly one consumer within the group — parallelism across A1/A2/A3</text>
+
+            <rect x="230" y="275" width="240" height="34" rx="4" fill="#eaf1ff" stroke="#2563eb" stroke-dasharray="4,3"/>
+            <text x="350" y="296" text-anchor="middle" font-size="9.5" fill="#1d4ed8">Consumer Group B — independent, reads all 3 partitions at its own pace</text>
+
+            <defs><marker id="a3" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#334155"/></marker></defs>
+          </svg>
+          <div class="diagram-caption">Producers write keyed records into partitions spread across brokers; within Consumer Group A each partition is read by exactly one consumer for parallelism, while an independent Consumer Group B can replay the same partitions from its own offset.</div>
+        </div>
+
+        <p><strong>Popular tools:</strong> Apache Kafka, Confluent Platform/Cloud (Schema Registry, ksqlDB, connectors), Amazon MSK, Redpanda (Kafka-API-compatible, no JVM or ZooKeeper dependency), Kafka Connect (source/sink connectors), Kafka Streams/ksqlDB (stream processing).</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Event streaming backbones — clickstream analytics, IoT telemetry, log aggregation, fraud detection — plus any situation where multiple independent downstream systems need the same raw event stream, event sourcing/CQRS backbones, high-throughput microservice decoupling, and change-data-capture pipelines (Debezium). Choose Kafka specifically when multiple teams need the same stream at their own pace, you need replay/backfill, or you need very high sustained throughput with per-key ordering — it's overkill for a simple background job queue or a low-volume system where operational simplicity matters more than throughput.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>Massive throughput and scalability via partition parallelism</li><li>Durable, replayable log — read history, not just "now"</li><li>Multiple independent consumer groups without interfering with each other</li><li>Strong per-partition/key ordering</li></ul></td>
+            <td><ul><li>Heavier operational footprint even under KRaft</li><li>Producers/consumers must handle partition-key routing logic themselves</li><li>No global ordering across an entire topic</li><li>Overkill for simple one-off job dispatch</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="event-driven-architecture">Event-Driven Architecture (EDA) as a Pattern</h3>
+        <p>Event-driven architecture is an architectural style, not a specific product — services communicate by producing and reacting to immutable events rather than calling each other directly and synchronously, which decouples them in time, location, and implementation. Any of the messaging building blocks above (a queue, a pub/sub topic, or Kafka) can serve as the transport; EDA is the pattern of designing services around events as the primary way state changes propagate through a system.</p>
+        <p>Events can carry different amounts of information: event notification is a lightweight "something happened" signal that forces the consumer to call back to the source for details, while event-carried state transfer embeds the actual state the consumer needs directly in the event, avoiding that callback at the cost of possible staleness or duplication. Event sourcing takes this further by treating every state change as an immutable, ordered event and deriving current state by replaying those events (or a snapshot plus the events since) — which gives a complete audit trail and the ability to query state as of any point in time, at the cost of schema-versioning and snapshotting complexity. CQRS complements this by splitting the model into a command side that handles writes (often event-sourced) and a query side that builds denormalized, purpose-built read models asynchronously from the event stream, letting reads and writes scale independently.</p>
+        <p>Because a single ACID transaction can't span multiple services, distributed workflows use the saga pattern: a sequence of local transactions, each with a corresponding compensating action if a later step fails. Choreography lets services react to each other's events with no central coordinator — simple and free of a single point of failure, but harder to trace as the number of participants grows. Orchestration instead uses a central orchestrator to explicitly sequence steps and compensations, giving much clearer visibility into complex workflows at the cost of making the orchestrator itself a critical, must-be-highly-available component.</p>
+        <p><strong>Popular tools:</strong> The event backbone is typically Apache Kafka, AWS EventBridge, Azure Event Grid, or NATS; saga orchestration commonly uses AWS Step Functions, Temporal, or Camunda; event sourcing/CQRS implementations often lean on frameworks like Axon Framework or EventStoreDB.</p>
+        <div class="callout">
+          <div class="callout-title">When to use it</div>
+          Microservices that need to react to state changes without tight coupling — checkout triggering inventory, shipping, and billing independently. Systems needing a strong audit trail (financial ledgers, healthcare) favor event sourcing; read-heavy systems needing multiple specialized views favor CQRS; distributed transactions across services call for sagas — choreography for a handful of participants, orchestration when you need central visibility into a complex workflow. Skip full event sourcing/CQRS for simple CRUD apps where the added complexity isn't earning its keep.
+        </div>
+        <table>
+          <tr><th>Pros</th><th>Cons</th></tr>
+          <tr>
+            <td><ul><li>High decoupling and independent scalability of services</li><li>Resilience — one service's trouble doesn't block others</li><li>Audit trail and history "for free" with event sourcing</li></ul></td>
+            <td><ul><li>Eventual consistency is harder to reason about</li><li>Distributed debugging/tracing is harder across many services</li><li>Ongoing event-schema-evolution tax</li><li>Real engineering overhead for event sourcing/CQRS</li></ul></td>
+          </tr>
+        </table>
+
+        <h3 id="mq-vs-kafka-vs-pubsub">Comparison: Message Queue vs. Kafka vs. Pub/Sub</h3>
+        <p>The three patterns above are often confused because they solve overlapping problems — the table below lines them up side by side on the dimensions that actually drive the choice.</p>
+        <table>
+          <tr><th>Dimension</th><th>Message Queue (SQS, RabbitMQ)</th><th>Event Streaming (Kafka)</th><th>Pub/Sub (SNS, GCP Pub/Sub, Redis)</th></tr>
+          <tr><td>Consumption</td><td>One message &rarr; one consumer</td><td>Multiple independent consumer groups each read the full stream</td><td>One message &rarr; every subscriber</td></tr>
+          <tr><td>Lifecycle</td><td>Deleted after ack</td><td>Retained per policy (replayable)</td><td>Typically ephemeral unless durable subscription</td></tr>
+          <tr><td>Ordering</td><td>Best-effort, or strict FIFO at a throughput cost</td><td>Guaranteed per partition/key</td><td>Usually not guaranteed</td></tr>
+          <tr><td>Replay</td><td>No</td><td>Yes</td><td>Generally no</td></tr>
+          <tr><td>Typical use</td><td>Task queues, job dispatch, load leveling</td><td>Streaming, analytics, CDC, event sourcing</td><td>Broadcast notifications, multi-service fan-out</td></tr>
+        </table>
+        <p><strong>Rule of thumb:</strong> exactly one worker must reliably do a job &rarr; queue. Multiple systems must independently react to (and maybe replay) a stream of things that happened &rarr; Kafka. Broadcast a fact to whoever is listening right now, possibly across protocols &rarr; pub/sub. These are frequently combined in practice — SNS fan-out into per-consumer SQS queues, or Kafka Connect sinking into SQS/SNS for downstream systems that expect queue semantics.</p>
+
+        <div class="page-nav">
+          <a class="prev" href="load-balancing.html"><span class="dir">Previous</span>Networking &amp; Traffic Management</a>
+          <a class="next" href="coordination-orchestration.html"><span class="dir">Next</span>Coordination, Consensus &amp; Compute Orchestration</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

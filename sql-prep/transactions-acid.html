@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transactions &amp; ACID | SQL Prep | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">SQL Prep</a><span class="sep">/</span><span class="current">Transactions &amp; ACID</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to SQL Prep overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#acid-explained">ACID Explained</a></li>
+        <li><a href="#isolation-levels-and-the-anomalies-they-prevent">Isolation Levels and the Anomalies They Prevent</a></li>
+        <li><a href="#optimistic-vs-pessimistic-locking">Optimistic vs. Pessimistic Locking</a></li>
+        <li><a href="#deadlocks-in-database-transactions">Deadlocks in Database Transactions</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SQL PREP</span>
+          <h1>Transactions &amp; ACID</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Transaction questions test whether you understand the guarantees a database actually makes when things go wrong — a crash mid-write, two clients touching the same row at once, a query reading data another transaction hasn't committed yet. You should be able to define ACID precisely, map each SQL isolation level to the anomaly it prevents (and the one it still allows), and reason about optimistic vs. pessimistic locking trade-offs.</p>
+
+        <h2 id="acid-explained">ACID Explained</h2>
+        <ul>
+          <li><strong>Atomicity</strong> — a transaction's statements succeed or fail as a single indivisible unit; if any part fails, the entire transaction rolls back and the database is left as if it never started (e.g. a funds transfer either debits <em>and</em> credits both accounts, or does neither).</li>
+          <li><strong>Consistency</strong> — a transaction moves the database from one valid state to another, never violating declared constraints (foreign keys, unique constraints, check constraints) or invariants, even if it fails partway (atomicity's rollback restores validity).</li>
+          <li><strong>Isolation</strong> — concurrent transactions appear to execute as if run one at a time, to a degree controlled by the chosen isolation level; stronger isolation prevents more classes of interference between transactions at the cost of concurrency/throughput.</li>
+          <li><strong>Durability</strong> — once a transaction commits, its changes survive any subsequent crash, power loss, or restart — typically guaranteed via a write-ahead log flushed to durable storage before the commit is acknowledged.</li>
+        </ul>
+
+        <h2 id="isolation-levels-and-the-anomalies-they-prevent">Isolation Levels and the Anomalies They Prevent</h2>
+        <table>
+          <tr><th>Isolation Level</th><th>Dirty Read</th><th>Non-Repeatable Read</th><th>Phantom Read</th></tr>
+          <tr><td>Read Uncommitted</td><td>Possible</td><td>Possible</td><td>Possible</td></tr>
+          <tr><td>Read Committed</td><td>Prevented</td><td>Possible</td><td>Possible</td></tr>
+          <tr><td>Repeatable Read</td><td>Prevented</td><td>Prevented</td><td>Possible*</td></tr>
+          <tr><td>Serializable</td><td>Prevented</td><td>Prevented</td><td>Prevented</td></tr>
+        </table>
+        <p><em>*Some engines (e.g. MySQL InnoDB's Repeatable Read via multi-version concurrency control) prevent phantom reads in practice for most query patterns, going beyond the strict SQL standard definition — always verify against your specific database's documentation rather than assuming the standard's minimum guarantee.</em></p>
+
+        <ul>
+          <li><strong>Dirty read</strong> — reading a row that another transaction has modified but not yet committed; if that transaction rolls back, you "read" data that never really existed.</li>
+          <li><strong>Non-repeatable read</strong> — re-reading the same row twice within one transaction and getting different values, because another transaction committed an update to it in between.</li>
+          <li><strong>Phantom read</strong> — re-running the same range query twice within one transaction and getting a different <em>set of rows</em> (new rows appeared or disappeared), because another transaction inserted/deleted rows matching the condition in between.</li>
+        </ul>
+        <div class="callout">
+          <div class="callout-title">Trade-off</div>
+          Stronger isolation levels prevent more anomalies but reduce concurrency — <code>Serializable</code> often requires range locks or aborts/retries under contention, hurting throughput. <code>Read Committed</code> is the default in most production databases (e.g. PostgreSQL, Oracle, SQL Server) because it's a reasonable balance for most applications; reach for stricter levels only when the anomaly it prevents would cause a real business-logic bug.
+        </div>
+
+        <h2 id="optimistic-vs-pessimistic-locking">Optimistic vs. Pessimistic Locking</h2>
+        <table>
+          <tr><th>Aspect</th><th>Pessimistic Locking</th><th>Optimistic Locking</th></tr>
+          <tr><td>Strategy</td><td>Acquire a lock on the row(s) before reading/modifying, blocking other transactions until release</td><td>Read without locking; before committing, check whether the row changed since it was read (e.g. via a version/timestamp column)</td></tr>
+          <tr><td>Best for</td><td>High-contention workloads where conflicts are frequent</td><td>Low-contention workloads where conflicts are rare</td></tr>
+          <tr><td>Failure mode</td><td>Threads block/wait for the lock; risk of deadlock</td><td>Commit is rejected if a conflict is detected; caller must retry</td></tr>
+          <tr><td>Typical mechanism</td><td><code>SELECT ... FOR UPDATE</code>, database row/table locks</td><td>A <code>version</code> column checked in the <code>WHERE</code> clause of the update: <code>UPDATE t SET ..., version = version + 1 WHERE id = ? AND version = ?</code></td></tr>
+        </table>
+
+        <h2 id="deadlocks-in-database-transactions">Deadlocks in Database Transactions</h2>
+        <p>A database deadlock occurs when two transactions each hold a lock the other needs — e.g. Transaction A locks row 1 then requests a lock on row 2, while Transaction B locks row 2 then requests a lock on row 1. Most database engines run a background deadlock detector that finds this cycle and forcibly aborts one transaction (rolling it back and returning a deadlock error) so the other can proceed. Application code should catch this error and retry the aborted transaction. Prevention strategies mirror those for in-memory deadlocks: always acquire locks on multiple rows in a consistent order (e.g. always by ascending primary key), keep transactions short, and avoid interactive/user-input steps in the middle of an open transaction.</p>
+
+        <div class="formula-box">
+          <span class="formula-label">Worked example — isolation vs. throughput</span>
+          effective_throughput &asymp; base_throughput / (1 + contention_factor)
+          <br>e.g. moving from Read Committed to Serializable on a hot table can push the contention_factor from &asymp;0.1 to &asymp;0.8, dropping effective throughput from &asymp;909 tx/sec toward &asymp;556 tx/sec (base 1,000 tx/sec) as more transactions block or retry on conflicts.
+          <br>Stricter isolation buys correctness guarantees at a real, measurable throughput cost — pick the loosest level that still prevents the anomalies you can't tolerate.
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between a dirty read and a non-repeatable read?</div>
+          <div class="qa-a">A dirty read sees <em>uncommitted</em> data from another transaction — data that might not even end up existing if that transaction rolls back. A non-repeatable read sees data that another transaction has already <em>committed</em>, but between your own transaction's two reads of the same row, causing the value to change out from under you even though every read you performed was of committed data.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why does <code>Serializable</code> isolation reduce throughput compared to <code>Read Committed</code>?</div>
+          <div class="qa-a"><code>Serializable</code> must guarantee that concurrent transactions produce a result equivalent to some serial (one-at-a-time) execution, which typically requires broader locking (including range/gap locks to prevent phantoms) or optimistic conflict detection with transaction aborts. Both approaches increase blocking, retries, or lock contention compared to <code>Read Committed</code>, which only needs to hide uncommitted data.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">When would you choose optimistic locking over pessimistic locking?</div>
+          <div class="qa-a">When conflicting writes to the same row are rare — e.g. a user editing their own profile, where two people editing the same profile simultaneously is unlikely. Optimistic locking avoids the overhead and contention of acquiring locks up front and only pays a cost (a rejected commit and retry) in the rare case of an actual conflict. Pessimistic locking is better when conflicts are common enough that retries would be frequent and wasteful, such as a highly contended inventory counter.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How does a database typically resolve a detected deadlock?</div>
+          <div class="qa-a">A background deadlock detector periodically (or continuously) looks for a cycle in the "waits-for" graph of transactions blocked on each other's locks. When found, it picks a victim (often the transaction that has done the least work, or the one holding the fewest locks) and aborts it with a deadlock error, releasing its locks so the remaining transaction(s) can proceed. The aborted transaction's changes are rolled back and the application is expected to retry it.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Does Atomicity guarantee Consistency, or are they independent guarantees?</div>
+          <div class="qa-a">They're related but distinct. Atomicity guarantees that a transaction's effects are all-or-nothing; Consistency guarantees that any state the database reaches (including after a rollback) satisfies its declared constraints and invariants. Atomicity is one of the mechanisms that helps achieve consistency (a failed transaction can't leave partial, invalid changes behind), but consistency also depends on the constraints themselves being correctly defined — atomicity alone can't stop a fully-committed transaction from violating a business rule that was never encoded as a database constraint.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          ACID = Atomicity, Consistency, Isolation, Durability. Each isolation level trades concurrency for protection against a specific anomaly — Read Uncommitted prevents nothing, Serializable prevents everything (dirty reads, non-repeatable reads, phantom reads) at the highest concurrency cost. Use pessimistic locking under high contention, optimistic locking under low contention, and always design a consistent lock-acquisition order to avoid deadlocks.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="indexing-optimization.html"><span class="dir">Previous</span>Indexing &amp; Query Optimization</a>
+          <a class="next" href="index.html"><span class="dir">Next</span>Topic Overview</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

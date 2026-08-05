@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multithreading &amp; Concurrency | Java | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Java</a><span class="sep">/</span><span class="current">Multithreading &amp; Concurrency</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Java overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#thread-vs-runnable">Thread vs. Runnable</a></li>
+        <li><a href="#the-synchronized-keyword-and-intrinsic-locks">The <code>synchronized</code> Keyword and Intrinsic Locks</a></li>
+        <li><a href="#volatile"><code>volatile</code></a></li>
+        <li><a href="#the-javautilconcurrent-package">The <code>java.util.concurrent</code> Package</a></li>
+        <li><a href="#concurrenthashmap-internals"><code>ConcurrentHashMap</code> Internals</a></li>
+        <li><a href="#deadlock-conditions-and-prevention">Deadlock: Conditions and Prevention</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">JAVA</span>
+          <h1>Multithreading &amp; Concurrency</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>Concurrency questions probe whether you can reason about shared mutable state across threads — where races, visibility bugs, and deadlocks come from, and which tool in <code>java.util.concurrent</code> solves which problem. Expect a mix of conceptual questions (what does <code>volatile</code> actually guarantee?) and applied ones (how would you run five tasks in parallel and combine their results?).</p>
+
+        <h2 id="thread-vs-runnable">Thread vs. Runnable</h2>
+        <p>You can create a thread of execution two ways: extend <code>Thread</code> and override <code>run()</code>, or implement <code>Runnable</code> (a functional interface with a single <code>run()</code> method) and pass it to a <code>Thread</code> or an executor. <code>Runnable</code> is almost always preferred: Java has single class inheritance, so extending <code>Thread</code> burns your one <code>extends</code> slot, and <code>Runnable</code> decouples the "what to run" from the "how it's executed" (letting you hand it to a thread pool instead of manually managing threads).</p>
+        <pre><code>// Preferred: Runnable + executor, no Thread subclassing needed
+Runnable task = () -&gt; System.out.println("running on " + Thread.currentThread().getName());
+new Thread(task).start();
+</code></pre>
+
+        <h2 id="the-synchronized-keyword-and-intrinsic-locks">The <code>synchronized</code> Keyword and Intrinsic Locks</h2>
+        <p>Every Java object has an associated intrinsic lock (monitor). Marking a method or block <code>synchronized</code> forces a thread to acquire that object's monitor before entering, and release it on exit (even if an exception is thrown). This guarantees both <strong>mutual exclusion</strong> (only one thread executes the critical section at a time) and <strong>visibility</strong> (changes made inside a synchronized block by one thread are visible to the next thread that acquires the same lock, thanks to the Java Memory Model's happens-before ordering).</p>
+        <pre><code>public class Counter {
+    private int count = 0;
+
+    public synchronized void increment() { // locks "this"
+        count++;
+    }
+
+    public synchronized int get() {
+        return count;
+    }
+}
+</code></pre>
+
+        <h2 id="volatile"><code>volatile</code></h2>
+        <p><code>volatile</code> guarantees <strong>visibility</strong> (every read sees the most recent write from any thread — the value is never cached in a CPU register or per-thread cache) and prevents instruction reordering around the variable, but it does <strong>not</strong> provide mutual exclusion. A compound operation like <code>count++</code> on a <code>volatile int</code> is still not atomic (it's a read-modify-write of three steps), so <code>volatile</code> is appropriate for simple flags (e.g. a <code>shutdown</code> boolean checked in a loop), not for counters or anything requiring atomic updates — use <code>AtomicInteger</code> or <code>synchronized</code> for those.</p>
+
+        <h2 id="the-javautilconcurrent-package">The <code>java.util.concurrent</code> Package</h2>
+        <table>
+          <tr><th>Utility</th><th>Purpose</th></tr>
+          <tr><td><code>ExecutorService</code></td><td>Manages a pool of worker threads; submit tasks instead of creating raw <code>Thread</code>s</td></tr>
+          <tr><td><code>Future</code> / <code>CompletableFuture</code></td><td>Represents the result of an asynchronous computation; <code>CompletableFuture</code> adds composable, non-blocking chaining (<code>thenApply</code>, <code>thenCombine</code>)</td></tr>
+          <tr><td><code>CountDownLatch</code></td><td>One-time gate — N threads call <code>countDown()</code>, one or more threads <code>await()</code> until the count hits zero (e.g. wait for all workers to finish startup)</td></tr>
+          <tr><td><code>Semaphore</code></td><td>Limits concurrent access to a resource to a fixed number of permits (e.g. cap concurrent DB connections)</td></tr>
+          <tr><td><code>ConcurrentHashMap</code></td><td>Thread-safe map with fine-grained internal locking, far more scalable than <code>Collections.synchronizedMap</code></td></tr>
+        </table>
+
+        <pre><code>ExecutorService pool = Executors.newFixedThreadPool(4);
+
+Future&lt;Integer&gt; future = pool.submit(() -&gt; {
+    Thread.sleep(100);
+    return 42;
+});
+
+// CompletableFuture: non-blocking composition
+CompletableFuture
+    .supplyAsync(() -&gt; fetchOrderTotal(), pool)
+    .thenApply(total -&gt; total * 1.08)          // apply tax
+    .thenAccept(finalTotal -&gt; System.out.println(finalTotal))
+    .exceptionally(ex -&gt; { log(ex); return null; });
+
+int result = future.get(); // blocks until the task completes
+pool.shutdown();
+</code></pre>
+
+        <div class="formula-box">
+          <span class="formula-label">Thread-pool sizing guidance</span>
+          For CPU-bound work: threads &asymp; N_cpu + 1
+          <br>For mixed CPU/I&#8209;O-bound work: threads &asymp; N_cpu &times; (1 + wait_time / compute_time)
+          <br>Example: 8 cores, tasks spend 80% of their time waiting on I/O (wait/compute = 4) &rarr; threads &asymp; 8 &times; (1 + 4) = 40
+        </div>
+
+        <h2 id="concurrenthashmap-internals"><code>ConcurrentHashMap</code> Internals</h2>
+        <p>Unlike <code>Collections.synchronizedMap(new HashMap&lt;&gt;())</code>, which serializes every operation behind a single lock, <code>ConcurrentHashMap</code> divides the table into fine-grained lock domains. In Java 7 this was explicit "segments" (16 by default); since Java 8, the implementation locks at the level of individual bucket heads (using synchronized blocks on the first node of a bin, plus CAS operations for lock-free reads and initial inserts). Reads are largely lock-free, and writes only contend if they target the <em>same bucket</em> — two threads writing to different buckets proceed in parallel. This makes <code>ConcurrentHashMap</code> dramatically more scalable under high concurrency than a globally-synchronized map, at the cost of only weakly-consistent iterators (fail-safe, not fail-fast).</p>
+
+        <h2 id="deadlock-conditions-and-prevention">Deadlock: Conditions and Prevention</h2>
+        <p>A deadlock requires all four Coffman conditions to hold simultaneously: <strong>mutual exclusion</strong> (resources can't be shared), <strong>hold and wait</strong> (a thread holds one lock while waiting for another), <strong>no preemption</strong> (a lock can't be forcibly taken away), and <strong>circular wait</strong> (a cycle of threads each waiting on a resource held by the next). Break any one condition and deadlock becomes impossible.</p>
+        <ul>
+          <li><strong>Lock ordering</strong> — always acquire multiple locks in a fixed, global order to eliminate circular wait.</li>
+          <li><strong>Lock timeout</strong> — use <code>tryLock(timeout)</code> from <code>java.util.concurrent.locks.Lock</code> instead of blocking <code>synchronized</code>, and back off/retry on failure.</li>
+          <li><strong>Reduce lock scope</strong> — hold locks for the shortest time possible and avoid calling out to unknown code while holding one.</li>
+          <li><strong>Prefer higher-level utilities</strong> — <code>java.util.concurrent</code> classes (e.g. <code>ConcurrentHashMap</code>, atomics) sidestep the need for manual locking in many common cases.</li>
+        </ul>
+        <div class="callout">
+          <div class="callout-title">Classic example</div>
+          Thread A locks account <code>X</code> then tries to lock account <code>Y</code> to perform a transfer; Thread B simultaneously locks <code>Y</code> then tries to lock <code>X</code> for the reverse transfer. Both threads block forever. Fix: always lock accounts in a consistent order (e.g. by account ID) regardless of transfer direction.
+        </div>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between <code>synchronized</code> and a <code>ReentrantLock</code>?</div>
+          <div class="qa-a"><code>synchronized</code> is a JVM-managed intrinsic lock — simpler syntax, automatic release on block exit/exception, but blocking-only and no fairness control. <code>ReentrantLock</code> (from <code>java.util.concurrent.locks</code>) offers <code>tryLock()</code> with timeouts, interruptible lock acquisition, fairness policies, and multiple condition variables via <code>newCondition()</code> — at the cost of requiring an explicit <code>finally</code> block to release the lock.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Does making a variable <code>volatile</code> make compound operations like <code>i++</code> thread-safe?</div>
+          <div class="qa-a">No. <code>i++</code> is read-modify-write; <code>volatile</code> only guarantees each individual read/write is visible across threads, not that the whole sequence is atomic. Two threads can both read the same value before either writes back, losing an update. Use <code>AtomicInteger.incrementAndGet()</code> or synchronization for atomic increments.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How does <code>CompletableFuture</code> improve on plain <code>Future</code>?</div>
+          <div class="qa-a"><code>Future.get()</code> blocks the calling thread and offers no way to chain follow-up work or combine multiple futures. <code>CompletableFuture</code> supports non-blocking composition (<code>thenApply</code>, <code>thenCompose</code>, <code>thenCombine</code>), exception handling (<code>exceptionally</code>, <code>handle</code>), and manual completion, making it suitable for building async pipelines.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why is <code>ConcurrentHashMap</code> preferred over <code>Collections.synchronizedMap</code> for high-throughput code?</div>
+          <div class="qa-a"><code>synchronizedMap</code> wraps every method call in a lock on a single monitor, so all threads serialize even on unrelated keys. <code>ConcurrentHashMap</code> locks at the bucket level (Java 8+) and uses lock-free reads, so unrelated writes proceed concurrently and reads almost never block — giving far better throughput under contention.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you size a thread pool for a service that's mostly waiting on network calls?</div>
+          <div class="qa-a">Since the workload is I/O-bound, the wait_time/compute_time ratio is high, so the pool should have more threads than cores — apply threads &asymp; N_cpu &times; (1 + wait/compute). Oversizing a pool for CPU-bound work wastes memory and increases context-switch overhead; oversizing for I/O-bound work is usually safe and often necessary to keep the CPU busy while other threads wait.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          <code>synchronized</code>/intrinsic locks give you mutual exclusion + visibility; <code>volatile</code> gives you visibility only. Prefer <code>java.util.concurrent</code> building blocks (executors, atomics, concurrent collections) over hand-rolled locking. Deadlocks require all four Coffman conditions — breaking circular wait via consistent lock ordering is usually the cheapest fix.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="collections.html"><span class="dir">Previous</span>Collections Framework</a>
+          <a class="next" href="jvm-internals.html"><span class="dir">Next</span>JVM Internals &amp; Memory Management</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

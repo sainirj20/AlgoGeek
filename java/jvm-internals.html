@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JVM Internals &amp; Memory Management | Java | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">Java</a><span class="sep">/</span><span class="current">JVM Internals &amp; Memory Management</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to Java overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#jvm-memory-areas">JVM Memory Areas</a></li>
+        <li><a href="#class-loading">Class Loading</a></li>
+        <li><a href="#garbage-collection-algorithms-conceptual">Garbage Collection Algorithms (Conceptual)</a></li>
+        <li><a href="#xms-xmx-tuning-basics"><code>-Xms</code> / <code>-Xmx</code> Tuning Basics</a></li>
+        <li><a href="#common-interview-questions">Common Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">JAVA</span>
+          <h1>JVM Internals &amp; Memory Management</h1>
+        </div>
+
+        <h2 id="overview">Overview</h2>
+        <p>JVM internals questions test whether you understand what actually happens between compiling a <code>.java</code> file and running it — where objects live in memory, how classes get loaded, and how garbage is collected without you ever calling <code>free()</code>. You don't need to have implemented a GC, but you should be able to reason about heap layout, generational collection, and the practical impact of common JVM flags.</p>
+
+        <h2 id="jvm-memory-areas">JVM Memory Areas</h2>
+        <table>
+          <tr><th>Region</th><th>Stores</th><th>Per-thread?</th></tr>
+          <tr><td>Heap</td><td>All objects and arrays (via <code>new</code>); divided into Young and Old generations</td><td>Shared</td></tr>
+          <tr><td>Stack</td><td>Method call frames — local variables, operand stack, return addresses</td><td>Yes, one per thread</td></tr>
+          <tr><td>Metaspace</td><td>Class metadata (replaced PermGen in Java 8+); grows into native memory, not the heap</td><td>Shared</td></tr>
+          <tr><td>PC Register</td><td>Address of the currently executing JVM instruction</td><td>Yes, one per thread</td></tr>
+          <tr><td>Native method stacks</td><td>Frames for native (JNI) method calls</td><td>Yes, one per thread</td></tr>
+        </table>
+
+        <h3>Heap Layout (Generational Hypothesis)</h3>
+        <pre><code>Heap
++-------------------------------------------+-------------------+
+|                Young Generation           |   Old Generation   |
+|  +----------+  +----------+  +---------+  |                     |
+|  |   Eden   |  |Survivor 0|  |Survivor1|  |   (tenured objects) |
+|  +----------+  +----------+  +---------+  |                     |
++-------------------------------------------+-------------------+
+                                              Metaspace (native memory,
+                                              class metadata — not on heap)
+</code></pre>
+        <p>New objects are allocated in <strong>Eden</strong>. A minor GC copies surviving objects between the two <strong>Survivor</strong> spaces, aging them each cycle; once an object survives enough minor GCs (the tenuring threshold), it's promoted ("tenured") into the <strong>Old Generation</strong>. Old-gen collections (major/full GCs) run far less often but cost much more per collection since the region is larger and typically requires compaction.</p>
+
+        <div class="formula-box">
+          <span class="formula-label">Generational hypothesis</span>
+          Most objects die young &rarr; minor GC (Eden + Survivor) is frequent and cheap, touching only a small, mostly-garbage region.
+          <br>Few objects survive long &rarr; major/full GC (Old Gen) is rare but expensive, often causing longer "stop-the-world" pauses.
+          <br>Design implication: keep short-lived objects small and scoped so they never leave Eden; long-lived caches belong in Old Gen by design, not by accident.
+        </div>
+
+        <h2 id="class-loading">Class Loading</h2>
+        <p>Classes are loaded lazily, on first active use, by a hierarchy of class loaders following the <strong>delegation model</strong>: each loader asks its parent to load a class before attempting to load it itself, so classes are only loaded by the most specific loader if no ancestor can find them.</p>
+        <ul>
+          <li><strong>Bootstrap ClassLoader</strong> — loads core JDK classes (<code>java.lang.*</code>, etc.) from the runtime library; written in native code, has no parent.</li>
+          <li><strong>Extension/Platform ClassLoader</strong> — loads classes from the extensions/platform module path.</li>
+          <li><strong>Application (System) ClassLoader</strong> — loads classes from the application classpath; the default loader for your own code.</li>
+        </ul>
+        <p>Each loaded class goes through three phases: <strong>loading</strong> (reading bytecode into a binary form), <strong>linking</strong> (verification of bytecode correctness, preparation of static fields with default values, and optional resolution of symbolic references), and <strong>initialization</strong> (running static initializers and assigning declared static field values).</p>
+        <div class="callout">
+          <div class="callout-title">Why delegation matters</div>
+          The parent-first delegation model prevents a malicious or accidental redefinition of a core class like <code>java.lang.String</code> from your own classpath — the bootstrap loader always gets first crack at loading it, so your version is never used.
+        </div>
+
+        <h2 id="garbage-collection-algorithms-conceptual">Garbage Collection Algorithms (Conceptual)</h2>
+        <table>
+          <tr><th>Collector</th><th>Approach</th><th>Best for</th></tr>
+          <tr><td>Serial</td><td>Single-threaded, stop-the-world for both minor and major GC</td><td>Small heaps, single-core environments, simple apps</td></tr>
+          <tr><td>Parallel (Throughput)</td><td>Multiple threads collect in parallel, still stop-the-world</td><td>Batch jobs prioritizing overall throughput over pause time</td></tr>
+          <tr><td>G1 (Garbage First)</td><td>Divides the heap into equal-sized regions; concurrently collects the regions with the most garbage first, targeting a configurable pause-time goal</td><td>Large heaps needing a balance of throughput and predictable pauses (default since Java 9)</td></tr>
+          <tr><td>ZGC</td><td>Fully concurrent, uses colored pointers and load barriers to do marking/relocation work without stopping application threads; pause times stay in the low single-digit milliseconds regardless of heap size</td><td>Very large heaps (multi-GB to TB) with strict low-latency requirements</td></tr>
+        </table>
+
+        <h2 id="xms-xmx-tuning-basics"><code>-Xms</code> / <code>-Xmx</code> Tuning Basics</h2>
+        <p><code>-Xms</code> sets the initial heap size and <code>-Xmx</code> sets the maximum heap size. Setting them equal (<code>-Xms4g -Xmx4g</code>) avoids the overhead of the JVM repeatedly resizing the heap at runtime, which is common practice for latency-sensitive services. Undersizing <code>-Xmx</code> causes frequent, expensive full GCs (or <code>OutOfMemoryError</code>); oversizing it wastes memory and can increase individual GC pause times (more live data to trace/compact). Related flags: <code>-XX:NewRatio</code> (old:young size ratio) and <code>-XX:MaxGCPauseMillis</code> (a target hint for G1/ZGC, not a hard guarantee).</p>
+
+        <h2 id="common-interview-questions">Common Interview Questions</h2>
+
+        <div class="qa-item">
+          <div class="qa-q">Why was PermGen replaced with Metaspace in Java 8?</div>
+          <div class="qa-a">PermGen had a fixed maximum size configured at JVM startup (<code>-XX:MaxPermSize</code>) and commonly caused <code>OutOfMemoryError: PermGen space</code> in applications that loaded many classes dynamically (e.g. app servers with frequent redeploys). Metaspace allocates class metadata from native memory instead, growing automatically (bounded only by available system memory or <code>-XX:MaxMetaspaceSize</code> if set), which eliminated that whole class of failure.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">What's the practical difference between a minor GC and a major/full GC?</div>
+          <div class="qa-a">A minor GC collects only the Young Generation (Eden + Survivor spaces) and is fast because most young objects are already garbage. A major/full GC collects the Old Generation (and often the whole heap plus Metaspace), is far more expensive, and typically causes longer stop-the-world pauses since it deals with more live data and may need to compact memory.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">How does G1 GC decide which regions to collect first?</div>
+          <div class="qa-a">G1 divides the heap into many equal-sized regions rather than one contiguous Young/Old space. It tracks how much garbage each region holds and, to hit a configured pause-time target, prioritizes collecting the regions with the most reclaimable garbage first — hence "Garbage First."</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Your service has frequent long GC pauses. What would you check first?</div>
+          <div class="qa-a">First check the GC logs to see which collector is running and whether pauses correlate with major/full GCs (Old Gen) or Metaspace growth. Common fixes: increase heap size if it's undersized and thrashing, switch to a low-pause collector like G1 or ZGC if using Serial/Parallel, check for memory leaks (Old Gen growing without bound), and verify object lifetimes aren't unnecessarily promoting short-lived objects out of Eden.</div>
+        </div>
+
+        <div class="qa-item">
+          <div class="qa-q">Why does setting <code>-Xms</code> equal to <code>-Xmx</code> help latency-sensitive applications?</div>
+          <div class="qa-a">If the initial heap is smaller than the max, the JVM must periodically pause to expand the heap as demand grows, which adds unpredictable latency. Fixing both to the same value pre-allocates the full heap up front, trading a larger initial memory footprint for consistent, predictable performance.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          Most objects die young — that's the whole justification for generational GC and why minor GCs are cheap. Class loading follows parent-first delegation for security and consistency. Pick a collector based on your latency/throughput needs: Parallel for batch throughput, G1 for balanced general-purpose use, ZGC for very large heaps with strict pause-time requirements.
+        </div>
+
+        <div class="page-nav">
+          <a class="prev" href="concurrency.html"><span class="dir">Previous</span>Multithreading &amp; Concurrency</a>
+          <a class="next" href="java8-features.html"><span class="dir">Next</span>Java 8+ Features (Streams &amp; Lambdas)</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

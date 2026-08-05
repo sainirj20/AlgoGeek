@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BookMyShow | System Design — Modern Systems | Interview Prep Hub</title>
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="../index.html" class="brand">Home</a>
+    </div>
+        <nav class="hub-nav">
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Courses <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../java/index.html">Java</a></li>
+          <li><a href="../spring/index.html">Spring</a></li>
+          <li><a href="../jpa-hibernate/index.html">JPA / Hibernate</a></li>
+          <li><a href="../sql-prep/index.html">SQL Prep</a></li>
+          <li><a href="../cloud/index.html">Cloud</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">DSA <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ds-algo-questions/index.html">DSA Questions</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Architecture <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../software-architecture/index.html">Software Architecture Patterns</a></li>
+          <li><a href="../microservices/index.html">Microservices &mdash; Fundamentals</a></li>
+          <li><a href="../system-design-building-units/index.html">Microservices &mdash; Building Units</a></li>
+          <li><a href="../database-types/index.html">Database Types</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Design <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../system-design-sub-systems/index.html">System Design &mdash; Sub Systems</a></li>
+          <li><a href="../system-design-modern/index.html">System Design &mdash; Modern Systems</a></li>
+          <li><a href="../system-design-case-studies/index.html">System Design &mdash; Case Studies</a></li>
+          <li><a href="../object-oriented-design/index.html">Object Oriented Design</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">Soft Skills <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../soft-skills/index.html">Soft Skills</a></li>
+        </ul>
+      </div>
+      <div class="hub-nav-item">
+        <button class="hub-nav-trigger" type="button">AI <span class="hub-nav-caret">&#9662;</span></button>
+        <ul class="hub-nav-dropdown">
+          <li><a href="../ai/index.html">AI</a></li>
+          <li><a href="../ai-2/index.html">AI 2</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumb">
+      <a href="../index.html">Home</a><span class="sep">/</span><a href="index.html">System Design — Modern Systems</a><span class="sep">/</span><span class="current">BookMyShow</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="sidebar-back" href="index.html">&larr; Back to System Design — Modern Systems overview</a>
+      <div class="sidebar-heading">On This Page</div>
+      <ul class="sidebar-list">
+        <li><a href="#problem-statement-and-scope">Problem Statement &amp; Scope</a></li>
+        <li><a href="#functional-requirements">Functional Requirements</a></li>
+        <li><a href="#non-functional-requirements">Non-Functional Requirements</a></li>
+        <li><a href="#assumptions-and-constraints">Assumptions &amp; Constraints</a></li>
+        <li><a href="#capacity-estimation-and-constraints">Capacity Estimation and Constraints</a></li>
+        <li><a href="#api-design">API Design</a></li>
+        <li><a href="#high-level-design">High-Level Design</a></li>
+        <li><a href="#low-level-design">Low-Level Design</a></li>
+        <li><a href="#database-schema">Database Schema</a></li>
+        <li><a href="#data-sharding">Data Sharding</a></li>
+        <li><a href="#feature-specific-logic">Feature-Specific Logic</a></li>
+        <li><a href="#replication-and-fault-tolerance">Replication and Fault Tolerance</a></li>
+        <li><a href="#monitoring-logging-and-analytics">Monitoring, Logging &amp; Analytics</a></li>
+        <li><a href="#follow-up-interview-questions">Follow-up Interview Questions</a></li>
+        <li><a href="#key-takeaways">Key Takeaways</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <article class="article">
+        <div class="article-header">
+          <span class="article-tag">SYSTEM DESIGN</span>
+          <h1>Designing BookMyShow</h1>
+        </div>
+
+        <p><em>A complete, interview-ready design walkthrough for a BookMyShow-class online movie ticket booking platform (directly comparable to Ticketmaster): requirements and capacity estimation, API design, high-level and low-level architecture, the seat-hold concurrency-control mechanics, database schema and sharding, feature-specific logic (waitlist, search, recommendations), replication and fault tolerance, monitoring/analytics/notifications, and a bank of follow-up interview questions.</em></p>
+
+        <div class="callout">
+          <div class="callout-title">A note on sources</div>
+          This design synthesizes two ground-truth sources into one coherent write-up: (1) a hand-drawn microservices architecture (used as the primary backbone for the High-Level Design and database schema) and (2) the classic "Design Ticketmaster" reference write-up (used for functional/non-functional requirement rigor, capacity estimation, API contracts, and concurrency-control detail). Where the two sources disagree, the conflict is called out explicitly, rather than silently resolved &mdash; see the two reconciliations under Assumptions &amp; Constraints below.
+        </div>
+
+        <h2 id="problem-statement-and-scope">Problem Statement &amp; Scope</h2>
+        <p>Design a large-scale online movie ticket booking platform (BookMyShow-class, directly comparable to Ticketmaster) that lets users across multiple cities browse movies, theaters, and showtimes, view a live seat map, select seats, temporarily hold them, pay, and receive a ticket &mdash; while guaranteeing <strong>no double-booking</strong> under heavy concurrent demand, and treating the underlying theater inventory as a <strong>third-party system</strong> that BookMyShow integrates with rather than owns.</p>
+        <p>That last clause is the single most important framing decision in the whole design, and it is worth stating to an interviewer in the first minute: BookMyShow is fundamentally an <strong>aggregator/integration layer</strong> on top of independently-operated theater-chain (PVR) systems, not the system of record for seat inventory. Almost every subsequent decision &mdash; the existence of an Order Service adaptor layer, the two cooperating lock layers in Low-Level Design, the blast-radius argument in Replication &amp; Fault Tolerance &mdash; falls directly out of this one constraint.</p>
+
+        <h3>In scope</h3>
+        <ul>
+          <li>City / movie / theater discovery and showtime browsing</li>
+          <li>Live seat map with multi-seat selection (up to 10 seats/booking)</li>
+          <li>Temporary seat hold with payment-gated confirmation (all-or-nothing)</li>
+          <li>Waitlisting when a show is fully booked/held, with strict FCFS fairness</li>
+          <li>Ticket delivery via SMS/email, plus confirmation back to the originating theater</li>
+          <li>Free-text search, ratings/comments, and personalized recommendations</li>
+          <li>Admin ingestion of new movies/theaters/cities/showtimes by PVR (theater-chain) partners</li>
+        </ul>
+
+        <h3>Out of scope (state this explicitly to the interviewer)</h3>
+        <ul>
+          <li>Payment-gateway internals</li>
+          <li>Pricing/discount-engine internals</li>
+          <li>Physical ticket-scanning / entry-gate hardware</li>
+          <li>Refund/cancellation policy engine</li>
+          <li>Non-standard venue seat maps (e.g., stadium/concert General-Admission zones) &mdash; though the Follow-Up Interview Questions section shows how the same core machinery generalizes to GA ticketing, which is exactly why this design is presented as Ticketmaster-comparable</li>
+        </ul>
+
+        <h2 id="functional-requirements">Functional Requirements</h2>
+        <p>These are the concrete, testable behaviors the system must support &mdash; state them explicitly at the start of an interview so both you and the interviewer are anchored to the same scope before any boxes get drawn.</p>
+        <ol>
+          <li>Display the list of cities where the service is available.</li>
+          <li>User selects a city, then a movie (or a theater first &mdash; both directions supported); system shows affiliate cinemas (PVR/theater chains) in that city carrying the movie, with showtimes. Multi-city support is a first-class requirement, not an afterthought.</li>
+          <li>No geo-radius / proximity constraint is required &mdash; a user may search and book shows in <strong>any</strong> city worldwide, not just one near their current location. (The classic API keeps optional lat_long/radius parameters for flexibility/future-proofing, but this is not a hard product requirement here.)</li>
+          <li>For a chosen show, display the seat map, clearly distinguishing <strong>available</strong> vs. <strong>booked/held</strong> seats.</li>
+          <li>User selects one or more seats (multi-seat selection) and initiates a booking.</li>
+          <li>Selected seats are <strong>held</strong> for a fixed window before payment must complete &mdash; <strong>all-or-nothing</strong>, no partial orders (either every requested seat is locked/booked, or none are).</li>
+          <li>If payment does not complete inside the hold window, the hold expires automatically and the seats return to the available pool.</li>
+          <li>If a show is fully booked/held, users may join a <strong>waitlist</strong>; when a hold expires or a booking is cancelled, the longest-waiting eligible user(s) are notified <strong>first-come-first-served (FCFS)</strong>.</li>
+          <li>A single booking request cannot exceed <strong>10 seats</strong> (abuse-prevention cap).</li>
+          <li>On successful payment: the ticket is delivered via <strong>SMS/email</strong>, and the finalized booking is confirmed back to the originating theater's own system (since BookMyShow does not own the theater's seat inventory).</li>
+          <li>Users can search movies/shows via free-text query, view ratings/comments per movie, and see a personalized home page (recommended movies, "trending now").</li>
+          <li>Admins (PVR/theater-chain operators) can add new movies, trailers, cities, cinemas, and showtimes via an ingestion pipeline.</li>
+        </ol>
+
+        <h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+        <p>The non-functional requirements are where this design earns its "hard interview question" reputation: the headline NFR &mdash; high concurrency &mdash; sounds like a throughput problem but is actually a hot-key contention problem, and that reframing (developed fully in Capacity Estimation, below) drives the sharding and locking strategy throughout the rest of the design.</p>
+        <table>
+          <tr><th>NFR</th><th>Detail</th></tr>
+          <tr><td>High concurrency</td><td>Many users compete for the same small seat set on a popular show at the exact on-sale moment; must serialize contention correctly without collapsing under load.</td></tr>
+          <tr><td>Strong consistency on the critical path</td><td>ACID guarantees for booking + payment (financial transaction) &mdash; no double-booking, no lost holds, no partial charge.</td></tr>
+          <tr><td>High availability on the read path</td><td>Browse/search/home-page traffic can be eventually consistent and cache-friendly; favor availability and low latency here.</td></tr>
+          <tr><td>Low latency / responsive UI</td><td>Seat-map interaction and search should feel instantaneous &mdash; target sub-200ms p95 reads, sub-second reservation attempts.</td></tr>
+          <tr><td>Fairness</td><td>Waitlisted users are served strictly FCFS.</td></tr>
+          <tr><td>Scalability under spiky load</td><td>Blockbuster/on-sale-moment surges can be 50&ndash;100x baseline <strong>on a single show</strong> &mdash; a hot-key problem, not just an aggregate-throughput problem.</td></tr>
+          <tr><td>Durability</td><td>Booking and payment records must survive process/node crashes (audit + dispute resolution).</td></tr>
+          <tr><td>Abuse prevention &amp; security</td><td>Max 10 seats/booking; SSL, authentication/authorization at the edge.</td></tr>
+        </table>
+
+        <h2 id="assumptions-and-constraints">Assumptions &amp; Constraints</h2>
+        <ul>
+          <li><strong>3rd-party integration model:</strong> BookMyShow does <strong>not</strong> own theater seat inventory. Each theater chain runs its own independent backend (own MySQL + Redis); BookMyShow's Order Service is purely an integration/adapter layer. This shapes almost every downstream decision (High-Level Design, Data Sharding, Replication &amp; Fault Tolerance).</li>
+          <li><strong>No partial orders:</strong> a request for N seats either fully succeeds or fully fails &mdash; never partially reserved/charged.</li>
+          <li>Ticket delivery via SMS/email (no in-app wallet/QR assumed unless explicitly added).</li>
+          <li><strong>Max 10 seats per booking</strong> (both sources agree).</li>
+          <li><strong>No proximity/geo-radius search requirement</strong> &mdash; worldwide browse/booking is allowed.</li>
+        </ul>
+
+        <div class="callout">
+          <div class="callout-title">Reconciliation #1 &mdash; Hold duration: 10 minutes vs. 5 minutes</div>
+          The hand-drawn spec (the user's own stated requirement) says <strong>hold seats for 10 minutes</strong> before payment must finalize. The classic Ticketmaster write-up uses <strong>5 minutes</strong>. <strong>We adopt 10 minutes as the primary spec</strong> throughout this document, since it is the user's explicit product requirement &mdash; but we flag 5 minutes as a common industry-standard alternative an interviewer may probe on. Trade-off: a shorter hold increases seat turnover/availability under contention but raises the risk of legitimate users timing out mid-payment (e.g., slow UPI/netbanking round-trips); a longer hold improves payment UX but keeps hot seats locked longer during a surge. Treat the hold window as an A/B-tunable parameter, not a hardcoded constant (see Follow-Up Interview Questions).
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Reconciliation #2 &mdash; Authentication: required vs. simplified away</div>
+          The classic write-up simplifies by assuming <strong>no user authentication</strong>. The hand-drawn architecture explicitly includes a <strong>User Service</strong> behind the API Gateway performing authentication/authorization. <strong>We treat auth as required</strong> in this design &mdash; it is needed anyway to (a) deliver tickets to a known email/phone, (b) enforce the per-user 10-seat abuse cap, and (c) track waitlist identity per user. The no-auth version is noted only as a textbook simplification some interviewers accept to reduce scope.
+        </div>
+
+        <ul>
+          <li>BookMyShow <strong>does</strong> own: users, bookings/reservations metadata, catalog (as published by PVR admins), search index, ratings, recommendations, notifications, and analytics.</li>
+          <li>BookMyShow does <strong>not</strong> own real-time seat-inventory truth &mdash; that lives in each theater's own Order-Service-fronted database.</li>
+        </ul>
+
+        <h2 id="capacity-estimation-and-constraints">Capacity Estimation and Constraints</h2>
+        <p>Given traffic profile: <strong>3 billion page views/month</strong>, <strong>10 million tickets sold/month</strong>. Always state assumptions explicitly, then derive numbers &mdash; interviewers care about the method, not decimal precision.</p>
+
+        <h3>Storage &mdash; step by step</h3>
+        <p>Inventory footprint model: 500 cities &times; 10 cinemas/city &times; 2,000 seats/cinema &times; 2 shows/day &times; (50 bytes seat-booking record + 50 bytes movie/cinema metadata).</p>
+        <table>
+          <tr><th>Step</th><th>Calculation</th><th>Result</th></tr>
+          <tr><td>Cinemas</td><td>500 cities &times; 10 cinemas/city</td><td><strong>5,000 cinemas</strong></td></tr>
+          <tr><td>Total physical seats</td><td>5,000 cinemas &times; 2,000 seats/cinema</td><td><strong>10,000,000 seats</strong></td></tr>
+          <tr><td>Seat-show slots/day</td><td>10,000,000 seats &times; 2 shows/day</td><td><strong>20,000,000 records/day</strong></td></tr>
+          <tr><td>Bytes per record</td><td>50 bytes (seat-booking) + 50 bytes (movie/cinema metadata)</td><td><strong>100 bytes</strong></td></tr>
+          <tr><td>Storage/day</td><td>20,000,000 &times; 100 bytes</td><td><strong>2,000,000,000 bytes = 2 GB/day</strong></td></tr>
+          <tr><td>Storage/year</td><td>2 GB/day &times; 365 days</td><td><strong>730 GB/year</strong></td></tr>
+          <tr><td>Storage/5 years</td><td>730 GB &times; 5</td><td><strong>3,650 GB &asymp; 3.6 TB</strong></td></tr>
+        </table>
+
+        <p><strong>Extended derivation</strong> &mdash; why the 3.6 TB is mostly seat-map/metadata "shape" data, not booking transactions:</p>
+        <table>
+          <tr><th>Metric</th><th>Formula</th><th>Value</th></tr>
+          <tr><td>Seat-show slots/year</td><td>20M/day &times; 365</td><td>&asymp; 7.3 billion</td></tr>
+          <tr><td>Tickets sold/year</td><td>10M/month &times; 12</td><td>120 million</td></tr>
+          <tr><td>Booked fraction of seat-show inventory</td><td>120M / 7.3B</td><td>&asymp; 1.6%</td></tr>
+          <tr><td>Est. Booking+Payment record size</td><td>BookingID, UserID, ShowID, seat list, timestamp, status, payment linkage</td><td>&asymp; 200 bytes</td></tr>
+          <tr><td>Booking table growth/year</td><td>120M &times; 200 bytes</td><td>&asymp; 24 GB/year</td></tr>
+          <tr><td>Booking table over 5 years</td><td>24 GB &times; 5</td><td>&asymp; 120 GB</td></tr>
+        </table>
+        <div class="formula-box">
+          <span class="formula-label">Takeaway</span>
+          The <strong>Show_Seat inventory snapshot</strong> (every seat, every show, whether booked or not) dominates storage at 3.6 TB/5yr, while the <strong>actual transactional Booking/Payment records</strong> are a much smaller &asymp;120 GB/5yr &mdash; meaning capacity planning for this system is driven by <em>catalog/inventory breadth</em> (cities &times; cinemas &times; seats &times; shows), not by <em>booking volume</em>.
+        </div>
+
+        <h3>QPS &mdash; derived from the 3B monthly page views</h3>
+        <div class="formula-box">
+          <span class="formula-label">Derivation</span>
+          Seconds/month = 30 days &times; 86,400 s = 2,592,000 s
+          <br>Avg. read (page-view) QPS = 3,000,000,000 &divide; 2,592,000 &asymp; <strong>1,157 QPS</strong>
+          <br>Peak read QPS (3&times;&ndash;5&times; typical for read-heavy consumer apps) = 1,157 &times; 3 to &times;5 &asymp; <strong>3,500 &ndash; 5,800 QPS</strong>
+          <br>Avg. booking QPS = 10,000,000 &divide; 2,592,000 &asymp; <strong>3.86 QPS</strong>
+          <br>Peak booking QPS (3&times;&ndash;5&times;) = 3.86 &times; 3 to &times;5 &asymp; <strong>11.6 &ndash; 19.3 QPS</strong>
+          <br>Read : Write ratio = 3B / 10M &asymp; <strong>300 : 1</strong>
+          <br>Approx. peak egress (50KB avg JSON payload) = 5,800 QPS &times; 50KB &asymp; 290 MB/s
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">Reconciling with the "highly concurrent" NFR</div>
+          Aggregate write throughput is modest &mdash; only &asymp;4&ndash;19 bookings/sec system-wide, even at peak. So "highly concurrent" is <strong>not</strong> primarily an aggregate-scaling problem; it's a <strong>hot-key concurrency</strong> problem: hundreds/thousands of users hitting the <em>same</em> ShowID's <em>same</em> seats within a narrow multi-second on-sale window (e.g., a blockbuster's first show going live). The aggregate QPS numbers justify the read path's caching/CDN/Varnish strategy (see High-Level Design and Feature-Specific Logic); the hot-key skew justifies ShowID-based sharding plus Varnish request-collapsing plus SERIALIZABLE row-locking on the write path (see Low-Level Design and Data Sharding).
+        </div>
+
+        <h3>Cache / index sizing (quick sanity check)</h3>
+        <div class="formula-box">
+          <span class="formula-label">Sanity check</span>
+          Elasticsearch catalog index: &asymp;50,000 active movies/shows &times; &asymp;2KB/doc &asymp; 100 MB &mdash; trivial; the real ES scaling driver is <strong>query QPS</strong> from the home-page/search Adaptor fan-out, not data volume.
+          <br><br>Redis seat-lock hot set: only <em>currently held</em> seats need to live in Redis (TTL'd), not the full 10M-seat inventory. At peak &mdash; say 500 shows simultaneously in an active on-sale window with &asymp;200 seats held concurrently each &mdash; that's only &asymp;100,000 keys, trivially small for Redis.
+        </div>
+
+        <h2 id="api-design">API Design</h2>
+        <p>In an interview, sketch a handful of the most important APIs &mdash; depth over breadth. The four below cover discovery, reservation, payment, and the waitlist long-poll &mdash; the complete critical path from search to ticket.</p>
+
+        <h3>SearchMovies</h3>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+          <tr><td>api_dev_key</td><td>string</td><td>Yes</td><td>Caller identification/throttling key</td></tr>
+          <tr><td>keyword</td><td>string</td><td>No</td><td>Free-text movie/query term</td></tr>
+          <tr><td>city</td><td>string</td><td>No*</td><td>Primary discovery axis (no geo-radius requirement, so city typically substitutes for lat/long)</td></tr>
+          <tr><td>lat_long</td><td>string</td><td>No</td><td>Kept for parity/future-proofing with the classic API; not a hard requirement here</td></tr>
+          <tr><td>radius</td><td>number</td><td>No</td><td>Only meaningful if lat_long supplied</td></tr>
+          <tr><td>start_datetime</td><td>datetime</td><td>No</td><td>Filter shows starting after this time</td></tr>
+          <tr><td>end_datetime</td><td>datetime</td><td>No</td><td>Filter shows ending before this time</td></tr>
+          <tr><td>postal_code</td><td>string</td><td>No</td><td>Alternative to city/lat-long</td></tr>
+          <tr><td>includeSpellcheck</td><td>boolean</td><td>No</td><td>Enable "did you mean" suggestions</td></tr>
+          <tr><td>results_per_page</td><td>int</td><td>No</td><td>Default 20</td></tr>
+          <tr><td>sorting_order</td><td>enum</td><td>No</td><td>RELEVANCE (default), RATING_DESC, PRICE_ASC, PRICE_DESC</td></tr>
+        </table>
+        <pre><code>// Example response
+{
+  "results": [
+    {
+      "movie_id": "mv_1042",
+      "title": "Dune: Part Three",
+      "genre": "Sci-Fi",
+      "language": "English",
+      "rating_avg": 4.6,
+      "shows": [
+        {
+          "show_id": "sh_88213",
+          "cinema": "PVR Forum Mall",
+          "city": "Bengaluru",
+          "start_time": "2026-07-18T19:30:00+05:30",
+          "seat_status_summary": { "available": 142, "held": 18, "booked": 210 }
+        }
+      ]
+    }
+  ],
+  "total_results": 1,
+  "spellcheck_suggestion": null
+}</code></pre>
+
+        <h3>ReserveSeats</h3>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+          <tr><td>api_dev_key</td><td>string</td><td>Yes</td><td>&nbsp;</td></tr>
+          <tr><td>session_id / auth_token</td><td>string</td><td>Yes</td><td>Authenticated user identity (Reconciliation #2, above)</td></tr>
+          <tr><td>movie_id</td><td>string</td><td>Yes</td><td>&nbsp;</td></tr>
+          <tr><td>show_id</td><td>string</td><td>Yes</td><td>Partition key for reservation-tracking (see Data Sharding)</td></tr>
+          <tr><td>seats_to_reserve[]</td><td>array&lt;string&gt;</td><td>Yes</td><td>Max length 10 (abuse cap)</td></tr>
+        </table>
+        <pre><code>// Request
+{
+  "api_dev_key": "abc123",
+  "session_id": "usr_9981_sess_44",
+  "movie_id": "mv_1042",
+  "show_id": "sh_88213",
+  "seats_to_reserve": ["A12", "A13"]
+}
+
+// Response — one of three outcomes
+{ "status": "RESERVATION_SUCCESSFUL", "reservation_id": "rsv_55210",
+  "hold_expires_at": "2026-07-17T20:41:00Z", "hold_minutes": 10 }
+
+{ "status": "RESERVATION_FAILED_SHOW_FULL" }
+
+{ "status": "RESERVATION_FAILED_RETRY",
+  "reason": "Other users are currently holding these seats — please retry." }</code></pre>
+
+        <h3>ConfirmPayment (added to complete the critical path)</h3>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+          <tr><td>api_dev_key</td><td>string</td><td>Yes</td><td>&nbsp;</td></tr>
+          <tr><td>reservation_id</td><td>string</td><td>Yes</td><td>From ReserveSeats</td></tr>
+          <tr><td>payment_method</td><td>enum</td><td>Yes</td><td>CARD, UPI, NETBANKING, WALLET</td></tr>
+          <tr><td>payment_token</td><td>string</td><td>Yes</td><td>Tokenized instrument reference (never raw card data)</td></tr>
+          <tr><td>amount</td><td>number</td><td>Yes</td><td>Must match server-computed price</td></tr>
+          <tr><td>discount_coupon_id</td><td>string</td><td>No</td><td>&nbsp;</td></tr>
+        </table>
+        <pre><code>// Response
+{ "status": "BOOKING_CONFIRMED", "booking_id": "bk_772103",
+  "ticket_url": "https://bms.example/ticket/bk_772103" }
+
+{ "status": "PAYMENT_FAILED", "reason": "Card declined" }
+
+{ "status": "RESERVATION_EXPIRED",
+  "reason": "Hold window elapsed before payment completed" }</code></pre>
+
+        <h3>GetWaitlistStatus (long-poll)</h3>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+          <tr><td>api_dev_key</td><td>string</td><td>Yes</td><td>&nbsp;</td></tr>
+          <tr><td>show_id</td><td>string</td><td>Yes</td><td>&nbsp;</td></tr>
+          <tr><td>session_id</td><td>string</td><td>Yes</td><td>&nbsp;</td></tr>
+          <tr><td>timeout_seconds</td><td>int</td><td>No</td><td>Long-poll budget, e.g. 30s, before returning a heartbeat</td></tr>
+        </table>
+        <pre><code>// Response variants
+{ "status": "WAITING", "queue_position": 4, "estimated_wait_seconds": 180 }
+
+{ "status": "SEATS_AVAILABLE", "offer_id": "off_331",
+  "accept_by": "2026-07-17T20:05:00Z", "seats_offered": ["C4", "C5"] }
+
+{ "status": "EXPIRED_FROM_QUEUE", "reason": "Offer window elapsed" }</code></pre>
+
+        <h2 id="high-level-design">High-Level Design</h2>
+        <p>Clients always enter through a single API Gateway + Adaptor, which fans out to six domain services, all of which emit events onto a shared Kafka backbone consumed by Analytics and Notification services. The Booking Service is the orchestrator of the critical path, and it is the one component that reaches outside BookMyShow's own infrastructure entirely &mdash; through a Reservation Server and an Order Service &mdash; into independently-operated, per-theater-chain systems that BookMyShow does not own.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 740 760" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-bms-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-bms-1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+              <marker id="arrow-bms-1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+
+            <rect x="270" y="10" width="200" height="42" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="36" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">Client Apps (Web/iOS/Android)</text>
+
+            <rect x="230" y="80" width="280" height="60" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)" stroke-width="1.5"></rect>
+            <text x="370" y="102" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">API GATEWAY</text>
+            <text x="370" y="117" text-anchor="middle" fill="#cbd8ef" font-size="9">AuthN/Z &#183; rate limit &#183; circuit breaker &#183; LB</text>
+            <text x="370" y="130" text-anchor="middle" fill="#cbd8ef" font-size="9">ADAPTOR: fans out &amp; consolidates composite pages</text>
+
+            <line x1="370" y1="52" x2="370" y2="78" stroke="var(--color-primary)" stroke-width="1.6" marker-end="url(#arrow-bms-1)"></line>
+
+            <rect x="15" y="165" width="112" height="46" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="71" y="184" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">User Service</text>
+            <text x="71" y="197" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(auth)</text>
+
+            <rect x="137" y="165" width="112" height="46" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="193" y="184" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">PVR Service</text>
+            <text x="193" y="197" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(admin ingest)</text>
+
+            <rect x="259" y="165" width="112" height="46" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="315" y="184" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">HomePage Svc</text>
+            <text x="315" y="197" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(recs)</text>
+
+            <rect x="381" y="165" width="112" height="46" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="437" y="184" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Search Service</text>
+            <text x="437" y="197" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(Elasticsearch)</text>
+
+            <rect x="503" y="165" width="112" height="46" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.4"></rect>
+            <text x="559" y="184" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">Rating/Comment</text>
+            <text x="559" y="197" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Service</text>
+
+            <rect x="596" y="230" width="130" height="46" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="661" y="249" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">Booking Service</text>
+            <text x="661" y="263" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">critical-path orchestrator</text>
+
+            <line x1="300" y1="140" x2="90" y2="163" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-bms-1)"></line>
+            <line x1="330" y1="140" x2="210" y2="163" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-bms-1)"></line>
+            <line x1="360" y1="140" x2="325" y2="163" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-bms-1)"></line>
+            <line x1="390" y1="140" x2="445" y2="163" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-bms-1)"></line>
+            <line x1="420" y1="140" x2="565" y2="163" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-bms-1)"></line>
+            <line x1="450" y1="140" x2="655" y2="228" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-bms-1)"></line>
+
+            <rect x="60" y="330" width="580" height="72" rx="10" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="350" y="352" text-anchor="middle" fill="#6b4a10" font-size="12" font-weight="700">KAFKA (backbone)</text>
+            <text x="350" y="368" text-anchor="middle" fill="#6b4a10" font-size="9">topics: new-content &#183; search-analytics &#183; rating-events &#183;</text>
+            <text x="350" y="382" text-anchor="middle" fill="#6b4a10" font-size="9">booking-events &#183; reservation-events &#183; notification-events</text>
+
+            <line x1="80" y1="211" x2="200" y2="328" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-bms-1m)"></line>
+            <line x1="200" y1="211" x2="260" y2="328" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-bms-1m)"></line>
+            <line x1="315" y1="211" x2="320" y2="328" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-bms-1m)"></line>
+            <line x1="437" y1="211" x2="400" y2="328" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-bms-1m)"></line>
+            <line x1="559" y1="211" x2="480" y2="328" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-bms-1m)"></line>
+            <line x1="640" y1="276" x2="560" y2="328" stroke="var(--color-text-muted)" stroke-width="1.1" stroke-dasharray="4,3" marker-end="url(#arrow-bms-1m)"></line>
+
+            <rect x="60" y="440" width="270" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="195" y="462" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Analytics Service</text>
+            <text x="195" y="477" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Spark Streaming &rarr; Hadoop (raw) +</text>
+            <text x="195" y="489" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">real-time reports; batch ML &rarr; Cassandra</text>
+
+            <rect x="370" y="440" width="270" height="60" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.5"></rect>
+            <text x="505" y="462" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">Notification Service</text>
+            <text x="505" y="477" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Email/SMS ticket delivery, PVR webhook,</text>
+            <text x="505" y="489" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">waitlist "seat available" push</text>
+
+            <line x1="250" y1="402" x2="220" y2="438" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-bms-1m)"></line>
+            <line x1="450" y1="402" x2="480" y2="438" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-bms-1m)"></line>
+
+            <text x="480" y="415" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">Booking Service also talks synchronously to:</text>
+
+            <rect x="460" y="530" width="180" height="58" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.6"></rect>
+            <text x="550" y="552" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Reservation Server</text>
+            <text x="550" y="565" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">ActiveReservations +</text>
+            <text x="550" y="577" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">WaitingUsers (in-mem, MySQL+Redis)</text>
+
+            <rect x="45" y="530" width="150" height="58" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.6"></rect>
+            <text x="120" y="564" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">Payment Service</text>
+
+            <line x1="661" y1="276" x2="580" y2="528" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-bms-1b)"></line>
+            <line x1="595" y1="559" x2="195" y2="559" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-bms-1b)" marker-start="url(#arrow-bms-1b)"></line>
+
+            <rect x="460" y="625" width="180" height="55" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.6"></rect>
+            <text x="550" y="648" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">Order Service</text>
+            <text x="550" y="662" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">integration / adapter layer</text>
+
+            <line x1="550" y1="588" x2="550" y2="623" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-bms-1b)"></line>
+            <text x="450" y="610" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">get / lock / unlock seats</text>
+
+            <rect x="230" y="710" width="420" height="45" rx="8" fill="none" stroke="var(--color-text-muted)" stroke-dasharray="6,4" stroke-width="1.5"></rect>
+            <text x="440" y="730" text-anchor="middle" fill="var(--color-text-muted)" font-size="10" font-weight="700">Independent per-theater-chain servers</text>
+            <text x="440" y="744" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">(own MySQL + Redis each — NOT owned by BookMyShow: Chain A, B, C, &hellip;)</text>
+
+            <line x1="500" y1="680" x2="470" y2="708" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-bms-1m)"></line>
+            <text x="360" y="700" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">GET reads via Varnish (coalesced)</text>
+            <line x1="600" y1="680" x2="620" y2="708" stroke="var(--color-accent-dark)" stroke-width="1.4" marker-end="url(#arrow-bms-1b)"></line>
+            <text x="660" y="700" text-anchor="middle" fill="var(--color-primary)" font-size="8" font-weight="600">LOCK/UNLOCK direct, never coalesced</text>
+          </svg>
+          <div class="diagram-caption">Figure 1. High-level topology: Client &rarr; API Gateway/Adaptor fans out to six domain services, all publishing to a shared Kafka backbone consumed by Analytics and Notification. Booking Service separately talks synchronously to the Reservation Server, Payment Service, and (via Order Service) the independently-owned theater-chain servers.</div>
+        </div>
+
+        <h3>Component walkthrough</h3>
+        <table>
+          <tr><th>Component</th><th>Responsibility</th></tr>
+          <tr><td>API Gateway</td><td>SSL termination, authentication/authorization (via User Service), rate limiting, circuit breaking, load balancing, and throttling (e.g., for a legacy-to-new-platform migration). A CDN sits alongside it to offload static assets (posters, trailers, JS/CSS) so backend services only ever serve dynamic JSON.</td></tr>
+          <tr><td>Adaptor</td><td>Inside the Gateway; fans out in parallel to multiple backend services and consolidates responses for composite pages: home page, search results, ratings widget. Each fan-out call has its own timeout so one slow dependency degrades a widget rather than the whole page (circuit breaker).</td></tr>
+          <tr><td>PVR Service</td><td>Admin-only write path: add new movies/trailers/info, new cities/PVRs/theaters/events. Publishes to a Kafka new-content topic consumed by both the Analytics Service and the Search Service's consumer.</td></tr>
+          <tr><td>HomePage Service (recommendation engine)</td><td>The user's main interaction point (select city/movie/PVR &rarr; go to booking). Shows recommended movies, comments, trailers. Data flow: Kafka events (searches, past bookings, comments) &rarr; Spark Streaming Consumer, which (a) writes raw events into a Hadoop cluster and (b) computes real-time reports ("movies people are booking/viewing right now"); a separate batch Spark ML job mines the Hadoop history to generate personalized recommendations, written back to HomePage Service and persisted in Cassandra (keyed by user). Static assets served via CDN.</td></tr>
+          <tr><td>Search Service</td><td>Elasticsearch-backed query search. A Search Consumer listens to the new-content Kafka topic (items added by PVR Service), applies light NLP preprocessing (stop-word removal + stemming &mdash; "book"/"booked"/"books" all reduce to root "book") before indexing. Every search query also emits an analytics event ("what users are searching") back onto Kafka.</td></tr>
+          <tr><td>User Service</td><td>Account management, authentication/authorization, called by the API Gateway and internally by Booking Service (per-user seat cap, waitlist identity).</td></tr>
+          <tr><td>Rating/Comment Service</td><td>Behind its own load balancer; lets users add comments/ratings; computes and persists the running average rating in Cassandra; emits analytics events to Kafka.</td></tr>
+          <tr><td>Booking Service</td><td>Orchestrates the critical path: selects a show &rarr; calls Order Service for available seats &rarr; locks the chosen seats &rarr; writes a local row (MySQL + Redis) with status active_reservation &rarr; on payment start, status &rarr; payment_in_progress &rarr; on payment success, status &rarr; booked_reservation (seat finalized in Order Service/theater DB) &rarr; if all seats are reserved/booked, new demand becomes waiting_reservation. Also calls Payment Service and Order Service, and emits analytics + notification events to Kafka.</td></tr>
+          <tr><td>Reservation Server</td><td>A daemon monitoring active reservations (locked, unpaid) and waiting reservations. When a hold expires without payment, it notifies the next (longest-waiting) waitlisted user. Waiting users per show live in-memory in a LinkedHashMap (insertion-ordered &mdash; head is always the longest-waiting user, giving FCFS fairness and O(1) removal on cancel). This corresponds exactly to the classic write-up's <code>ActiveReservationsService</code> + <code>WaitingUsersService</code> pair (see Low-Level Design) &mdash; same concept, split into two named responsibilities.</td></tr>
+          <tr><td>Order Service</td><td>The integration layer to real theaters. Each theater chain runs its own independent server with its own MySQL + Redis (BookMyShow does not own this data). Two call shapes: <strong>GET available seats</strong> (routed through Varnish, since many users concurrently query the same show's seat map &mdash; Varnish request-collapsing coalesces duplicate reads) and <strong>LOCK/UNLOCK seat</strong> (a mutating call sent directly to the theater server, bypassing Varnish, since each lock/unlock is unique and must never be deduplicated).</td></tr>
+          <tr><td>Kafka</td><td>The backbone bus connecting Booking/Reservation/PVR/Search/Rating services to two downstream consumers: Analytics Service and Notification Service.</td></tr>
+          <tr><td>Notification Service</td><td>Sends the ticket to the user (email/SMS) after booking; separately sends a booking confirmation back to the PVR/theater about the seat booking.</td></tr>
+          <tr><td>Booking history / archival</td><td>Completed bookings live in MySQL + Redis (ACID + fast active-state access); a cron-job archiver migrates completed bookings out of MySQL into Cassandra booking_history, optimized for read-heavy historical lookups.</td></tr>
+        </table>
+
+        <p>Zooming into the write-path detail that the topology diagram compresses: Order Service exposes two structurally different call shapes to the theater servers, and treating them identically would be a correctness bug, not just a performance miss.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 330" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-bms-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-bms-2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+            <rect x="20" y="20" width="140" height="42" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="90" y="46" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Booking Service</text>
+
+            <rect x="280" y="20" width="140" height="42" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="350" y="46" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Order Service</text>
+
+            <rect x="540" y="20" width="140" height="42" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="610" y="46" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Theater Server</text>
+
+            <line x1="90" y1="62" x2="90" y2="300" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+            <line x1="350" y1="62" x2="350" y2="300" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+            <line x1="610" y1="62" x2="610" y2="300" stroke="var(--color-border)" stroke-width="1.4" stroke-dasharray="4,3"></line>
+
+            <rect x="230" y="95" width="240" height="30" rx="14" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="350" y="115" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">VARNISH — request coalescing</text>
+
+            <line x1="90" y1="145" x2="350" y2="145" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-bms-2)"></line>
+            <text x="220" y="138" text-anchor="middle" fill="var(--color-text)" font-size="9">1. GET available seats (idempotent read)</text>
+            <line x1="350" y1="170" x2="610" y2="170" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="3,3" marker-end="url(#arrow-bms-2m)"></line>
+            <text x="480" y="163" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">only 1 of N duplicate reads reaches origin</text>
+
+            <line x1="90" y1="215" x2="350" y2="215" stroke="var(--color-primary)" stroke-width="1.8" marker-end="url(#arrow-bms-2)"></line>
+            <text x="220" y="208" text-anchor="middle" fill="var(--color-text)" font-size="9" font-weight="600">2. LOCK/UNLOCK seats (mutating write)</text>
+            <line x1="350" y1="240" x2="610" y2="240" stroke="var(--color-primary)" stroke-width="1.8" marker-end="url(#arrow-bms-2)"></line>
+            <text x="480" y="233" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">sent directly — bypasses Varnish, never coalesced</text>
+
+            <line x1="610" y1="260" x2="350" y2="260" stroke="var(--color-text-muted)" stroke-width="1.3" marker-end="url(#arrow-bms-2m)"></line>
+            <text x="480" y="278" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">SERIALIZABLE txn result: success / fail</text>
+            <line x1="350" y1="292" x2="90" y2="292" stroke="var(--color-text-muted)" stroke-width="1.3" marker-end="url(#arrow-bms-2m)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 2. Order Service's two call shapes: idempotent GET reads are routed through Varnish and safely coalesced across concurrently-querying users, while LOCK/UNLOCK writes always go direct to the theater server so no individual user's distinct lock attempt is ever silently merged with another's.</div>
+        </div>
+
+        <h2 id="low-level-design">Low-Level Design</h2>
+
+        <h3>Booking state machine</h3>
+        <p>A booking request for N seats (N &le; 10, all-or-nothing) moves through a small, well-defined set of states. If seats are available it becomes an active_reservation with a hold timer; if not, it becomes a waiting_reservation in the FCFS queue.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 470" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-bms-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-bms-3g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+            </defs>
+            <rect x="270" y="10" width="160" height="36" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="350" y="33" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">request N &le; 10 seats</text>
+            <line x1="350" y1="46" x2="350" y2="70" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-bms-3)"></line>
+
+            <rect x="255" y="72" width="190" height="42" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)"></rect>
+            <text x="350" y="97" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="600">seats available now?</text>
+
+            <line x1="300" y1="114" x2="150" y2="150" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-bms-3)"></line>
+            <text x="200" y="135" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">yes</text>
+            <line x1="400" y1="114" x2="560" y2="150" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-bms-3)"></line>
+            <text x="500" y="135" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">no</text>
+
+            <rect x="55" y="152" width="190" height="52" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.8"></rect>
+            <text x="150" y="174" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">active_reservation</text>
+            <text x="150" y="190" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">10-minute hold timer</text>
+
+            <rect x="465" y="152" width="190" height="52" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.8"></rect>
+            <text x="560" y="174" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">waiting_reservation</text>
+            <text x="560" y="190" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">joins FCFS queue</text>
+
+            <line x1="150" y1="204" x2="150" y2="235" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-bms-3)"></line>
+            <text x="150" y="222" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">payment starts</text>
+
+            <rect x="55" y="237" width="190" height="42" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="1.8"></rect>
+            <text x="150" y="263" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">payment_in_progress</text>
+
+            <line x1="150" y1="279" x2="150" y2="330" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-bms-3g)"></line>
+            <text x="105" y="310" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">success</text>
+            <line x1="230" y1="260" x2="470" y2="330" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-bms-3)"></line>
+            <text x="330" y="300" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">fail / timeout</text>
+
+            <rect x="45" y="332" width="210" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="2"></rect>
+            <text x="150" y="355" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">booked_reservation</text>
+            <text x="150" y="370" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">terminal: ticket sent, PVR notified</text>
+
+            <rect x="380" y="332" width="240" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.6"></rect>
+            <text x="500" y="352" text-anchor="middle" fill="var(--color-primary)" font-size="11" font-weight="700">expired</text>
+            <text x="500" y="366" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">seat released, Reservation Server</text>
+            <text x="500" y="378" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">offers seat to next waiter</text>
+
+            <line x1="560" y1="204" x2="510" y2="332" stroke="var(--color-text-muted)" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arrow-bms-3)"></line>
+            <text x="600" y="270" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">timeout (up to</text>
+            <text x="600" y="282" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">&asymp;1 hour)</text>
+
+            <path d="M500,332 C500,300 200,270 148,204" fill="none" stroke="var(--color-primary)" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#arrow-bms-3)"></path>
+            <text x="330" y="410" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">seats freed &amp; head-of-queue user is offered a new active_reservation</text>
+
+            <text x="350" y="440" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">payment_in_progress still counts against the original hold expiry, plus a 5-second server-side buffer</text>
+            <text x="350" y="455" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">past the client-visible countdown, so the server never times out before the client's own UI does.</text>
+          </svg>
+          <div class="diagram-caption">Figure 3. Booking state machine: active_reservation and waiting_reservation are the two entry states; payment_in_progress is a sub-state of an active hold; booked_reservation and expired are the two terminal outcomes, with expiry looping back to offer the freed seat to the next waitlisted user.</div>
+        </div>
+        <p>Notes: <code>payment_in_progress</code> still counts against the <em>original</em> hold expiry, but the server adds a 5-second buffer past the client-visible countdown so the server never times out before the client's own UI does. <code>waiting_reservation</code> itself has a timeout (e.g., up to &asymp;1 hour per the classic write-up) &mdash; if no offer is accepted in time, the wait entry itself expires.</p>
+
+        <h3>Class / interface sketch</h3>
+        <pre><code>interface BookingService {
+  ReservationResult reserveSeats(String userId, String showId,
+      List&lt;String&gt; seatIds); // &le;10 seats, all-or-nothing
+  PaymentResult confirmPayment(String reservationId, PaymentRequest req);
+  void cancelReservation(String reservationId);
+}
+
+class BookingServiceImpl implements BookingService {
+  OrderServiceClient orderServiceClient;
+  ReservationServer reservationServer;
+  PaymentServiceClient paymentServiceClient;
+  KafkaProducer analyticsAndNotificationProducer;
+
+  ReservationResult reserveSeats(...) {
+    // 1. size check: seatIds.size() &lt;= 10, else reject (abuse policy)
+    // 2. seatLockManager.tryLock(showId, seatIds) -&gt; Order Service LOCK call
+    //    (direct, bypasses Varnish)
+    // 3. on lock success: write Booking row status=active_reservation
+    //    (MySQL, mirrored in Redis)
+    // 4. reservationServer.trackActiveReservation(showId, bookingId,
+    //    now + HOLD_MINUTES)
+    // 5. emit Kafka event: booking.reserved
+  }
+}
+
+interface ReservationServer {
+  // ActiveReservationsService responsibilities
+  void trackActiveReservation(String showId, String bookingId, Instant expiresAt);
+  void onPaymentSuccess(String bookingId); // -&gt; booked_reservation, remove from active map
+  void onExpiry(String showId, String bookingId); // seat release + waitlist offer
+
+  // WaitingUsersService responsibilities
+  void joinWaitlist(String showId, String userId, int seatsWanted);
+  Optional&lt;Offer&gt; pollWaitlistStatus(String showId, String userId); // backs the long-poll API
+  void notifyHeadOfQueue(String showId, int seatsFreed);
+}
+
+class ActiveReservationsService {
+  // key data structure — exactly as specified in the source material
+  Map&lt;String /*ShowID*/, LinkedHashMap&lt;String /*BookingID*/, Instant /*ExpiryTimestamp*/&gt;&gt; activeReservations;
+  // head of each inner LinkedHashMap = oldest / soonest-to-expire (insertion-ordered)
+  // background sweep thread scans head-of-queue per ShowID each tick;
+  // server-side expiry = client-visible countdown + 5s buffer, so the server
+  // never times out before the client's UI does
+}
+
+class WaitingUsersService {
+  Map&lt;String /*ShowID*/, LinkedHashMap&lt;String /*UserID*/, Instant /*WaitStartTime*/&gt;&gt; waitingUsers;
+  // head of inner LinkedHashMap = longest-waiting user -&gt; strict FCFS
+  // O(1) add (put), O(1) remove-by-key (remove) on cancel, O(1) peek-oldest
+}
+
+interface OrderServiceClient {
+  SeatAvailability getAvailableSeats(String showId); // via Varnish (idempotent read, coalesced)
+  LockResult lockSeats(String showId, List&lt;String&gt; seatIds); // direct to theater server (write, never coalesced)
+  void unlockSeats(String showId, List&lt;String&gt; seatIds); // direct to theater server
+  void finalizeBooking(String showId, List&lt;String&gt; seatIds, String bookingId); // on payment success
+}
+
+interface SeatLockManager {
+  boolean tryLock(String showId, List&lt;String&gt; seatIds); // Redis TTL key per seat, or theater-side row lock
+  void release(String showId, List&lt;String&gt; seatIds);
+  boolean isLocked(String showId, String seatId);
+}</code></pre>
+
+        <h3>SERIALIZABLE SQL transaction (concurrency control at the theater's DB)</h3>
+        <pre><code>BEGIN TRANSACTION;
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+-- Step 1: attempt to read &amp; lock the target seats for this show
+SELECT ShowSeatID
+FROM Show_Seat
+WHERE ShowID = ?
+  AND ShowSeatID IN (?, ?, ?, ...) -- requested seat list, up to 10
+  AND Status = 0; -- 0 = free
+
+-- Step 2 (application layer): if COUNT(rows returned) != requested seat count,
+-- ROLLBACK and return "Reservation Failed - Show Full" / "Retry".
+
+-- Step 3: otherwise, still inside the same transaction:
+UPDATE Show_Seat
+SET Status = 1, BookingID = ? -- 1 = held/booked
+WHERE ShowID = ?
+  AND ShowSeatID IN (?, ?, ?, ...)
+  AND Status = 0;
+
+INSERT INTO Booking (BookingID, NumberOfSeats, Timestamp, Status, UserID, ShowID)
+VALUES (?, ?, NOW(), 0 /*active_reservation*/, ?, ?);
+
+COMMIT;</code></pre>
+        <p><strong>Why SERIALIZABLE:</strong> it is the strictest isolation level, preventing dirty reads (never see another transaction's uncommitted seat status), non-repeatable reads (status can't flip under you mid-transaction), and phantom reads (no seat row can appear/disappear from your matched WHERE set between the SELECT and the UPDATE). The initial SELECT effectively takes a write lock on the matched rows &mdash; any concurrent transaction targeting the same Show_Seat rows either blocks until this transaction commits/rolls back, or is aborted by the engine's serialization-failure detector and must retry. This gives the "no double-booking" guarantee without external distributed-lock infrastructure at the per-theater level. Trade-off: SERIALIZABLE reduces throughput on hot rows (the exact hot-ShowID problem addressed at the sharding layer, below), and serialization-failure aborts under extreme contention must be surfaced to the client as the retryable <code>RESERVATION_FAILED_RETRY</code> outcome, not a hard failure.</p>
+
+        <h3>Two cooperating lock layers</h3>
+        <p>Correctness and UI responsiveness are deliberately split across two different lock mechanisms that operate at different distances from the client &mdash; recognizing which one is the real source of truth is essential to reasoning about this design correctly.</p>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-bms-4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+            <rect x="20" y="20" width="130" height="40" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="85" y="45" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Client UI</text>
+            <line x1="150" y1="40" x2="220" y2="40" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-bms-4)"></line>
+
+            <rect x="222" y="20" width="230" height="70" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></rect>
+            <text x="337" y="42" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">1. BookMyShow soft lock</text>
+            <text x="337" y="57" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">Redis TTL key: lock:show:{showId}:</text>
+            <text x="337" y="69" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">seat:{seatId} — 10-min TTL</text>
+            <text x="337" y="82" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">instant UI feedback, no network hop to theater</text>
+
+            <line x1="453" y1="55" x2="520" y2="55" stroke="var(--color-primary)" stroke-width="1.5" marker-end="url(#arrow-bms-4)"></line>
+            <text x="487" y="45" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">async / best-effort</text>
+
+            <rect x="522" y="20" width="150" height="70" rx="8" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="597" y="45" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Theater Server</text>
+            <text x="597" y="60" text-anchor="middle" fill="#cbd8ef" font-size="8">(independent, not</text>
+            <text x="597" y="72" text-anchor="middle" fill="#cbd8ef" font-size="8">owned by BookMyShow)</text>
+
+            <rect x="222" y="140" width="450" height="80" rx="8" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="2.5"></rect>
+            <text x="447" y="163" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">2. Theater-side hard lock</text>
+            <text x="447" y="180" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">SERIALIZABLE SQL transaction on Show_Seat — the ACTUAL SOURCE OF TRUTH</text>
+            <text x="447" y="195" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">Redis lock above is a cache / optimization, not the correctness boundary</text>
+            <text x="447" y="210" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">— consistent with "BookMyShow doesn't own theater data"</text>
+
+            <line x1="597" y1="90" x2="500" y2="138" stroke="var(--color-accent-dark)" stroke-width="1.5" marker-end="url(#arrow-bms-4)"></line>
+          </svg>
+          <div class="diagram-caption">Figure 4. Two cooperating lock layers: BookMyShow's Redis TTL key gives fast, best-effort UI feedback; the theater's SERIALIZABLE transaction is the actual correctness boundary that no double-booking can bypass.</div>
+        </div>
+        <ol>
+          <li><strong>BookMyShow-side soft lock</strong> &mdash; a Redis TTL key (<code>lock:show:{showId}:seat:{seatId}</code>, 10-minute TTL) &mdash; fast, in-process, gives instant UI feedback ("seat just got taken") without a network hop to the theater.</li>
+          <li><strong>Theater-side hard lock</strong> &mdash; the SERIALIZABLE transaction above; the actual source of truth. BookMyShow's Redis lock is a cache/optimization, not the correctness boundary, consistent with the "BookMyShow doesn't own theater data" assumption.</li>
+        </ol>
+
+        <h2 id="database-schema">Database Schema</h2>
+        <p>The schema is a fairly standard relational model for the catalog and booking metadata BookMyShow owns, plus a Cassandra archival table and a Redis key schema for the ephemeral hold/lock state. Ten core tables cover the full domain.</p>
+
+        <h3>Movie</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+          <tr><td>MovieID</td><td>int</td><td>PK</td></tr>
+          <tr><td>Title</td><td>varchar(256)</td><td>&nbsp;</td></tr>
+          <tr><td>Description</td><td>varchar(512)</td><td>&nbsp;</td></tr>
+          <tr><td>Duration</td><td>datetime</td><td>&nbsp;</td></tr>
+          <tr><td>Language</td><td>varchar(16)</td><td>&nbsp;</td></tr>
+          <tr><td>ReleaseDate</td><td>datetime</td><td>&nbsp;</td></tr>
+          <tr><td>Country</td><td>varchar(64)</td><td>&nbsp;</td></tr>
+          <tr><td>Genre</td><td>varchar(20)</td><td>&nbsp;</td></tr>
+        </table>
+
+        <h3>Show</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+          <tr><td>ShowID</td><td>int</td><td>PK</td></tr>
+          <tr><td>Date</td><td>datetime</td><td>&nbsp;</td></tr>
+          <tr><td>StartTime</td><td>datetime</td><td>&nbsp;</td></tr>
+          <tr><td>EndTime</td><td>datetime</td><td>&nbsp;</td></tr>
+          <tr><td>CinemaHallID</td><td>int</td><td>FK &rarr; Cinema_Hall</td></tr>
+          <tr><td>MovieID</td><td>int</td><td>FK &rarr; Movie</td></tr>
+        </table>
+
+        <h3>Booking</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+          <tr><td>BookingID</td><td>int</td><td>PK</td></tr>
+          <tr><td>NumberOfSeats</td><td>int</td><td>&nbsp;</td></tr>
+          <tr><td>Timestamp</td><td>datetime</td><td>&nbsp;</td></tr>
+          <tr><td>Status</td><td>int (enum)</td><td>0=active_reservation, 1=payment_in_progress, 2=booked_reservation, 3=waiting_reservation, 4=expired/cancelled</td></tr>
+          <tr><td>UserID</td><td>int</td><td>FK &rarr; User</td></tr>
+          <tr><td>ShowID</td><td>int</td><td>FK &rarr; Show</td></tr>
+        </table>
+
+        <h3>User</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+          <tr><td>UserID</td><td>int</td><td>PK</td></tr>
+          <tr><td>Name</td><td>varchar(64)</td><td>&nbsp;</td></tr>
+          <tr><td>Password</td><td>varchar(20)</td><td>illustrative only &mdash; production stores a salted hash, not a raw/short password</td></tr>
+          <tr><td>Email</td><td>varchar(64)</td><td>&nbsp;</td></tr>
+          <tr><td>Phone</td><td>varchar(16)</td><td>&nbsp;</td></tr>
+        </table>
+
+        <h3>Cinema</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+          <tr><td>CinemaID</td><td>int</td><td>PK</td></tr>
+          <tr><td>Name</td><td>varchar(64)</td><td>&nbsp;</td></tr>
+          <tr><td>TotalCinemaHalls</td><td>int</td><td>&nbsp;</td></tr>
+          <tr><td>CityID</td><td>int</td><td>FK &rarr; City</td></tr>
+        </table>
+
+        <h3>Cinema_Hall</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+          <tr><td>CinemaHallID</td><td>int</td><td>PK</td></tr>
+          <tr><td>Name</td><td>varchar(64)</td><td>&nbsp;</td></tr>
+          <tr><td>TotalSeats</td><td>int</td><td>&nbsp;</td></tr>
+          <tr><td>CinemaID</td><td>int</td><td>FK &rarr; Cinema</td></tr>
+        </table>
+
+        <h3>Show_Seat</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+          <tr><td>ShowSeatID</td><td>int</td><td>PK</td></tr>
+          <tr><td>Status</td><td>int (enum)</td><td>0=free, 1=held, 2=booked</td></tr>
+          <tr><td>Price</td><td>number</td><td>&nbsp;</td></tr>
+          <tr><td>CinemaSeatID</td><td>int</td><td>FK &rarr; Cinema_Seat</td></tr>
+          <tr><td>ShowID</td><td>int</td><td>FK &rarr; Show</td></tr>
+          <tr><td>BookingID</td><td>int</td><td>FK &rarr; Booking</td></tr>
+        </table>
+
+        <h3>Cinema_Seat</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+          <tr><td>CinemaSeatID</td><td>int</td><td>PK</td></tr>
+          <tr><td>SeatNumber</td><td>int</td><td>&nbsp;</td></tr>
+          <tr><td>Type</td><td>int (enum)</td><td>0=regular, 1=premium, 2=recliner</td></tr>
+          <tr><td>CinemaHallID</td><td>int</td><td>FK &rarr; Cinema_Hall</td></tr>
+        </table>
+
+        <h3>City</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+          <tr><td>CityID</td><td>int</td><td>PK</td></tr>
+          <tr><td>Name</td><td>varchar(64)</td><td>&nbsp;</td></tr>
+          <tr><td>State</td><td>varchar(64)</td><td>&nbsp;</td></tr>
+          <tr><td>ZipCode</td><td>varchar(16)</td><td>&nbsp;</td></tr>
+        </table>
+
+        <h3>Payment</h3>
+        <table>
+          <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+          <tr><td>PaymentID</td><td>int</td><td>PK</td></tr>
+          <tr><td>Amount</td><td>number</td><td>&nbsp;</td></tr>
+          <tr><td>Timestamp</td><td>datetime</td><td>&nbsp;</td></tr>
+          <tr><td>DiscountCouponID</td><td>int</td><td>&nbsp;</td></tr>
+          <tr><td>RemoteTransactionID</td><td>int</td><td>&nbsp;</td></tr>
+          <tr><td>PaymentMethod</td><td>int (enum)</td><td>&nbsp;</td></tr>
+          <tr><td>BookingID</td><td>int</td><td>FK &rarr; Booking</td></tr>
+        </table>
+
+        <p><strong>Relationships:</strong> City 1&ndash;N Cinema 1&ndash;N Cinema_Hall 1&ndash;N Cinema_Seat; Cinema_Hall 1&ndash;N Show; Movie 1&ndash;N Show; Show 1&ndash;N Show_Seat; Cinema_Seat 1&ndash;1 Show_Seat (per show instance); Booking 1&ndash;N Show_Seat; User 1&ndash;N Booking; Booking 1&ndash;1 Payment.</p>
+        <p>Cinema_Seat is the <strong>static physical seat layout</strong> of a hall (created once per Cinema_Hall); Show_Seat is the <strong>ephemeral per-show-instance booking state</strong> (created fresh for every show &mdash; this is exactly why the capacity math multiplies seats &times; shows/day). Separating them keeps Show_Seat a lean, high-churn table optimized purely for the free/held/booked status flips that the SERIALIZABLE transaction contends over.</p>
+
+        <h3>booking_history (Cassandra, archival)</h3>
+        <table>
+          <tr><th>Column</th><th>Notes</th></tr>
+          <tr><td>booking_id</td><td>&nbsp;</td></tr>
+          <tr><td>user_id</td><td>&nbsp;</td></tr>
+          <tr><td>show_id</td><td>&nbsp;</td></tr>
+          <tr><td>movie_title</td><td>denormalized for read efficiency</td></tr>
+          <tr><td>cinema_name</td><td>denormalized</td></tr>
+          <tr><td>city</td><td>denormalized</td></tr>
+          <tr><td>seats</td><td>list</td></tr>
+          <tr><td>amount</td><td>&nbsp;</td></tr>
+          <tr><td>booked_at</td><td>&nbsp;</td></tr>
+          <tr><td>status</td><td>&nbsp;</td></tr>
+        </table>
+        <p>Two access patterns compete for partition key: "show me my past bookings" (favors user_id as partition key, booked_at DESC as clustering column) vs. "all bookings on date X" for ops/analytics (favors a booking_date-bucketed partition key). Recommendation: maintain <strong>two tables</strong> (standard Cassandra denormalization) or a materialized view, rather than forcing one partition key to serve both patterns.</p>
+
+        <h3>Redis key schema (seat-lock TTLs)</h3>
+        <table>
+          <tr><th>Key pattern</th><th>Value</th><th>TTL</th><th>Purpose</th></tr>
+          <tr><td>lock:show:{showId}:seat:{seatId}</td><td>bookingId</td><td>10 min (+5s server buffer)</td><td>Soft seat hold</td></tr>
+          <tr><td>reservation:{bookingId}</td><td>JSON {showId, seatIds[], userId, expiresAt, status}</td><td>10 min</td><td>Fast active-reservation lookup, mirrored from MySQL</td></tr>
+          <tr><td>waitlist:{showId}</td><td>&mdash;</td><td>&mdash;</td><td>Not present in the baseline design (waitlist is in-memory only); optional snapshot recommended, see Replication and Fault Tolerance</td></tr>
+          <tr><td>idempotency:{apiRequestId}</td><td>cached response payload</td><td>24h</td><td>Replay-safe retries on ReserveSeats / ConfirmPayment</td></tr>
+        </table>
+
+        <h2 id="data-sharding">Data Sharding</h2>
+        <ul>
+          <li><strong>Why not MovieID:</strong> partitioning strictly by MovieID puts all shows of one blockbuster on a single shard &mdash; concentrating exactly the highest-contention traffic (opening weekend) onto one node, the worst possible key for a system whose core NFR is handling a single hot show gracefully.</li>
+          <li><strong>Partition by ShowID instead:</strong> spreads a single movie's hundreds of shows (different cities, cinemas, times) across the hash ring. A blockbuster's contention is now distributed across as many shards as it has shows.</li>
+          <li><strong>Consistent hashing</strong> maps ShowID &rarr; a small owning set of ActiveReservationsService / WaitingUsersService instances, <strong>replication factor 3</strong> per show for HA.</li>
+          <li><strong>On expiry:</strong> the owning server updates Booking.Status in the DB, removes the entry from its local ActiveReservations LinkedHashMap, notifies the expired user, then broadcasts to the WaitingUsersService replica(s) owning that ShowID so the head-of-queue waiter gets the first offer.</li>
+          <li><strong>On successful reservation:</strong> the owning server tells its WaitingUsersService peers to re-check remaining seat count (cache this DB check &mdash; don't hit MySQL on every waitlist tick) and proactively expire any waiting user now asking for more seats than remain (e.g., someone waiting for 4 seats when only 2 just freed up).</li>
+          <li><strong>Order Service / theater data</strong> is partitioned "for free": each theater chain already runs an independent server + DB; Order Service is a thin routing/adapter layer keyed by theater/chain identity &rarr; theater endpoint &mdash; a natural, ownership-enforced partition rather than something BookMyShow must engineer.</li>
+          <li><strong>booking_history (Cassandra)</strong> partitioned by UserID (optimizes "my bookings" lookups &mdash; the dominant historical-read pattern) or by BookingDate bucket (optimizes ops/analytics "all bookings on day X"); maintain both via a second table/materialized view.</li>
+          <li><strong>Rebalancing caveat:</strong> when ring membership changes (node added/removed), some ShowIDs move to new owners. This hand-off needs care to avoid a "double owner" window that could cause double-booking at the reservation-tracking layer &mdash; though the DB-level SERIALIZABLE transaction remains the real correctness backstop regardless (see Follow-Up Interview Questions).</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-bms-5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-accent-dark)"></path>
+              </marker>
+              <marker id="arrow-bms-5m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+
+            <text x="160" y="25" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">Wrong: shard by MovieID</text>
+            <circle cx="160" cy="120" r="95" fill="none" stroke="var(--color-border)" stroke-width="1.5"></circle>
+            <circle cx="160" cy="30" r="18" fill="#fde2e2" stroke="#c0392b" stroke-width="2"></circle>
+            <text x="160" y="35" text-anchor="middle" fill="#8c2a20" font-size="8" font-weight="700">Movie X</text>
+            <text x="160" y="55" text-anchor="middle" fill="var(--color-text-muted)" font-size="7">ALL shows</text>
+            <circle cx="240" cy="90" r="10" fill="var(--color-surface)" stroke="var(--color-border)"></circle>
+            <circle cx="235" cy="175" r="10" fill="var(--color-surface)" stroke="var(--color-border)"></circle>
+            <circle cx="85" cy="175" r="10" fill="var(--color-surface)" stroke="var(--color-border)"></circle>
+            <circle cx="80" cy="90" r="10" fill="var(--color-surface)" stroke="var(--color-border)"></circle>
+            <text x="160" y="230" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">every show of a blockbuster lands</text>
+            <text x="160" y="242" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">on ONE shard — hot-key disaster</text>
+
+            <text x="540" y="25" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">Right: shard by ShowID</text>
+            <circle cx="540" cy="120" r="95" fill="none" stroke="var(--color-border)" stroke-width="1.5"></circle>
+            <circle cx="540" cy="30" r="14" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></circle>
+            <text x="540" y="34" text-anchor="middle" fill="var(--color-primary)" font-size="7" font-weight="700">Show A</text>
+            <circle cx="620" cy="90" r="14" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></circle>
+            <text x="620" y="94" text-anchor="middle" fill="var(--color-primary)" font-size="7" font-weight="700">Show B</text>
+            <circle cx="615" cy="175" r="14" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></circle>
+            <text x="615" y="179" text-anchor="middle" fill="var(--color-primary)" font-size="7" font-weight="700">Show C</text>
+            <circle cx="465" cy="175" r="14" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></circle>
+            <text x="465" y="179" text-anchor="middle" fill="var(--color-primary)" font-size="7" font-weight="700">Show D</text>
+            <circle cx="460" cy="90" r="14" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="2"></circle>
+            <text x="460" y="94" text-anchor="middle" fill="var(--color-primary)" font-size="7" font-weight="700">Show E</text>
+            <text x="540" y="230" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">the SAME blockbuster's shows spread</text>
+            <text x="540" y="242" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">across the ring — contention distributed</text>
+
+            <rect x="180" y="290" width="340" height="110" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.5"></rect>
+            <text x="350" y="312" text-anchor="middle" fill="#6b4a10" font-size="11" font-weight="700">consistent hashing, RF = 3 per ShowID</text>
+            <text x="350" y="330" text-anchor="middle" fill="#6b4a10" font-size="9">ShowID hashed onto ring &rarr; owner + 2 replicas</text>
+            <text x="350" y="346" text-anchor="middle" fill="#6b4a10" font-size="9">host that ShowID's ActiveReservationsService /</text>
+            <text x="350" y="362" text-anchor="middle" fill="#6b4a10" font-size="9">WaitingUsersService instances</text>
+            <text x="350" y="382" text-anchor="middle" fill="#6b4a10" font-size="8" font-style="italic">rebalancing caveat: ring membership changes can</text>
+            <text x="350" y="395" text-anchor="middle" fill="#6b4a10" font-size="8" font-style="italic">create a brief dual-owner window — SERIALIZABLE txn is the backstop</text>
+          </svg>
+          <div class="diagram-caption">Figure 5. Sharding by ShowID (not MovieID) spreads a single blockbuster's contention across many shards instead of concentrating it on one; consistent hashing with replication factor 3 gives each ShowID's reservation-tracking state high availability.</div>
+        </div>
+
+        <h2 id="feature-specific-logic">Feature-Specific Logic</h2>
+
+        <h3>Seat hold/lock/unlock lifecycle (end to end)</h3>
+        <ol>
+          <li>User selects seats in the UI &rarr; client calls ReserveSeats.</li>
+          <li>Booking Service validates: seat count &le; 10, user authenticated, seats currently free per last-fetched seat map.</li>
+          <li>Booking Service calls OrderServiceClient.lockSeats &mdash; <strong>direct call, bypassing Varnish</strong> (must not be coalesced/deduped; concurrently arriving lock calls for different users on the same seat must each be individually evaluated).</li>
+          <li>Theater server executes the SERIALIZABLE transaction (see Low-Level Design); replies success/fail.</li>
+          <li>On success: Booking Service writes a local MySQL row (Status=active_reservation), mirrors it into Redis with a 10-min TTL, and registers it with ActiveReservationsService.</li>
+          <li>Client is shown a countdown timer (10:00) and proceeds to payment.</li>
+          <li>Payment starts: Status &rarr; payment_in_progress (counts against the same expiry, plus the server's 5s buffer).</li>
+          <li>Payment succeeds: finalizeBooking finalizes seat Status=booked in the theater DB; local Status &rarr; booked_reservation; ActiveReservationsService removes the entry; Notification Service sends the ticket and confirms to the PVR.</li>
+          <li>Payment fails or the timer lapses first: unlockSeats (direct call) releases the theater-side hold; local Status &rarr; expired; ActiveReservationsService removes the entry and immediately checks WaitingUsersService for that ShowID.</li>
+          <li>If a waiter exists: the head-of-queue (oldest WaitStartTime) is offered the freed seats with a short accept-window (e.g., 2 minutes) before moving to the next waiter.</li>
+        </ol>
+
+        <h3>Waitlist fairness (FCFS via LinkedHashMap)</h3>
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-bms-6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+            </defs>
+            <text x="350" y="24" text-anchor="middle" fill="var(--color-primary)" font-size="12" font-weight="700">LinkedHashMap&lt;UserID, WaitStartTime&gt; — per ShowID</text>
+
+            <rect x="30" y="55" width="110" height="60" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent-dark)" stroke-width="2.2"></rect>
+            <text x="85" y="78" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">User 41</text>
+            <text x="85" y="93" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">t = 10:00:01</text>
+            <text x="85" y="47" text-anchor="middle" fill="var(--color-accent-dark)" font-size="9" font-weight="700">HEAD (oldest)</text>
+
+            <rect x="160" y="55" width="110" height="60" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="215" y="78" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">User 87</text>
+            <text x="215" y="93" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">t = 10:00:04</text>
+
+            <rect x="290" y="55" width="110" height="60" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="345" y="78" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">User 12</text>
+            <text x="345" y="93" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">t = 10:00:09</text>
+
+            <rect x="420" y="55" width="110" height="60" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.5" stroke-dasharray="4,3"></rect>
+            <text x="475" y="78" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">&hellip;</text>
+
+            <rect x="550" y="55" width="120" height="60" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1.5"></rect>
+            <text x="610" y="78" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="600">User 203</text>
+            <text x="610" y="93" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">t = 10:01:30</text>
+            <text x="610" y="47" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">newest joiner</text>
+
+            <line x1="140" y1="85" x2="158" y2="85" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-bms-6)"></line>
+            <line x1="270" y1="85" x2="288" y2="85" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-bms-6)"></line>
+            <line x1="400" y1="85" x2="418" y2="85" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-bms-6)"></line>
+            <line x1="530" y1="85" x2="548" y2="85" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-bms-6)"></line>
+
+            <line x1="85" y1="115" x2="85" y2="150" stroke="var(--color-accent-dark)" stroke-width="1.6" marker-end="url(#arrow-bms-6)"></line>
+            <text x="85" y="168" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">peek-oldest: O(1)</text>
+            <text x="85" y="182" text-anchor="middle" fill="var(--color-primary)" font-size="9" font-weight="600">offered first when a seat frees</text>
+
+            <text x="345" y="168" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">join = put(userId, now) — O(1)</text>
+            <text x="345" y="182" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">cancel = remove(userId) — O(1), any position</text>
+
+            <text x="350" y="220" text-anchor="middle" fill="var(--color-text-muted)" font-size="9" font-style="italic">insertion order == arrival order, so iteration order is always oldest-first with no re-sorting</text>
+          </svg>
+          <div class="diagram-caption">Figure 6. Waitlist fairness: a per-ShowID LinkedHashMap keeps insertion order, so the head is always the longest-waiting user (O(1) peek); joins and cancel-from-anywhere are both O(1), unlike a heap which needs O(log n) or O(n) for arbitrary-key removal.</div>
+        </div>
+        <ul>
+          <li>LinkedHashMap&lt;UserID, WaitStartTime&gt; per ShowID preserves insertion order, so iteration order is always oldest-first &mdash; the head is O(1) to peek.</li>
+          <li>Join = put(userId, now) &mdash; O(1). Cancel/leave = remove(userId) &mdash; O(1), unlike a heap-by-timestamp, which would need O(log n) or O(n) for arbitrary-key removal.</li>
+          <li>Guarantees strict FCFS without periodic re-sorting or scanning all waiters on every seat-release event.</li>
+          <li>GetWaitlistStatus long-polling lets clients avoid busy-polling: the server holds the HTTP connection open up to N seconds and responds immediately on a status change (offered seats / expired-from-queue), or with a timeout/heartbeat otherwise.</li>
+        </ul>
+
+        <h3>Varnish: reads vs. writes</h3>
+        <ul>
+          <li><strong>GET available seats:</strong> idempotent, safe to de-duplicate. Varnish request-collapsing means if 500 users query the same ShowID's seat map within the cache window, only one request reaches the theater's origin server &mdash; the other 499 get the cached (sub-second-stale) response. This is exactly the right trade for the "highly concurrent, responsive UI" NFR on the browse path.</li>
+          <li><strong>LOCK/UNLOCK seat:</strong> a mutating call where every attempt has a distinct winner/loser outcome &mdash; must never be coalesced. Sent directly to the theater server, bypassing Varnish entirely; collapsing these would silently drop concurrent users' distinct lock attempts into one, corrupting "who actually got the seat."</li>
+        </ul>
+
+        <h3>Search relevance pipeline</h3>
+        <p>Kafka (new-content from PVR Service) &rarr; Search Consumer &rarr; light NLP preprocessing: stop-word removal (ignore "the", "a", "in", etc.) + stemming ("book"/"booked"/"books" &rarr; root "book") &rarr; indexed into Elasticsearch. User search queries hit Elasticsearch (via the Adaptor) for low-latency, relevance-ranked results, and each query also emits a "what users are searching" analytics event onto Kafka (feeds trending-search dashboards and the recommendation pipeline's implicit-signal set).</p>
+
+        <h3>Recommendation pipeline</h3>
+        <p>Kafka (booking, search, comment/rating events) &rarr; Spark Streaming Consumer, two parallel jobs: (a) writes raw events into a Hadoop cluster (durable, batch-queryable history); (b) computes real-time aggregates ("movies people are booking/viewing right now") served directly to HomePage Service. Separately, a scheduled batch Spark ML job mines the Hadoop history (collaborative-filtering / content-based signals) to produce per-user personalized recommendations and trending lists, written back to HomePage Service and persisted in Cassandra keyed by UserID for O(1) lookup at page load. Static assets (posters, trailers) are served via CDN regardless of the personalization layer.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)">
+            <defs>
+              <marker id="arrow-bms-7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-primary)"></path>
+              </marker>
+              <marker id="arrow-bms-7m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--color-text-muted)"></path>
+              </marker>
+            </defs>
+            <rect x="20" y="20" width="120" height="42" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="80" y="46" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">PVR Service</text>
+
+            <rect x="20" y="140" width="120" height="42" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="80" y="166" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Booking / Search /</text>
+            <text x="80" y="166" text-anchor="middle" fill="#ffffff" font-size="9" dy="10">Rating events</text>
+
+            <rect x="230" y="80" width="130" height="100" rx="8" fill="var(--color-formula-bg)" stroke="var(--color-formula-border)" stroke-width="1.6"></rect>
+            <text x="295" y="110" text-anchor="middle" fill="#6b4a10" font-size="12" font-weight="700">KAFKA</text>
+            <text x="295" y="128" text-anchor="middle" fill="#6b4a10" font-size="8">new-content, booking-events,</text>
+            <text x="295" y="141" text-anchor="middle" fill="#6b4a10" font-size="8">search-analytics, rating-events</text>
+            <text x="295" y="158" text-anchor="middle" fill="#6b4a10" font-size="8">topics</text>
+
+            <line x1="140" y1="42" x2="228" y2="105" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-bms-7)"></line>
+            <line x1="140" y1="161" x2="228" y2="145" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-bms-7)"></line>
+
+            <rect x="420" y="20" width="150" height="50" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.6"></rect>
+            <text x="495" y="42" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Search Consumer</text>
+            <text x="495" y="57" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">stop-word removal + stemming</text>
+            <line x1="360" y1="105" x2="418" y2="55" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-bms-7)"></line>
+
+            <rect x="610" y="20" width="70" height="50" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="645" y="50" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">ES</text>
+            <line x1="570" y1="45" x2="608" y2="45" stroke="var(--color-primary)" stroke-width="1.4" marker-end="url(#arrow-bms-7)"></line>
+
+            <rect x="420" y="200" width="150" height="55" rx="6" fill="var(--color-accent-light)" stroke="var(--color-accent)" stroke-width="1.6"></rect>
+            <text x="495" y="222" text-anchor="middle" fill="var(--color-primary)" font-size="10" font-weight="700">Spark Streaming</text>
+            <text x="495" y="237" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">raw events + real-time</text>
+            <text x="495" y="249" text-anchor="middle" fill="var(--color-text-muted)" font-size="8">"trending now" aggregate</text>
+            <line x1="360" y1="155" x2="418" y2="220" stroke="var(--color-primary)" stroke-width="1.3" marker-end="url(#arrow-bms-7)"></line>
+
+            <rect x="420" y="285" width="90" height="42" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="465" y="311" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600">Hadoop</text>
+            <line x1="470" y1="255" x2="465" y2="283" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-bms-7m)"></line>
+
+            <rect x="520" y="285" width="150" height="42" rx="6" fill="var(--color-primary)" stroke="var(--color-primary-dark)"></rect>
+            <text x="595" y="304" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="600">Batch Spark ML &rarr;</text>
+            <text x="595" y="317" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="600">Cassandra (recs)</text>
+            <line x1="510" y1="306" x2="518" y2="306" stroke="var(--color-text-muted)" stroke-width="1.2" marker-end="url(#arrow-bms-7m)"></line>
+            <line x1="570" y1="255" x2="595" y2="283" stroke="var(--color-text-muted)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-bms-7m)"></line>
+
+            <text x="595" y="345" text-anchor="middle" fill="var(--color-text-muted)" font-size="8" font-style="italic">&rarr; served back to HomePage Service, keyed by UserID</text>
+          </svg>
+          <div class="diagram-caption">Figure 7. Kafka fan-out for search and recommendations: PVR content and booking/search/rating events flow through Kafka to a Search Consumer (indexing into Elasticsearch) and a Spark Streaming pipeline (real-time trending aggregates plus a batch ML job over Hadoop history, writing personalized recommendations into Cassandra for the HomePage Service).</div>
+        </div>
+
+        <h2 id="replication-and-fault-tolerance">Replication and Fault Tolerance</h2>
+        <ul>
+          <li><strong>MySQL replication:</strong> each independently-owned store (Booking Service's local DB, and each theater's own DB) uses master-slave (or multi-AZ semi-sync) replication; failover promotes a replica to master. Each owner (BookMyShow and every theater chain) manages this independently.</li>
+          <li><strong>ActiveReservationsService / WaitingUsersService HA:</strong> consistent-hashing replication factor 3 per ShowID is the primary HA mechanism &mdash; if the primary owner for a ShowID's shard dies, one of its 2 replicas takes over. Fallback: ActiveReservationsService state can be fully rebuilt by scanning the Booking table for Status = active_reservation/payment_in_progress rows, since that DB state is the durable source of truth.</li>
+        </ul>
+
+        <div class="callout">
+          <div class="callout-title">The WaitingUsersService gap</div>
+          Unlike ActiveReservationsService (DB-backed, rebuildable), the waitlist in the baseline design is <strong>in-memory only</strong> &mdash; a full outage of all 3 replicas for a ShowID loses the entire wait queue with no rebuild path, forcing every waiting user to re-join and lose their place (violates the fairness NFR). <strong>Recommended mitigation:</strong> periodically snapshot each ShowID's waitlist LinkedHashMap to Redis (e.g., a sorted set keyed by ShowID, score = WaitStartTime, refreshed every few seconds or on every join/leave) &mdash; cheap and fast, giving a replacement owner a near-real-time rebuild source without reintroducing the synchronous-persistence latency the in-memory design was meant to avoid.
+        </div>
+
+        <ul>
+          <li><strong>Theater-server independence limits blast radius:</strong> because each theater chain runs its own server/DB, an outage of one chain's system affects only bookings for that chain's shows &mdash; BookMyShow's own services, other chains, and the browse/search/home-page experience are unaffected. Trade-off: BookMyShow cannot itself guarantee a given theater's uptime SLA; Booking Service must treat Order Service calls as an external dependency with timeouts + circuit breaker + graceful "temporarily unavailable" per-chain UX.</li>
+          <li><strong>Kafka replication:</strong> standard multi-broker replication (e.g., RF=3, acks=all for booking/reservation topics) ensures analytics and notification events survive a broker failure. Losing a notification event means a paying customer never gets their ticket, so this topic warrants the highest durability settings in the cluster &mdash; in contrast to lower-stakes topics like search-analytics, which can tolerate at-most-once semantics.</li>
+          <li><strong>API Gateway / Adaptor:</strong> stateless, horizontally scaled behind a load balancer; per-downstream circuit breaker so one slow dependency (e.g., a theater's Order Service) doesn't cascade-fail the whole composite home-page render &mdash; degrade gracefully (omit that widget) instead.</li>
+        </ul>
+
+        <h2 id="monitoring-logging-and-analytics">Monitoring, Logging &amp; Analytics</h2>
+
+        <h3>Key metrics</h3>
+        <table>
+          <tr><th>Metric</th><th>Why it matters</th></tr>
+          <tr><td>Seat-lock contention rate (locks attempted vs. won per ShowID)</td><td>Surfaces hot shows in real time; spike = flash-sale/blockbuster surge, may need manual shard-replica scale-up</td></tr>
+          <tr><td>Reservation-expiry rate (% of active_reservations timing out unpaid)</td><td>High rate suggests payment UX friction or too-short hold window &mdash; ties directly to the 10-min vs. 5-min debate</td></tr>
+          <tr><td>Waitlist conversion rate (% of waitlisted users who eventually book)</td><td>Measures whether the waitlist delivers real value vs. just delaying a "sold out" message</td></tr>
+          <tr><td>Booking success rate (booked_reservation / reserveSeats attempts)</td><td>Top-line health metric for the critical path</td></tr>
+          <tr><td>Kafka consumer lag (per topic/group, esp. Search &amp; Notification consumers)</td><td>Lag on the Notification consumer directly delays ticket delivery &mdash; page on-call above a small threshold (e.g., &gt;30s)</td></tr>
+          <tr><td>Per-theater-server latency/availability (Order Service p50/p95/p99, error rate)</td><td>Primary external-dependency health signal; drives per-chain circuit-breaker trips</td></tr>
+          <tr><td>SERIALIZABLE abort/retry rate</td><td>Proxy for real-world contention/deadlock pressure on hot Show_Seat rows</td></tr>
+          <tr><td>CDN cache-hit ratio / Varnish coalescing ratio</td><td>Read-path efficiency signals</td></tr>
+        </table>
+
+        <h3>Logging / audit</h3>
+        <p>Payment and seat-lock events are append-only audit logs (who, what seat, what show, timestamp, outcome), retained independently of the operational MySQL row lifecycle &mdash; needed for dispute resolution ("I was charged but got no ticket") and compliance. Every Booking status transition emits a Kafka event carrying before/after status, enabling full state reconstruction for debugging without querying the transactional DB directly.</p>
+
+        <h3>Analytics Service consumption</h3>
+        <p>Trending movies (rolling window of booking/search event counts); real-time "what people are booking right now" (Spark Streaming aggregate feeding HomePage); user profiling/preference vectors (batch Spark ML on Hadoop history); search-term analytics (raw query volume, zero-result rate) feeding back into Search Service relevance tuning and PVR content-gap reporting.</p>
+
+        <h3>Notification Service design</h3>
+        <ul>
+          <li><strong>Ticket delivery:</strong> on booked_reservation, consume the booking.confirmed Kafka event &rarr; render ticket &rarr; send via email/SMS provider (retry with backoff; dead-letter queue + manual reconciliation for permanent failures).</li>
+          <li><strong>PVR booking-confirmation webhook:</strong> separately notify the originating theater/PVR system of the finalized booking, decoupled from the user-facing notification so a theater webhook outage never delays the user's ticket.</li>
+          <li><strong>Waitlist "seat available" push:</strong> on being offered seats, notify the head-of-queue user via push/SMS with a short accept-window countdown &mdash; a distinct channel/urgency from ticket delivery.</li>
+        </ul>
+
+        <h2 id="follow-up-interview-questions">Follow-up Interview Questions</h2>
+        <p>Interviewers commonly push into these areas after the base design. The guidance below is grouped by theme, matching how they'd typically arrive in an actual interview conversation.</p>
+
+        <h3>Concurrency, Sharding &amp; Consistency</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent double-booking if two consistent-hashing replica servers both think they own a ShowID during a rebalance?</div>
+          <div class="qa-a">The consistent-hashing layer tracks reservation/waitlist state as an optimization &mdash; it is not the correctness boundary; the theater-side SERIALIZABLE transaction on Show_Seat is. Even if two replicas briefly both act as "owner," only one of their subsequent lockSeats calls can win the row-level lock; the loser gets a clean failure and rolls back local state. Add a fencing/epoch token per ownership hand-off (each ring-membership change bumps an epoch; stale-epoch writes are rejected) to shrink the dual-owner window itself.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you handle a blockbuster release where one ShowID gets 100x normal load despite ShowID-based sharding?</div>
+          <div class="qa-a">ShowID sharding distributes load <em>across</em> shows, but a single wildly popular show can still be a hot key on its own shard. Mitigations: dynamically bump replication factor for that ShowID (triggered by the seat-lock contention metric), add a virtual "queueing" front door (ticket-sale waiting room) admitting users at a controlled rate, and lean harder on Varnish coalescing on the read path so only genuine reservation attempts reach the contested rows.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the consistency model between the BookMyShow-side Redis seat-lock cache and the theater's actual seat status?</div>
+          <div class="qa-a">Redis is a fast, best-effort cache for UI responsiveness &mdash; not the correctness boundary; the theater's SERIALIZABLE transaction is authoritative. If Redis and the theater DB briefly disagree, the next lockSeats call re-validates against the theater DB and returns the true outcome, so staleness produces at worst a brief UI flicker, never an actual double-booking.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you test/verify "no partial orders" under concurrent load?</div>
+          <div class="qa-a">The SERIALIZABLE transaction enforces this at the DB layer (the UPDATE's WHERE clause requires Status=0 for ALL requested seats &mdash; if any one seat lost the race, the row count fails and the whole transaction rolls back before any seat is marked held). At the test layer, run chaos/load tests racing N threads for overlapping seat sets on one ShowID and assert exactly one requester per seat ever reaches booked_reservation.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you shard the primary MySQL Booking/Show_Seat tables themselves as the system grows past a single DB instance?</div>
+          <div class="qa-a">Shard by ShowID for the same hot-key reasoning as Data Sharding &mdash; co-locate a show's Show_Seat rows and its Booking rows on the same shard so the SERIALIZABLE transaction never needs a cross-shard/distributed transaction; route via the same consistent-hash ring used for ActiveReservationsService ownership so reservation-tracking and DB-shard ownership stay co-located.</div>
+        </div>
+
+        <h3>Fairness, Fault Tolerance &amp; Ops</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How do you make the waitlist fair across time zones or multiple simultaneous shows of the same movie?</div>
+          <div class="qa-a">Fairness is scoped per-ShowID, not per-movie globally &mdash; a user waitlisted for the 7pm show has no claim on the 9pm show; each show has its own independent LinkedHashMap queue. Store WaitStartTime in UTC and convert only for display; FCFS ordering is timezone-agnostic since it's based on server-side arrival order.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why LinkedHashMap and not a priority queue/heap for the waitlist?</div>
+          <div class="qa-a">We need O(1) arbitrary-key removal (a user can cancel from any position, not just the head) plus O(1) peek-oldest &mdash; a heap gives O(log n) removal-by-value (needing a scan or auxiliary index). LinkedHashMap gives insertion-order iteration for free, so the head is always oldest at O(1) insert/remove/peek.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How do you prevent one user from scripting hundreds of ReserveSeats calls to hoard seats?</div>
+          <div class="qa-a">The 10-seat cap alone doesn't stop many separate bookings; add per-user rate limiting at the Gateway (tied to authenticated UserID, not just IP), step-up-auth/CAPTCHA on suspicious velocity, and a max-concurrent-active-reservations-per-user cap enforced by Booking Service.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How does the Adaptor avoid becoming a single point of failure/latency bottleneck for composite pages?</div>
+          <div class="qa-a">Fan out to backend services in parallel (not sequentially) with per-service timeouts and fallback content (circuit breaker), so a slow dependency degrades only that widget; cache composite responses at the CDN/edge for anonymous/non-personalized page variants where possible.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if the Search Consumer falls behind (consumer lag) during a big new-release content push?</div>
+          <div class="qa-a">New movies/shows briefly won't appear in search (though still reachable via direct city/cinema browse). Monitor consumer lag as a first-class metric and treat prolonged lag as page-worthy, since it silently hides bookable inventory from users and hurts the page-view-to-ticket conversion funnel.</div>
+        </div>
+
+        <h3>Extensions &amp; Edge Cases</h3>
+
+        <div class="qa-item">
+          <div class="qa-q">How would you redesign this if BookMyShow DID own the theater inventory?</div>
+          <div class="qa-a">Collapse Order Service and the independent theater servers into a single first-party Seat Inventory Service; Show_Seat becomes a directly-owned, shardable table (by ShowID) instead of an external integration, letting the SERIALIZABLE transaction run in your own cluster (no external latency/availability dependency) and enabling cross-theater price/seat optimization. Trade-off: you now own theater-side operational burden (POS integration, hall/seat-map data entry, uptime SLAs) previously outsourced.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What happens if the payment gateway is slow/times out right at the edge of the hold window?</div>
+          <div class="qa-a">This is exactly why server-side expiry adds a 5-second buffer past the client-visible countdown &mdash; if payment is in flight (payment_in_progress) when the client timer hits zero, the server waits a short grace period for the callback before expiring. If the callback never arrives, the safe default is to expire and roll back, with the payment provider's idempotent webhook reconciling afterward via a compensating refund flow.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why 10-minute hold instead of 5-minute &mdash; how would you actually decide?</div>
+          <div class="qa-a">Treat it as an A/B-tested, per-market-tunable parameter: measure reservation-expiry rate and booking-success rate at both windows. Shorter holds increase seat turnover under contention but hurt users with slow payment methods; longer holds do the opposite. Payment-method-aware dynamic windows (shorter for one-click card, longer for UPI) are a natural refinement.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How would you extend this to support concert/stadium General-Admission ticketing (this design is Ticketmaster-comparable)?</div>
+          <div class="qa-a">Replace the seat-level Show_Seat row-lock with a counter-based inventory decrement (atomic Redis DECR or SELECT...FOR UPDATE on a single "remaining GA tickets" row) guarded by the same SERIALIZABLE-style pattern; the hold/waitlist/expiry state machine is otherwise unchanged since it doesn't depend on seats being individually addressable.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Why is Cinema_Seat separate from Show_Seat instead of one seat table with a ShowID/status column?</div>
+          <div class="qa-a">Cinema_Seat is the static physical hall layout (created once per Cinema_Hall); Show_Seat is the ephemeral per-show-instance booking state (created fresh for every show, &times;2/day per cinema). Separating them avoids duplicating seat-layout metadata on every show and keeps Show_Seat a lean, high-churn table optimized for the status flips the SERIALIZABLE transaction contends over.</div>
+        </div>
+
+        <h2 id="key-takeaways">Key Takeaways</h2>
+        <div class="callout">
+          <div class="callout-title">Remember</div>
+          BookMyShow is an integration layer over independently-owned theater inventory, not the system of record for seats &mdash; that single framing decision explains the Order Service adaptor, the two cooperating lock layers, and the blast-radius argument in fault tolerance. "Highly concurrent" is a hot-key problem, not an aggregate-throughput one: peak booking QPS is only &asymp;12&ndash;19 system-wide, but hundreds of users can hit the same ShowID's same seats in a single on-sale burst &mdash; which is why ShowID (never MovieID) is the sharding key, and why SERIALIZABLE row-locking at the theater's DB, not distributed-lock infrastructure, is the correctness boundary. Two explicit judgment calls were made where the source material disagreed: a 10-minute hold (not 5) because it is the user's stated product requirement, and required authentication (not the classic write-up's simplification) because the system needs identity for ticket delivery, abuse caps, and waitlist fairness. LinkedHashMap gives the waitlist O(1) FCFS semantics for free; Varnish request-coalescing is safe only for idempotent reads, never for LOCK/UNLOCK writes; and the WaitingUsersService's in-memory-only design is a genuine fault-tolerance gap worth naming unprompted, along with its Redis-snapshot mitigation.
+        </div>
+
+        <h2 id="references">References</h2>
+        <ul>
+          <li>Wikipedia, <a href="https://en.wikipedia.org/wiki/Isolation_(database_systems)" target="_blank" rel="noopener">"Isolation (database systems)"</a> &mdash; SERIALIZABLE and the other ANSI SQL isolation levels, and the anomalies (dirty/non-repeatable/phantom reads) each one prevents</li>
+          <li>Wikipedia, <a href="https://en.wikipedia.org/wiki/Consistent_hashing" target="_blank" rel="noopener">"Consistent hashing"</a> &mdash; the ring/replication-factor model used for ShowID-based partitioning of reservation-tracking state</li>
+          <li>Varnish Software, <a href="https://www.varnish-software.com/glossary/what-is-request-coalescing/" target="_blank" rel="noopener">"What is Request Coalescing?"</a> &mdash; the GET-only de-duplication pattern behind the Order Service read path</li>
+          <li>Oracle Java Documentation, <a href="https://docs.oracle.com/javase/8/docs/api/java/util/LinkedHashMap.html" target="_blank" rel="noopener"><code>java.util.LinkedHashMap</code></a> &mdash; the insertion-order data structure behind the FCFS waitlist</li>
+          <li>Apache Kafka, <a href="https://kafka.apache.org/documentation/" target="_blank" rel="noopener">Kafka Documentation</a> &mdash; replication factor, acks=all, and consumer-lag semantics referenced throughout Replication and Fault Tolerance</li>
+          <li>Apache Cassandra Documentation, <a href="https://cassandra.apache.org/doc/latest/cassandra/architecture/dynamo.html" target="_blank" rel="noopener">"Data Distribution and Replication"</a> &mdash; partition-key trade-offs referenced in the booking_history discussion</li>
+        </ul>
+
+        <div class="page-nav">
+          <a class="prev" href="cricinfo.html"><span class="dir">Previous</span>CricInfo / CricBuzz</a>
+          <a class="next" href="uber.html"><span class="dir">Next</span>Uber</a>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>
