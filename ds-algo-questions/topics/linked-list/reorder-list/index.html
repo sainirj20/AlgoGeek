@@ -79,11 +79,17 @@
   <h2>Problem</h2>
   <p>Given a singly linked list <code>L0 -> L1 -> ... -> Ln-1 -> Ln</code>, reorder it in place to <code>L0 -> Ln -> L1 -> Ln-1 -> L2 -> Ln-2 -> ...</code>.</p>
   <div class="example-block"><span class="example-label">Example</span>Input:  1 -&gt; 2 -&gt; 3 -&gt; 4
-Output: 1 -&gt; 4 -&gt; 2 -&gt; 3</div>
-  <div class="diagram-placeholder"><span class="diagram-placeholder-icon">&#128247;</span><span class="diagram-placeholder-text">Diagram placeholder &mdash; paste the array traversal image here (save it into this problem's folder and set <code>diagram</code> in <code>solutions.py</code>).</span></div>
+Output: 1 -&gt; 4 -&gt; 2 -&gt; 3
+    <img src="../images/reorder1linked-list.jpg" alt="image" style="border: 1px solid #000;">
+</div>
+
+  <div class="example-block"><span class="example-label">Example</span>Input:  1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5
+Output: 1 -&gt; 5 -&gt; 2 -&gt; 4 -&gt; 3 
+    <img src="../images/reorder2-linked-list.jpg" alt="image" style="border: 1px solid #000;">
+</div>
+  
   <div class="problem-meta">
     <a href="https://leetcode.com/problems/reorder-list/" target="_blank" rel="noopener">LeetCode #143</a>
-    
   </div>
 </div>
 
@@ -93,44 +99,67 @@ Output: 1 -&gt; 4 -&gt; 2 -&gt; 3</div>
   <div class="complexity-row"><span class="complexity-pill">Time O(n)</span><span class="complexity-pill">Space O(1)</span></div>
 </div>
 
-<div class="code-block"><span class="code-label">Java</span><pre><button class="copy-btn" type="button">Copy</button><code class="language-java"><span class="tok-kw">public</span> <span class="tok-kw">void</span> reorderList(<span class="tok-type">ListNode</span> head) {
-    <span class="tok-kw">if</span> (head == <span class="tok-kw">null</span> || head.next == <span class="tok-kw">null</span>) {
-        <span class="tok-kw">return</span>;
+<div class="code-block">
+  <span class="code-label">Java</span><pre><button class="copy-btn" type="button">Copy</button><code class="language-java">
+/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode() {}
+ *     ListNode(int val) { this.val = val; }
+ *     ListNode(int val, ListNode next) { this.val = val; this.next = next; }
+ * }
+ */
+class Solution {
+    public void reorderList(ListNode head) {
+        if (head == null) return;
+
+        ListNode slow = head;
+        for (ListNode fast = head; 
+             fast != null && fast.next != null && fast.next.next != null; 
+             fast = fast.next.next) {
+            slow = slow.next;
+        }
+        
+        ListNode fakeHead2 = reverse (slow.next);
+        slow.next = null;
+        
+        ListNode fakeHead3 = new ListNode(0);
+        ListNode p = fakeHead3;
+        while (head != null && fakeHead2 != null) {
+            ListNode temp = head; 
+            head = head.next;
+        
+            p.next = temp;
+            p = p.next;
+            
+            temp = fakeHead2; 
+            fakeHead2 = fakeHead2.next;
+            
+            p.next = temp; 
+            p = p.next;
+        }
+        if (head != null) {
+            p.next = head; 
+        }
+        
+        head = fakeHead3.next;
     }
-
-    <span class="tok-type">ListNode</span> slow = head, fast = head;
-    <span class="tok-kw">while</span> (fast.next != <span class="tok-kw">null</span> &amp;&amp; fast.next.next != <span class="tok-kw">null</span>) {
-        slow = slow.next;
-        fast = fast.next.next;
-    }
-
-    <span class="tok-type">ListNode</span> second = slow.next;
-    slow.next = <span class="tok-kw">null</span>;
-    second = reverse(second);
-
-    <span class="tok-type">ListNode</span> first = head;
-    <span class="tok-kw">while</span> (second != <span class="tok-kw">null</span>) {
-        <span class="tok-type">ListNode</span> firstNext = first.next;
-        <span class="tok-type">ListNode</span> secondNext = second.next;
-
-        first.next = second;
-        second.next = firstNext;
-
-        first = firstNext;
-        second = secondNext;
+    
+    private ListNode reverse (ListNode head) {
+        ListNode p = null;
+        while (head != null) {
+            ListNode temp = head;
+            head = head.next;
+            temp.next = p;
+            p = temp;
+        }
+        return p;
     }
 }
-
-<span class="tok-kw">private</span> <span class="tok-type">ListNode</span> reverse(<span class="tok-type">ListNode</span> head) {
-    <span class="tok-type">ListNode</span> prev = <span class="tok-kw">null</span>;
-    <span class="tok-kw">while</span> (head != <span class="tok-kw">null</span>) {
-        <span class="tok-type">ListNode</span> next = head.next;
-        head.next = prev;
-        prev = head;
-        head = next;
-    }
-    <span class="tok-kw">return</span> prev;
-}</code></pre></div>
+  </code></pre>
+</div>
 
 <p class="source-note">Solved on <a href="https://leetcode.com/problems/reorder-list/" target="_blank" rel="noopener">LeetCode #143</a>.</p>
 </div>
