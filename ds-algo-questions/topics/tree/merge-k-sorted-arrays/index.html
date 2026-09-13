@@ -80,7 +80,6 @@
   <p>Given <code>k</code> sorted integer arrays, merge them into a single sorted array.</p>
   <div class="example-block"><span class="example-label">Example</span>Input:  arrays = [[1,4,5],[1,3,4],[2,6]]
 Output: [1,1,2,3,4,4,5,6]</div>
-  <div class="diagram-placeholder"><span class="diagram-placeholder-icon">&#128247;</span><span class="diagram-placeholder-text">Diagram placeholder &mdash; paste the array traversal image here (save it into this problem's folder and set <code>diagram</code> in <code>solutions.py</code>).</span></div>
   <div class="problem-meta">
     <a href="https://leetcode.com/problems/" target="_blank" rel="noopener">Classic interview question</a>
     
@@ -93,29 +92,45 @@ Output: [1,1,2,3,4,4,5,6]</div>
   <div class="complexity-row"><span class="complexity-pill">Time O(n log k)</span><span class="complexity-pill">Space O(k)</span></div>
 </div>
 
-<div class="code-block"><span class="code-label">Java</span><pre><button class="copy-btn" type="button">Copy</button><code class="language-java"><span class="tok-kw">public</span> <span class="tok-kw">int</span>[] mergeKArrays(<span class="tok-kw">int</span>[][] arrays) {
-    <span class="tok-type">PriorityQueue</span>&lt;<span class="tok-kw">int</span>[]&gt; heap = <span class="tok-kw">new</span> <span class="tok-type">PriorityQueue</span>&lt;&gt;((a, b) -&gt; a[<span class="tok-num">0</span>] - b[<span class="tok-num">0</span>]);
-    <span class="tok-kw">int</span> totalLength = <span class="tok-num">0</span>;
+<div class="code-block"><span class="code-label">Java</span><pre><button class="copy-btn" type="button">Copy</button><code class="language-java">class ArrayContainer implements Comparable<ArrayContainer> {
+	int[] arr;
+	int index;
+ 
+	public ArrayContainer(int[] arr, int index) {
+		this.arr = arr;
+		this.index = index;
+	}
+ 
+	@Override
+	public int compareTo(ArrayContainer o) {
+		return this.arr[this.index] - o.arr[o.index];
+	}
+}
 
-    <span class="tok-kw">for</span> (<span class="tok-kw">int</span> i = <span class="tok-num">0</span>; i &lt; arrays.length; i++) {
-        <span class="tok-kw">if</span> (arrays[i].length &gt; <span class="tok-num">0</span>) {
-            heap.offer(<span class="tok-kw">new</span> <span class="tok-kw">int</span>[]{arrays[i][<span class="tok-num">0</span>], i, <span class="tok-num">0</span>});
-        }
-        totalLength += arrays[i].length;
+<span class="tok-kw">public</span> <span class="tok-kw">int</span>[] mergeKArrays(<span class="tok-kw">int</span>[][] arrays) {
+    PriorityQueue&lt;ArrayContainer> queue = new PriorityQueue&lt;ArrayContainer>();
+    int total=0;
+
+    //add arrays to heap
+    for (int i = 0; i &lt; arr.length; i++) {
+      queue.add(new ArrayContainer(arr[i], 0));
+      total = total + arr[i].length;
     }
 
-    <span class="tok-kw">int</span>[] result = <span class="tok-kw">new</span> <span class="tok-kw">int</span>[totalLength];
-    <span class="tok-kw">int</span> index = <span class="tok-num">0</span>;
+    int m=0;
+    int result[] = new int[total];
 
-    <span class="tok-kw">while</span> (!heap.isEmpty()) {
-        <span class="tok-kw">int</span>[] top = heap.poll();
-        result[index++] = top[<span class="tok-num">0</span>];
+    //while heap is not empty
+    while(!queue.isEmpty()){
+      ArrayContainer ac = queue.poll();
+      result[m++]=ac.arr[ac.index];
 
-        <span class="tok-kw">int</span> arrayIndex = top[<span class="tok-num">1</span>], elementIndex = top[<span class="tok-num">2</span>] + <span class="tok-num">1</span>;
-        <span class="tok-kw">if</span> (elementIndex &lt; arrays[arrayIndex].length) {
-            heap.offer(<span class="tok-kw">new</span> <span class="tok-kw">int</span>[]{arrays[arrayIndex][elementIndex], arrayIndex, elementIndex});
-        }
+      if(ac.index &lt; ac.arr.length-1){
+        queue.add(new ArrayContainer(ac.arr, ac.index+1));
+      }
     }
+
+    return result;
 
     <span class="tok-kw">return</span> result;
 }</code></pre></div>

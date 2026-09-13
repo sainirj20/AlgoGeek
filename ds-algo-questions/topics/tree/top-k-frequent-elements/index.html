@@ -80,7 +80,6 @@
   <p>Given an integer array and an integer <code>k</code>, return the <code>k</code> most frequent elements.</p>
   <div class="example-block"><span class="example-label">Example</span>Input:  nums = [1,1,1,2,2,3], k = 2
 Output: [1,2]</div>
-  <div class="diagram-placeholder"><span class="diagram-placeholder-icon">&#128247;</span><span class="diagram-placeholder-text">Diagram placeholder &mdash; paste the array traversal image here (save it into this problem's folder and set <code>diagram</code> in <code>solutions.py</code>).</span></div>
   <div class="problem-meta">
     <a href="https://leetcode.com/problems/top-k-frequent-elements/" target="_blank" rel="noopener">LeetCode #347</a>
     
@@ -94,24 +93,27 @@ Output: [1,2]</div>
 </div>
 
 <div class="code-block"><span class="code-label">Java</span><pre><button class="copy-btn" type="button">Copy</button><code class="language-java"><span class="tok-kw">public</span> <span class="tok-kw">int</span>[] topKFrequent(<span class="tok-kw">int</span>[] nums, <span class="tok-kw">int</span> k) {
-    <span class="tok-type">Map</span>&lt;<span class="tok-type">Integer</span>, <span class="tok-type">Integer</span>&gt; freq = <span class="tok-kw">new</span> <span class="tok-type">HashMap</span>&lt;&gt;();
-    <span class="tok-kw">for</span> (<span class="tok-kw">int</span> num : nums) {
-        freq.merge(num, <span class="tok-num">1</span>, <span class="tok-type">Integer</span>::sum);
+    if (nums == null || nums.length == 0) {
+        return null;
     }
-
-    <span class="tok-type">PriorityQueue</span>&lt;<span class="tok-type">Integer</span>&gt; heap = <span class="tok-kw">new</span> <span class="tok-type">PriorityQueue</span>&lt;&gt;((a, b) -&gt; freq.get(a) - freq.get(b));
-    <span class="tok-kw">for</span> (<span class="tok-kw">int</span> num : freq.keySet()) {
-        heap.offer(num);
-        <span class="tok-kw">if</span> (heap.size() &gt; k) {
-            heap.poll();
+    Map<Integer, Integer> freqMap = new HashMap<>();
+    for (int num : nums) {
+        freqMap.put(num, freqMap.getOrDefault(num, 0) +1);
+    }
+    
+    PriorityQueue<Map.Entry<Integer, Integer>> queue = 
+        new PriorityQueue<>((m1, m2) -> m1.getValue() - m2.getValue());
+    
+    for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
+        queue.offer(entry);
+        if (queue.size() > k) {
+            queue.poll();
         }
+    }        
+    int [] result = new int [k];
+    for (int i=k-1; i>=0; i--) {
+        result[i] = queue.poll().getKey();
     }
-
-    <span class="tok-kw">int</span>[] result = <span class="tok-kw">new</span> <span class="tok-kw">int</span>[k];
-    <span class="tok-kw">for</span> (<span class="tok-kw">int</span> i = k - <span class="tok-num">1</span>; i &gt;= <span class="tok-num">0</span>; i--) {
-        result[i] = heap.poll();
-    }
-
     <span class="tok-kw">return</span> result;
 }</code></pre></div>
 
