@@ -80,7 +80,6 @@
   <p>Given strings <code>s</code> and <code>t</code>, find the minimum window in <code>s</code> that contains every character of <code>t</code> (with at least the same multiplicity).</p>
   <div class="example-block"><span class="example-label">Example</span>Input:  s = &quot;ADOBECODEBANC&quot;, t = &quot;ABC&quot;
 Output: &quot;BANC&quot;</div>
-  <div class="diagram-placeholder"><span class="diagram-placeholder-icon">&#128247;</span><span class="diagram-placeholder-text">Diagram placeholder &mdash; paste the array traversal image here (save it into this problem's folder and set <code>diagram</code> in <code>solutions.py</code>).</span></div>
   <div class="problem-meta">
     <a href="https://leetcode.com/problems/minimum-window-substring/" target="_blank" rel="noopener">LeetCode #76</a>
     
@@ -94,43 +93,44 @@ Output: &quot;BANC&quot;</div>
 </div>
 
 <div class="code-block"><span class="code-label">Java</span><pre><button class="copy-btn" type="button">Copy</button><code class="language-java"><span class="tok-kw">public</span> <span class="tok-type">String</span> minWindow(<span class="tok-type">String</span> s, <span class="tok-type">String</span> t) {
-    <span class="tok-kw">if</span> (s.length() &lt; t.length()) {
-        <span class="tok-kw">return</span> <span class="tok-str">&quot;&quot;</span>;
-    }
+        if (t.length() > s.length()) return "";
 
-    <span class="tok-type">Map</span>&lt;<span class="tok-type">Character</span>, <span class="tok-type">Integer</span>&gt; target = <span class="tok-kw">new</span> <span class="tok-type">HashMap</span>&lt;&gt;();
-    <span class="tok-kw">for</span> (<span class="tok-kw">char</span> c : t.toCharArray()) {
-        target.merge(c, <span class="tok-num">1</span>, <span class="tok-type">Integer</span>::sum);
-    }
-
-    <span class="tok-type">Map</span>&lt;<span class="tok-type">Character</span>, <span class="tok-type">Integer</span>&gt; window = <span class="tok-kw">new</span> <span class="tok-type">HashMap</span>&lt;&gt;();
-    <span class="tok-kw">int</span> required = target.size();
-    <span class="tok-kw">int</span> formed = <span class="tok-num">0</span>;
-    <span class="tok-kw">int</span> left = <span class="tok-num">0</span>;
-    <span class="tok-kw">int</span> bestLen = <span class="tok-type">Integer</span>.<span class="tok-type">MAX_VALUE</span>, bestStart = <span class="tok-num">0</span>;
-
-    <span class="tok-kw">for</span> (<span class="tok-kw">int</span> right = <span class="tok-num">0</span>; right &lt; s.length(); right++) {
-        <span class="tok-kw">char</span> c = s.charAt(right);
-        window.merge(c, <span class="tok-num">1</span>, <span class="tok-type">Integer</span>::sum);
-        <span class="tok-kw">if</span> (target.containsKey(c) &amp;&amp; window.get(c).intValue() == target.get(c).intValue()) {
-            formed++;
+        Map < Character, Integer> freqMap = new HashMap< > ();
+        for (int i=0; i< t.length(); i++) {
+            char ch = t.charAt(i);
+            freqMap.put(ch, freqMap.getOrDefault(ch, 0) + 1);
         }
 
-        <span class="tok-kw">while</span> (formed == required) {
-            <span class="tok-kw">if</span> (right - left + <span class="tok-num">1</span> &lt; bestLen) {
-                bestLen = right - left + <span class="tok-num">1</span>;
-                bestStart = left;
+        int []result = new int[] {-1, -1};
+        int min = Integer.MAX_VALUE;
+        int count = freqMap.size();
+        int left = 0, right = 0;
+        while (right < s.length()) {
+            char ch = s.charAt(right);
+            if (freqMap.containsKey(ch)) {
+                int freq = freqMap.get(ch) - 1;
+                freqMap.put(ch, freq);
+                if (freq == 0) count--;
             }
-            <span class="tok-kw">char</span> leftChar = s.charAt(left);
-            window.put(leftChar, window.get(leftChar) - <span class="tok-num">1</span>);
-            <span class="tok-kw">if</span> (target.containsKey(leftChar) &amp;&amp; window.get(leftChar) &lt; target.get(leftChar)) {
-                formed--;
-            }
-            left++;
-        }
-    }
+            right ++;
+            while (count == 0) {
+                if (min > right - left) {
+                    min = right - left;
+                    result[0] = left;
+                    result[1] = right;
+                }
 
-    <span class="tok-kw">return</span> bestLen == <span class="tok-type">Integer</span>.<span class="tok-type">MAX_VALUE</span> ? <span class="tok-str">&quot;&quot;</span> : s.substring(bestStart, bestStart + bestLen);
+                char tail = s.charAt(left);
+                if (freqMap.containsKey(tail)) {
+                    int freq = freqMap.get(tail) + 1;
+                    freqMap.put(tail, freq);
+                    if (freq > 0) count++;
+                }
+                left++;
+            }
+        }
+
+        return (result[0] == -1) ? "" : s.substring(result[0], result[1]);
 }</code></pre></div>
 
 <p class="source-note">Solved on <a href="https://leetcode.com/problems/minimum-window-substring/" target="_blank" rel="noopener">LeetCode #76</a>.</p>
